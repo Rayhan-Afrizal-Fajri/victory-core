@@ -22,6 +22,9 @@ return new class extends Migration
             $table->decimal('total_harga', 15, 2)->default(0);
             $table->boolean('is_received')->default(false);
             $table->date('tgl_pembelian')->nullable();
+
+            $table->integer('received_qty')->default(0); // Qty yang sudah diterima
+            $table->enum('status', ['pending', 'partially_received', 'completed'])->default('Pending'); // Status pembelian berdasarkan penerimaan barang
             $table->timestamps();
         });
     }

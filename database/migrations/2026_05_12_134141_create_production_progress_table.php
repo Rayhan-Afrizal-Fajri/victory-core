@@ -15,10 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pesanan_id')->constrained('pesanan')->onDelete('cascade');
             $table->enum('prioritas', ['Low', 'Medium', 'High', 'Urgent'])->default('Medium');
-            
-            // Gate Trigger
-            $table->boolean('acc_sample')->default(false);
-            $table->timestamp('tgl_acc_sample')->nullable(); //pemicu masuk ke fase produksi masal
+
+            $table->dateTime('started_at')->nullable(); // Tanggal dan waktu ketika produksi dimulai
+            $table->dateTime('completed_at')->nullable(); // Tanggal dan waktu ketika produksi
 
             //poin-poin checklist sesuai gambar job ticket fisik
             //fase ppm

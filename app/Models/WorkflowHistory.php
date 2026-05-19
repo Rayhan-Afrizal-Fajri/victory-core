@@ -4,25 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Invoice extends Model
+class WorkflowHistory extends Model
 {
     protected $fillable = [
         'pesanan_id',
-        'no_invoice',
-        'kategori_invoice',
-        'total_tagihan',
-        'status_tagihan',
-        'tgl_jatuh_tempo',
+        'step',
+        'action',
+        'user_id',
+        'notes',
     ];
-
 
     public function pesanan()
     {
         return $this->belongsTo(Pesanan::class);
     }
 
-    public function payment()
+    public function user()
     {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(User::class);
     }
 }

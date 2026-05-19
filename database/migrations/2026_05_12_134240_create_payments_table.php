@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('metode_pembayaran');
             $table->string('bukti_transfer_path')->nullable();
             $table->text('catatan_finance')->nullable();
+            $table->foreignId('verified_by')->nullable()->constrained('users'); // Relasi ke tabel users untuk yang memverifikasi pembayaran (user finance atau admin)
+            $table->dateTime('verified_at')->nullable(); // Tanggal dan waktu ketika pembayaran
             $table->timestamps();
         });
     }

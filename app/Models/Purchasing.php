@@ -16,6 +16,9 @@ class Purchasing extends Model
         'total_harga',
         'is_received',
         'tgl_pembelian',
+
+        'received_by',
+        'status',
     ];
 
     public function pesanan()
@@ -26,5 +29,10 @@ class Purchasing extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function materialReceiving()
+    {
+        return $this->hasMany(MaterialReceiving::class);
     }
 }

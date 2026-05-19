@@ -37,4 +37,44 @@ class User extends Authenticatable
     {
         return $this->hasMany(Pesanan::class, 'created_by');
     }
+
+    public function customer()
+    {
+        return $this->hasOne(Customer::class);
+    }
+
+    public function paymentVerified()
+    {
+        return $this->hasMany(Payment::class, 'verified_by');
+    }
+
+    public function designer()
+    {
+        return $this->hasMany(Design::class, 'designer_id');
+    }
+
+    public function designApprovedBy()
+    {
+        return $this->hasMany(Design::class, 'approved_by');
+    }
+
+    public function sampleApprovedBy()
+    {
+        return $this->hasMany(Sample::class, 'approved_by');
+    }
+
+    public function materialReceivingCheckedBy()
+    {
+        return $this->hasMany(MaterialReceiving::class, 'checked_by');
+    }
+
+    public function workflowHistory()
+    {
+        return $this->hasMany(WorkflowHistory::class);
+    }
+
+    public function attachmentUploadedBy()
+    {
+        return $this->hasMany(Attachment::class, 'uploaded_by');
+    }
 }

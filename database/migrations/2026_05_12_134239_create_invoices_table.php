@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pesanan_id')->constrained('pesanan');
             $table->string('no_invoice')->unique();
-            $table->enum('tipe_invoice', ['Sample', 'DP Produksi', 'Pelunasan']);
+            $table->string('kategori_invoice');
             $table->decimal('total_tagihan', 15, 2);
             $table->enum('status_tagihan', ['Unpaid', 'Partially Paid', 'Paid', 'Cancelled'])->default('Unpaid');
             $table->date('tgl_jatuh_tempo');

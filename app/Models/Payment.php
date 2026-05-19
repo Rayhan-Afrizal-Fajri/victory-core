@@ -13,10 +13,17 @@ class Payment extends Model
         'metode_pembayaran',
         'bukti_transfer_path',
         'catatan_finance',  
+        'verified_by',
+        'verified_at'
     ];
 
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function verifiedBy()
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

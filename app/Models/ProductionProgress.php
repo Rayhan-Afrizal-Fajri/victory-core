@@ -9,8 +9,9 @@ class ProductionProgress extends Model
     protected $fillable = [
         'pesanan_id',
         'prioritas',
-        'acc_sample',
-        'tgl_acc_sample',
+
+        'started_at',
+        'completed_at',
 
         'ppm_bahan',
         'ppm_aksesoris',

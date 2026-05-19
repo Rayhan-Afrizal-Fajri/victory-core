@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('order_specifications', function (Blueprint $table) {
             $table->id();
-            $table->string('nama')->nullable();
-            $table->foreignId('user_id')->constrained('users'); // Relasi ke tabel users
-            $table->string('no_hp')->nullable();
-            $table->string('nama_perusahaan')->nullable();
-            $table->text('alamat')->nullable();
+            $table->foreignId('pesanan_id')->constrained('pesanan')->onDelete('cascade');
+            $table->string('jenis_spesifikasi'); //eg: bahan, sablon, aksesoris
+            $table->text('value'); //eg: Combed 30s Black, Plastisol 3 Warna, Kancing snap, label woven
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('order_specifications');
     }
 };

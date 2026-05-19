@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
+            $table->string('nama')->nullable();
+            $table->string('nama_perusahaan')->nullable();
+            $table->string('email')->nullable();
             $table->enum('kategori', ['Bahan Baku', 'Aksesoris', 'CMT / Makloon']);
             $table->string('kontak')->nullable();
             $table->text('alamat')->nullable();

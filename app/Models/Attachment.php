@@ -4,25 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Invoice extends Model
+class Attachment extends Model
 {
     protected $fillable = [
         'pesanan_id',
-        'no_invoice',
-        'kategori_invoice',
-        'total_tagihan',
-        'status_tagihan',
-        'tgl_jatuh_tempo',
+        'kategori',
+        'file_path',
+        'uploaded_by',
+        'catatan',
     ];
-
 
     public function pesanan()
     {
         return $this->belongsTo(Pesanan::class);
     }
 
-    public function payment()
+    public function uploadedBy()
     {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }
