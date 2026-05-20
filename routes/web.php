@@ -41,10 +41,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [JobTicketController::class, 'updateStatus']
     )->name('pesanan.update-status');
     Route::patch(
-        'production-progress/{id}',
-        [ProductionProgressController::class, 'update']
-    )->name('production-progress.update');
-    Route::patch(
         '/production-progress/{id}/toggle-sample',
         [ProductionProgressController::class, 'toggleSample']
     )->name('production-progress.toggle-sample');    
