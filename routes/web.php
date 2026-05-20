@@ -16,9 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::inertia('/', '/login');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -48,9 +46,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         '/production-progress/{id}/toggle-sample',
         [ProductionProgressController::class, 'toggleSample']
     )->name('production-progress.toggle-sample');    
-
-    // Design approval endpoint (used by UI to approve design)
-    Route::patch('job-tickets/{id}/design-approve', [JobTicketController::class, 'approveDesign'])->name('job-tickets.design-approve');
 
     Route::resource('profit-loss-report', ProfitLossReportController::class);
 });
