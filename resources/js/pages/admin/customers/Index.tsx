@@ -13,10 +13,16 @@ import { store as customerStore, update as customerUpdate, destroy as customerDe
 import InputError from '@/components/input-error';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import { FormDialog } from '@/components/crud/form-dialog';
+import { CustomerForm } from '@/components/forms/customer/customer-form';
+import { CustomerDetail } from '@/components/forms/customer/customer-detail';
+import { DetailSheet } from '@/components/crud/detail-sheet';
 
 type CustomerRow = {
   id: number;
   name: string;
+  company_name: string;
+  email: string;
   contact: string;
   address: string;
   total_orders: number;
@@ -42,6 +48,8 @@ export default function Index({ customers }: Props) {
 
   const customerForm = useForm({
     nama: '',
+    nama_perusahaan: '',
+    email: '',
     no_hp: '',
     alamat: '',
   });
@@ -58,6 +66,8 @@ export default function Index({ customers }: Props) {
 
     customerForm.setData({
       nama: customer.name,
+      nama_perusahaan: customer.company_name,
+      email: customer.email,
       no_hp: customer.contact,
       alamat: customer.address,
     });
@@ -155,68 +165,26 @@ export default function Index({ customers }: Props) {
             </p>
           </div>
           <div className="flex gap-3">
-            <Dialog
-              open={isDialogOpen}
-              onOpenChange={(open) => {
-                setIsDialogOpen(open);
 
-                if (!open) {
-                  setEditingCustomer(null);
-                  customerForm.reset();
-                  customerForm.clearErrors();
-                }
-              }}
+            <FormDialog
+              open={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              title={
+                editingCustomer
+                  ? 'Edit Customer'
+                  : 'Tambah Customer'
+              }
+              description="Kelola data customer"
+              submitLabel={
+                editingCustomer
+                  ? 'Update Customer'
+                  : 'Simpan Customer'
+              }
+              loading={customerForm.processing}
+              onSubmit={handleSubmitCustomer}
             >
-              <DialogTrigger asChild>
-                <Button variant="default" className="inline-flex items-center gap-2">
-                  <Plus className="size-4" /> Tambah Customer
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-xl">
-                <DialogHeader>
-                  <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Tambah Customer Baru'}</DialogTitle>
-                  <DialogDescription>
-                    {editingCustomer
-                      ? 'Perbarui informasi pelanggan.'
-                      : 'Tambahkan profil pelanggan baru untuk mempermudah penjualan dan pengelolaan order.'}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Nama Customer</label>
-                    <Input
-                      value={customerForm.data.nama}
-                      onChange={(event) => customerForm.setData('nama', event.target.value)}
-                      className="w-full"
-                    />
-                    <InputError message={customerForm.errors.nama as string} />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Kontak</label>
-                    <Input
-                      value={customerForm.data.no_hp}
-                      onChange={(event) => customerForm.setData('no_hp', event.target.value)}
-                    />
-                    <InputError message={customerForm.errors.no_hp as string} />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Alamat</label>
-                    <Textarea
-                      value={customerForm.data.alamat}
-                      onChange={(event) => customerForm.setData('alamat', event.target.value)}
-                      rows={2}
-                    />
-                    <InputError message={customerForm.errors.alamat as string} />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button onClick={handleSubmitCustomer}>{editingCustomer ? 'Update Customer' : 'Simpan Customer'}</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              <CustomerForm form={customerForm}/>
+            </FormDialog>
           </div>
         </div>
 
@@ -301,6 +269,19 @@ export default function Index({ customers }: Props) {
           )}
         </SheetContent>
       </Sheet>
+      {/* <DetailSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        title="Detail Customer"
+        description="Lihat detail customer"
+      >
+        {selectedCustomer && (
+          <CustomerDetail
+            customer={selectedCustomer}
+            onClose={() => setIsSheetOpen(false)}
+          />
+        )}
+      </DetailSheet> */}
     </>
   );
 }

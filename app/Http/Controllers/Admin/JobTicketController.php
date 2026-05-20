@@ -204,69 +204,122 @@ class JobTicketController extends Controller
         // Cari order berdasarkan ID
         $pesanan = Pesanan::with([
             'customer',
-            'productionProgress'
+            'design',
+            'sample',
+            'invoice.payment',
+            'purchasing.materialReceiving',
+            'productionProgress',
+            'workflowHistory.user',
+            'attachment',
+            'workflowStatus',
         ])->findOrFail($id);
 
-        // Kirim data lengkap ke file Show.tsx Anda
+        $workflowStatus = $pesanan->workflowStatus;
+
+        $mapped = [
+            'id' => $pesanan->id,
+            'order_number' => $pesanan->no_job_ticket,
+            'product_name' => $pesanan->produk,
+            'customer' => [
+                'name' => $pesanan->customer?->nama,
+                'company' => $pesanan->customer?->nama_perusahaan ?? $pesanan->customer?->nama,
+            ],
+            'quantity' => $pesanan->q,
+            'deadline' => $pesanan->deadline,
+            'created_at' => $pesanan->created_at,
+            'status' => $pesanan->status_divisi,
+            'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
+            'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
+            'specs' => [
+                'material' => $pesanan->spesifikasi_bahan,
+                'design' => $pesanan->spesifikasi_sablon_bordir,
+                'notes' => $pesanan->keterangan_tambahan,
+            ],
+            'designs' => $pesanan->design->map(fn ($d) => [
+                'id' => $d->id,
+                'file_path' => $d->file_path,
+                'note' => $d->revision_note,
+                'approved' => (bool) $d->approved_at,
+                'approved_at' => $d->approved_at,
+                'created_at' => $d->uploaded_at,
+            ])->toArray(),
+            'samples' => $pesanan->sample->map(fn ($s) => [
+                'id' => $s->id,
+                'qty' => $s->qty,
+                'status' => $s->status,
+                'sent_at' => $s->sent_at,
+                'approved_at' => $s->approved_at,
+            ])->toArray(),
+            'invoices' => $pesanan->invoice->map(fn ($inv) => [
+                'id' => $inv->id,
+                'title' => $inv->no_invoice ?? $inv->kategori_invoice,
+                'amount' => (float) $inv->total_tagihan,
+                'status' => $inv->status_tagihan ?? 'Unpaid',
+                'issued_at' => $inv->tgl_jatuh_tempo,
+                'payments' => $inv->payment->map(fn ($p) => [
+                    'id' => $p->id,
+                    'amount' => (float) $p->jumlah_bayar,
+                    'method' => $p->metode_pembayaran,
+                    'paid_at' => $p->tgl_bayar,
+                ])->toArray(),
+            ])->toArray(),
+            'purchasings' => $pesanan->purchasing->map(fn ($p) => [
+                'id' => $p->id,
+                'item' => $p->item_bahan,
+                'supplier' => $p->supplier?->name ?? $p->supplier_id,
+                'ordered_qty' => $p->qty_bahan,
+                'received_qty' => $p->materialReceiving->sum('receiver_qty'),
+                'material_receivings' => $p->materialReceiving->map(fn ($r) => [
+                    'id' => $r->id,
+                    'qty_received' => $r->receiver_qty,
+                    'received_at' => $r->receiver_at ?? $r->created_at,
+                ])->toArray(),
+            ])->toArray(),
+            'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
+            'workflowHistories' => $pesanan->workflowHistory->map(fn ($h) => [
+                'id' => $h->id,
+                'actor' => $h->user?->name ?? 'System',
+                'action' => $h->action,
+                'note' => $h->notes,
+                'created_at' => $h->created_at,
+            ])->toArray(),
+            'attachments' => $pesanan->attachment->map(fn ($a) => [
+                'id' => $a->id,
+                'category' => $a->kategori,
+                'file_path' => $a->file_path,
+                'notes' => $a->catatan,
+            ])->toArray(),
+            'workflow_status' => $workflowStatus?->toArray() ?? [],
+        ];
+
         return Inertia::render('admin/job-tickets/Show', [
-            'pesanan' => [
-                'id' => $pesanan->id,
-                'no_job_ticket' => $pesanan->no_job_ticket,
-                'produk' => $pesanan->produk,
-
-                'customer' => [
-                    'nama' => $pesanan->customer?->nama,
-                    'nama_perusahaan' => $pesanan->customer?->nama
-                ],
-
-                'q' => $pesanan->q,
-                'qs' => $pesanan->qs,
-                'deadline' => $pesanan->deadline,
-                'created_at' => $pesanan->created_at,
-                'status_divisi' => $pesanan->status_divisi,
-
-                'harga_jual_per_pcs' => (float) $pesanan->harga_jual_per_pcs,
-                'estimasi_hpp_per_pcs' => (float) $pesanan->estimasi_hpp_per_pcs,
-                'spesifikasi_bahan' => $pesanan->spesifikasi_bahan,
-                'spesifikasi_sablon_bordir' => $pesanan->spesifikasi_sablon_bordir,
-                'keterangan_tambahan' => $pesanan->keterangan_tambahan,
-
-                'production_progress' => $pesanan->productionProgress ?? [
-                    'id' => null,
-                    'prioritas' => 'Medium',
-                    'acc_sample' => false,
-
-                    'ppm_bahan' => false,
-                    'ppm_aksesoris' => false,
-                    'ppm_cutting' => false,
-                    'ppm_sablon' => false,
-                    'ppm_jahit' => false,
-
-                    'cut_test_susut' => false,
-                    'cut_test_luntur' => false,
-                    'cut_relax_bahan' => false,
-                    'cut_form_cutting' => false,
-                    'cut_label_potongan' => false,
-                    'cut_sisa_bahan' => false,
-
-                    'sablon_sample_warna' => false,
-                    'sablon_test_muntah' => false,
-
-                    'jahit_kelengkapan_aksesoris' => false,
-                    'jahit_titik_kritis' => false,
-                    'jahit_random_check' => false,
-
-                    'qc_steam_packing' => false,
-                    'qc_sampling_ukuran' => false,
-                    'qc_inspeksi_jahit' => false,
-                    'qc_surat_jalan' => false,
-
-                    'log_foto_confirm' => false,
-                    'log_random_cek' => false,
-                    'log_payment_delivery' => false,
-                ],
-            ]
+            'pesanan' => $mapped,
         ]);
+    }
+
+    /**
+     * Approve design (called from UI)
+     */
+    public function approveDesign(Request $request, string $id)
+    {
+        $pesanan = Pesanan::with(['workflowStatus'])->findOrFail($id);
+
+        // Ensure workflow status exists
+        if (!$pesanan->workflowStatus) {
+            $pesanan->workflowStatus()->create(['design_approved' => true, 'design_uploaded' => true]);
+        } else {
+            $pesanan->workflowStatus->update(['design_approved' => true]);
+        }
+
+        // record workflow history
+        $pesanan->workflowHistory()->create([
+            'step' => 'design',
+            'action' => 'approve',
+            'user_id' => auth()->id(),
+            'notes' => 'Desain disetujui melalui UI',
+        ]);
+
+        return back()->with('success', 'Desain disetujui');
     }
 
     /**

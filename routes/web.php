@@ -49,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [ProductionProgressController::class, 'toggleSample']
     )->name('production-progress.toggle-sample');    
 
+    // Design approval endpoint (used by UI to approve design)
+    Route::patch('job-tickets/{id}/design-approve', [JobTicketController::class, 'approveDesign'])->name('job-tickets.design-approve');
+
     Route::resource('profit-loss-report', ProfitLossReportController::class);
 });
 

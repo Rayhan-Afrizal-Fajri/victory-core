@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class CustomerController extends Controller
@@ -21,6 +23,7 @@ class CustomerController extends Controller
             ->map(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->nama,
+                'email' => $customer->user->email,
                 'contact' => $customer->no_hp,
                 'address' => $customer->alamat,
                 'total_orders' => $customer->pesanan->count(),
@@ -54,11 +57,33 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
+            'nama_perusahaan' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'no_hp' => ['required', 'string', 'max:20'],
             'alamat' => ['required', 'string'],
         ]);
 
-        Customer::create($validated);
+        DB::transaction(function () use ($validated) {
+
+            // buat user dulu
+            $user = User::create([
+                'name' => $validated['nama'],
+                'email' => $validated['email'],
+                'password' => bcrypt('password'),
+                'is_active' => true,
+            ]);
+
+            $user->assignRole('Customer');
+
+            // baru buat customer
+            Customer::create([
+                'user_id' => $user->id,
+                'nama' => $validated['nama'],
+                'nama_perusahaan' => $validated['nama_perusahaan'],
+                'no_hp' => $validated['no_hp'],
+                'alamat' => $validated['alamat'],
+            ]);
+        });
 
         return back();
     }
