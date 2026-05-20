@@ -23,6 +23,7 @@ class CustomerController extends Controller
             ->map(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->nama,
+                'company_name' => $customer->nama_perusahaan,
                 'email' => $customer->user->email,
                 'contact' => $customer->no_hp,
                 'address' => $customer->alamat,
