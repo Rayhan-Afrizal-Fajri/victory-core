@@ -1,12 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useMemo, useState, type FormEvent } from 'react';
-import { dashboard } from '@/routes';
+import { useMemo, useState  } from 'react';
+import type {FormEvent} from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { store, update } from '@/routes/order-entry';
+import { dashboard } from '@/routes';
 import { show as jobTicketShow } from '@/routes/job-tickets';
+import { store, update } from '@/routes/order-entry';
 
 function formatIDR(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -22,12 +23,14 @@ function calculateDaysLeft(deadline: string) {
   }
 
   const due = new Date(deadline);
+
   if (Number.isNaN(due.getTime())) {
     return null;
   }
 
   const now = new Date();
   const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
   return diff;
 }
 
@@ -77,6 +80,7 @@ export default function Index({ nextJobTicket, customers }: Props) {
     if (!form.data.harga_jual_per_pcs || form.data.harga_jual_per_pcs <= 0) {
       return 0;
     }
+
     return Math.max(((form.data.harga_jual_per_pcs - form.data.estimasi_hpp_per_pcs) / form.data.harga_jual_per_pcs) * 100, 0);
   }, [form.data.harga_jual_per_pcs, form.data.estimasi_hpp_per_pcs]);
 

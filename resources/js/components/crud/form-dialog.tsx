@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import { Plus } from "lucide-react";
+import type { ReactNode } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
 
 type FormDialogProps = {
     open: boolean;

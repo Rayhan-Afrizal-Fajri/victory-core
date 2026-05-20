@@ -1,6 +1,6 @@
+import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import InputError from '@/components/input-error';
 
 type Props = {
   form: any;

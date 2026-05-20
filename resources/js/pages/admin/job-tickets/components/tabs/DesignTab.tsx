@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { JobTicket } from '../../types';
-import SectionCard from '../SectionCard';
-import { toast } from 'sonner';
 import { router } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+import type { JobTicket } from '../../types';
+import SectionCard from '../SectionCard';
 
 const DesignTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const initialApproved = (job as any).workflow_status?.design_approved ?? false;
   const [approved, setApproved] = useState(initialApproved);
 
   function handleApprove() {
-    if (!job.id) return;
+    if (!job.id) {
+return;
+}
+
     router.patch(`/job-tickets/${job.id}/design-approve`, {}, {
       onSuccess: () => {
         setApproved(true);

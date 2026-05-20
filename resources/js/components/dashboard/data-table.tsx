@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState  } from 'react';
+import type {ReactNode} from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 export interface DataTableColumn<T> {
@@ -35,6 +36,7 @@ export default function DataTable<T extends Record<string, any>>({
 
   const filteredData = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     if (!query) {
       return data;
     }

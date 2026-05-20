@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { router } from "@inertiajs/react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 type UseCrudOptions<T> = {
@@ -50,13 +50,17 @@ export function useCrud<T extends { id: number; name?: string }>({
 
     //delete
     const handleDelete = (item: T) => {
-        if (!deleteUrl) return;
+        if (!deleteUrl) {
+return;
+}
 
         const confirmed = confirm(
             `Apakah yakin ingin menghapus ${entityName} "${item.name ?? item.id}"?`
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+return;
+}
 
         router.delete(deleteUrl(item.id), {
             preserveScroll: true,

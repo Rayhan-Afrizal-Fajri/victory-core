@@ -1,11 +1,13 @@
+import type {
+    ReactNode} from 'react';
 import {
     createContext,
     useContext,
     useState,
-    ReactNode,
     useCallback,
 } from 'react';
-import { AlertNotification, AlertType } from '@/components/alert-notification';
+import type { AlertType } from '@/components/alert-notification';
+import { AlertNotification } from '@/components/alert-notification';
 
 type Notification = {
     id: number;

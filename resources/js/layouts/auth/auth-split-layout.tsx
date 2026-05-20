@@ -1,8 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
+import { Factory } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
-import { Factory } from 'lucide-react';
 
 export default function AuthSplitLayout({
     children,

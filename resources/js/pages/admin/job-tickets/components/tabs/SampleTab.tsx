@@ -1,12 +1,15 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import { toast } from 'sonner';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
-import { toast } from 'sonner';
 
 const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const designApproved = (job as any).workflow_status?.design_approved ?? false;
-  if (!designApproved) return <WorkflowGate reason="Desain belum disetujui. Sampel terkunci." />;
+
+  if (!designApproved) {
+return <WorkflowGate reason="Desain belum disetujui. Sampel terkunci." />;
+}
 
   return (
     <div className="space-y-4">

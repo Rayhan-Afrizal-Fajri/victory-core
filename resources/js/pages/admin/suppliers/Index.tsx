@@ -1,19 +1,21 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ReactNode, useMemo, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { DataTable, type DataTableColumn } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import type { ReactNode} from 'react';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { DataTable  } from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { store as supplierStore, update as supplierUpdate, destroy as supplierDestroy } from '@/routes/suppliers';
-import InputError from '@/components/input-error';
-import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/app-layout';
 
 type SupplierRow = {
   id: number;
@@ -183,6 +185,7 @@ export default function Index({ suppliers }: Props) {
       CMT: 'bg-sky-100 text-sky-800',
       Makloon: 'bg-violet-100 text-violet-800',
     };
+
     return <Badge className={classes[category]}>{category}</Badge>;
   };
 

@@ -1,11 +1,13 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { DataTable, type DataTableColumn } from '@/components/data-table';
+import { Plus } from 'lucide-react';
+import type { ReactNode} from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { DataTable  } from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import * as invoiceRoute from '@/routes/invoices';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -23,16 +33,8 @@ import {
   SheetTitle,
   SheetDescription
 } from '@/components/ui/sheet';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
-import InputError from '@/components/input-error';
+import AppLayout from '@/layouts/app-layout';
+import * as invoiceRoute from '@/routes/invoices';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -189,6 +191,7 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
   useEffect(() => {
     if (!selectedJob) {
       invoiceForm.setData('total_amount', 0);
+
       return;
     }
 
@@ -197,6 +200,7 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
         'total_amount',
         selectedJob.harga_jual_per_pcs * selectedJob.qty_sample * 3,
       );
+
       return;
     }
 
@@ -205,6 +209,7 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
         selectedJob.total_price * (Number(invoiceForm.data.percentage) / 100),
       );
       invoiceForm.setData('total_amount', amount);
+
       return;
     }
 
@@ -278,6 +283,7 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
       'Partially Paid': 'bg-cyan-100 text-cyan-800',
       Paid: 'bg-emerald-100 text-emerald-800',
     };
+
     return (
       <Badge className={styles[status]}> {status} </Badge>
     );
@@ -289,6 +295,7 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
       'DP Produksi': 'bg-slate-100 text-slate-800',
       Pelunasan: 'bg-emerald-100 text-emerald-800',
     };
+
     return <Badge className={styles[type]}>{type}</Badge>;
   };
 

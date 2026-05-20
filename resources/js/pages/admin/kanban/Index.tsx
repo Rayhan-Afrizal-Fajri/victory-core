@@ -1,9 +1,9 @@
 import { Head } from '@inertiajs/react';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/app-layout';
 
 type KanbanStatus = {
     id: string;
@@ -148,15 +148,30 @@ function formatIDR(value: number) {
 }
 
 function getDeadlineColor(daysLeft: number) {
-    if (daysLeft < 0) return 'text-red-600';
-    if (daysLeft < 5) return 'text-orange-600';
+    if (daysLeft < 0) {
+return 'text-red-600';
+}
+
+    if (daysLeft < 5) {
+return 'text-orange-600';
+}
+
     return 'text-green-600';
 }
 
 function getProgressColor(percentage: number) {
-    if (percentage >= 100) return 'bg-green-500';
-    if (percentage >= 75) return 'bg-blue-500';
-    if (percentage >= 50) return 'bg-yellow-500';
+    if (percentage >= 100) {
+return 'bg-green-500';
+}
+
+    if (percentage >= 75) {
+return 'bg-blue-500';
+}
+
+    if (percentage >= 50) {
+return 'bg-yellow-500';
+}
+
     return 'bg-red-500';
 }
 
@@ -359,6 +374,7 @@ export default function Index() {
         STATUSES.forEach((status) => {
             grouped[status.id] = cards.filter((c) => c.status === status.id);
         });
+
         return grouped;
     }, [cards]);
 

@@ -1,15 +1,13 @@
 import { Head, usePage, Link } from '@inertiajs/react';
 import { Package, TrendingUp, AlertTriangle, Layers, ArrowUpRight } from 'lucide-react';
-import { dashboard } from '@/routes';
+import DataTable from '@/components/dashboard/data-table';
+import type {DataTableColumn} from '@/components/dashboard/data-table';
+import StatusDistribution from '@/components/dashboard/status-distribution';
+import type {StatusDistributionItem} from '@/components/dashboard/status-distribution';
 import SummaryCard from '@/components/dashboard/summary-card';
-import StatusDistribution, {
-  type StatusDistributionItem,
-} from '@/components/dashboard/status-distribution';
-import DataTable, {
-  type DataTableColumn,
-} from '@/components/dashboard/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { dashboard } from '@/routes';
 import orderEntry from '@/routes/order-entry';
 
 const summaryCards = [

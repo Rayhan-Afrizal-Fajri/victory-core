@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 
 const ActivityTab: React.FC<{ job: JobTicket }> = ({ job }) => {

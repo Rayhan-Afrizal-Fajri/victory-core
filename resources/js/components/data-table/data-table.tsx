@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-import DataTableToolbar from './data-table-toolbar';
 import DataTablePagination from './data-table-pagination';
+import DataTableToolbar from './data-table-toolbar';
 
 import type { DataTableColumn } from './data-table-types';
 

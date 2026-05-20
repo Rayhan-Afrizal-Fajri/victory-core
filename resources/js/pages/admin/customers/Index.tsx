@@ -1,22 +1,24 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ReactNode, useMemo, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { DataTable, type DataTableColumn } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import type { ReactNode} from 'react';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { DetailSheet } from '@/components/crud/detail-sheet';
+import { FormDialog } from '@/components/crud/form-dialog';
+import { DataTable  } from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
+import { CustomerDetail } from '@/components/forms/customer/customer-detail';
+import { CustomerForm } from '@/components/forms/customer/customer-form';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { store as customerStore, update as customerUpdate, destroy as customerDestroy } from '@/routes/customers';
-import InputError from '@/components/input-error';
-import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
-import { FormDialog } from '@/components/crud/form-dialog';
-import { CustomerForm } from '@/components/forms/customer/customer-form';
-import { CustomerDetail } from '@/components/forms/customer/customer-detail';
-import { DetailSheet } from '@/components/crud/detail-sheet';
 
 type CustomerRow = {
   id: number;

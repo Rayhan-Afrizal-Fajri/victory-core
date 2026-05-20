@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { JobTicket } from '../../types';
+import { toast } from 'sonner';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
-import { toast } from 'sonner';
 
 const DeliveryTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const ws = (job as any).workflow_status ?? {};
-  if (!(ws.packing_completed && ws.final_payment_paid)) return <WorkflowGate reason="Packing belum selesai atau pembayaran akhir belum terverifikasi. Delivery terkunci." />;
+
+  if (!(ws.packing_completed && ws.final_payment_paid)) {
+return <WorkflowGate reason="Packing belum selesai atau pembayaran akhir belum terverifikasi. Delivery terkunci." />;
+}
 
   const [tracking, setTracking] = useState(job.delivery?.tracking_number ?? '');
 

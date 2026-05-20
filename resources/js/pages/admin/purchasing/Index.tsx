@@ -1,16 +1,18 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ReactNode, useMemo, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { DataTable, type DataTableColumn } from '@/components/data-table';
+import { Plus } from 'lucide-react';
+import type { ReactNode} from 'react';
+import { useMemo, useState } from 'react';
+import { DataTable  } from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
 import { update as updatePurchasing } from '@/routes/purchasings';
-import InputError from '@/components/input-error';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -113,15 +115,18 @@ export default function Index({ purchases = samplePurchases }: { purchases?: Pur
   const filteredPurchases = useMemo(() => {
     return purchases.filter((purchase) => {
       const statusLabel = purchase.is_received ? 'Bahan Datang' : 'Belum Datang';
+
       if (statusFilter !== 'All' && statusLabel !== statusFilter) {
         return false;
       }
+
       if (
         supplierCategoryFilter !== 'All' &&
         purchase.supplier_category !== supplierCategoryFilter
       ) {
         return false;
       }
+
       return true;
     });
   }, [purchases, statusFilter, supplierCategoryFilter]);

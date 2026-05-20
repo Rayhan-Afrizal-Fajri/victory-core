@@ -14,18 +14,18 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import orderEntry from '@/routes/order-entry';
+import customers from '@/routes/customers';
+import invoices from '@/routes/invoices';
 import jobTickets from '@/routes/job-tickets';
 import kanbanBoard from '@/routes/kanban-board';
+import orderEntry from '@/routes/order-entry';
 import profitLossReport from '@/routes/profit-loss-report';
-import type { NavItem } from '@/types';
-import customers from '@/routes/customers';
-import { SidebarDropdown, SidebarDropdownProvider } from './sidebar-dropdown';
-import users from '@/routes/users';
-import suppliers from '@/routes/suppliers';
-import { RouteDefinition } from '@/wayfinder';
-import invoices from '@/routes/invoices';
 import purchasings from '@/routes/purchasings';
+import suppliers from '@/routes/suppliers';
+import users from '@/routes/users';
+import type { NavItem } from '@/types';
+import type { RouteDefinition } from '@/wayfinder';
+import { SidebarDropdown, SidebarDropdownProvider } from './sidebar-dropdown';
 
 
 const generalWorkspace: NavItem[] = [

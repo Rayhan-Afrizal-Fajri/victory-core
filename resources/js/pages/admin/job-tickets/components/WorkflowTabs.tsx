@@ -1,19 +1,19 @@
-import React from 'react';
-import { JobTicket } from '../types';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Lock } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import type { JobTicket } from '../types';
 
-import OverviewTab from './tabs/OverviewTab';
-import DesignTab from './tabs/DesignTab';
-import SampleTab from './tabs/SampleTab';
-import FinanceTab from './tabs/FinanceTab';
-import PurchasingTab from './tabs/PurchasingTab';
-import ProductionTab from './tabs/ProductionTab';
-import QCTab from './tabs/QCTab';
-import PackingTab from './tabs/PackingTab';
-import DeliveryTab from './tabs/DeliveryTab';
 import ActivityTab from './tabs/ActivityTab';
+import DeliveryTab from './tabs/DeliveryTab';
+import DesignTab from './tabs/DesignTab';
+import FinanceTab from './tabs/FinanceTab';
+import OverviewTab from './tabs/OverviewTab';
+import PackingTab from './tabs/PackingTab';
+import ProductionTab from './tabs/ProductionTab';
+import PurchasingTab from './tabs/PurchasingTab';
+import QCTab from './tabs/QCTab';
+import SampleTab from './tabs/SampleTab';
 import { WorkflowTimeline } from './WorkflowTimeline';
 
 const tabs = [
@@ -64,6 +64,7 @@ export const WorkflowTabs: React.FC<{ job: JobTicket }> = ({ job }) => {
                     }
                     onClick={(e: any) => {
                     const isLocked = e.currentTarget.disabled;
+
                     if (isLocked) {
                         e.preventDefault();
                         handleLocked(t);

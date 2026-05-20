@@ -1,11 +1,14 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
 
 const QCTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const ws = (job as any).workflow_status ?? {};
-  if (!ws.production_completed) return <WorkflowGate reason="Produksi belum selesai. QC terkunci." />;
+
+  if (!ws.production_completed) {
+return <WorkflowGate reason="Produksi belum selesai. QC terkunci." />;
+}
 
   return (
     <div className="space-y-4">

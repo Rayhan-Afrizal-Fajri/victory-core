@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Show;
-var react_1 = require("react");
-var WorkflowTabs_1 = require("./components/WorkflowTabs");
 var react_2 = require("@inertiajs/react");
+var react_1 = require("react");
 var app_layout_1 = require("@/layouts/app-layout");
 var job_tickets_1 = require("@/routes/job-tickets");
 var StatusBadge_1 = require("./components/StatusBadge");
+var WorkflowTabs_1 = require("./components/WorkflowTabs");
 var dummyJobTicket = {
     id: 1,
     order_number: 'JT-2026-0001',
@@ -44,6 +44,7 @@ var dummyJobTicket = {
 function Show(_a) {
     var pesanan = _a.pesanan;
     var jobTicket = pesanan !== null && pesanan !== void 0 ? pesanan : dummyJobTicket;
+
     return (<>
         <react_2.Head title={"Job Ticket \u2014 ".concat(jobTicket.order_number)}/>
 
@@ -58,6 +59,7 @@ Show.layout = function (page) {
     var noJobTicket = (pesanan === null || pesanan === void 0 ? void 0 : pesanan.order_number) || 'Detail Tiket';
     var progress = (_d = (_c = (_b = pesanan === null || pesanan === void 0 ? void 0 : pesanan.productionProgress) === null || _b === void 0 ? void 0 : _b.percent) !== null && _c !== void 0 ? _c : pesanan === null || pesanan === void 0 ? void 0 : pesanan.progressPercent) !== null && _d !== void 0 ? _d : 0;
     var priority = (_g = (_f = (_e = pesanan === null || pesanan === void 0 ? void 0 : pesanan.productionProgress) === null || _e === void 0 ? void 0 : _e.prioritas) !== null && _f !== void 0 ? _f : pesanan === null || pesanan === void 0 ? void 0 : pesanan.priority) !== null && _g !== void 0 ? _g : 'Normal';
+
     return (<app_layout_1.default title={noJobTicket} description={"".concat((_j = (_h = pesanan === null || pesanan === void 0 ? void 0 : pesanan.customer) === null || _h === void 0 ? void 0 : _h.name) !== null && _j !== void 0 ? _j : 'Customer', " \u00B7 ").concat((_k = pesanan === null || pesanan === void 0 ? void 0 : pesanan.product_name) !== null && _k !== void 0 ? _k : 'Produk')} information="No. Job Ticket" breadcrumbs={[
             {
                 title: 'Job Tickets',

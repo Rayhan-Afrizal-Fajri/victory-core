@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobTicket } from '../types';
+import type { JobTicket } from '../types';
 import StatusBadge from './StatusBadge';
 
 export const JobTicketHeader: React.FC<{ job: JobTicket }> = ({ job }) => {

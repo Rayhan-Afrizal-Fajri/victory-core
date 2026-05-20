@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
 
 const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const ws = (job as any).workflow_status ?? {};
+
   if (!(ws.sample_approved && ws.production_dp_paid && ws.materials_distributed)) {
     return <WorkflowGate reason="Produksi terkunci. Pastikan sampel disetujui, pembayaran produksi terverifikasi, dan distribusi material selesai." />;
   }

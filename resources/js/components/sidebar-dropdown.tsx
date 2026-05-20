@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import React, { useContext, useState } from 'react';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import { RouteDefinition } from '@/wayfinder';
+import type { RouteDefinition } from '@/wayfinder';
 
 interface NavItemProps {
     label: string;
@@ -36,6 +36,7 @@ export function SidebarDropdownProvider({
     children,
 }: React.PropsWithChildren<unknown>) {
     const [openKey, setOpenKey] = useState<string | null>(null);
+
     return (
         <SidebarDropdownContext.Provider value={{ openKey, setOpenKey }}>
             {children}

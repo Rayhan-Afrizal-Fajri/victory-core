@@ -1,7 +1,7 @@
-import React from 'react';
-import { JobTicket } from '../types';
 import { CheckCircle2, Clock, Lock, Circle } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
+import type { JobTicket } from '../types';
 
 const ICON_SIZE = 18;
 
@@ -28,6 +28,7 @@ const stepsOrder = [
 
 function getStepStatus(step: string, ws: JobTicket['workflow_status'] | undefined) {
   const flags = ws || {};
+
   switch (step) {
     case 'Order Entry':
       return flags.design_approved ? 'completed' : 'active';
@@ -36,7 +37,10 @@ function getStepStatus(step: string, ws: JobTicket['workflow_status'] | undefine
     case 'Design Approval':
       return flags.design_approved ? 'completed' : 'pending';
     case 'Sample':
-      if (!flags.design_approved) return 'locked';
+      if (!flags.design_approved) {
+return 'locked';
+}
+
       return flags.sample_created ? (flags.sample_approved ? 'completed' : 'active') : 'active';
     case 'Sample Payment':
       return flags.sample_paid ? 'completed' : 'pending';
@@ -53,7 +57,10 @@ function getStepStatus(step: string, ws: JobTicket['workflow_status'] | undefine
     case 'Material Distribution':
       return flags.materials_distributed ? 'completed' : 'pending';
     case 'Production':
-      if (!(flags.sample_approved && flags.production_dp_paid && flags.materials_distributed)) return 'locked';
+      if (!(flags.sample_approved && flags.production_dp_paid && flags.materials_distributed)) {
+return 'locked';
+}
+
       return flags.production_completed ? 'completed' : 'active';
     case 'Quality Control':
       return flags.production_completed ? (flags.qc_completed ? 'completed' : 'active') : 'locked';
@@ -78,6 +85,7 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
       <div className="flex md:flex-col flex-row gap-6 items-center min-w-max">
         {stepsOrder.map((s) => {
           const status = getStepStatus(s, flags);
+
           return (
             <div key={s} className="flex flex-col items-center text-center w-36">
               <div

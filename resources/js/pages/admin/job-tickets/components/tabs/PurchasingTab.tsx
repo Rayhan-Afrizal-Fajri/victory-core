@@ -1,11 +1,14 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
 
 const PurchasingTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const verified = (job as any).workflow_status?.production_dp_paid ?? false;
-  if (!verified) return <WorkflowGate reason="Pembayaran produksi belum diverifikasi. Purchasing terkunci." />;
+
+  if (!verified) {
+return <WorkflowGate reason="Pembayaran produksi belum diverifikasi. Purchasing terkunci." />;
+}
 
   return (
     <div className="space-y-4">

@@ -1,17 +1,18 @@
 import { Head, Link } from "@inertiajs/react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from '@/components/data-table';
-import { Badge } from "@/components/ui/badge";
+import { ArrowUpRight} from "lucide-react";
+import type { ReactNode } from "react";
 import ProgressBar from "@/components/dashboard/progress-bar";
+import {
+  DataTable
+  
+} from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import DeadlineBadge from "@/components/ui/deadline-badge";
 import AppLayout from "@/layouts/app-layout";
-import { Button } from "@/components/ui/button";
-import { ReactNode } from "react";
-import { ArrowUpRight} from "lucide-react";
-import orderEntry from "@/routes/order-entry";
 import jobTickets from "@/routes/job-tickets";
+import orderEntry from "@/routes/order-entry";
 
 type Order = {
   id: number;
@@ -210,4 +211,5 @@ Index.layout = (page: ReactNode) => {
     >
         {page}
     </AppLayout>
-)};
+)
+};

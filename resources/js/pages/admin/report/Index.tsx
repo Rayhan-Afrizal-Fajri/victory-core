@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/app-layout';
 
 type ReportStatus = 'penawaran' | 'sample' | 'produksi' | 'done';
 
@@ -159,6 +159,7 @@ export default function Index() {
         acc.cost += cost;
         acc.gop += gop;
         acc.qty += row.qty;
+
         return acc;
       },
       { revenue: 0, cost: 0, gop: 0, qty: 0 }

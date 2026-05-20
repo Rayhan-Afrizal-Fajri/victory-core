@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 import { StatusBadge } from '../StatusBadge';
 

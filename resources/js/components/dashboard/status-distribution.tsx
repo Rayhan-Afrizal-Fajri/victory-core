@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import type {ReactNode} from 'react';
 import ProgressBar from '@/components/dashboard/progress-bar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 

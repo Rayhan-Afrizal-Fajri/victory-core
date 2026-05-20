@@ -1,9 +1,10 @@
 import React from 'react';
-import { JobTicket } from '../../types';
+import type { JobTicket } from '../../types';
 import SectionCard from '../SectionCard';
 
 const OverviewTab: React.FC<{ job: JobTicket }> = ({ job }) => {
   const progress = job.productionProgress?.percent ?? (job as any).progressPercent ?? 0;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

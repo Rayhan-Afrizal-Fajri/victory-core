@@ -1,10 +1,12 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ReactNode, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
+import type { ReactNode} from 'react';
+import { useMemo, useState } from 'react';
 
-import AppLayout from '@/layouts/app-layout';
+import { toast } from 'sonner';
+import { DataTable  } from '@/components/data-table';
+import type {DataTableColumn} from '@/components/data-table';
 
-import { DataTable, type DataTableColumn } from '@/components/data-table';
 import InputError from '@/components/input-error';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +29,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
 
 import { store as userStore, update as userUpdate, destroy as userDestroy } from '@/routes/users';
 
-import { toast } from 'sonner';
 
 type Role = {
     id: number;
@@ -143,7 +145,9 @@ export default function Index({ users, roles }: Props) {
             `Yakin ingin menghapus user "${user.name}"?`
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+return;
+}
 
         router.delete(userDestroy(user.id).url, {
             preserveScroll: true,
