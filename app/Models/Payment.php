@@ -12,9 +12,16 @@ class Payment extends Model
         'jumlah_bayar',
         'metode_pembayaran',
         'bukti_transfer_path',
-        'catatan_finance',  
+        'catatan_finance',
+        'status',
+        'rejection_note',
         'verified_by',
-        'verified_at'
+        'verified_at',
+    ];
+
+    protected $casts = [
+        'tgl_bayar' => 'date',
+        'verified_at' => 'datetime',
     ];
 
     public function invoice()

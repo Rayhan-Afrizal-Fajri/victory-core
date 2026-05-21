@@ -9,6 +9,8 @@ class Pesanan extends Model
     protected $table = 'pesanan';
     protected $fillable = [
         'customer_id',
+        'customer_nama_snapshot',
+        'customer_perusahaan_snapshot',
         'created_by',
         'date',
         'no_job_ticket',
@@ -31,7 +33,7 @@ class Pesanan extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function invoice()
+    public function invoices()
     {
         return $this->hasMany(Invoice::class);
     }
@@ -56,14 +58,24 @@ class Pesanan extends Model
         return $this->hasMany(OrderSpecification::class);
     }
 
-    public function design()
+    public function designs()
     {
         return $this->hasMany(Design::class);
     }
 
-    public function sample()
+    public function latestDesign()
+    {
+        return $this->hasOne(Design::class, 'pesanan_id')->latestOfMany();
+    }
+
+    public function samples()
     {
         return $this->hasMany(Sample::class);
+    }
+
+    public function latestSample()
+    {
+        return $this->hasOne(Sample::class, 'pesanan_id')->latestOfMany();
     }
 
     public function workflowHistory()

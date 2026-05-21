@@ -113,7 +113,7 @@ export function AppSidebar() {
 
                 <NavMain items={generalWorkspace} title="Utama" />
                 <NavMain items={salesWorkspace} title="Pra-Produksi & Sales" />
-                <NavMain items={operationWorkspace} title="Workshop & Logistik" />
+                <NavMain items={operationWorkspace} title="Workspace & Logistik" />
                 <NavMain items={reportWorkspace} title="Laporan" />
 
                 <div className="mt-4 px-3 text-xs font-semibold text-sidebar-foreground/50 opacity-100 group-data-[collapsible=icon]:hidden">

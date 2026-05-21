@@ -23,7 +23,7 @@ class CustomerController extends Controller
             ->map(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->nama,
-                'company_name' => $customer->nama_perusahaan,
+                'company_name' => $customer->nama_perusa,
                 'email' => $customer->user->email,
                 'contact' => $customer->no_hp,
                 'address' => $customer->alamat,
@@ -126,7 +126,20 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
-        $customer->delete();
+        
+        DB::transaction(function () use ($customer) {
+            // 1. Ambil ID user login miliknya
+            $userId = $customer->user_id;
+
+            // 2. Hapus data profile customer terlebih dahulu
+            // Pesanan tidak akan hilang, customer_id di tb_pesanan otomatis berubah jadi NULL berkat nullOnDelete()
+            $customer->delete();
+
+            // 3. Hapus akun login user-nya
+            if ($userId) {
+                User::where('id', $userId)->delete();
+            }
+        });
 
         return back();
     }

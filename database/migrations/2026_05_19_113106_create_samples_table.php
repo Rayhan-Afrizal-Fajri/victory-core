@@ -16,12 +16,23 @@ return new class extends Migration
             $table->foreignId('pesanan_id')->constrained('pesanan')->onDelete('cascade');
 
             $table->integer('qty'); // Qty Sample
-            $table->enum('status', ['pending', 'in_progress', 'delivered', 'approved', 'rejected'])->default('pending'); // Status sample
+            $table->enum('status', [
+                'draft',
+                'waiting_payment',
+                'paid',
+                'in_delivery',
+                'delivered',
+                'approved',
+                'revision_needed',
+                'rejected',
+            ])->default('draft'); // Status sample
+
             $table->text('catatan')->nullable(); // Catatan tambahan untuk sample
 
             $table->dateTime('sent_at')->nullable(); // Tanggal dan waktu ketika sample dikirim ke customer
             $table->dateTime('approved_at')->nullable(); // Tanggal dan waktu ketika sample disetujui oleh customer
             $table->foreignId('approved_by')->nullable()->constrained('users'); // Relasi ke tabel users untuk yang menyetujui sample (user customer atau admin)
+            
             $table->timestamps();
         });
     }

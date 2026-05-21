@@ -75,9 +75,14 @@ class OrderEntryController extends Controller
             'keterangan_tambahan' => ['nullable', 'string'],
         ]);
 
+        $customer = Customer::find($validated['customer_id']);
+
         $pesanan = Pesanan::create([
             ...$validated,
             'date' => now(),
+
+            'customer_nama_snapshot' => $customer->nama,
+            'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
 
             'status_divisi' => 'Penawaran',
             'created_by' => Auth::user()->id,

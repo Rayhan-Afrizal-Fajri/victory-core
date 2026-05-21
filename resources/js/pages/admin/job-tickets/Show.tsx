@@ -80,7 +80,7 @@ Show.layout = (page: React.ReactElement<Props>) => {
     return (
         <AppLayout
             title={noJobTicket}
-            description={`${pesanan?.customer?.name ?? 'Customer'} · ${pesanan?.product_name ?? 'Produk'}`}
+            description={`${pesanan?.customer?.company ?? 'Customer'} · ${pesanan?.product_name ?? 'Produk'}`}
             information="No. Job Ticket"
             breadcrumbs={[
                 {

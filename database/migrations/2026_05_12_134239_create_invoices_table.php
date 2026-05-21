@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('no_invoice')->unique();
             $table->string('kategori_invoice');
             $table->decimal('total_tagihan', 15, 2);
-            $table->enum('status_tagihan', ['Unpaid', 'Partially Paid', 'Paid', 'Cancelled'])->default('Unpaid');
+            $table->enum('status_tagihan', ['unpaid', 'partially_paid', 'paid', 'cancelled'])->default('Unpaid');
             $table->date('tgl_jatuh_tempo');
             $table->timestamps();
         });

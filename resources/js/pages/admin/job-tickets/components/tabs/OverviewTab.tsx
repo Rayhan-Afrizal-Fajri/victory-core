@@ -9,7 +9,7 @@ const OverviewTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <SectionCard title="Ringkasan">
-          <div className="text-sm text-gray-700">Pelanggan: {job.customer?.name || job.customer?.company}</div>
+          <div className="text-sm text-gray-700">Pelanggan: {job.customer?.company}</div>
           <div className="text-sm text-gray-700">Produk: {job.product_name}</div>
           <div className="text-sm text-gray-700">Deadline: {job.deadline ?? '—'}</div>
         </SectionCard>

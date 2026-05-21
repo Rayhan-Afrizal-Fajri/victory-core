@@ -11,6 +11,8 @@ class Design extends Model
         'designer_id',
         'file_path',
         'revision_note',
+        'customer_revision_note',
+        'designer_revision_note',
         'status',
         'uploaded_at',
         'approved_at',

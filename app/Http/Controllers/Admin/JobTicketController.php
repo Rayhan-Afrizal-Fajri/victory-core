@@ -165,7 +165,7 @@ class JobTicketController extends Controller
                     'id' => $order->id,
                     'no_job_ticket' => $order->no_job_ticket,
                     'produk' => $order->produk,
-                    'customer' => $order->customer?->nama,
+                    'customer' => $order->customer?->nama_perusahaan ?? $order->customer_perusahaan_snapshot,
                     'qty' => $order->q,
                     'deadline' => $order->deadline,
                     'status_divisi' => $order->status_divisi,
@@ -204,12 +204,23 @@ class JobTicketController extends Controller
         // Cari order berdasarkan ID
         $pesanan = Pesanan::with([
             'customer',
-            'design',
-            'sample',
-            'invoice.payment',
+            'designs'=> function ($query) {
+                $query->latest();
+            },
+            'orderSpecification',
+            'samples' => function ($query) {
+                $query->with([
+                    'invoice.payment',
+                    'media',
+                    'delivery'
+                ])->latest();
+            },
+            'invoices.payment',
             'purchasing.materialReceiving',
             'productionProgress',
-            'workflowHistory.user',
+            'workflowHistory' => function ($query) {
+                $query->with('user')->latest();
+            },
             'attachment',
             'workflowStatus',
         ])->findOrFail($id);
@@ -221,8 +232,8 @@ class JobTicketController extends Controller
             'order_number' => $pesanan->no_job_ticket,
             'product_name' => $pesanan->produk,
             'customer' => [
-                'name' => $pesanan->customer?->nama,
-                'company' => $pesanan->customer?->nama_perusahaan ?? $pesanan->customer?->nama,
+                'name' => $pesanan->customer?->nama ?? $pesanan->customer_nama_snapshot,
+                'company' => $pesanan->customer?->nama_perusahaan ?? $pesanan->customer_perusahaan_snapshot,
             ],
             'quantity' => $pesanan->q,
             'deadline' => $pesanan->deadline,
@@ -230,27 +241,30 @@ class JobTicketController extends Controller
             'status' => $pesanan->status_divisi,
             'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
             'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
-            'specs' => [
-                'material' => $pesanan->spesifikasi_bahan,
-                'design' => $pesanan->spesifikasi_sablon_bordir,
-                'notes' => $pesanan->keterangan_tambahan,
-            ],
-            'designs' => $pesanan->design->map(fn ($d) => [
+            'specs' => $pesanan->orderSpecification?->map(fn ($s) => [
+                'id' => $s->id,
+                'jenis_spesifikasi' => $s->jenis_spesifikasi,
+                'value' => $s->value,
+            ])->toArray(),
+            'designs' => $pesanan->designs->map(fn ($d) => [
                 'id' => $d->id,
                 'file_path' => $d->file_path,
                 'note' => $d->revision_note,
+                'customer_revision_note' => $d->customer_revision_note,
+                'designer_revision_note' => $d->designer_revision_note,
+                'status' => $d->status,
                 'approved' => (bool) $d->approved_at,
                 'approved_at' => $d->approved_at,
                 'created_at' => $d->uploaded_at,
             ])->toArray(),
-            'samples' => $pesanan->sample->map(fn ($s) => [
+            'samples' => $pesanan->samples->map(fn ($s) => [
                 'id' => $s->id,
                 'qty' => $s->qty,
                 'status' => $s->status,
                 'sent_at' => $s->sent_at,
                 'approved_at' => $s->approved_at,
             ])->toArray(),
-            'invoices' => $pesanan->invoice->map(fn ($inv) => [
+            'invoices' => $pesanan->invoices->map(fn ($inv) => [
                 'id' => $inv->id,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
                 'amount' => (float) $inv->total_tagihan,
@@ -298,31 +312,6 @@ class JobTicketController extends Controller
     }
 
     /**
-     * Approve design (called from UI)
-     */
-    public function approveDesign(Request $request, string $id)
-    {
-        $pesanan = Pesanan::with(['workflowStatus'])->findOrFail($id);
-
-        // Ensure workflow status exists
-        if (!$pesanan->workflowStatus) {
-            $pesanan->workflowStatus()->create(['design_approved' => true, 'design_uploaded' => true]);
-        } else {
-            $pesanan->workflowStatus->update(['design_approved' => true]);
-        }
-
-        // record workflow history
-        $pesanan->workflowHistory()->create([
-            'step' => 'design',
-            'action' => 'approve',
-            'user_id' => auth()->id(),
-            'notes' => 'Desain disetujui melalui UI',
-        ]);
-
-        return back()->with('success', 'Desain disetujui');
-    }
-
-    /**
      * Update status divisi (Untuk dropdown perpindahan divisi / Kanban simulation)
      */
     public function updateStatus(Request $request, string $id)
@@ -364,8 +353,9 @@ class JobTicketController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Pesanan $pesanan)
     {
-        //
+        $pesanan->delete();
+        return back();
     }
 }

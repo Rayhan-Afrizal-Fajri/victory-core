@@ -125,6 +125,7 @@ export default function Index({ nextJobTicket, customers }: Props) {
               <Label htmlFor="jobNo">No Job Ticket *</Label>
               <Input
                 id="jobNo"
+                readOnly
                 placeholder="VL-2026-009"
                 value={form.data.no_job_ticket}
                 onChange={(event) => form.setData('no_job_ticket', event.target.value)}
