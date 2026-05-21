@@ -2,113 +2,161 @@ import { CheckCircle2, Clock, Lock, Circle } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
 import type { JobTicket } from '../types';
+import SectionCard from './SectionCard';
+import { Card } from '@/components/ui/card';
 
 const ICON_SIZE = 18;
 
-const stepsOrder = [
-  'Order Entry',
-  'Design',
-  'Design Approval',
-  'Sample',
-  'Sample Payment',
-  'Sample Delivery',
-  'Sample Approval',
-  'Production Invoice',
-  'Production Payment',
-  'Purchasing',
-  'Material Receiving',
-  'Material Distribution',
-  'Production',
-  'Quality Control',
-  'Packing',
-  'Final Billing',
-  'Delivery',
-  'Done',
+const workflowGroups = [
+  {
+    key: 'order_entry',
+    label: 'Order Entry',
+    steps: ['pesanan_id'],
+  },
+  {
+    key: 'design',
+    label: 'Design',
+    steps: ['design_uploaded', 'design_approved'],
+  },
+  {
+    key: 'sample',
+    label: 'Sample',
+    steps: [
+      'sample_created',
+      'sample_paid',
+      'sample_delivered',
+      'sample_approved',
+    ],
+  },
+  {
+    key: 'production_payment',
+    label: 'Production Payment',
+    steps: [
+      'production_invoice_created',
+      'production_dp_paid',
+    ],
+  },
+  {
+    key: 'purchasing',
+    label: 'Purchasing',
+    steps: [
+      'purchasing',
+      'materials_received',
+      'materials_distributed',
+    ],
+  },
+  {
+    key: 'production',
+    label: 'Production',
+    steps: ['production_completed'],
+  },
+  {
+    key: 'qc',
+    label: 'Quality Control',
+    steps: ['qc_completed'],
+  },
+  {
+    key: 'final_billing',
+    label: 'Final Billing',
+    steps: ['final_payment_paid'],
+  },
+  {
+    key: 'delivery',
+    label: 'Delivery',
+    steps: ['delivered'],
+  },
+  {
+    key: 'done',
+    label: 'Done',
+    steps: ['completed'],
+  },
 ];
 
-function getStepStatus(step: string, ws: JobTicket['workflow_status'] | undefined) {
-  const flags = ws || {};
+function getGroupProgress(
+  group: typeof workflowGroups[number],
+  flags: JobTicket['workflow_status']
+) {
+  const total = group.steps.length;
 
-  switch (step) {
-    case 'Order Entry':
-      return flags.design_approved ? 'completed' : 'active';
-    case 'Design':
-      return flags.design_uploaded ? 'completed' : 'active';
-    case 'Design Approval':
-      return flags.design_approved ? 'completed' : 'pending';
-    case 'Sample':
-      if (!flags.design_approved) {
-return 'locked';
+  const completed = group.steps.filter((step) => {
+    return flags?.[step as keyof typeof flags];
+  }).length;
+
+  return {
+    total,
+    completed,
+    percentage: (completed / total) * 100,
+  };
 }
 
-      return flags.sample_created ? (flags.sample_approved ? 'completed' : 'active') : 'active';
-    case 'Sample Payment':
-      return flags.sample_paid ? 'completed' : 'pending';
-    case 'Sample Approval':
-      return flags.sample_approved ? 'completed' : 'pending';
-    case 'Production Invoice':
-      return flags.sample_approved ? (flags.production_invoice_created ? 'active' : 'pending') : 'locked';
-    case 'Production Payment':
-      return flags.production_dp_paid ? 'completed' : 'pending';
-    case 'Purchasing':
-      return flags.production_dp_paid ? 'active' : 'locked';
-    case 'Material Receiving':
-      return flags.materials_received ? 'completed' : 'pending';
-    case 'Material Distribution':
-      return flags.materials_distributed ? 'completed' : 'pending';
-    case 'Production':
-      if (!(flags.sample_approved && flags.production_dp_paid && flags.materials_distributed)) {
-return 'locked';
-}
-
-      return flags.production_completed ? 'completed' : 'active';
-    case 'Quality Control':
-      return flags.production_completed ? (flags.qc_completed ? 'completed' : 'active') : 'locked';
-    case 'Packing':
-      return flags.qc_completed ? (flags.packing_completed ? 'completed' : 'active') : 'locked';
-    case 'Final Billing':
-      return flags.packing_completed ? 'active' : 'pending';
-    case 'Delivery':
-      return flags.packing_completed && flags.final_payment_paid ? (flags.delivered ? 'completed' : 'active') : 'locked';
-    case 'Done':
-      return flags.completed ? 'completed' : 'pending';
-    default:
-      return 'pending';
-  }
+function getGroupStatus(percentage: number) {
+  if (percentage >= 100) return 'completed';
+  if (percentage > 0) return 'active';
+  return 'pending';
 }
 
 export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
   const flags = job.workflow_status;
 
   return (
-    <div className="overflow-x-auto py-4">
-      <div className="flex md:flex-col flex-row gap-6 items-center min-w-max">
-        {stepsOrder.map((s) => {
-          const status = getStepStatus(s, flags);
+    <Card className="rounded-4xl py-0 overflow-hidden">
+      <div className="overflow-x-auto no-scrollbar">
+        <div className="flex min-w-max px-8 py-6 -pb-12">
+          {workflowGroups.map((group, index) => {
+            const progress = getGroupProgress(group, flags);
+            const status = getGroupStatus(progress.percentage);
+            const isLast = index === workflowGroups.length - 1;
 
-          return (
-            <div key={s} className="flex flex-col items-center text-center w-36">
+            return (
               <div
-                className={`p-3 rounded-full border ${
-                  status === 'completed' ? 'bg-green-50 border-green-200' : status === 'active' ? 'bg-yellow-50 border-yellow-200' : status === 'locked' ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-100'
-                }`}
-                onClick={() => {
-                  if (status === 'locked') {
-                    toast.error('Langkah terkunci: ' + s);
-                  }
-                }}
+                key={group.key}
+                className="relative flex flex-col items-center w-40"
               >
-                {status === 'completed' && <CheckCircle2 size={ICON_SIZE} className="text-green-600" />}
-                {status === 'active' && <Clock size={ICON_SIZE} className="text-yellow-600" />}
-                {status === 'locked' && <Lock size={ICON_SIZE} className="text-gray-500" />}
-                {status === 'pending' && <Circle size={ICON_SIZE} className="text-gray-400" />}
+                {!isLast && (
+                  <div className="absolute top-5 left-1/2 w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 transition-all duration-500"
+                      style={{
+                        width: `${progress.percentage}%`,
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div
+                  className={`
+                    relative z-10 w-10 h-10 rounded-full border-4 flex items-center justify-center
+                    ${
+                      status === 'completed'
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : status === 'active'
+                        ? 'border-green-500 text-green-500 bg-white'
+                        : 'border-gray-300 text-gray-400 bg-white'
+                    }
+                  `}
+                >
+                  {status === 'completed' ? (
+                    <CheckCircle2 size={18} />
+                  ) : (
+                    <span className="text-xs font-semibold">
+                      {index + 1}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2 text-xs text-center w-28 leading-tight text-gray-700">
+                  {group.label}
+                </div>
+
+                <div className="text-[10px] text-gray-500 mt-1">
+                  {progress.completed}/{progress.total}
+                </div>
               </div>
-              <div className="mt-2 text-xs text-gray-600">{s}</div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

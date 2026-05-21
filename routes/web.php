@@ -62,6 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pesanan/{id}/samples', [SampleController::class, 'store'])
     ->name('samples.store');
 
+    Route::post('/samples/{id}/media', [SampleController::class, 'uploadMedia'])
+    ->name('samples.media.store');
+
     Route::post('/samples/{id}/payments', [SampleController::class, 'submitPayment'])
         ->name('samples.payments.store');
 

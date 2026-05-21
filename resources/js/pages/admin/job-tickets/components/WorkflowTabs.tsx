@@ -46,73 +46,71 @@ export const WorkflowTabs: React.FC<{ job: JobTicket }> = ({ job }) => {
   }
 
   return (
-    <div className='flex gap-6 w-full items-start'>
-        <WorkflowTimeline job={job} />
-        <Tabs defaultValue="overview" className="mt-4 w-full">
-            <TabsList className='w-full justify-between'>
-                {tabs.map((t) => (
-                <TabsTrigger
-                    key={t}
-                    value={t}
-                    disabled={
-                    (t === 'sample' && locked.sample) ||
-                    (t === 'purchasing' && locked.purchasing) ||
-                    (t === 'production' && locked.production) ||
-                    (t === 'qc' && locked.qc) ||
-                    (t === 'packing' && locked.packing) ||
-                    (t === 'delivery' && locked.delivery)
-                    }
-                    onClick={(e: any) => {
-                    const isLocked = e.currentTarget.disabled;
+    
+    <Tabs defaultValue="overview" className="mt-4 w-full">
+        <TabsList className='w-full justify-between'>
+            {tabs.map((t) => (
+            <TabsTrigger
+                key={t}
+                value={t}
+                disabled={
+                (t === 'sample' && locked.sample) ||
+                (t === 'purchasing' && locked.purchasing) ||
+                (t === 'production' && locked.production) ||
+                (t === 'qc' && locked.qc) ||
+                (t === 'packing' && locked.packing) ||
+                (t === 'delivery' && locked.delivery)
+                }
+                onClick={(e: any) => {
+                const isLocked = e.currentTarget.disabled;
 
-                    if (isLocked) {
-                        e.preventDefault();
-                        handleLocked(t);
-                    }
-                    }}
-                >
-                    <div className="flex items-center gap-2">
-                    <span className="capitalize">{t}</span>
-                    {((t === 'sample' && locked.sample) || (t === 'purchasing' && locked.purchasing) || (t === 'production' && locked.production) || (t === 'qc' && locked.qc) || (t === 'packing' && locked.packing) || (t === 'delivery' && locked.delivery)) && (
-                        <Lock size={14} className="text-gray-400" />
-                    )}
-                    </div>
-                </TabsTrigger>
-                ))}
-            </TabsList>
+                if (isLocked) {
+                    e.preventDefault();
+                    handleLocked(t);
+                }
+                }}
+            >
+                <div className="flex items-center gap-2">
+                <span className="capitalize">{t}</span>
+                {((t === 'sample' && locked.sample) || (t === 'purchasing' && locked.purchasing) || (t === 'production' && locked.production) || (t === 'qc' && locked.qc) || (t === 'packing' && locked.packing) || (t === 'delivery' && locked.delivery)) && (
+                    <Lock size={14} className="text-gray-400" />
+                )}
+                </div>
+            </TabsTrigger>
+            ))}
+        </TabsList>
 
-            <TabsContent value="overview">
-                <OverviewTab job={job} />
-            </TabsContent>
-            <TabsContent value="design">
-                <DesignTab job={job} />
-            </TabsContent>
-            <TabsContent value="sample">
-                <SampleTab job={job} />
-            </TabsContent>
-            <TabsContent value="finance">
-                <FinanceTab job={job} />
-            </TabsContent>
-            <TabsContent value="purchasing">
-                <PurchasingTab job={job} />
-            </TabsContent>
-            <TabsContent value="production">
-                <ProductionTab job={job} />
-            </TabsContent>
-            <TabsContent value="qc">
-                <QCTab job={job} />
-            </TabsContent>
-            <TabsContent value="packing">
-                <PackingTab job={job} />
-            </TabsContent>
-            <TabsContent value="delivery">
-                <DeliveryTab job={job} />
-            </TabsContent>
-            <TabsContent value="activity">
-                <ActivityTab job={job} />
-            </TabsContent>
-        </Tabs>
-    </div>
+        <TabsContent value="overview">
+            <OverviewTab job={job} />
+        </TabsContent>
+        <TabsContent value="design">
+            <DesignTab job={job} />
+        </TabsContent>
+        <TabsContent value="sample">
+            <SampleTab job={job} />
+        </TabsContent>
+        <TabsContent value="finance">
+            <FinanceTab job={job} />
+        </TabsContent>
+        <TabsContent value="purchasing">
+            <PurchasingTab job={job} />
+        </TabsContent>
+        <TabsContent value="production">
+            <ProductionTab job={job} />
+        </TabsContent>
+        <TabsContent value="qc">
+            <QCTab job={job} />
+        </TabsContent>
+        <TabsContent value="packing">
+            <PackingTab job={job} />
+        </TabsContent>
+        <TabsContent value="delivery">
+            <DeliveryTab job={job} />
+        </TabsContent>
+        <TabsContent value="activity">
+            <ActivityTab job={job} />
+        </TabsContent>
+    </Tabs>
   );
 };
 

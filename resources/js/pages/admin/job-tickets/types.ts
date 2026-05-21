@@ -113,11 +113,6 @@ export interface Payment {
   verified_by?: number | null;
   verified_at?: string | null;
 
-  // field lama agar kode existing tidak langsung error
-  amount?: number;
-  method?: string;
-  paid_at?: string | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }

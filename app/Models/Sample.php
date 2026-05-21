@@ -56,7 +56,7 @@ class Sample extends Model
 
     public function delivery()
     {
-        return $this->hasMany(SampleDelivery::class);
+        return $this->hasOne(SampleDelivery::class);
     }
 
     public function parentSample()

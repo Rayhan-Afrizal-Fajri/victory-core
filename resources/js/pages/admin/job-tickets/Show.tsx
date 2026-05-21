@@ -52,6 +52,7 @@ export default function Show({ pesanan }: Props) {
     <>
         <Head title={`Job Ticket — ${jobTicket.order_number}`} />
 
+        <WorkflowTimeline job={jobTicket} />
         <WorkflowTabs job={jobTicket} />
 
     </>
@@ -69,8 +70,7 @@ Show.layout = (page: React.ReactElement<Props>) => {
     
     const progress =
         pesanan?.productionProgress?.percent ??
-        (pesanan as any)?.progressPercent ??
-        0;
+        (pesanan as any)?.progressPercent ?? 0;
 
     const priority =
         pesanan?.productionProgress?.prioritas ??

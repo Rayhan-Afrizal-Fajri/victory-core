@@ -40,7 +40,7 @@ class SampleController extends Controller
                     'no_invoice' => $invoiceService->generate('SAMPLE'),
                     'kategori_invoice' => 'sample',
                     'total_tagihan' => $request->sample_price,
-                    'status_tagihan' => 'Unpaid',
+                    'status_tagihan' => 'unpaid',
                     'tgl_jatuh_tempo' => now()->addDays(3)->toDateString(),
                 ]);
             }
@@ -128,7 +128,7 @@ class SampleController extends Controller
             abort(422, 'Sample ini tidak memiliki invoice.');
         }
 
-        if ($sample->invoice->status_tagihan === 'Paid') {
+        if ($sample->invoice->status_tagihan === 'paid') {
             abort(422, 'Invoice sample sudah lunas.');
         }
 
@@ -138,7 +138,7 @@ class SampleController extends Controller
             $path = $request->file('bukti_transfer')->store('payments', 'public');
         }
 
-        $sample->invoice->payments()->create([
+        $sample->invoice->payment()->create([
             'tgl_bayar' => $request->tgl_bayar,
             'jumlah_bayar' => $request->jumlah_bayar,
             'metode_pembayaran' => $request->metode_pembayaran,
@@ -166,7 +166,7 @@ class SampleController extends Controller
 
             $sample = $invoice->sample;
 
-            if ($sample && $invoice->status_tagihan === 'Paid') {
+            if ($sample && $invoice->status_tagihan === 'paid') {
                 $sample->update([
                     'status' => 'paid',
                     'paid_at' => now(),
@@ -312,6 +312,9 @@ class SampleController extends Controller
                 'user_id' => Auth::user()->id,
                 'notes' => 'Sample disetujui customer.',
             ]);
+
+
+            //otomatis create invoice production
         });
 
         return back()->with('success', 'Sample berhasil disetujui.');

@@ -9,106 +9,6 @@ use Inertia\Inertia;
 
 class JobTicketController extends Controller
 {
-
-    // Simulasi Database Koleksi Data Dummy Terpusat
-    private static function getMockOrders()
-    {
-        return [
-            [
-                'id' => 1,
-                'no_job_ticket' => 'VL-2026-001',
-                'produk' => 'Polo Shirt Event',
-                'customer' => [
-                    'nama' => 'Maju Bersama',
-                    'nama_perusahaan' => 'PT Maju Bersama'
-                ],
-                'q' => 120,
-                'qs' => 2,
-                'deadline' => '2026-05-18',
-                'created_at' => '2026-05-10 09:00:00',
-                'status_divisi' => 'Produksi',
-                'harga_jual_per_pcs' => 85000,
-                'estimasi_hpp_per_pcs' => 55000,
-                'spesifikasi_bahan' => 'Pique Cotton Premium Indigo Blue',
-                'spesifikasi_sablon_bordir' => 'Bordir Komputer 3 Titik (Dada L/R, Punggung)',
-                'keterangan_tambahan' => 'Kancing senada kain, packing plastik rapi per pcs.',
-                'production_progress' => [
-                    'id' => 1,
-                    'prioritas' => 'High',
-                    'acc_sample' => true,
-                    'tgl_acc_sample' => '2026-05-12 14:00:00',
-                    'ppm_bahan' => true, 'ppm_aksesoris' => true, 'ppm_cutting' => true, 'ppm_sablon' => true, 'ppm_jahit' => true,
-                    'cut_test_susut' => true, 'cut_test_luntur' => true, 'cut_relax_bahan' => true, 'cut_form_cutting' => true, 'cut_label_potongan' => true, 'cut_sisa_bahan' => false,
-                    'sablon_sample_warna' => true, 'sablon_test_muntah' => true,
-                    'jahit_kelengkapan_aksesoris' => true, 'jahit_titik_kritis' => false, 'jahit_random_check' => false,
-                    'qc_steam_packing' => false, 'qc_sampling_ukuran' => false, 'qc_inspeksi_jahit' => false, 'qc_surat_jalan' => false,
-                    'log_foto_confirm' => false, 'log_random_cek' => false, 'log_payment_delivery' => false,
-                ]
-            ],
-            [
-                'id' => 2,
-                'no_job_ticket' => 'VL-2026-002',
-                'produk' => 'Kemeja Lapangan',
-                'customer' => [
-                    'nama' => 'Sinar Abadi',
-                    'nama_perusahaan' => 'CV Sinar Abadi'
-                ],
-                'q' => 80,
-                'qs' => 1,
-                'deadline' => '2026-05-15',
-                'created_at' => '2026-05-11 10:30:00',
-                'status_divisi' => 'Sample',
-                'harga_jual_per_pcs' => 135000,
-                'estimasi_hpp_per_pcs' => 80000,
-                'spesifikasi_bahan' => 'Ripstop Tornado Khaki',
-                'spesifikasi_sablon_bordir' => 'Bordir Emblem Lepas Pasang Velcro',
-                'keterangan_tambahan' => 'Ventilasi jaring di punggung belakang.',
-                'production_progress' => [
-                    'id' => 2,
-                    'prioritas' => 'Medium',
-                    'acc_sample' => false,
-                    'tgl_acc_sample' => null,
-                    'ppm_bahan' => true, 'ppm_aksesoris' => false, 'ppm_cutting' => false, 'ppm_sablon' => false, 'ppm_jahit' => false,
-                    'cut_test_susut' => false, 'cut_test_luntur' => false, 'cut_relax_bahan' => false, 'cut_form_cutting' => false, 'cut_label_potongan' => false, 'cut_sisa_bahan' => false,
-                    'sablon_sample_warna' => false, 'sablon_test_muntah' => false,
-                    'jahit_kelengkapan_aksesoris' => false, 'jahit_titik_kritis' => false, 'jahit_random_check' => false,
-                    'qc_steam_packing' => false, 'qc_sampling_ukuran' => false, 'qc_inspeksi_jahit' => false, 'qc_surat_jalan' => false,
-                    'log_foto_confirm' => false, 'log_random_cek' => false, 'log_payment_delivery' => false,
-                ]
-            ],
-            [
-                'id' => 3,
-                'no_job_ticket' => 'VL-2026-003',
-                'produk' => 'Hoodie Komunitas',
-                'customer' => [
-                    'nama' => 'Vespa Club',
-                    'nama_perusahaan' => 'Komunitas Vespa'
-                ],
-                'q' => 200,
-                'qs' => 3,
-                'deadline' => '2026-05-13',
-                'created_at' => '2026-05-01 08:00:00',
-                'status_divisi' => 'Done',
-                'harga_jual_per_pcs' => 175000,
-                'estimasi_hpp_per_pcs' => 110000,
-                'spesifikasi_bahan' => 'Cotton Fleece 330gsm Deep Black',
-                'spesifikasi_sablon_bordir' => 'Sablon Plastisol High Density Glossy',
-                'keterangan_tambahan' => 'Tali hoodie kustom anyaman tebal.',
-                'production_progress' => [
-                    'id' => 3,
-                    'prioritas' => 'Urgent',
-                    'acc_sample' => true,
-                    'tgl_acc_sample' => '2026-05-04 11:00:00',
-                    'ppm_bahan' => true, 'ppm_aksesoris' => true, 'ppm_cutting' => true, 'ppm_sablon' => true, 'ppm_jahit' => true,
-                    'cut_test_susut' => true, 'cut_test_luntur' => true, 'cut_relax_bahan' => true, 'cut_form_cutting' => true, 'cut_label_potongan' => true, 'cut_sisa_bahan' => true,
-                    'sablon_sample_warna' => true, 'sablon_test_muntah' => true,
-                    'jahit_kelengkapan_aksesoris' => true, 'jahit_titik_kritis' => true, 'jahit_random_check' => true,
-                    'qc_steam_packing' => true, 'qc_sampling_ukuran' => true, 'qc_inspeksi_jahit' => true, 'qc_surat_jalan' => true,
-                    'log_foto_confirm' => true, 'log_random_cek' => true, 'log_payment_delivery' => true,
-                ]
-            ],
-        ];
-    }
     /**
      * Display a listing of the resource.
      */
@@ -210,12 +110,12 @@ class JobTicketController extends Controller
             'orderSpecification',
             'samples' => function ($query) {
                 $query->with([
-                    'invoice.payment',
+                    'invoice.payments',
                     'media',
                     'delivery'
                 ])->latest();
             },
-            'invoices.payment',
+            'invoices.payments',
             'purchasing.materialReceiving',
             'productionProgress',
             'workflowHistory' => function ($query) {
@@ -259,10 +159,27 @@ class JobTicketController extends Controller
             ])->toArray(),
             'samples' => $pesanan->samples->map(fn ($s) => [
                 'id' => $s->id,
+                'pesanan_id' => $s->pesanan_id,
                 'qty' => $s->qty,
+                'sample_price' => $s->sample_price,
+                'invoice_id' => $s->invoice_id,
+                'parent_sample_id' => $s->parent_sample_id,
+                'is_chargeable' => $s->is_chargeable,
                 'status' => $s->status,
+                'catatan' => $s->catatan,
+                'customer_review_note' => $s->customer_review_note,
+                'internal_note' => $s->internal_note,
+                'created_by' => $s->created_by,
+                'created_sample_at' => $s->created_sample_at,
+                'paid_at' => $s->paid_at,
                 'sent_at' => $s->sent_at,
                 'approved_at' => $s->approved_at,
+                'approved_by' => $s->approved_by,
+                'invoice' => $s->invoice,
+                'media' => $s->media,
+                'delivery' => $s->delivery,
+                'created_at' => $s->created_at,
+                'updated_at' => $s->updated_at,
             ])->toArray(),
             'invoices' => $pesanan->invoices->map(fn ($inv) => [
                 'id' => $inv->id,
@@ -270,11 +187,20 @@ class JobTicketController extends Controller
                 'amount' => (float) $inv->total_tagihan,
                 'status' => $inv->status_tagihan ?? 'Unpaid',
                 'issued_at' => $inv->tgl_jatuh_tempo,
-                'payments' => $inv->payment->map(fn ($p) => [
+                'payments' => $inv->payments->map(fn ($p) => [
                     'id' => $p->id,
-                    'amount' => (float) $p->jumlah_bayar,
-                    'method' => $p->metode_pembayaran,
-                    'paid_at' => $p->tgl_bayar,
+                    'invoice_id' => $p->invoice_id,
+                    'tgl_bayar' => $p->tgl_bayar,
+                    'jumlah_bayar' => (float) $p->jumlah_bayar,
+                    'metode_pembayaran' => $p->metode_pembayaran,
+                    'bukti_transfer_path' => $p->bukti_transfer_path,
+                    'catatan_finance' => $p->catatan_finance,
+                    'status' => $p->status,
+                    'rejection_note' => $p->rejection_note,
+                    'verified_by' => $p->verified_by,
+                    'verified_at' => $p->verified_at,
+                    'created_at' => $p->created_at,
+                    'updated_at' => $p->updated_at,
                 ])->toArray(),
             ])->toArray(),
             'purchasings' => $pesanan->purchasing->map(fn ($p) => [
