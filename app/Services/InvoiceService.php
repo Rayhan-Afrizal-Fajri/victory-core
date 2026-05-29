@@ -33,11 +33,11 @@ class InvoiceService
             ->sum('jumlah_bayar');
 
         if ($totalPaid <= 0) {
-            $status = 'Unpaid';
+            $status = 'unpaid';
         } elseif ($totalPaid < $invoice->total_tagihan) {
-            $status = 'Partially Paid';
+            $status = 'partially_paid';
         } else {
-            $status = 'Paid';
+            $status = 'paid';
         }
 
         $invoice->update([

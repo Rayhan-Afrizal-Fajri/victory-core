@@ -26,6 +26,9 @@ import users from '@/routes/users';
 import type { NavItem } from '@/types';
 import type { RouteDefinition } from '@/wayfinder';
 import { SidebarDropdown, SidebarDropdownProvider } from './sidebar-dropdown';
+import products from '@/routes/products';
+import materials from '@/routes/materials';
+import manufacturingWorks from '@/routes/manufacturing-works';
 
 
 const generalWorkspace: NavItem[] = [
@@ -87,6 +90,18 @@ const masterItems = [
     {
         label: 'Suppliers',
         href: suppliers.index(),
+    },
+    {
+        label: 'Products',
+        href: products.index(),
+    },
+    {
+        label: 'Bahan',
+        href: materials.index(),
+    },
+    {
+        label: 'Manufaktur',
+        href: manufacturingWorks.index(),
     },
 ];
 

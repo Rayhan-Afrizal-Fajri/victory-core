@@ -15,6 +15,11 @@ use App\Http\Controllers\Admin\PurchasingController;
 use App\Http\Controllers\Admin\SampleController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\ManufacturingWorkController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductManufacturingWorkController;
+use App\Http\Controllers\ProductMaterialController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,14 +39,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('customers', CustomerController::class);
     Route::resource('suppliers', SupplierController::class);
 
+    /**
+     * Master Data
+     */
+    // Product/Article Master
+    Route::resource('products', ProductController::class);
+    Route::patch('/products/{product}/toggle-active', [ProductController::class, 'toggleActive'])
+        ->name('products.toggle-active');
+
+    // Material Master
+    Route::resource('materials', MaterialController::class);
+    Route::patch('/materials/{material}/toggle-active', [MaterialController::class, 'toggleActive'])
+        ->name('materials.toggle-active');
+
+    // Manufacturing Work Master
+    Route::resource('manufacturing-works', ManufacturingWorkController::class);
+    Route::patch('/manufacturing-works/{manufacturingWork}/toggle-active', [ManufacturingWorkController::class, 'toggleActive'])
+        ->name('manufacturing-works.toggle-active');
+
+    // Product Materials (BOM)
+    Route::resource('product-materials', ProductMaterialController::class)->only(['store', 'update', 'destroy']);
+
+    // Product Manufacturing Works (BOM)
+    Route::resource('product-manufacturing-works', ProductManufacturingWorkController::class)->only(['store', 'update', 'destroy']);
+
     Route::resource('order-entry', OrderEntryController::class);
-    Route::resource('invoices', InvoiceController::class);
-    Route::resource('payments', PaymentController::class);
     
-    Route::resource('purchasings', PurchasingController::class);
+    // Route::resource('purchasings', PurchasingController::class);
     Route::resource('production-progress', ProductionProgressController::class);
 
     Route::resource('job-tickets', JobTicketController::class);
+
+
+    /**
+     * For detail job-tickets
+     */
     Route::patch(
         '/pesanan/{id}/update-status',
         [JobTicketController::class, 'updateStatus']
@@ -58,21 +90,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/designs/{id}/request-revision', [DesignController::class, 'requestRevision'])
     ->name('designs.revision');
 
-    //samples
+    Route::post('/pesanan/{pesanan}/sync-article', [DesignController::class, 'syncArticle'])
+        ->name('designs.sync-article');
+
+    Route::patch('/design-material-specs/{spec}', [DesignController::class, 'updateMaterialSpec'])
+        ->name('design-material-specs.update');
+
+    Route::patch('/design-manufacturing-specs/{spec}', [DesignController::class, 'updateManufacturingSpec'])
+        ->name('design-manufacturing-specs.update');
+
+    /**
+     * Samples
+     */
     Route::post('/pesanan/{id}/samples', [SampleController::class, 'store'])
-    ->name('samples.store');
+        ->name('samples.store');
 
     Route::post('/samples/{id}/media', [SampleController::class, 'uploadMedia'])
-    ->name('samples.media.store');
+        ->name('samples.media.store');
 
-    Route::post('/samples/{id}/payments', [SampleController::class, 'submitPayment'])
-        ->name('samples.payments.store');
+    Route::patch('/samples/{sample}', [SampleController::class, 'update'])
+        ->name('samples.update');
 
-    Route::patch('/payments/{id}/verify', [SampleController::class, 'verifyPayment'])
-        ->name('sample-payments.verify');
-
-    Route::patch('/payments/{id}/reject', [SampleController::class, 'rejectPayment'])
-        ->name('sample-payments.reject');
+    Route::delete('/sample/{sample}', [SampleController::class, 'destroy'])
+        ->name('samples.destroy');
 
     Route::post('/samples/{id}/delivery', [SampleController::class, 'ship'])
         ->name('samples.delivery.store');
@@ -88,6 +128,73 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('/samples/{id}/reject', [SampleController::class, 'reject'])
         ->name('samples.reject');
+
+
+    /**
+     * Invoices
+     */
+    Route::resource('invoices', InvoiceController::class);
+
+    Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
+        ->name('invoices.cancel');
+
+    /**
+     * Payment
+     */
+    Route::post('/invoices/{id}/payments', [PaymentController::class, 'store'])
+        ->name('invoices.payments.store');
+
+    Route::patch('/payments/{id}/verify', [PaymentController::class, 'verifyPayment'])
+        ->name('payments.verify');
+
+    Route::patch('/payments/{id}/reject', [PaymentController::class, 'rejectPayment'])
+        ->name('payments.reject');
+
+    Route::patch('/payments/{payment}', [PaymentController::class, 'update'])
+        ->name('payments.update');
+
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])
+        ->name('payments.destroy');
+
+    //delivery
+    Route::patch('/samples/{sample}/delivery', [SampleController::class, 'updateDelivery'])
+        ->name('samples.delivery.update');
+
+    Route::delete('/samples/{sample}/delivery', [SampleController::class, 'cancelDelivery'])
+        ->name('samples.delivery.cancel');
+
+    //gallery
+    Route::delete('/samples/media/{media}', [SampleController::class, 'deleteMedia'])
+        ->name('samples.media.destroy');
+
+
+    /**
+     * Purchasing
+     */
+    Route::get('/purchasings', [PurchasingController::class, 'index'])
+    ->name('purchasings.index');
+
+    Route::post('/pesanan/{pesanan}/purchasings', [PurchasingController::class, 'store'])
+    ->name('purchasings.store');
+
+    Route::patch('/purchasings/{purchasing}', [PurchasingController::class, 'update'])
+        ->name('purchasings.update');
+
+    Route::delete('/purchasings/{purchasing}', [PurchasingController::class, 'destroy'])
+        ->name('purchasings.destroy');
+
+    Route::patch('/purchasings/{purchasing}/mark-ordered', [PurchasingController::class, 'markOrdered'])
+        ->name('purchasings.mark-ordered');
+
+    Route::post('/purchasings/{purchasing}/receivings', [PurchasingController::class, 'storeReceiving'])
+        ->name('purchasings.receivings.store');
+
+    Route::delete('/material-receivings/{receiving}', [PurchasingController::class, 'destroyReceiving'])
+        ->name('material-receivings.destroy');
+
+    /**
+     * End of detail job tickets
+     */
         
     
     Route::resource('profit-loss-report', ProfitLossReportController::class);

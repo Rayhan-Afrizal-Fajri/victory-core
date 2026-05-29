@@ -72,7 +72,7 @@ type Invoice = {
   pesanan_id: number;
   billing_type: 'Sample' | 'DP Produksi' | 'Pelunasan';
   total_amount: number;
-  status: 'Unpaid' | 'Partially Paid' | 'Paid';
+  status: 'unpaid' | 'partially_paid' | 'paid';
   due_date: string;
   payments: Payment[];
 };
@@ -116,7 +116,7 @@ const sampleInvoices: Invoice[] = [
     pesanan_id: 1,
     billing_type: 'Sample',
     total_amount: 1275000,
-    status: 'Paid',
+    status: 'paid',
     due_date: '2026-05-22',
     payments: [
       {
@@ -136,7 +136,7 @@ const sampleInvoices: Invoice[] = [
     pesanan_id: 2,
     billing_type: 'DP Produksi',
     total_amount: 4800000,
-    status: 'Partially Paid',
+    status: 'partially_paid',
     due_date: '2026-05-30',
     payments: [
       {
@@ -156,14 +156,14 @@ const sampleInvoices: Invoice[] = [
     pesanan_id: 3,
     billing_type: 'Pelunasan',
     total_amount: 36000000,
-    status: 'Unpaid',
+    status: 'unpaid',
     due_date: '2026-06-10',
     payments: [],
   },
 ];
 
 const filterOptions = ['All', 'Sample', 'DP Produksi', 'Pelunasan'] as const;
-const paymentStatusOptions = ['All', 'Unpaid', 'Partially Paid', 'Paid'] as const;
+const paymentStatusOptions = ['All', 'unpaid', 'partially_paid', 'paid'] as const;
 
 export default function Index({ invoices = sampleInvoices }: { invoices?: Invoice[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -279,9 +279,9 @@ export default function Index({ invoices = sampleInvoices }: { invoices?: Invoic
 
   const statusBadge = (status: Invoice['status']) => {
     const styles: Record<string, string> = {
-      Unpaid: 'bg-amber-100 text-amber-700',
-      'Partially Paid': 'bg-cyan-100 text-cyan-800',
-      Paid: 'bg-emerald-100 text-emerald-800',
+      unpaid: 'bg-amber-100 text-amber-700',
+      partially_paid: 'bg-cyan-100 text-cyan-800',
+      paid: 'bg-emerald-100 text-emerald-800',
     };
 
     return (

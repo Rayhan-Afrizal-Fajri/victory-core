@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('pesanan', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
 
             $table->string('customer_nama_snapshot');
             $table->string('customer_perusahaan_snapshot')->nullable();

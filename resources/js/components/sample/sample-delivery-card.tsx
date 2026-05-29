@@ -1,29 +1,49 @@
 import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import EmptyState from "./empty-state";
-import { PackageCheck, Truck } from "lucide-react";
+import { Edit, PackageCheck, Trash2, Truck } from "lucide-react";
 import Field from "./field";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import InfoLine from "./info-line";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { useState } from "react";
 
 const SampleDeliveryCard = ({
     sample,
     delivery,
     canDeliver,
     canMarkDelivered,
+    canEditDelivery,
+    canCancelDelivery,
     deliveryForm,
+    editDeliveryForm,
     onSubmitDelivery,
+    onUpdateDelivery,
+    onCancelDelivery,
     onMarkDelivered,
 }: {
     sample: any;
     delivery: any;
     canDeliver: boolean;
     canMarkDelivered: boolean;
+    canEditDelivery: boolean;
+    canCancelDelivery: boolean;
     deliveryForm: any;
+    editDeliveryForm: any;
     onSubmitDelivery: (e: React.FormEvent) => void;
+    onUpdateDelivery: (e: React.FormEvent) => void;
+    onCancelDelivery: (e: React.FormEvent) => void;
     onMarkDelivered: () => void;
 }) => {
+
+    const [editOpen, setEditOpen] = useState(false);
 
     return (
         <SectionCard title="Delivery Sample">
@@ -100,10 +120,35 @@ const SampleDeliveryCard = ({
                         </div>
                     )}
 
-                    <Button type="button" onClick={onMarkDelivered}>
-                        <PackageCheck className="mr-2 size-4" />
-                        Mark as Delivered
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        {canEditDelivery && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
+                            >
+                                <Edit className="mr-2 size-4" />
+                                Edit Delivery
+                            </Button>
+                        )}
+
+                        {canCancelDelivery && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-red-200 text-red-700 hover:bg-red-50"
+                                onClick={onCancelDelivery}
+                            >
+                                <Trash2 className="mr-2 size-4" />
+                                Cancel Delivery
+                            </Button>
+                        )}
+
+                        <Button type="button" onClick={onMarkDelivered}>
+                            <PackageCheck className="mr-2 size-4" />
+                            Mark as Delivered
+                        </Button>
+                    </div>
                 </div>
             )}
 
@@ -112,6 +157,73 @@ const SampleDeliveryCard = ({
                     Sample sudah diterima customer dan siap direview.
                 </div>
             )}
+
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Delivery Sample</DialogTitle>
+                        <DialogDescription>
+                            Perbarui data pengiriman selama sample belum ditandai diterima customer.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={onUpdateDelivery} className="space-y-3">
+                        <Field label="Jasa Kirim" error={editDeliveryForm.errors.courier_name}>
+                            <Input
+                                placeholder="JNE / J&T / GoSend / Internal Courier"
+                                value={editDeliveryForm.data.courier_name}
+                                onChange={(e) =>
+                                    editDeliveryForm.setData('courier_name', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        <Field label="Nomor Resi" error={editDeliveryForm.errors.tracking_number}>
+                            <Input
+                                placeholder="Opsional untuk kurir internal"
+                                value={editDeliveryForm.data.tracking_number}
+                                onChange={(e) =>
+                                    editDeliveryForm.setData('tracking_number', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        <Field label="Tracking URL" error={editDeliveryForm.errors.tracking_url}>
+                            <Input
+                                placeholder="https://..."
+                                value={editDeliveryForm.data.tracking_url}
+                                onChange={(e) =>
+                                    editDeliveryForm.setData('tracking_url', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        <Field label="Catatan Pengiriman" error={editDeliveryForm.errors.delivery_note}>
+                            <Textarea
+                                rows={3}
+                                value={editDeliveryForm.data.delivery_note}
+                                onChange={(e) =>
+                                    editDeliveryForm.setData('delivery_note', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        <div className="flex justify-end gap-2 border-t pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditOpen(false)}
+                            >
+                                Batal
+                            </Button>
+
+                            <Button type="submit" disabled={editDeliveryForm.processing}>
+                                Simpan Perubahan
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </SectionCard>
     );
 };

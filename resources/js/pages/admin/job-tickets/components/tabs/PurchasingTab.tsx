@@ -1,43 +1,225 @@
-import React from 'react';
-import type { JobTicket } from '../../types';
-import SectionCard from '../SectionCard';
+import React, { useEffect, useState } from 'react';
+import { router, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
+
+import type { JobTicket, Supplier } from '../../types';
 import WorkflowGate from '../WorkflowGate';
 
-const PurchasingTab: React.FC<{ job: JobTicket }> = ({ job }) => {
-  const verified = (job as any).workflow_status?.production_dp_paid ?? false;
+import DesignSpecsReferenceCard from '@/components/purchasings/design-specs-reference-card';
+import PurchasingSummaryCard from '@/components/purchasings/purchasing-summary-card';
+import PurchasingMaterialTable from '@/components/purchasings/purchasing-material-table';
+import PurchasingFormDialog from '@/components/purchasings/purchasing-form-dialog';
+import ReceivingDialog from '@/components/purchasings/receiving-dialog';
 
-  if (!verified) {
-return <WorkflowGate reason="Pembayaran produksi belum diverifikasi. Purchasing terkunci." />;
-}
+const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
+    const workflow = job.workflow_status;
+    const verified = workflow?.production_dp_paid ?? false;
 
-  return (
-    <div className="space-y-4">
-      <SectionCard title="Daftar Material">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-gray-500">
-              <th>Material</th>
-              <th>Supplier</th>
-              <th>Ordered</th>
-              <th>Received</th>
-              <th>Sisa</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(job.purchasings || []).map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="py-2">{p.item}</td>
-                <td className="py-2">{p.supplier}</td>
-                <td className="py-2">{p.ordered_qty}</td>
-                <td className="py-2">{p.received_qty}</td>
-                <td className="py-2">{p.ordered_qty - (p.received_qty || 0)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </SectionCard>
-    </div>
-  );
+    const purchasings = job.purchasings || [];
+
+    const [openPurchasingForm, setOpenPurchasingForm] = useState(false);
+    const [purchasingMode, setPurchasingMode] = useState<'create' | 'edit'>('create');
+    const [editingPurchasing, setEditingPurchasing] = useState<any | null>(null);
+
+    const [openReceiving, setOpenReceiving] = useState(false);
+    const [selectedPurchasing, setSelectedPurchasing] = useState<any | null>(null);
+
+    const purchasingForm = useForm({
+        supplier_id: null as number | null,
+        item_bahan: '',
+        qty_bahan: 1,
+        satuan: '',
+        harga_satuan: 0,
+        tgl_pembelian: new Date().toISOString().slice(0, 10),
+    });
+
+    const receivingForm = useForm({
+        received_qty: 1,
+        received_at: new Date().toISOString().slice(0, 10),
+        notes: '',
+    });
+
+    useEffect(() => {
+        if (editingPurchasing) {
+            purchasingForm.setData({
+                supplier_id: editingPurchasing.supplier_id || null,
+                item_bahan: editingPurchasing.item || '',
+                qty_bahan: Number(editingPurchasing.ordered_qty || 1),
+                satuan: editingPurchasing.unit || '',
+                harga_satuan: Number(editingPurchasing.harga_satuan || 0),
+                tgl_pembelian:
+                    editingPurchasing.tgl_pembelian ||
+                    new Date().toISOString().slice(0, 10),
+            });
+        }
+    }, [editingPurchasing?.id]);
+
+    useEffect(() => {
+        if (selectedPurchasing) {
+            receivingForm.setData({
+                received_qty: 1,
+                received_at: new Date().toISOString().slice(0, 10),
+                notes: '',
+            });
+        }
+    }, [selectedPurchasing?.id]);
+
+    if (!verified) {
+        return (
+            <WorkflowGate reason="Pembayaran produksi belum diverifikasi. Purchasing terkunci." />
+        );
+    }
+
+    const openCreatePurchasing = () => {
+        setPurchasingMode('create');
+        setEditingPurchasing(null);
+
+        purchasingForm.setData({
+            supplier_id: null,
+            item_bahan: '',
+            qty_bahan: 1,
+            satuan: '',
+            harga_satuan: 0,
+            tgl_pembelian: new Date().toISOString().slice(0, 10),
+        });
+
+        setOpenPurchasingForm(true);
+    };
+
+    const openEditPurchasing = (purchasing: any) => {
+        setPurchasingMode('edit');
+        setEditingPurchasing(purchasing);
+        setOpenPurchasingForm(true);
+    };
+
+    const submitPurchasing = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (purchasingMode === 'edit' && editingPurchasing) {
+            purchasingForm.patch(`/purchasings/${editingPurchasing.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Material purchasing berhasil diperbarui.');
+                    setOpenPurchasingForm(false);
+                    setEditingPurchasing(null);
+                    purchasingForm.reset();
+                },
+            });
+
+            return;
+        }
+
+        purchasingForm.post(`/pesanan/${job.id}/purchasings`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Material purchasing berhasil dibuat.');
+                setOpenPurchasingForm(false);
+                purchasingForm.reset();
+            },
+        });
+    };
+
+    const deletePurchasing = (purchasing: any) => {
+        if (!confirm('Hapus material purchasing ini?')) return;
+
+        router.delete(`/purchasings/${purchasing.id}`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Material purchasing berhasil dihapus.'),
+        });
+    };
+
+    const markOrdered = (purchasing: any) => {
+        router.patch(
+            `/purchasings/${purchasing.id}/mark-ordered`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Material ditandai ordered.'),
+            }
+        );
+    };
+
+    const openReceiveMaterial = (purchasing: any) => {
+        setSelectedPurchasing(purchasing);
+        setOpenReceiving(true);
+    };
+
+    const submitReceiving = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!selectedPurchasing) {
+            toast.error('Material belum dipilih.');
+            return;
+        }
+
+        receivingForm.post(`/purchasings/${selectedPurchasing.id}/receivings`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Receiving material berhasil disimpan.');
+                setOpenReceiving(false);
+                setSelectedPurchasing(null);
+                receivingForm.reset();
+            },
+        });
+    };
+
+    const deleteReceiving = (receiving: any) => {
+        if (!confirm('Hapus riwayat receiving ini?')) return;
+
+        router.delete(`/material-receivings/${receiving.id}`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Receiving material berhasil dihapus.'),
+        });
+    };
+
+    return (
+        <div className="space-y-6">
+            <DesignSpecsReferenceCard job={job} />
+
+            <PurchasingSummaryCard purchasings={purchasings} />
+
+            <PurchasingMaterialTable
+                purchasings={purchasings}
+                onCreate={openCreatePurchasing}
+                onEdit={openEditPurchasing}
+                onDelete={deletePurchasing}
+                onMarkOrdered={markOrdered}
+                onReceive={openReceiveMaterial}
+                onDeleteReceiving={deleteReceiving}
+            />
+
+            <PurchasingFormDialog
+                open={openPurchasingForm}
+                suppliers={suppliers}
+                onOpenChange={(open) => {
+                    setOpenPurchasingForm(open);
+
+                    if (!open) {
+                        setEditingPurchasing(null);
+                        purchasingForm.reset();
+                    }
+                }}
+                form={purchasingForm}
+                onSubmit={submitPurchasing}
+                mode={purchasingMode}
+            />
+
+            <ReceivingDialog
+                open={openReceiving}
+                onOpenChange={(open) => {
+                    setOpenReceiving(open);
+
+                    if (!open) {
+                        setSelectedPurchasing(null);
+                        receivingForm.reset();
+                    }
+                }}
+                purchasing={selectedPurchasing}
+                form={receivingForm}
+                onSubmit={submitReceiving}
+            />
+        </div>
+    );
 };
 
 export default PurchasingTab;

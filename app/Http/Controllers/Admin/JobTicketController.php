@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pesanan;
+use App\Models\Supplier;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -81,22 +83,6 @@ class JobTicketController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
      * Display the specified resource.
      */
     public function show(string $id)
@@ -116,13 +102,17 @@ class JobTicketController extends Controller
                 ])->latest();
             },
             'invoices.payments',
-            'purchasing.materialReceiving',
+            'purchasing.materialReceiving.checkedBy',
+            'purchasing.supplier',
             'productionProgress',
             'workflowHistory' => function ($query) {
                 $query->with('user')->latest();
             },
             'attachment',
             'workflowStatus',
+            'sizeBreakdowns',
+            'manufacturingSpecs.vendor',
+            'materialSpecs.supplier',
         ])->findOrFail($id);
 
         $workflowStatus = $pesanan->workflowStatus;
@@ -185,7 +175,7 @@ class JobTicketController extends Controller
                 'id' => $inv->id,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
                 'amount' => (float) $inv->total_tagihan,
-                'status' => $inv->status_tagihan ?? 'Unpaid',
+                'status' => $inv->status_tagihan ?? 'unpaid',
                 'issued_at' => $inv->tgl_jatuh_tempo,
                 'payments' => $inv->payments->map(fn ($p) => [
                     'id' => $p->id,
@@ -205,14 +195,41 @@ class JobTicketController extends Controller
             ])->toArray(),
             'purchasings' => $pesanan->purchasing->map(fn ($p) => [
                 'id' => $p->id,
+
                 'item' => $p->item_bahan,
-                'supplier' => $p->supplier?->name ?? $p->supplier_id,
-                'ordered_qty' => $p->qty_bahan,
-                'received_qty' => $p->materialReceiving->sum('receiver_qty'),
+
+                'supplier_id' => $p->supplier_id,
+                'supplier' => $p->supplier ? [
+                    'id' => $p->supplier->id,
+                    'nama' => $p->supplier->nama ?? null,
+                    'nama_perusahaan' => $p->supplier->nama_perusahaan ?? null,
+                    'kategori' => $p->supplier->kategori ?? null,
+                    'email' => $p->supplier->email ?? null,
+                    'kontak' => $p->supplier->kontak ?? null,
+                    'alamat' => $p->supplier->alamat ?? null,
+                ] : null,
+
+                'ordered_qty' => (float) $p->qty_bahan,
+                'received_qty' => (float) $p->materialReceiving->sum('received_qty'),
+                'remaining_qty' => max((float) $p->qty_bahan - (float) $p->materialReceiving->sum('received_qty'), 0),
+
+                'unit' => $p->satuan,
+
+                'harga_satuan' => (float) $p->harga_satuan,
+                'total_harga' => (float) $p->total_harga,
+                'tgl_pembelian' => $p->tgl_pembelian,
+                'is_received' => (bool) $p->is_received,
+                'status' => $p->status,
+
                 'material_receivings' => $p->materialReceiving->map(fn ($r) => [
                     'id' => $r->id,
-                    'qty_received' => $r->receiver_qty,
-                    'received_at' => $r->receiver_at ?? $r->created_at,
+                    'qty_received' => (float) $r->received_qty,
+                    'received_at' => $r->received_at ?? $r->created_at?->toDateString(),
+                    'notes' => $r->notes,
+                    'checked_by' => $r->checkedBy ? [
+                        'id' => $r->checkedBy->id,
+                        'name' => $r->checkedBy->name,
+                    ] : null,
                 ])->toArray(),
             ])->toArray(),
             'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
@@ -230,10 +247,62 @@ class JobTicketController extends Controller
                 'notes' => $a->catatan,
             ])->toArray(),
             'workflow_status' => $workflowStatus?->toArray() ?? [],
+            'size_breakdowns' => $pesanan->sizeBreakdowns->map(fn ($row) => [
+                'id' => $row->id,
+                'color' => $row->color,
+                'size_label' => $row->size_label,
+                'qty' => $row->qty,
+            ]),
+
+            'product' => $pesanan->product ? [
+                'id' => $pesanan->product->id,
+                'name' => $pesanan->product->name,
+                'category' => $pesanan->product->category,
+            ] : null,
+
+            'material_specs' => $pesanan->materialSpecs->map(fn ($spec) => [
+                'id' => $spec->id,
+                'supplier_id' => $spec->supplier_id,
+                'type' => $spec->type,
+                'material_name' => $spec->material_name_snapshot,
+                'color' => $spec->color,
+                'usage' => $spec->usage,
+                'unit' => $spec->unit,
+                'usage_per_set' => $spec->usage_per_set,
+                'supplier' => $spec->supplier?->nama ?? $spec->supplier?->name,
+                'harga_ecer' => $spec->harga_ecer,
+                'harga_roll' => $spec->harga_roll,
+                'roll_qty' => $spec->roll_qty,
+                'price_type' => $spec->price_type,
+                'cost_per_pcs' => $spec->cost_per_pcs,
+            ]),
+
+            'manufacturing_specs' => $pesanan->manufacturingSpecs->map(fn ($spec) => [
+                'id' => $spec->id,
+                'work_name' => $spec->work_name_snapshot,
+                'usage' => $spec->usage,
+                'unit' => $spec->unit,
+                'usage_note' => $spec->usage_note,
+                'vendor' => $spec->vendor?->nama ?? $spec->vendor?->name,
+                'min_estimate' => $spec->min_estimate,
+                'max_estimate' => $spec->max_estimate,
+                'cost_per_pcs' => $spec->cost_per_pcs,
+            ]),
         ];
+
+        $productOption = Product::all()->map(fn ($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'category' => $p->category,
+        ]);
+
+
+        $suppliers = Supplier::all();
 
         return Inertia::render('admin/job-tickets/Show', [
             'pesanan' => $mapped,
+            'suppliers' => $suppliers,
+            'productOptions' => $productOption,
         ]);
     }
 

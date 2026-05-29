@@ -26,10 +26,10 @@ export type SampleStatus =
   | 'rejected';
 
 export type InvoiceStatus =
-  | 'Unpaid'
-  | 'Partially Paid'
-  | 'Paid'
-  | 'Cancelled';
+  | 'unpaid'
+  | 'partially_paid'
+  | 'paid'
+  | 'cancelled';
 
 export type PaymentStatus =
   | 'pending'
@@ -178,14 +178,33 @@ export interface MaterialReceiving {
   id: number;
   qty_received: number;
   received_at?: string | null;
+  notes?: string | null;
+  checked_by?: {
+    id?: number;
+    name?: string;
+  } | null;
 }
 
 export interface PurchasingItem {
   id: number;
+
   item: string;
-  supplier?: string | number;
+  supplier?: Supplier | string | null;
+
+  supplier_id?: number | null;
+
   ordered_qty: number;
   received_qty: number;
+  remaining_qty?: number;
+
+  unit?: string | null;
+
+  harga_satuan?: number;
+  total_harga?: number;
+  tgl_pembelian?: string | null;
+
+  status?: string;
+
   material_receivings?: MaterialReceiving[];
 }
 
@@ -283,6 +302,57 @@ export interface Customer {
   address?: string;
 }
 
+export interface Supplier {
+  id?: number;
+  nama?: string;
+  nama_perusahaan?: string;
+  email?:string;
+  kategori?:string;
+  kontak?:string;
+  alamat:string;
+}
+
+export interface SizeBreakdown {
+  id: number;
+  color?: string;
+  size_label?: string;
+  qty?: number;
+}
+
+export interface ProductOption {
+  id: number;
+  name: string;
+  category?: string | null;
+}
+
+export interface MaterialSpec {
+  id: number;
+  type: string;
+  material_name: string;
+  color?: string | null;
+  usage?: number | null;
+  unit?: string | null;
+  usage_per_set?: number | null;
+  supplier?: Supplier | string | null;
+  harga_eceran?: number | null;
+  harga_roll?: number | null;
+  roll_qty?: number | null;
+  price_type?: string | null;
+  cost_per_piece?: number | null;
+}
+
+export interface ManufacturingSpec {
+  id: number;
+  work_name: string;
+  usage?: number | null;
+  unit?: string | null;
+  usage_note?: string | null;
+  vendor?: Supplier | string | null;
+  min_estimate?: number | null;
+  max_estimate?: number | null;
+  cost_per_pcs?: number | null;
+}
+
 export interface JobTicket {
   id: number;
 
@@ -350,4 +420,12 @@ export interface JobTicket {
 
   workflow_status?: WorkflowStatus;
   workflowStatus?: WorkflowStatus; // optional kalau backend return camelCase
+
+  size_breakdowns?: SizeBreakdown[];
+
+  product?: ProductOption;
+
+  material_specs?: MaterialSpec[];
+  manufacturing_specs?: ManufacturingSpec[];
 }
+

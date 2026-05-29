@@ -24,7 +24,7 @@ return new class extends Migration
             $table->date('tgl_pembelian')->nullable();
 
             $table->integer('received_qty')->default(0); // Qty yang sudah diterima
-            $table->enum('status', ['pending', 'partially_received', 'completed'])->default('Pending'); // Status pembelian berdasarkan penerimaan barang
+            $table->enum('status', ['draft', 'ordered', 'partial_received', 'received', 'cancelled'])->default('draft'); // Status pembelian berdasarkan penerimaan barang
             $table->timestamps();
         });
     }

@@ -2,13 +2,17 @@ import React from 'react';
 import JobTicketHeader from './components/JobTicketHeader';
 import WorkflowTimeline from './components/WorkflowTimeline';
 import WorkflowTabs from './components/WorkflowTabs';
-import { JobTicket } from './types';
+import { JobTicket, ProductOption, Supplier } from './types';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import jobTickets from '@/routes/job-tickets';
 import StatusBadge from './components/StatusBadge';
 
-type Props = { pesanan?: JobTicket };
+type Props = { 
+    pesanan?: JobTicket;
+    suppliers: Supplier[];
+    productOptions: ProductOption[] | null;
+};
 
 const dummyJobTicket: JobTicket = {
   id: 1,
@@ -36,7 +40,7 @@ const dummyJobTicket: JobTicket = {
   ],
   payments: [],
   purchasings: [
-    { id: 1, item: 'Kain Katun', supplier: 'PT. Supplier', ordered_qty: 100, received_qty: 20 },
+    { id: 1, item: 'Kain Katun', supplier: null, ordered_qty: 100, received_qty: 20 },
   ],
   productionProgress: { percent: 20, phase: 'Cutting', checklist: ['Potong', 'Sew'] },
   qc: { reject_count: 0 },
@@ -45,7 +49,7 @@ const dummyJobTicket: JobTicket = {
   activity_logs: [{ id: 1, actor: 'Andi', role: 'CS', action: 'Buat job', note: 'Order masuk', created_at: '2026-05-10' }],
 };
 
-export default function Show({ pesanan }: Props) {
+export default function Show({ pesanan, suppliers, productOptions }: Props) {
   const jobTicket = pesanan ?? dummyJobTicket;
 
   return (
@@ -53,7 +57,7 @@ export default function Show({ pesanan }: Props) {
         <Head title={`Job Ticket — ${jobTicket.order_number}`} />
 
         <WorkflowTimeline job={jobTicket} />
-        <WorkflowTabs job={jobTicket} />
+        <WorkflowTabs job={jobTicket} suppliers={suppliers} productOptions={productOptions} />
 
     </>
   );

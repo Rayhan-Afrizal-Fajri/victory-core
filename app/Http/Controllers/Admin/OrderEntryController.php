@@ -8,6 +8,8 @@ use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderEntryController extends Controller
 {
@@ -64,31 +66,75 @@ class OrderEntryController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'no_job_ticket' => ['required', 'string'],
+            'no_job_ticket' => ['required', 'string', 'unique:pesanan,no_job_ticket'],
             'customer_id' => ['required', 'exists:customers,id'],
-            'produk' => ['required', 'string'],
+
+            'requested_product_name' => ['required', 'string', 'max:255'],
             'q' => ['required', 'integer', 'min:1'],
-            'qs' => ['required', 'integer', 'min:1'],
             'deadline' => ['required', 'date'],
-            'harga_jual_per_pcs' => ['required', 'numeric'],
-            'estimasi_hpp_per_pcs' => ['required', 'numeric'],
-            'keterangan_tambahan' => ['nullable', 'string'],
+            'customer_notes' => ['nullable', 'string'],
+
+            'size_breakdowns' => ['required', 'array', 'min:1'],
+            'size_breakdowns.*.color' => ['nullable', 'string', 'max:100'],
+            'size_breakdowns.*.size_label' => ['required', 'string', 'max:50'],
+            'size_breakdowns.*.qty' => ['required', 'integer', 'min:1'],
         ]);
 
-        $customer = Customer::find($validated['customer_id']);
+        $totalSizeQty = collect($validated['size_breakdowns'])->sum('qty');
 
-        $pesanan = Pesanan::create([
-            ...$validated,
-            'date' => now(),
+        if ($totalSizeQty !== (int) $validated['q']) {
+            throw ValidationException::withMessages([
+                'size_breakdowns' => 'Total size breakdown harus sama dengan quantity order.',
+            ]);
+        }
 
-            'customer_nama_snapshot' => $customer->nama,
-            'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
+        $customer = Customer::findOrFail($validated['customer_id']);
 
-            'status_divisi' => 'Penawaran',
-            'created_by' => Auth::user()->id,
-        ]);
+        $pesanan = DB::transaction(function () use ($validated, $customer) {
+            $pesanan = Pesanan::create([
+                'no_job_ticket' => $validated['no_job_ticket'],
+                'customer_id' => $validated['customer_id'],
 
-        $pesanan->productionProgress()->create([]);
+                // legacy compatibility
+                'produk' => $validated['requested_product_name'],
+                'q' => $validated['q'],
+                'keterangan_tambahan' => $validated['customer_notes'] ?? null,
+
+                // new fields
+                'requested_product_name' => $validated['requested_product_name'],
+                'deadline' => $validated['deadline'],
+                'customer_notes' => $validated['customer_notes'] ?? null,
+
+                'date' => now(),
+                'customer_nama_snapshot' => $customer->nama,
+                'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
+
+                'status_divisi' => 'Order Entry',
+                'created_by' => Auth::id(),
+            ]);
+
+            foreach ($validated['size_breakdowns'] as $index => $row) {
+                $pesanan->sizeBreakdowns()->create([
+                    'color' => $row['color'] ?? null,
+                    'size_label' => $row['size_label'],
+                    'qty' => $row['qty'],
+                    'sort_order' => $index,
+                ]);
+            }
+
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                [
+                    'order_entry' => true,
+                    'design_uploaded' => false,
+                    'design_approved' => false,
+                ]
+            );
+
+            $pesanan->productionProgress()->create([]);
+
+            return $pesanan;
+        });
 
         return redirect()
             ->route('job-tickets.show', $pesanan->id);

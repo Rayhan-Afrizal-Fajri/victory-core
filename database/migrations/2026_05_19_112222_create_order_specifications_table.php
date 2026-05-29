@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pesanan_id')->constrained('pesanan')->onDelete('cascade');
             $table->string('jenis_spesifikasi'); //eg: bahan, sablon, aksesoris
-            $table->text('value'); //eg: Combed 30s Black, Plastisol 3 Warna, Kancing snap, label woven
+            $table->text('value')->nullable(); //eg: Combed 30s Black, Plastisol 3 Warna, Kancing snap, label woven
             $table->timestamps();
         });
     }

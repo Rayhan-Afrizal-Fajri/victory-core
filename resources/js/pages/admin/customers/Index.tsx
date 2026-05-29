@@ -203,7 +203,7 @@ export default function Index({ customers }: Props) {
       </div>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="right" className="max-w-2xl">
+        <SheetContent side="right" className="max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Detail Customer</SheetTitle>
             <SheetDescription>Lihat ringkasan profil customer dan histori pesanan terbaru.</SheetDescription>

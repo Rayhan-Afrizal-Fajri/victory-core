@@ -40,7 +40,7 @@ const workflowGroups = [
     key: 'purchasing',
     label: 'Purchasing',
     steps: [
-      'purchasing',
+      'materials_purchased',
       'materials_received',
       'materials_distributed',
     ],
@@ -103,9 +103,15 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
       <div className="overflow-x-auto no-scrollbar">
         <div className="flex min-w-max px-8 py-6 -pb-12">
           {workflowGroups.map((group, index) => {
-            const progress = getGroupProgress(group, flags);
-            const status = getGroupStatus(progress.percentage);
-            const isLast = index === workflowGroups.length - 1;
+            let progress = getGroupProgress(group, flags);
+            let status = getGroupStatus(progress.percentage);
+            let isLast = index === workflowGroups.length - 1;
+
+            if (group.label === 'Final Billing') {
+              progress = getGroupProgress(workflowGroups[6], flags);
+              status = getGroupStatus(progress.percentage);
+            }
+
 
             return (
               <div

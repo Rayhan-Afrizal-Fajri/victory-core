@@ -8,8 +8,8 @@ class MaterialReceiving extends Model
 {
     protected $fillable = [
         'purchasing_id',
-        'receiver_qty',
-        'receiver_at',
+        'received_qty',
+        'received_at',
         'checked_by',
         'notes',
     ];

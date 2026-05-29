@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 import { show as jobTicketShow } from '@/routes/job-tickets';
 import { store, update } from '@/routes/order-entry';
+import { Textarea } from '@/components/ui/textarea';
 
 function formatIDR(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -46,17 +47,68 @@ type Props = {
 
 export default function Index({ nextJobTicket, customers }: Props) {
 
+  const emptySizeRow = {
+    color: '',
+    size_label: '',
+    qty: 1,
+  };
+
   const form = useForm({
     no_job_ticket: nextJobTicket || 'VL-2026-001',
     customer_id: '',
     produk: '',
+    requested_product_name: '',
     q: 0,
     qs: 3,
     deadline: '',
     harga_jual_per_pcs: 0,
     estimasi_hpp_per_pcs: 0,
     keterangan_tambahan: '',
+    customer_notes: '',
+    size_breakdowns: [{...emptySizeRow}],
   });
+
+  //handle size breakdown
+  const totalSizeQty = useMemo(() => {
+    return form.data.size_breakdowns.reduce((total, row) => {
+      return total + Number(row.qty || 0);
+    }, 0);
+  }, [form.data.size_breakdowns]);
+
+  const sizeQtyIsValid = totalSizeQty === Number(form.data.q || 0);
+
+  const handleAddSize = () => {
+    form.setData('size_breakdowns', [
+      ...form.data.size_breakdowns,
+      { ...emptySizeRow },
+    ]);
+  };
+
+  const handleRemoveSize = (index: number) => {
+    const nextRows = form.data.size_breakdowns.filter((_, i) => i !== index);
+
+    form.setData(
+      'size_breakdowns',
+      nextRows.length > 0 ? nextRows : [{ ...emptySizeRow }]
+    );
+  };
+
+  const handleSizeChange = (
+    index: number,
+    field: 'color' | 'size_label' | 'qty',
+    value: string | number
+  ) => {
+    const nextRows = [...form.data.size_breakdowns];
+
+    nextRows[index] = {
+      ...nextRows[index],
+      [field]: field === 'qty' ? Number(value) : value,
+    };
+
+    form.setData('size_breakdowns', nextRows);
+  };
+
+  //end of handle size breakdown
 
   const [edited, setEdited] = useState(false);
 
@@ -91,12 +143,15 @@ export default function Index({ nextJobTicket, customers }: Props) {
       no_job_ticket: nextJobTicket || 'VL-2026-001',
       customer_id: '',
       produk: '',
-      q: 0,
+      requested_product_name: '',
+      q: 1,
       qs: 3,
       deadline: '',
       harga_jual_per_pcs: 0,
       estimasi_hpp_per_pcs: 0,
       keterangan_tambahan: '',
+      customer_notes: '',
+      size_breakdowns: [{ ...emptySizeRow }],
     });
 
     setEdited(false);
@@ -105,7 +160,7 @@ export default function Index({ nextJobTicket, customers }: Props) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (edited) {
+    if (!sizeQtyIsValid) {
       return;
     }
 
@@ -121,16 +176,16 @@ export default function Index({ nextJobTicket, customers }: Props) {
       <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
         <div className="space-y-6 rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="jobNo">No Job Ticket *</Label>
-              <Input
-                id="jobNo"
-                readOnly
-                placeholder="VL-2026-009"
-                value={form.data.no_job_ticket}
-                onChange={(event) => form.setData('no_job_ticket', event.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="jobNo">No Job Ticket *</Label>
+                <Input
+                  id="jobNo"
+                  readOnly
+                  placeholder="VL-2026-009"
+                  value={form.data.no_job_ticket}
+                  onChange={(event) => form.setData('no_job_ticket', event.target.value)}
+                />
+              </div>
             <div className="space-y-2">
               <Label htmlFor="customer">Customer / Brand *</Label>
               <Select
@@ -152,26 +207,31 @@ export default function Index({ nextJobTicket, customers }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="product">Produk / Tipe Garment *</Label>
+            <Label htmlFor="product">Produk yang Diminta *</Label>
             <Input
               id="product"
-              placeholder="cth. Kemeja Seragam Kantor"
-              value={form.data.produk}
-              onChange={(event) => form.setData('produk', event.target.value)}
+              placeholder="cth. T-Shirt Oversize D&L Corps"
+              value={form.data.requested_product_name}
+              onChange={(event) =>
+                form.setData('requested_product_name', event.target.value)
+              }
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="qty">Quantity (Qty) *</Label>
+              <Label htmlFor="qty">Total Quantity *</Label>
               <Input
                 id="qty"
                 type="number"
-                min={0}
+                min={1}
                 value={form.data.q}
-                onChange={(event) => form.setData('q', Number(event.target.value))}
+                onChange={(event) =>
+                  form.setData('q', Number(event.target.value))
+                }
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="deadline">Deadline *</Label>
               <Input
@@ -183,38 +243,84 @@ export default function Index({ nextJobTicket, customers }: Props) {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="hargaJual">Harga Jual (per pcs) *</Label>
-              <Input
-                id="hargaJual"
-                type="number"
-                min={0}
-                step={1000}
-                value={form.data.harga_jual_per_pcs}
-                onChange={(event) => form.setData('harga_jual_per_pcs', Number(event.target.value))}
-              />
+          <div className="space-y-3 rounded-sm border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Label>Detail Ukuran / Size Breakdown *</Label>
+                <p className="mt-1 text-xs text-slate-500">
+                  Customer bisa mengisi size custom seperti S, M, L, XL, All Size, atau ukuran lain.
+                </p>
+              </div>
+
+              <Button type="button" variant="secondary" onClick={handleAddSize}>
+                Tambah Size
+              </Button>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="hpp">Estimasi HPP (per pcs) *</Label>
-              <Input
-                id="hpp"
-                type="number"
-                min={0}
-                step={1000}
-                value={form.data.estimasi_hpp_per_pcs}
-                onChange={(event) => form.setData('estimasi_hpp_per_pcs', Number(event.target.value))}
-              />
+              {form.data.size_breakdowns.map((row, index) => (
+                <div key={index} className="grid gap-2 grid-cols-[1fr_1fr_120px_44px]">
+                  <Input
+                    placeholder="Warna optional"
+                    value={row.color}
+                    onChange={(event) =>
+                      handleSizeChange(index, 'color', event.target.value)
+                    }
+                  />
+
+                  <Input
+                    placeholder="Size, cth. S / M / XL / All Size"
+                    value={row.size_label}
+                    onChange={(event) =>
+                      handleSizeChange(index, 'size_label', event.target.value)
+                    }
+                  />
+
+                  <Input
+                    type="number"
+                    min={1}
+                    value={row.qty}
+                    onChange={(event) =>
+                      handleSizeChange(index, 'qty', Number(event.target.value))
+                    }
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="text-red-600 hover:bg-red-50"
+                    onClick={() => handleRemoveSize(index)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
             </div>
+
+            <div
+              className={`rounded-md border p-3 text-sm ${
+                sizeQtyIsValid
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-amber-200 bg-amber-50 text-amber-700'
+              }`}
+            >
+              Total size breakdown: <strong>{totalSizeQty}</strong> /{' '}
+              <strong>{form.data.q || 0}</strong>
+            </div>
+
+            {form.errors.size_breakdowns && (
+              <p className="text-xs text-red-500">{form.errors.size_breakdowns}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Catatan / Spek</Label>
-            <textarea
+            <Label htmlFor="notes">Catatan</Label>
+            <Textarea
               id="notes"
-              value={form.data.keterangan_tambahan}
-              onChange={(event) => form.setData('keterangan_tambahan', event.target.value)}
-              placeholder="cth. Bahan oxford warna navy, bordir logo dada kiri..."
+              value={form.data.customer_notes}
+              onChange={(event) => form.setData('customer_notes', event.target.value)}
+              placeholder="cth. Warna hitam, sablon depan besar, bahan jangan terlalu tipis..."
               className="min-h-36 w-full rounded-sm border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
             />
           </div>
@@ -235,6 +341,40 @@ export default function Index({ nextJobTicket, customers }: Props) {
         </div>
 
         <aside className="space-y-6">
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+              Ringkasan Order
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <SummaryItem label="Produk" value={form.data.requested_product_name || '—'} />
+              <SummaryItem label="Quantity" value={`${form.data.q || 0} pcs`} />
+              <SummaryItem label="Total Size" value={`${totalSizeQty} pcs`} />
+              <SummaryItem
+                label="Validasi Size"
+                value={sizeQtyIsValid ? 'Sesuai' : 'Belum sesuai'}
+                success={sizeQtyIsValid}
+              />
+              <SummaryItem
+                label="Sisa Hari"
+                value={daysLeft === null ? '—' : `${daysLeft} hari`}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+              Catatan Flow
+            </p>
+            <div className="space-y-3 text-sm text-slate-600">
+              <p>Customer hanya mengisi kebutuhan order.</p>
+              <p>Designer akan memilih artikel master di Design Tab.</p>
+              <p>Harga dan costing akan dihitung setelah artikel disinkronkan.</p>
+            </div>
+          </div>
+        </aside>
+
+        {/* <aside className="space-y-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-start justify-between gap-2">
               <div>
@@ -297,9 +437,32 @@ export default function Index({ nextJobTicket, customers }: Props) {
               <p>Sisa Hari = Deadline − Hari Ini</p>
             </div>
           </div>
-        </aside>
+        </aside> */}
       </form>
     </>
+  );
+}
+
+function SummaryItem({
+  label,
+  value,
+  success,
+}: {
+  label: string;
+  value: React.ReactNode;
+  success?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+      <p className="text-sm font-medium text-slate-700">{label}</p>
+      <p
+        className={`text-sm font-semibold ${
+          success === true ? 'text-emerald-700' : 'text-slate-900'
+        }`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 

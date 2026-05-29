@@ -1,8 +1,8 @@
 import { useForm, router } from '@inertiajs/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
-import type { JobTicket } from '../../types';
+import { CheckCircle, XCircle } from 'lucide-react';
+import type { JobTicket, ProductOption, Supplier } from '../../types';
 import SectionCard from '../SectionCard';
 import FormImageUpload from '@/components/ui/form-image';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,122 @@ import { sync } from '@/routes/specifications';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+import OrderRequestSummaryCard from './OrderRequestSummaryCard';
+import DesignSpecsPreview from './DesignSpecsPreview';
+import MaterialSpecEditDialog from './MaterialSpecEditDialog';
+import ManufacturingSpecEditDialog from './ManufacturingSpecEditDialog';
+import Field from '@/components/sample/field';
+
+
 const emptySpec = {
     jenis_spesifikasi: '',
     value: '',
 };
 
-const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
+const DesignAndSpecsTab: React.FC<{
+    job: JobTicket;
+    products?: ProductOption[] | null;
+    suppliers?: Supplier[]
+}> = ({ job, products = [], suppliers = [] }) => {
+    const [editingMaterialSpec, setEditingMaterialSpec] = useState<any | null>(null);
+    const [editingManufacturingSpec, setEditingManufacturingSpec] = useState<any | null>(null);
+
+    const materialSpecForm = useForm({
+        color: '',
+        usage: 0,
+        unit: '',
+        usage_per_set: 1,
+        supplier_id: null as number | null,
+        harga_ecer: 0,
+        harga_roll: 0,
+        price_type: 'ecer',
+        roll_qty: 25,
+    });
+
+    const manufacturingSpecForm = useForm({
+        usage: 0,
+        unit: '',
+        usage_note: '',
+        vendor_id: null as number | null,
+        min_estimate: 0,
+        max_estimate: 0,
+    });
+
+    useEffect(() => {
+        if (editingMaterialSpec) {
+            materialSpecForm.setData({
+                color: editingMaterialSpec.color || '',
+                usage: Number(editingMaterialSpec.usage || 0),
+                unit: editingMaterialSpec.unit || '',
+                usage_per_set: Number(editingMaterialSpec.usage_per_set || 1),
+                supplier_id: editingMaterialSpec.supplier_id || null,
+                harga_ecer: Number(editingMaterialSpec.harga_ecer || 0),
+                harga_roll: Number(editingMaterialSpec.harga_roll || 0),
+                price_type: editingMaterialSpec.price_type || 'ecer',
+                roll_qty: Number(editingMaterialSpec.roll_qty) || 25,
+            });
+        }
+    }, [editingMaterialSpec?.id]);
+
+    useEffect(() => {
+        if (editingManufacturingSpec) {
+            manufacturingSpecForm.setData({
+                usage: Number(editingManufacturingSpec.usage || 0),
+                unit: editingManufacturingSpec.unit || '',
+                usage_note: editingManufacturingSpec.usage_note || '',
+                vendor_id: editingManufacturingSpec.vendor_id || null,
+                min_estimate: Number(editingManufacturingSpec.min_estimate || 0),
+                max_estimate: Number(editingManufacturingSpec.max_estimate || 0),
+            });
+        }
+    }, [editingManufacturingSpec?.id]);
+
+    const updateMaterialSpec = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editingMaterialSpec) {
+            toast.error('Spec belum dipilih.');
+            return;
+        }
+
+        materialSpecForm.patch(`/design-material-specs/${editingMaterialSpec.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Spesifikasi material berhasil diperbarui.');
+                setEditingMaterialSpec(null);
+                materialSpecForm.reset();
+            },
+        });
+    };
+
+    const updateManufacturingSpec = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editingManufacturingSpec) {
+            toast.error('Spec belum dipilih.');
+            return;
+        }
+
+        manufacturingSpecForm.patch(`/design-manufacturing-specs/${editingManufacturingSpec.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Spesifikasi manufaktur berhasil diperbarui.');
+                setEditingManufacturingSpec(null);
+                manufacturingSpecForm.reset();
+            },
+        });
+    };
+
+
+
     const specifications = (job as any).specs || [];
 
     const designs = (job as any).designs || [];
@@ -108,7 +218,7 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const [revisionDesignId, setRevisionDesignId] = useState<number | null>(null);
 
     const revisionForm = useForm({
-        customer_revision_note: '',
+        revision_note: '',
     });
 
     const submitRevision = (designId: number) => {
@@ -122,81 +232,56 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
         });
     };
 
+    /**
+     * Sync product
+     */
+
+    const selectedProduct = (job as any).product || null;
+    const sizeBreakdowns = (job as any).size_breakdowns || [];
+    const materialSpecs = (job as any).material_specs || [];
+    const manufacturingSpecs = (job as any).manufacturing_specs || [];
+
+    const syncArticleForm = useForm({
+        product_id: selectedProduct?.id ? String(selectedProduct.id) : '',
+    });
+
+    useEffect(() => {
+        syncArticleForm.setData(
+            'product_id',
+            selectedProduct?.id ? String(selectedProduct.id) : ''
+        );
+    }, [selectedProduct?.id]);
+
+    const submitSyncArticle = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!syncArticleForm.data.product_id) {
+            toast.error('Pilih artikel terlebih dahulu.');
+            return;
+        }
+
+        const hasExistingSpecs =
+            materialSpecs.length > 0 || manufacturingSpecs.length > 0;
+
+        if (
+            hasExistingSpecs &&
+            !confirm('Sync ulang artikel akan mengganti spesifikasi bahan, aksesoris, dan manufaktur yang sudah ada. Lanjutkan?')
+        ) {
+            return;
+        }
+
+        syncArticleForm.post(`/pesanan/${job.id}/sync-article`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Artikel berhasil disinkronkan.'),
+        });
+    };
+
     return (
         <div className="space-y-8">
-            <SectionCard title="Spesifikasi Artikel">
-                <form onSubmit={submitSpecs} className="space-y-4">
-                    {specsForm.data.specs.map((spec: any, index: number) => (
-                        <div key={index} className="flex items-start gap-3">
-                            <div className="w-1/3">
-                                <Input
-                                    type="text"
-                                    placeholder="Jenis (Bahan, Sablon, dll)"
-                                    className="w-full rounded-md border-slate-300 text-sm shadow-sm"
-                                    value={spec.jenis_spesifikasi}
-                                    onChange={(e) =>
-                                        handleSpecChange(
-                                            index,
-                                            'jenis_spesifikasi',
-                                            e.target.value,
-                                        )
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="flex w-full gap-2">
-                                <Input
-                                    type="text"
-                                    placeholder="Detail nilai spesifikasi..."
-                                    className="w-full rounded-md border-slate-300 text-sm shadow-sm"
-                                    value={spec.value}
-                                    onChange={(e) =>
-                                        handleSpecChange(
-                                            index,
-                                            'value',
-                                            e.target.value,
-                                        )
-                                    }
-                                    required
-                                />
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => handleRemoveSpec(index)}
-                                    className="shrink-0 text-red-500 hover:bg-red-50"
-                                >
-                                    <Trash2 className="size-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-
-                    <div className="flex items-center justify-between border-t pt-2">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={handleAddSpec}
-                            className="text-sm"
-                        >
-                            <Plus className="mr-2 size-4" />
-                            Tambah Spesifikasi
-                        </Button>
-
-                        <Button
-                            type="submit"
-                            disabled={specsForm.processing}
-                            className="bg-slate-900 text-white"
-                        >
-                            {specsForm.processing
-                                ? 'Menyimpan...'
-                                : 'Simpan Spesifikasi'}
-                        </Button>
-                    </div>
-                </form>
-            </SectionCard>
+            <OrderRequestSummaryCard
+                job={job}
+                sizeBreakdowns={sizeBreakdowns}
+            />
 
             <SectionCard title="Manajemen Desain & Revisi">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -210,7 +295,7 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                             onChange={(file) =>
                                 designForm.setData('file_desain', file)
                             }
-                            hint="Upload file desain untuk direview customer."
+                            hint="Upload file desain untuk direview owner."
                             error={designForm.errors.file_desain}
                         />
 
@@ -247,12 +332,12 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                         )}
 
                         {needsRevisionUpload &&
-                            latestDesign?.customer_revision_note && (
+                            latestDesign?.revision_note && (
                                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                                     <p className="font-semibold">
-                                        Catatan revisi dari customer:
+                                        Catatan revisi:
                                     </p>
-                                    <p>{latestDesign.customer_revision_note}</p>
+                                    <p>{latestDesign.revision_note}</p>
                                 </div>
                             )}
 
@@ -267,8 +352,8 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                             {designForm.processing
                                 ? 'Mengunggah...'
                                 : needsRevisionUpload
-                                  ? 'Upload Revisi Desain'
-                                  : 'Upload Desain'}
+                                    ? 'Upload Revisi Desain'
+                                    : 'Upload Desain'}
                         </Button>
                     </form>
 
@@ -291,8 +376,8 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                                 ? 'border-emerald-200 bg-emerald-50'
                                                 : d.status ===
                                                     'revision_needed'
-                                                  ? 'border-amber-200 bg-amber-50'
-                                                  : 'bg-white'
+                                                    ? 'border-amber-200 bg-amber-50'
+                                                    : 'bg-white'
                                         }`}
                                     >
                                         <div className="mb-2 flex items-start justify-between">
@@ -309,8 +394,8 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                                         ? 'bg-emerald-200 text-emerald-800'
                                                         : d.status ===
                                                             'revision_needed'
-                                                          ? 'bg-amber-200 text-amber-800'
-                                                          : 'bg-slate-200 text-slate-700'
+                                                            ? 'bg-amber-200 text-amber-800'
+                                                            : 'bg-slate-200 text-slate-700'
                                                 }`}
                                             >
                                                 {d.status.replace('_', ' ')}
@@ -318,19 +403,26 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                         </div>
 
                                         {d.file_path && (
-                                            <img
-                                                src={`/storage/${d.file_path}`}
-                                                alt="Thumbnail desain"
-                                                className="mb-2 h-16 w-16 rounded border object-cover"
-                                            />
+                                            <a
+                                                href={`/storage/${d.file_path}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block"
+                                            >
+                                                <img
+                                                    src={`/storage/${d.file_path}`}
+                                                    alt="Thumbnail desain"
+                                                    className="mb-2 h-72 w-72 rounded border object-cover"
+                                                />
+                                            </a>
                                         )}
 
-                                        {d.customer_revision_note && (
+                                        {d.revision_note && (
                                             <div className="mb-2 rounded border border-red-100 bg-red-50 p-2 text-xs text-red-700">
                                                 <p className="font-semibold">
-                                                    Catatan customer:
+                                                    Catatan:
                                                 </p>
-                                                <p>{d.customer_revision_note}</p>
+                                                <p>{d.revision_note}</p>
                                             </div>
                                         )}
 
@@ -382,14 +474,14 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                                         <Textarea
                                                             className="w-full rounded-md border-slate-300 text-xs shadow-sm"
                                                             rows={3}
-                                                            value={revisionForm.data.customer_revision_note}
+                                                            value={revisionForm.data.revision_note}
                                                             onChange={(e) =>
                                                                 revisionForm.setData(
-                                                                    'customer_revision_note',
+                                                                    'revision_note',
                                                                     e.target.value,
                                                                 )
                                                             }
-                                                            placeholder="Tulis catatan revisi dari customer..."
+                                                            placeholder="Tulis catatan revisi..."
                                                         />
 
                                                         <div className="flex gap-2">
@@ -422,8 +514,60 @@ const DesignAndSpecsTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                     </div>
                 </div>
             </SectionCard>
+
+            <SectionCard title="Sync Artikel Master">
+                <form onSubmit={submitSyncArticle} method='POST' className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                        <Select
+                            value={syncArticleForm.data.product_id}
+                            onValueChange={(value) =>
+                                syncArticleForm.setData('product_id', value)
+                            }
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih artikel master" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                {products?.map((product) => (
+                                    <SelectItem
+                                        key={product.id}
+                                        value={String(product.id)}
+                                    >
+                                        {product.name}
+                                        {product.category ? ` — ${product.category}` : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Button type="submit" disabled={syncArticleForm.processing}>
+                            {selectedProduct ? 'Sync Ulang Artikel' : 'Sync Artikel'}
+                        </Button>
+                    </div>
+
+                    {selectedProduct && (
+                        <div className="rounded-xl border bg-emerald-50 p-3 text-sm text-emerald-800">
+                            Artikel aktif: <strong>{selectedProduct.name}</strong>
+                        </div>
+                    )}
+
+                    {syncArticleForm.errors.product_id && (
+                        <p className="text-xs text-red-500">
+                            {syncArticleForm.errors.product_id}
+                        </p>
+                    )}
+                </form>
+            </SectionCard>
+
+            <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
+
+            <MaterialSpecEditDialog open={Boolean(editingMaterialSpec)} onOpenChange={(open) => { if (!open) setEditingMaterialSpec(null); }} spec={editingMaterialSpec} form={materialSpecForm} suppliers={suppliers} onSubmit={updateMaterialSpec} />
+
+            <ManufacturingSpecEditDialog open={Boolean(editingManufacturingSpec)} onOpenChange={(open) => { if (!open) setEditingManufacturingSpec(null); }} spec={editingManufacturingSpec} form={manufacturingSpecForm} suppliers={suppliers} onSubmit={updateManufacturingSpec} />
         </div>
     );
 };
+
 
 export default DesignAndSpecsTab;

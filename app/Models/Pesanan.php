@@ -9,12 +9,14 @@ class Pesanan extends Model
     protected $table = 'pesanan';
     protected $fillable = [
         'customer_id',
+        'product_id',
         'customer_nama_snapshot',
         'customer_perusahaan_snapshot',
         'created_by',
         'date',
         'no_job_ticket',
         'produk',
+        'requested_produk_name',
         'q',
         'qs',
         'deadline',
@@ -92,4 +94,25 @@ class Pesanan extends Model
     {
         return $this->hasOne(WorkflowStatus::class);
     }
+
+    public function sizeBreakdowns()
+    {
+        return $this->hasMany(PesananSizeBreakdown::class);
+    }
+
+    public function materialSpecs()
+    {
+        return $this->hasMany(PesananMaterialSpecs::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function manufacturingSpecs()
+    {
+        return $this->hasMany(PesananManufacturingSpecs::class);
+    }
+    
 }

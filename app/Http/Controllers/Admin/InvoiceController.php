@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
+use App\Services\InvoiceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
@@ -51,9 +55,64 @@ class InvoiceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id, InvoiceService $invoiceService)
     {
-        //
+        $request->validate([
+            'total_tagihan' => ['required', 'numeric', 'min:0'],
+            'tgl_jatuh_tempo' => ['nullable', 'date'],
+        ]);
+
+        $invoice = Invoice::with([
+            'payments',
+            'sample.pesanan.workflowStatus',
+        ])->findOrFail($id);
+
+        $hasVerifiedPayment = $invoice->payments()
+            ->where('status', 'verified')
+            ->exists();
+
+        if ($hasVerifiedPayment) {
+            abort('422', 'Invoice tidak dapat diedit karena sudah memiliki payment terverifikasi');
+        }
+
+        if (in_array($invoice->status_tagihan, ['paid', 'Paid'])) {
+            abort(422, 'Invoice lunas tidak bisa diedit.');
+        }
+
+        if (in_array($invoice->status_tagihan, ['cancelled', 'Cancelled'])) {
+            abort(422, 'Invoice yang sudah dibatalkan tidak bisa diedit.');
+        }
+
+        DB::transaction(function () use ($request, $invoice, $invoiceService){
+            $invoice->update([
+                'total_tagihan' => $request->total_tagihan,
+                'tgl_jatuh_tempo' => $request->tgl_jatuh_tempo
+            ]);
+
+            $invoice = $invoiceService->recalculateStatus($invoice);
+
+            $sample = $invoice->sample;
+            if ($sample) {
+                $sample->update([
+                    'sample_price' => $request->total_tagihan,
+                    'status' => 'waiting_payment',
+                    'paid_at' => null,
+                ]);
+
+                $sample->pesanan->workflowStatus()->update([
+                    'sample_paid' => false,
+                ]);
+
+                $sample->pesanan->workflowHistory()->create([
+                    'step' => 'sample',
+                    'action' => 'invoice_updated',
+                    'user_id' => Auth::user()->id,
+                    'notes' => 'Invoice sample diperbarui'
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Invoice berhasil diperbarui.');
     }
 
     /**
@@ -62,5 +121,58 @@ class InvoiceController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function cancel(string $id)
+    {
+        $invoice = Invoice::with([
+            'payments',
+            'sample.pesanan.workflowStatus',
+        ])->findOrFail($id);
+
+        $hasVerifiedPayment = $invoice->payments()
+            ->where('status', 'verified')
+            ->exists();
+
+        if ($hasVerifiedPayment) {
+            abort(422, 'Invoice tidak bisa dibatalkan karena sudah memiliki payment terverifikasi');
+        }
+
+        if (in_array($invoice->status_tagihan, ['paid', 'Paid'])) {
+            abort(422, 'Invoice lunas tidak bisa dibatalkan');
+        }
+
+        if (in_array($invoice->status_tagihan, ['cancelled', 'Cancelled'])) {
+            abort(422, 'Invoice sudah dibatalkan');
+        }
+
+        DB::transaction(function() use ($invoice){
+            $invoice->update([
+                'status_tagihan' => 'cancelled',
+            ]);
+
+            $sample = $invoice->sample;
+            if ($sample) {
+                $sample->update([
+                    'invoice_id' => null,
+                    'is_chargeable' => false,
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                ]);
+
+                $sample->pesanan->workflowStatus()->update([
+                    'sample_paid' => true,
+                ]);
+
+                $sample->pesanan->workflowHistory()->create([
+                    'step' => 'sample',
+                    'action' => 'invoice_cancelled',
+                    'user_id' => Auth::user()->id,
+                    'notes' => 'Invoice sample dibatalkan. Sample dianggap tanpa biaya.', 
+                ]);
+            }
+        }); 
+
+        return back()->with('success', 'Invoice berhasil dibatalkan.');
     }
 }

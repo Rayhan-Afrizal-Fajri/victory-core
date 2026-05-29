@@ -2,7 +2,7 @@ import { Lock } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import type { JobTicket } from '../types';
+import type { JobTicket, ProductOption, Supplier } from '../types';
 
 import ActivityTab from './tabs/ActivityTab';
 import DeliveryTab from './tabs/DeliveryTab';
@@ -29,7 +29,7 @@ const tabs = [
   'activity',
 ] as const;
 
-export const WorkflowTabs: React.FC<{ job: JobTicket }> = ({ job }) => {
+export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], productOptions: ProductOption[] | null }> = ({ job, suppliers, productOptions }) => {
   const ws = (job as any).workflow_status ?? (job as any).workflowFlags ?? {};
   const locked = {
     sample: !ws.design_approved,
@@ -84,7 +84,7 @@ export const WorkflowTabs: React.FC<{ job: JobTicket }> = ({ job }) => {
             <OverviewTab job={job} />
         </TabsContent>
         <TabsContent value="design">
-            <DesignTab job={job} />
+            <DesignTab job={job} products={productOptions} suppliers={suppliers} />
         </TabsContent>
         <TabsContent value="sample">
             <SampleTab job={job} />
@@ -93,7 +93,7 @@ export const WorkflowTabs: React.FC<{ job: JobTicket }> = ({ job }) => {
             <FinanceTab job={job} />
         </TabsContent>
         <TabsContent value="purchasing">
-            <PurchasingTab job={job} />
+            <PurchasingTab job={job} suppliers={suppliers} />
         </TabsContent>
         <TabsContent value="production">
             <ProductionTab job={job} />
