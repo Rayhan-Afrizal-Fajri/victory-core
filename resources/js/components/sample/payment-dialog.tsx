@@ -32,6 +32,7 @@ const PaymentDialog = ({
     onSubmitPayment: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
 }) => {
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
@@ -79,6 +80,8 @@ const PaymentDialog = ({
                         <Field label="Jumlah Bayar" error={paymentForm.errors.jumlah_bayar}>
                             <Input
                                 type="number"
+                                min={0}
+                                step={1000}
                                 value={paymentForm.data.jumlah_bayar}
                                 onChange={(e) =>
                                     paymentForm.setData('jumlah_bayar', Number(e.target.value))

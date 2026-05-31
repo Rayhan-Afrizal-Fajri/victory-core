@@ -10,10 +10,25 @@ import PurchasingSummaryCard from '@/components/purchasings/purchasing-summary-c
 import PurchasingMaterialTable from '@/components/purchasings/purchasing-material-table';
 import PurchasingFormDialog from '@/components/purchasings/purchasing-form-dialog';
 import ReceivingDialog from '@/components/purchasings/receiving-dialog';
+import GenerateBomPoCard from '@/components/purchasings/generate-bom-po-card';
+import EditPoDialog from '@/components/purchasings/edit-po-dialog';
 
 const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
     const workflow = job.workflow_status;
-    const verified = workflow?.production_dp_paid ?? false;
+    const verified = workflow?.sample_paid ?? false;
+
+    const generateBomForm = useForm({
+        sample_qty: 3,
+    });
+
+    const generatePurchasingFromBom = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        generateBomForm.post(`/pesanan/${job.id}/purchasings/generate-from-bom`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Purchasing BOM/PO berhasil digenerate.'),
+        });
+    };
 
     const purchasings = job.purchasings || [];
 
@@ -23,6 +38,35 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     const [openReceiving, setOpenReceiving] = useState(false);
     const [selectedPurchasing, setSelectedPurchasing] = useState<any | null>(null);
+
+    const [editingPo, setEditingPo] = useState<any | null>(null);
+
+    const poForm = useForm({
+       supplier_id: null as number | null,
+       stock_qty: 0,
+       purchase_qty: 0,
+       harga_satuan: 0,
+       notes: '',
+       tgl_pembelian: '', 
+    });
+
+    useEffect(() => {
+        if (editingPo) {
+            poForm.setData({
+                supplier_id: editingPo.supplier_id || null,
+                stock_qty: Number(editingPo.stock_qty || 0),
+                purchase_qty: Number(
+                    editingPo.purchase_qty ||
+                    editingPo.ordered_qty ||
+                    editingPo.qty_bahan ||
+                    0
+                ),
+                harga_satuan: Number(editingPo.harga_satuan || 0),
+                notes: editingPo.notes || '',
+                tgl_pembelian: editingPo.tgl_pembelian || '',
+            })
+        }
+    }, [editingPo?.id]);
 
     const purchasingForm = useForm({
         supplier_id: null as number | null,
@@ -66,7 +110,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     if (!verified) {
         return (
-            <WorkflowGate reason="Pembayaran produksi belum diverifikasi. Purchasing terkunci." />
+            <WorkflowGate reason="Invoice sample belum lunas. Purchasing terkunci." />
         );
     }
 
@@ -118,6 +162,24 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
             },
         });
     };
+
+    const updatePoItem = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editingPo) {
+            toast.error('PO item belum dipilih.');
+            return;
+        }
+
+        poForm.patch(`/purchasings/${editingPo.id}/po`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('PO item berhasil diperbarui.');
+                setEditingPo(null);
+                poForm.reset();
+            },
+        });
+    }
 
     const deletePurchasing = (purchasing: any) => {
         if (!confirm('Hapus material purchasing ini?')) return;
@@ -176,16 +238,41 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
         <div className="space-y-6">
             <DesignSpecsReferenceCard job={job} />
 
-            <PurchasingSummaryCard purchasings={purchasings} />
+            {purchasings.length === 0 ? (
+                <GenerateBomPoCard
+                    job={job}
+                    form={generateBomForm}
+                    onSubmit={generatePurchasingFromBom}
+                />
+            ) : (
+                <>
+                    <PurchasingSummaryCard purchasings={purchasings} />
 
-            <PurchasingMaterialTable
-                purchasings={purchasings}
-                onCreate={openCreatePurchasing}
-                onEdit={openEditPurchasing}
-                onDelete={deletePurchasing}
-                onMarkOrdered={markOrdered}
-                onReceive={openReceiveMaterial}
-                onDeleteReceiving={deleteReceiving}
+                    <PurchasingMaterialTable
+                        purchasings={purchasings}
+                        onCreate={openCreatePurchasing}
+                        onEditManual={openEditPurchasing}
+                        onEditPo={setEditingPo}
+                        onDelete={deletePurchasing}
+                        onMarkOrdered={markOrdered}
+                        onReceive={openReceiveMaterial}
+                        onDeleteReceiving={deleteReceiving}
+                    />
+                </>
+            )}
+
+            <EditPoDialog
+                open={Boolean(editingPo)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setEditingPo(null);
+                        poForm.reset();
+                    }
+                }}
+                purchasing={editingPo}
+                form={poForm}
+                suppliers={suppliers}
+                onSubmit={updatePoItem}
             />
 
             <PurchasingFormDialog

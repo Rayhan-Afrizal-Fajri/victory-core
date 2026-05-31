@@ -107,27 +107,51 @@ class PaymentController extends Controller
 
     private function handleSamplePaymentVerified(Invoice $invoice, bool $invoicePaid): void
     {
-        $sample = $invoice->sample;
+        $pesanan = $invoice->pesanan;
 
-        if (! $sample || ! $invoicePaid) {
+        if (!$pesanan) {
             return;
         }
 
-        $sample->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
+        DB::transaction(function () use ($pesanan, $invoice, $invoicePaid) {
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                [
+                    'sample_invoice_created' => true,
+                    'sample_paid' => $invoicePaid,
+                ]
+            );
 
-        $sample->pesanan->workflowStatus()->update([
-            'sample_paid' => true,
-        ]);
+            $pesanan->invoices()->where('id', $invoice->id)->update([
+                'status_tagihan' => $invoicePaid ? 'paid' : 'partially_paid',
+            ]);
 
-        $sample->pesanan->workflowHistory()->create([
-            'step' => 'sample',
-            'action' => 'payment_verified',
-            'user_id' => Auth::user()->id,
-            'notes' => 'Pembayaran sample telah diverifikasi dan invoice sample lunas',
-        ]);
+            $pesanan->workflowHistory()->create([
+                'step' => 'sample_payment',
+                'action' => $invoicePaid ? 'sample_payment_paid' : 'sample_payment_verified',
+                'user_id' => Auth::user()->id,
+                'notes' => $invoicePaid
+                    ? 'Invoice sample sudah lunas.'
+                    : 'Pembayaran invoice sample telah diverifikasi.',
+            ]);
+
+            // $invoice->update([
+            //     'status_tagihan' => 'paid',
+            // ]);
+
+            // $pesanan->workflowStatus()->update([
+            //     'sample_paid' => true,
+            //     'purchasing' => false,
+            //     'materials_received' => false,
+            // ]);
+
+            // $pesanan->workflowHistory()->create([
+            //     'step' => 'sample',
+            //     'action' => 'payment_verified',
+            //     'user_id' => Auth::user()->id,
+            //     'notes' => 'Invoice sample lunas. Purchasing untuk sample dan production sudah dapat dimulai.',
+            // ]);
+        });
     }
 
     private function handleProductionPaymentVerified(invoice $invoice, float $verifiedTotal, bool $invoicePaid): void
@@ -148,6 +172,10 @@ class PaymentController extends Controller
                 'final_payment_paid' => $invoicePaid,
             ]
         );
+
+        $pesanan->invoices()->where('id', $invoice->id)->update([
+            'status_tagihan' => $invoicePaid ? 'paid' : 'partially_paid',
+        ]);
 
         $pesanan->workflowHistory()->create([
             'step' => 'production_payment',
@@ -185,6 +213,7 @@ class PaymentController extends Controller
             $category = $this->getInvoiceCategory($invoice);
             $verifiedTotal = $this->getVerifiedTotal($invoice);
             $invoicePaid = $this->isInvoicePaid($invoice);
+
 
             if ($category === 'sample') {
                 $this->handleSamplePaymentVerified($invoice, $invoicePaid);

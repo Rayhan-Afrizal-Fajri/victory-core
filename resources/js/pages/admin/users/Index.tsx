@@ -141,27 +141,48 @@ export default function Index({ users, roles }: Props) {
     };
     
     const handleDelete = (user: UserRow) => {
-        const confirmed = window.confirm(
-            `Yakin ingin menghapus user "${user.name}"?`
-        );
+        // const confirmed = window.confirm(
+        //     `Yakin ingin menghapus user "${user.name}"?`
+        // );
 
-        if (!confirmed) {
-return;
-}
+        // if (!confirmed) {
+        //     return;
+        // }
 
-        router.delete(userDestroy(user.id).url, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('User deleted', {
-                    description: "User berhasil dihapus",
-                });
+        // router.delete(userDestroy(user.id).url, {
+        //     preserveScroll: true,
+        //     onSuccess: () => {
+        //         toast.success('User deleted', {
+        //             description: "User berhasil dihapus",
+        //         });
+        //     },
+        //     onError: () => {
+        //         toast.error('User failed deleted', {
+        //             description: "User gagal dihapus",
+        //         });
+        //     }
+        // })
+        toast.warning('Yakin ingin menghapus user?', {
+            description: 'Tindakan ini tidak dapat dibatalkan.',
+            action: {
+                label: 'Hapus',
+                onClick: () => {
+                    router.delete(userDestroy(user.id).url, {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            toast.success('User deleted', {
+                                description: "User berhasil dihapus",
+                            });
+                        },
+                        onError: () => {
+                            toast.error('User failed deleted', {
+                                description: "User gagal dihapus",
+                            });
+                        }
+                    });
+                },
             },
-            onError: () => {
-                toast.error('User failed deleted', {
-                    description: "User gagal dihapus",
-                });
-            }
-        })
+        });
     }
 
     const roleBadge = (role: string) => {

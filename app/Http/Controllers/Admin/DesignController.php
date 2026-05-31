@@ -11,8 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
-// use App\Models\PesananMaterialSpecs;
-// use App\Models\PesananManufacturingSpecs;
 
 class DesignController extends Controller
 {
@@ -101,6 +99,8 @@ class DesignController extends Controller
                 ]
             );
 
+            $pesanan->refresh();
+
             $pesanan->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'approve',
@@ -122,6 +122,7 @@ class DesignController extends Controller
 
         $design = Design::with('pesanan.workflowStatus')->findOrFail($id);
         $pesanan = $design->pesanan;
+
 
         DB::transaction(function () use ($request, $design, $pesanan) {
             if (! in_array($design->status, ['waiting_approval', 'approved'])) {
@@ -190,6 +191,11 @@ class DesignController extends Controller
 
             foreach ($product->productMaterials as $component) {
                 $material = $component->material;
+                
+
+                $totalUsage = $pesanan->q * $component->default_usage;
+                $totalCost = $totalUsage * ($material?->harga_ecer ?? 0);
+                $costPerPcs = $pesanan->q > 0 ? round($totalCost / $pesanan->q, 2) : 0;
 
                 $pesanan->materialSpecs()->create([
                     'product_id' => $product->id,
@@ -210,14 +216,16 @@ class DesignController extends Controller
                     'price_type' => 'ecer',
                     // 'roll_qty' => $material?->roll_qty,
 
-                    'total_usage' => 0,
-                    'total_cost' => 0,
-                    'cost_per_pcs' => 0,
+                    'total_usage' => $totalUsage,
+                    'total_cost' => $totalCost,
+                    'cost_per_pcs' => $costPerPcs,
                 ]);
             }
 
             foreach ($product->productManufacturingWorks as $component) {
                 $work = $component->manufacturingWork;
+
+                $costPerPcs = $component->default_usage * ($work?->default_max_estimate ?? 0);
 
                 $pesanan->manufacturingSpecs()->create([
                     'product_id' => $product->id,
@@ -231,7 +239,7 @@ class DesignController extends Controller
 
                     'min_estimate' => $work?->default_min_estimate ?? 0,
                     'max_estimate' => $work?->default_max_estimate ?? 0,
-                    'cost_per_pcs' => 0,
+                    'cost_per_pcs' => $costPerPcs,
                 ]);
             }
 
@@ -259,8 +267,8 @@ class DesignController extends Controller
         $validated = $request->validate([
             'color' => ['nullable', 'string', 'max:100'],
             'usage' => ['required', 'numeric', 'min:0'],
-            'unit' => ['nullable', 'string', 'max:50'],
-            'usage_per_set' => ['required', 'numeric', 'min:1'],
+            'unit' => ['required', 'string', 'max:50'],
+            'usage_per_set' => ['nullable', 'numeric'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'harga_ecer' => ['required', 'numeric', 'min:0'],
             'harga_roll' => ['required', 'numeric', 'min:0'],
@@ -278,10 +286,9 @@ class DesignController extends Controller
         }
 
         $usage = (float) $validated['usage'];
-        $usagePerSet = (float) $validated['usage_per_set'];
+        // $usagePerSet = (float) $validated['usage_per_set'];
 
-        $usagePerPcs = $usage / $usagePerSet;
-        $totalUsage = $usagePerPcs * $orderQty;
+        $totalUsage = round($usage * $orderQty, 2);
 
         $hargaEcer = (float) $validated['harga_ecer'];
         $hargaRoll = (float) $validated['harga_roll'];
@@ -298,13 +305,15 @@ class DesignController extends Controller
             $totalCost = $totalUsage * $hargaEcer;
         }
 
-        $costPerPcs = $totalCost / $orderQty;
+        $costPerPcs = round($totalCost / $orderQty, 2);
+
+        // dd('penggunaan per pcs:'. $usage, 'order qty: '. $orderQty,'total usage: '. $totalUsage, 'total cost: '. $totalCost, 'cost per pcs: '. $costPerPcs);
 
         $spec->update([
             'color' => $validated['color'] ?? null,
             'usage' => $usage,
             'unit' => $validated['unit'],
-            'usage_per_set' => $usagePerSet,
+            // 'usage_per_set' => $usagePerSet,
             'supplier_id' => $validated['supplier_id'] ?? null,
             'harga_ecer' => $hargaEcer,
             'harga_roll' => $hargaRoll,
@@ -367,5 +376,42 @@ class DesignController extends Controller
         ]);
 
         return back()->with('success', 'Spesifikasi manufaktur berhasil diperbarui.');
+    }
+
+    public function updateOwnerSellingPrice(Request $request, string $pesananId)
+    {
+        $validated = $request->validate([
+            'harga_jual_per_pcs' => ['required', 'numeric', 'min:0'],
+            'estimasi_hpp_per_pcs' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $pesanan = Pesanan::with([
+            'materialSpecs',
+            'manufacturingSpecs',
+            'workflowStatus',
+        ])->findOrFail($pesananId);
+
+        DB::transaction(function () use ($pesanan, $validated) {
+            $pesanan->update([
+                'harga_jual_per_pcs' => $validated['harga_jual_per_pcs'],
+                'estimasi_hpp_per_pcs' => $validated['estimasi_hpp_per_pcs'],
+            ]);
+
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                [
+                    'design_specs_completed' => true,
+                ]
+            );
+
+            $pesanan->workflowHistory()->create([
+                'step' => 'design',
+                'action' => 'owner_selling_price_updated',
+                'user_id' => Auth::id(),
+                'notes' => 'Owner menentukan harga jual final per pcs.',
+            ]);
+        });
+
+        return back()->with('success', 'Harga jual final berhasil disimpan.');
     }
 }

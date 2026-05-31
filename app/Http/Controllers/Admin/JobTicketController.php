@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pesanan;
 use App\Models\Supplier;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -102,8 +103,11 @@ class JobTicketController extends Controller
                 ])->latest();
             },
             'invoices.payments',
-            'purchasing.materialReceiving.checkedBy',
-            'purchasing.supplier',
+            // 'purchasing.materialReceiving.checkedBy',
+            // 'purchasing.supplier',
+            'purchasing' => function ($query) {
+                $query->with('supplier', 'materialReceiving.checkedBy')->latest();
+            },
             'productionProgress',
             'workflowHistory' => function ($query) {
                 $query->with('user')->latest();
@@ -113,6 +117,7 @@ class JobTicketController extends Controller
             'sizeBreakdowns',
             'manufacturingSpecs.vendor',
             'materialSpecs.supplier',
+            'quotations.items',
         ])->findOrFail($id);
 
         $workflowStatus = $pesanan->workflowStatus;
@@ -195,41 +200,42 @@ class JobTicketController extends Controller
             ])->toArray(),
             'purchasings' => $pesanan->purchasing->map(fn ($p) => [
                 'id' => $p->id,
+                'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
 
                 'item' => $p->item_bahan,
-
                 'supplier_id' => $p->supplier_id,
                 'supplier' => $p->supplier ? [
                     'id' => $p->supplier->id,
                     'nama' => $p->supplier->nama ?? null,
                     'nama_perusahaan' => $p->supplier->nama_perusahaan ?? null,
                     'kategori' => $p->supplier->kategori ?? null,
-                    'email' => $p->supplier->email ?? null,
-                    'kontak' => $p->supplier->kontak ?? null,
                     'alamat' => $p->supplier->alamat ?? null,
+                    'kontak' => $p->supplier->kontak ?? null,
                 ] : null,
+
+                'color' => $p->materialSpec?->color,
+                'required_qty' => (float) $p->required_qty,
+                'purchase_qty' => (float) $p->purchase_qty,
+                'stock_qty' => (float) $p->stock_qty,
+                'leftover_qty' => (float) $p->leftover_qty,
 
                 'ordered_qty' => (float) $p->qty_bahan,
                 'received_qty' => (float) $p->materialReceiving->sum('received_qty'),
-                'remaining_qty' => max((float) $p->qty_bahan - (float) $p->materialReceiving->sum('received_qty'), 0),
 
                 'unit' => $p->satuan,
-
                 'harga_satuan' => (float) $p->harga_satuan,
                 'total_harga' => (float) $p->total_harga,
+
+                'notes' => $p->notes,
                 'tgl_pembelian' => $p->tgl_pembelian,
-                'is_received' => (bool) $p->is_received,
                 'status' => $p->status,
 
                 'material_receivings' => $p->materialReceiving->map(fn ($r) => [
                     'id' => $r->id,
                     'qty_received' => (float) $r->received_qty,
+                    'checked_by' => User::find($r->checked_by) ?? null,
                     'received_at' => $r->received_at ?? $r->created_at?->toDateString(),
                     'notes' => $r->notes,
-                    'checked_by' => $r->checkedBy ? [
-                        'id' => $r->checkedBy->id,
-                        'name' => $r->checkedBy->name,
-                    ] : null,
                 ])->toArray(),
             ])->toArray(),
             'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
@@ -287,6 +293,34 @@ class JobTicketController extends Controller
                 'min_estimate' => $spec->min_estimate,
                 'max_estimate' => $spec->max_estimate,
                 'cost_per_pcs' => $spec->cost_per_pcs,
+            ]),
+
+            'quotations' => $pesanan->quotations->sortByDesc('id')->values()->map(fn ($q) => [
+                'id' => $q->id,
+                'quotation_number' => $q->quotation_number,
+                'status' => $q->status,
+                'valid_until' => $q->valid_until?->toDateString(),
+                'payment_terms' => $q->payment_terms,
+                'delivery_terms' => $q->delivery_terms,
+                'notes' => $q->notes,
+                'price_per_pcs' => (float) $q->price_per_pcs,
+                'quantity' => (int) $q->quantity,
+                'subtotal' => (float) $q->subtotal,
+                'tax' => (float) $q->tax,
+                'delivery_cost' => (float) $q->delivery_cost,
+                'grand_total' => (float) $q->grand_total,
+                'approved_at' => $q->approved_at?->toDateTimeString(),
+                'approved_by_name' => $q->approved_by_name,
+                'signature_path' => $q->signature_path,
+                'items' => $q->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'item_name' => $item->item_name,
+                    'fabric' => $item->fabric,
+                    'print_method' => $item->print_method,
+                    'quantity' => $item->quantity,
+                    'price_per_pcs' => (float) $item->price_per_pcs,
+                    'subtotal' => (float) $item->subtotal,
+                ]),
             ]),
         ];
 

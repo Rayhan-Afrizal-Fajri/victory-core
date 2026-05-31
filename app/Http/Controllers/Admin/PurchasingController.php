@@ -21,6 +21,141 @@ class PurchasingController extends Controller
         return Inertia::render('admin/purchasing/Index');
     }
 
+    public function generateFromBom(Request $request, string $pesananId)
+    {
+        $validated = $request->validate([
+            'sample_qty' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $pesanan = Pesanan::with([
+            'workflowStatus',
+            'materialSpecs.supplier',
+            'purchasing',
+        ])->findOrFail($pesananId);
+
+        if (! $pesanan->workflowStatus?->sample_paid) {
+            abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum lunas.');
+        }
+
+        if ($pesanan->purchasing()->exists()) {
+            abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
+        }
+
+        $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
+        $sampleQty = (int) $validated['sample_qty'];
+        $totalPlannedQty = $productionQty + $sampleQty;
+
+        if ($totalPlannedQty <= 0) {
+            abort(422, 'Total quantity belum valid.');
+        }
+
+        DB::transaction(function () use ($pesanan, $totalPlannedQty) {
+            foreach ($pesanan->materialSpecs as $spec) {
+                $usage = (float) $spec->usage;
+                $usagePerSet = (float) ($spec->usage_per_set ?: 1);
+
+                $usagePerPcs = $usage / $usagePerSet;
+                $requiredQty = $usagePerPcs * $totalPlannedQty;
+
+                $purchaseQty = $requiredQty;
+                $stockQty = 0;
+                $leftoverQty = max($purchaseQty + $stockQty - $requiredQty, 0);
+
+                $hargaSatuan = $spec->price_type === 'roll'
+                    ? (float) $spec->harga_roll
+                    : (float) $spec->harga_ecer;
+
+                $totalHarga = $purchaseQty * $hargaSatuan;
+
+                // dd('nama: '.$spec->material_name_snapshot,' required: '.$requiredQty.', purchase: '.$purchaseQty.', stock: '.$stockQty.', leftover: '.$leftoverQty.', harga: '.$hargaSatuan.', total: '.$totalHarga);
+
+                $pesanan->purchasing()->create([
+                    'pesanan_material_spec_id' => $spec->id,
+                    'supplier_id' => $spec->supplier_id,
+
+                    'item_bahan' => $spec->material_name_snapshot,
+                    'qty_bahan' => $requiredQty,
+                    'required_qty' => $requiredQty,
+                    'purchase_qty' => $purchaseQty,
+                    'stock_qty' => $stockQty,
+                    'leftover_qty' => $leftoverQty,
+
+                    'satuan' => $spec->unit,
+                    'harga_satuan' => $hargaSatuan,
+                    'total_harga' => $totalHarga,
+
+                    'is_received' => false,
+                    'status' => 'draft',
+                    'purchase_scope' => 'sample_and_production',
+                    'notes' => null,
+                ]);
+            }
+
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                [
+                    'materials_purchased' => true,
+                    'materials_received' => false,
+                ]
+            );
+
+            $pesanan->workflowHistory()->create([
+                'step' => 'purchasing',
+                'action' => 'generated_from_bom',
+                'user_id' => Auth::id(),
+                'notes' => 'Purchasing digenerate dari BOM untuk kebutuhan sample dan production.',
+            ]);
+        });
+
+        return back()->with('success', 'Purchasing BOM/PO berhasil digenerate.');
+    }
+
+    public function updatePoItem(Request $request, string $purchasingId)
+    {
+        $validated = $request->validate([
+            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'stock_qty' => ['required', 'numeric', 'min:0'],
+            'purchase_qty' => ['required', 'numeric', 'min:0'],
+            'harga_satuan' => ['required', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string'],
+            'tgl_pembelian' => ['nullable', 'date'],
+        ]);
+
+        $purchasing = Purchasing::with('pesanan.workflowStatus')->findOrFail($purchasingId);
+
+        if (in_array($purchasing->status, ['received', 'cancelled'])) {
+            abort(422, 'PO item yang sudah received/cancelled tidak bisa diedit.');
+        }
+
+        $requiredQty = (float) $purchasing->required_qty;
+        $stockQty = (float) $validated['stock_qty'];
+        $purchaseQty = (float) $validated['purchase_qty'];
+
+        $leftoverQty = max(($stockQty + $purchaseQty) - $requiredQty, 0);
+        $totalHarga = $purchaseQty * (float) $validated['harga_satuan'];
+
+        $purchasing->update([
+            'supplier_id' => $validated['supplier_id'] ?? null,
+            'stock_qty' => $stockQty,
+            'purchase_qty' => $purchaseQty,
+            'leftover_qty' => $leftoverQty,
+            'qty_bahan' => $purchaseQty,
+            'harga_satuan' => $validated['harga_satuan'],
+            'total_harga' => $totalHarga,
+            'notes' => $validated['notes'] ?? null,
+            'tgl_pembelian' => $validated['tgl_pembelian'] ?? null,
+        ]);
+
+        $purchasing->pesanan->workflowHistory()->create([
+            'step' => 'purchasing',
+            'action' => 'po_item_updated',
+            'user_id' => Auth::id(),
+            'notes' => "PO item diperbarui: {$purchasing->item_bahan}",
+        ]);
+
+        return back()->with('success', 'PO item berhasil diperbarui.');
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -45,8 +180,8 @@ class PurchasingController extends Controller
 
         $pesanan = Pesanan::with('workflowStatus')->findOrFail($pesananId);
 
-        if (! $pesanan->workflowStatus?->production_dp_paid) {
-            abort(422, 'Purchasing belum bisa dibuat karena DP produksi belum diverifikasi.');
+        if (! $pesanan->workflowStatus?->sample_paid) {
+            abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum diverifikasi.');
         }
 
         DB::transaction(function () use ($request, $pesanan) {
@@ -68,7 +203,7 @@ class PurchasingController extends Controller
             $pesanan->workflowStatus()->updateOrCreate(
                 ['pesanan_id' => $pesanan->id],
                 [
-                    'purchasing' => true,
+                    'materials_purchased' => true,
                     'materials_received' => false,
                     'materials_distributed' => false,
                 ]
@@ -199,6 +334,8 @@ class PurchasingController extends Controller
             'status' => 'ordered',
         ]);
 
+
+
         $purchasing->pesanan->workflowHistory()->create([
             'step' => 'purchasing',
             'action' => 'ordered',
@@ -289,21 +426,18 @@ class PurchasingController extends Controller
         if ($receivedQty <= 0) {
             $status = $purchasing->status === 'draft' ? 'draft' : 'ordered';
             $isReceived = false;
-            $receivedBy = null;
         } elseif ($receivedQty < $qty) {
             $status = 'partial_received';
             $isReceived = false;
-            $receivedBy = Auth::id();
         } else {
             $status = 'received';
             $isReceived = true;
-            $receivedBy = Auth::id();
         }
 
         $purchasing->update([
+            'received_qty' => $receivedQty,
             'status' => $status,
             'is_received' => $isReceived,
-            // 'received_by' => $receivedBy,
         ]);
     }
 
@@ -320,7 +454,7 @@ class PurchasingController extends Controller
         $pesanan->workflowStatus()->updateOrCreate(
             ['pesanan_id' => $pesanan->id],
             [
-                'purchasing' => $hasPurchasing,
+                'materials_purchased' => $hasPurchasing,
                 'materials_received' => $allReceived,
             ]
         );

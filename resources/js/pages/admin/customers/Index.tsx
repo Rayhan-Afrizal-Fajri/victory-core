@@ -102,15 +102,35 @@ export default function Index({ customers }: Props) {
     });
   };
 
-  const handleDeleteCustomer = (customer: CustomerRow) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus customer "${customer.name}"?`)) {
-      return;
-    }
+  // const handleDeleteCustomer = (customer: CustomerRow) => {
+  //   if (!confirm(`Apakah Anda yakin ingin menghapus customer "${customer.name}"?`)) {
+  //     return;
+  //   }
 
-    router.delete(customerDestroy(customer.id).url, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Customer berhasil dihapus');
+  //   router.delete(customerDestroy(customer.id).url, {
+  //     preserveScroll: true,
+  //     onSuccess: () => {
+  //       toast.success('Customer berhasil dihapus');
+  //     },
+  //   });
+  // };
+
+  const handleDeleteCustomer = (customer: CustomerRow) => {
+    //triger warning
+    toast.warning(`Apakah Anda yakin ingin menghapus customer "${customer.name}"?`, {
+      description: 'Data yang dihapus tidak dapat dikembalikan.',
+      //main action
+      action: {
+        label: 'Hapus',
+        onClick: () => {
+          //excecute
+          router.delete(customerDestroy(customer.id).url, {
+            preserveScroll: true,
+            onSuccess: () => {
+              toast.success('Customer berhasil dihapus');
+            },
+          });
+        },
       },
     });
   };

@@ -47,7 +47,7 @@ function MaterialSpecEditDialog({
                         </Field>
 
                         <Field label="Pemakaian" error={form.errors.usage}>
-                            <Input type="number" step="0.0001" value={form.data.usage} onChange={(e) => form.setData('usage', Number(e.target.value))} />
+                            <Input type="number" step="0.01" value={form.data.usage} onChange={(e) => form.setData('usage', Number(e.target.value))} />
                         </Field>
 
                         <Field label="Unit" error={form.errors.unit}>
@@ -56,9 +56,9 @@ function MaterialSpecEditDialog({
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
-                        <Field label="Penggunaan untuk berapa pcs/set" error={form.errors.usage_per_set}>
+                        {/* <Field label="Penggunaan untuk berapa pcs/set" error={form.errors.usage_per_set}>
                             <Input type="number" min={1} value={form.data.usage_per_set} onChange={(e) => form.setData('usage_per_set', Number(e.target.value))} />
-                        </Field>
+                        </Field> */}
 
                         <Field label="Pilihan Harga" error={form.errors.price_type}>
                             <Select value={form.data.price_type} onValueChange={(value) => form.setData('price_type', value)}>
@@ -83,7 +83,7 @@ function MaterialSpecEditDialog({
                         </Field>
 
                         <Field label="Isi Roll" error={form.errors.roll_qty}>
-                            <Input type="number" min={0} step="0.0001" value={form.data.roll_qty ?? ''} onChange={(e) => form.setData('roll_qty', e.target.value ? Number(e.target.value) : null)} placeholder="cth. 40 meter" />
+                            <Input type="number" min={0} step="0.01" value={form.data.roll_qty ?? ''} onChange={(e) => form.setData('roll_qty', e.target.value ? Number(e.target.value) : null)} placeholder="cth. 40 meter" />
                         </Field>
                     </div>
 

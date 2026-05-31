@@ -18,6 +18,9 @@ return new class extends Migration
             $table->boolean('design_uploaded')->default(false);
             $table->boolean('design_approved')->default(false);
 
+            $table->boolean('quotation_created')->default(false);
+            $table->boolean('quotation_approved')->default(false);
+
             $table->boolean('sample_created')->default(false);
             $table->boolean('sample_paid')->default(false);
             $table->boolean('sample_delivered')->default(false);

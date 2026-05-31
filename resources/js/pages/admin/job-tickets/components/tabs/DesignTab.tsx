@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 
 import { store } from '@/routes/designs';
 import { sync } from '@/routes/specifications';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
@@ -24,7 +23,9 @@ import OrderRequestSummaryCard from './OrderRequestSummaryCard';
 import DesignSpecsPreview from './DesignSpecsPreview';
 import MaterialSpecEditDialog from './MaterialSpecEditDialog';
 import ManufacturingSpecEditDialog from './ManufacturingSpecEditDialog';
-import Field from '@/components/sample/field';
+import formatRupiah from '@/components/ui/format-rupiah';
+import { Input } from '@/components/ui/input';
+import QuotationSection from '@/components/designs/quotationSection';
 
 
 const emptySpec = {
@@ -263,18 +264,84 @@ const DesignAndSpecsTab: React.FC<{
         const hasExistingSpecs =
             materialSpecs.length > 0 || manufacturingSpecs.length > 0;
 
-        if (
-            hasExistingSpecs &&
-            !confirm('Sync ulang artikel akan mengganti spesifikasi bahan, aksesoris, dan manufaktur yang sudah ada. Lanjutkan?')
-        ) {
-            return;
+        if (hasExistingSpecs) {
+            toast.warning(`Sync ulang artikel akan mengganti spesifikasi bahan, aksesoris, dan manufaktur yang sudah ada. Lanjutkan?`, {
+                action: {
+                    label: 'Ya, Sync Ulang',
+                    onClick: () => {
+                        syncArticleForm.post(`/pesanan/${job.id}/sync-article`, {
+                            preserveScroll: true,
+                            onSuccess: () => toast.success('Artikel berhasil disinkronkan.'),
+                        });
+                    },
+                },
+            });
+        } else {
+            syncArticleForm.post(`/pesanan/${job.id}/sync-article`, {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Artikel berhasil disinkronkan.'),
+            });
         }
-
-        syncArticleForm.post(`/pesanan/${job.id}/sync-article`, {
-            preserveScroll: true,
-            onSuccess: () => toast.success('Artikel berhasil disinkronkan.'),
-        });
     };
+
+
+    /**
+     * Formula Costing
+     */
+
+    function getRecommendedPrice(cost: number, margin: number) {
+        if (!cost || cost <= 0) return 0;
+
+        return cost / (1 - margin);
+    }
+
+    const orderQty = Number((job as any).quantity || (job as any).q || 0);
+
+    const costingSummary = useMemo(() => {
+        const materialCostPerPcs = materialSpecs.reduce((total: number, item: any) => {
+            return total + Number(item.cost_per_pcs || 0);
+        }, 0);
+
+        const manufacturingCostPerPcs = manufacturingSpecs.reduce((total: number, item: any) => {
+            return total + Number(item.cost_per_pcs || 0);
+        }, 0);
+
+        const hppPerPcs = materialCostPerPcs + manufacturingCostPerPcs;
+
+        return {
+            materialCostPerPcs,
+            manufacturingCostPerPcs,
+            hppPerPcs,
+            totalHpp: hppPerPcs * orderQty,
+            recommendations: {
+                25: getRecommendedPrice(hppPerPcs, 0.25),
+                30: getRecommendedPrice(hppPerPcs, 0.30),
+                35: getRecommendedPrice(hppPerPcs, 0.35),
+                40: getRecommendedPrice(hppPerPcs, 0.40),
+            },
+        };
+    }, [materialSpecs, manufacturingSpecs, orderQty]);
+
+    const ownerPriceForm = useForm({
+        harga_jual_per_pcs: Number((job as any).price_per_piece || 0),
+        estimasi_hpp_per_pcs: 0,
+    });
+
+    useEffect(() => {
+        ownerPriceForm.setData({
+            harga_jual_per_pcs: Number((job as any).price_per_piece || 0),
+            estimasi_hpp_per_pcs: costingSummary.hppPerPcs,
+        });
+    }, [(job as any).price_per_piece, costingSummary.hppPerPcs]);
+
+    const submitOwnerPrice = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        ownerPriceForm.patch(`/pesanan/${job.id}/owner-selling-price`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Harga jual final berhasil disimpan.'),
+        });
+    };    
 
     return (
         <div className="space-y-8">
@@ -560,14 +627,196 @@ const DesignAndSpecsTab: React.FC<{
                 </form>
             </SectionCard>
 
-            <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
+            {materialSpecs.length === 0 && manufacturingSpecs.length === 0 ? (
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-500">
+                    Belum ada spesifikasi bahan atau manufaktur. Sync artikel master untuk mengisi data spesifikasi, atau tambahkan spesifikasi secara manual.
+                </div>
+            ): (
+                <>
+                    <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
+                    <CostingSummaryCard
+                        orderQty={orderQty}
+                        summary={costingSummary}
+                        form={ownerPriceForm}
+                        onSubmit={submitOwnerPrice}
+                    />
+                </>
+            )}
 
             <MaterialSpecEditDialog open={Boolean(editingMaterialSpec)} onOpenChange={(open) => { if (!open) setEditingMaterialSpec(null); }} spec={editingMaterialSpec} form={materialSpecForm} suppliers={suppliers} onSubmit={updateMaterialSpec} />
-
             <ManufacturingSpecEditDialog open={Boolean(editingManufacturingSpec)} onOpenChange={(open) => { if (!open) setEditingManufacturingSpec(null); }} spec={editingManufacturingSpec} form={manufacturingSpecForm} suppliers={suppliers} onSubmit={updateManufacturingSpec} />
+
+            {selectedProduct && (
+                <QuotationSection
+                    job={job}
+                    quotations={(job as any).quotations || []}
+                />
+            )}
         </div>
     );
 };
 
 
 export default DesignAndSpecsTab;
+
+function CostingSummaryCard({
+    orderQty,
+    summary,
+    form,
+    onSubmit,
+}: {
+    orderQty: number;
+    summary: any;
+    form: any;
+    onSubmit: (e: React.FormEvent) => void;
+}) {
+    const ownerPrice = Number(form.data.harga_jual_per_pcs || 0);
+    const profitPerPcs = Math.max(ownerPrice - summary.hppPerPcs, 0);
+    const totalSelling = ownerPrice * orderQty;
+    const totalProfit = profitPerPcs * orderQty;
+    const margin =
+        ownerPrice > 0
+            ? ((ownerPrice - summary.hppPerPcs) / ownerPrice) * 100
+            : 0;
+
+    return (
+        <SectionCard title="Costing Summary & Rekomendasi Harga Jual per pcs">
+            <div className="grid gap-4 md:grid-cols-4">
+                <SummaryBox
+                    label="Bahan / pcs"
+                    value={formatRupiah(summary.materialCostPerPcs)}
+                />
+                <SummaryBox
+                    label="Manufaktur / pcs"
+                    value={formatRupiah(summary.manufacturingCostPerPcs)}
+                />
+                <SummaryBox
+                    label="Modal / HPP per pcs"
+                    value={formatRupiah(summary.hppPerPcs)}
+                />
+                <SummaryBox
+                    label="Total Modal"
+                    value={formatRupiah(summary.totalHpp)}
+                />
+            </div>
+
+            <div className="mt-5 rounded-2xl border bg-slate-50 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Rekomendasi Harga Jual
+                </p>
+
+                <div className="grid gap-3 md:grid-cols-4">
+                    {[25, 30, 35, 40].map((margin) => (
+                        <button
+                            key={margin}
+                            type="button"
+                            onClick={() =>
+                                form.setData(
+                                    'harga_jual_per_pcs',
+                                    Math.ceil(summary.recommendations[margin] || 0)
+                                )
+                            }
+                            className="rounded-xl border bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50"
+                        >
+                            <p className="text-xs text-slate-500">
+                                Margin {margin}%
+                            </p>
+                            <p className="mt-1 text-lg font-bold text-slate-900">
+                                {formatRupiah(summary.recommendations[margin] || 0)}
+                            </p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <form onSubmit={onSubmit} className="mt-5 space-y-4 rounded-2xl border bg-white p-4">
+                <div>
+                    <p className="font-semibold text-slate-900">
+                        Harga Jual Final Owner
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                        Harga ini akan digunakan untuk generate surat penawaran.
+                    </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-700">
+                            Harga Jual / pcs
+                        </label>
+                        <Input
+                            type="number"
+                            min={0}
+                            step={1000}
+                            value={form.data.harga_jual_per_pcs}
+                            onChange={(e) =>
+                                form.setData(
+                                    'harga_jual_per_pcs',
+                                    Number(e.target.value)
+                                )
+                            }
+                        />
+                        {form.errors.harga_jual_per_pcs && (
+                            <p className="text-xs text-red-500">
+                                {form.errors.harga_jual_per_pcs}
+                            </p>
+                        )}
+                    </div>
+
+                    <SummaryBox
+                        label="Estimasi Margin"
+                        value={`${Math.max(margin, 0).toFixed(1)}%`}
+                        danger={margin < 25}
+                    />
+
+                    <SummaryBox
+                        label="Profit / pcs"
+                        value={formatRupiah(profitPerPcs)}
+                    />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                    <SummaryBox
+                        label="Total Penawaran"
+                        value={formatRupiah(totalSelling)}
+                    />
+                    <SummaryBox
+                        label="Estimasi Total Profit"
+                        value={formatRupiah(totalProfit)}
+                    />
+                </div>
+
+                <div className="flex justify-end border-t pt-4">
+                    <Button type="submit" disabled={form.processing}>
+                        Simpan Harga Jual Final
+                    </Button>
+                </div>
+            </form>
+        </SectionCard>
+    );
+}
+
+function SummaryBox({
+    label,
+    value,
+    danger = false,
+}: {
+    label: string;
+    value: React.ReactNode;
+    danger?: boolean;
+}) {
+    return (
+        <div className="rounded-xl border bg-white p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {label}
+            </p>
+            <p
+                className={`mt-1 text-lg font-bold ${
+                    danger ? 'text-red-500' : 'text-slate-900'
+                }`}
+            >
+                {value}
+            </p>
+        </div>
+    );
+}

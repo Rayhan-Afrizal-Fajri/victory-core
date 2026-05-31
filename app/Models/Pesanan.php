@@ -114,5 +114,15 @@ class Pesanan extends Model
     {
         return $this->hasMany(PesananManufacturingSpecs::class);
     }
+
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class);
+    }
+
+    public function latestQuotation()
+    {
+        return $this->hasOne(Quotation::class, 'pesanan_id')->latestOfMany();
+    }
     
 }

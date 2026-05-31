@@ -12,6 +12,9 @@ class WorkflowStatus extends Model
         'design_uploaded',
         'design_approved',
 
+        'quotation_created',
+        'quotation_approved',
+
         'sample_created',
         'sample_paid',
         'sample_delivered',

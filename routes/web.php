@@ -20,6 +20,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductManufacturingWorkController;
 use App\Http\Controllers\ProductMaterialController;
+use App\Http\Controllers\Admin\QuotationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -99,6 +100,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/design-manufacturing-specs/{spec}', [DesignController::class, 'updateManufacturingSpec'])
         ->name('design-manufacturing-specs.update');
 
+    Route::patch('/pesanan/{pesanan}/owner-selling-price', [DesignController::class, 'updateOwnerSellingPrice'])
+        ->name('designs.owner-selling-price');
+
+    /**
+     * Quotations
+     */
+
+    Route::post('/pesanan/{pesanan}/quotations/generate', [QuotationController::class, 'generate'])
+        ->name('quotations.generate');
+
+    Route::patch('/quotations/{quotation}', [QuotationController::class, 'update'])
+        ->name('quotations.update');
+
+    Route::patch('/quotations/{quotation}/approve', [QuotationController::class, 'approve'])
+        ->name('quotations.approve');
+
+    Route::patch('/quotations/{quotation}/reject', [QuotationController::class, 'reject'])
+        ->name('quotations.reject');
+
+    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])
+        ->name('quotations.print');
+
+    Route::delete('/quotations/{quotation}', [QuotationController::class, 'destroy'])
+        ->name('quotations.destroy');
+
+    
+
     /**
      * Samples
      */
@@ -171,6 +199,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Purchasing
      */
+    Route::post('/pesanan/{pesanan}/purchasings/generate-from-bom', [PurchasingController::class, 'generateFromBom'])
+    ->name('purchasings.generate-from-bom');
+
+    Route::patch('/purchasings/{purchasing}/po', [PurchasingController::class, 'updatePoItem'])
+        ->name('purchasings.update-po-item');
+
     Route::get('/purchasings', [PurchasingController::class, 'index'])
     ->name('purchasings.index');
 

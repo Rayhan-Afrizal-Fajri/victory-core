@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('quotation_items', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('quotation_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->string('item_name');
+            $table->string('fabric')->nullable();
+            $table->string('print_method')->nullable();
+
+            $table->integer('quantity')->default(0);
+            $table->decimal('price_per_pcs', 15, 2)->default(0);
+            $table->decimal('subtotal', 15, 2)->default(0);
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('quotation_items');
+    }
+};

@@ -25,11 +25,13 @@ import {
     purchasingStatusClass,
     getSupplierName,
 } from './purchasing-utils';
+import { formatCurrency, formatDecimal } from '@/helpers/format';
 
 const PurchasingMaterialTable = ({
     purchasings,
     onCreate,
-    onEdit,
+    onEditPo,
+    onEditManual,
     onDelete,
     onMarkOrdered,
     onReceive,
@@ -37,7 +39,8 @@ const PurchasingMaterialTable = ({
 }: {
     purchasings: any[];
     onCreate: () => void;
-    onEdit: (purchasing: any) => void;
+    onEditPo: (purchasing: any) => void;
+    onEditManual: (purchasing: any) => void;
     onDelete: (purchasing: any) => void;
     onMarkOrdered: (purchasing: any) => void;
     onReceive: (purchasing: any) => void;
@@ -48,7 +51,7 @@ const PurchasingMaterialTable = ({
             <div className="mb-4 flex justify-end">
                 <Button type="button" onClick={onCreate}>
                     <PlusCircle className="size-4" />
-                    Tambah Material
+                    Tambah Item Manual
                 </Button>
             </div>
 
@@ -65,6 +68,7 @@ const PurchasingMaterialTable = ({
                         const remainingQty = getRemainingQty(item);
                         const progress = getReceivingProgress(item);
                         const receivings = getReceivings(item);
+                        const isGeneratedFromBom = Boolean(item.pesanan_material_spec_id);
 
                         return (
                             <div key={item.id} className="rounded-2xl border bg-white p-4">
@@ -83,6 +87,15 @@ const PurchasingMaterialTable = ({
                                             >
                                                 {getPurchasingStatusLabel(item.status)}
                                             </Badge>
+                                            <Badge
+                                                className={
+                                                    isGeneratedFromBom
+                                                        ? 'border-blue-200 bg-blue-100 text-blue-700'
+                                                        : 'border-slate-200 bg-slate-100 text-slate-700'
+                                                }
+                                            >
+                                                {isGeneratedFromBom ? 'BOM' : 'Manual'}
+                                            </Badge>
                                         </div>
 
                                         <p className="mt-1 text-xs text-slate-500">
@@ -100,10 +113,17 @@ const PurchasingMaterialTable = ({
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => onEdit(item)}
+                                                onClick={() => {
+                                                    if (isGeneratedFromBom) {
+                                                        onEditPo(item);
+                                                        return;
+                                                    }
+
+                                                    onEditManual(item);
+                                                }}
                                             >
                                                 <Edit className="size-4" />
-                                                Edit
+                                                {isGeneratedFromBom ? 'Edit PO' : 'Edit Manual'}
                                             </Button>
                                         )}
 
@@ -145,15 +165,36 @@ const PurchasingMaterialTable = ({
                                     </div>
                                 </div>
 
-                                <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                    <InfoBox label="Qty Order" value={`${item.ordered_qty} ${item.unit}` || ''} />
-                                    <InfoBox label="Received" value={`${receivedQty} ${item.unit}`} />
+                                <div className="mt-4 grid gap-3 md:grid-cols-6">
                                     <InfoBox
-                                        label="Sisa"
-                                        value={`${remainingQty} ${item.unit}`}
-                                        danger={remainingQty > 0}
+                                        label="Required"
+                                        value={`${formatDecimal(item.required_qty || item.ordered_qty || 0)} ${item.unit || ''}`}
                                     />
-                                    <InfoBox label="Total Harga" value={formatRupiah(item.total_harga || 0)} />
+
+                                    <InfoBox
+                                        label="Stock"
+                                        value={`${formatDecimal(item.stock_qty || 0)} ${item.unit || ''}`}
+                                    />
+
+                                    <InfoBox
+                                        label="Purchase"
+                                        value={`${formatDecimal(item.purchase_qty || item.ordered_qty || 0)} ${item.unit || ''}`}
+                                    />
+
+                                    <InfoBox
+                                        label="Leftover"
+                                        value={`${formatDecimal(item.leftover_qty || 0)} ${item.unit || ''}`}
+                                    />
+
+                                    <InfoBox
+                                        label="Received"
+                                        value={`${formatDecimal(receivedQty)} ${item.unit || ''}`}
+                                    />
+
+                                    <InfoBox
+                                        label="Total"
+                                        value={formatCurrency(item.total_harga || 0)}
+                                    />
                                 </div>
 
                                 <div className="mt-4">

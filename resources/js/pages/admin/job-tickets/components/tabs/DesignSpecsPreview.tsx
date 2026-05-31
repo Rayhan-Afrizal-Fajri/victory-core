@@ -20,9 +20,15 @@ function DesignSpecsPreview({
 
     return (
         <div className="space-y-4">
-            <SpecSection title="Bahan" items={bahan} onEdit={onEditMaterial} />
-            <SpecSection title="Aksesoris" items={aksesoris} onEdit={onEditMaterial} />
-            <ManufacturingSection items={manufacturingSpecs} onEdit={onEditManufacturing}/>
+            {bahan && (
+                <SpecSection title="Bahan" items={bahan} onEdit={onEditMaterial} />
+            )}
+            {aksesoris && (
+                <SpecSection title="Aksesoris" items={aksesoris} onEdit={onEditMaterial} />
+            )}
+            {manufacturingSpecs && (
+                <ManufacturingSection items={manufacturingSpecs} onEdit={onEditManufacturing}/>
+            )}
         </div>
     );
 }

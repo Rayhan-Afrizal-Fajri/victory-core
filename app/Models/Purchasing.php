@@ -8,9 +8,14 @@ class Purchasing extends Model
 {
     protected $fillable = [
         'pesanan_id',
+        'pesanan_material_spec_id',
         'supplier_id',
         'item_bahan',
         'qty_bahan',
+        'required_qty',
+        'purchase_qty',
+        'stock_qty',
+        'leftover_qty',
         'satuan',
         'harga_satuan',
         'total_harga',
@@ -18,6 +23,8 @@ class Purchasing extends Model
         'tgl_pembelian',
         'received_by',
         'status',
+        'purchase_scope',
+        'notes',
     ];
 
     protected $appends = [
@@ -44,6 +51,11 @@ class Purchasing extends Model
     public function materialReceiving()
     {
         return $this->materialReceivings();
+    }
+
+    public function pesananMaterialSpec()
+    {
+        return $this->belongsTo(PesananMaterialSpecs::class, 'pesanan_material_spec_id');
     }
 
     public function getReceivedQtyAttribute()

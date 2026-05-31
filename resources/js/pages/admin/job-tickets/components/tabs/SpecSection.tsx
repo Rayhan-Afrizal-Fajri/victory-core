@@ -1,12 +1,13 @@
 import React from 'react';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/button';
+import { formatCurrency, formatDecimal } from '@/helpers/format';
 
 // Renders a specification table for materials or accessories with an Edit action.
 function SpecSection({ title, items, onEdit }: { title: string; items: any[]; onEdit: (spec: any) => void }) {
     return (
         <SectionCard title={title}>
-            {items.length === 0 ? (
+            {items && items.length === 0 ? (
                 <p className="text-sm text-slate-500">
                     Belum ada data {title.toLowerCase()}. Sync artikel terlebih dahulu.
                 </p>
@@ -31,13 +32,13 @@ function SpecSection({ title, items, onEdit }: { title: string; items: any[]; on
                                 <tr key={item.id} className="border-b">
                                     <td className="py-2 font-medium">{item.material_name}</td>
                                     <td className="py-2">{item.color || '-'}</td>
-                                    <td className="py-2">{item.usage}</td>
+                                    <td className="py-2">{formatDecimal(item.usage || 0)}</td>
                                     <td className="py-2">{item.unit || '-'}</td>
                                     <td className="py-2">{item.supplier || '-'}</td>
-                                    <td className="py-2">{Number(item.harga_ecer || 0).toLocaleString('id-ID')}</td>
-                                    <td className="py-2">{Number(item.harga_roll || 0).toLocaleString('id-ID')}</td>
+                                    <td className="py-2">{formatCurrency(item.harga_ecer || 0)}</td>
+                                    <td className="py-2">{formatCurrency(item.harga_roll || 0   )}</td>
                                     <td className="py-2">{item.price_type || '-'}</td>
-                                    <td className="py-2 text-right">{Number(item.cost_per_pcs || 0).toLocaleString('id-ID')}</td>
+                                    <td className="py-2 text-right">{formatCurrency(item.cost_per_pcs || 0)}</td>
                                     <td className="py-2 text-right">
                                         <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)}>
                                             Edit

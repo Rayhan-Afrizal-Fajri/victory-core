@@ -83,6 +83,14 @@ export default function Index({ nextJobTicket, customers }: Props) {
       { ...emptySizeRow },
     ]);
   };
+  
+  const isSizeBreakdownEmpty = useMemo(() => {
+    return (
+      form.data.size_breakdowns.length === 1 &&
+      !form.data.size_breakdowns[0].color &&
+      !form.data.size_breakdowns[0].size_label
+    );
+  }, [form.data.size_breakdowns]);
 
   const handleRemoveSize = (index: number) => {
     const nextRows = form.data.size_breakdowns.filter((_, i) => i !== index);
@@ -160,9 +168,18 @@ export default function Index({ nextJobTicket, customers }: Props) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!sizeQtyIsValid) {
+    // HANYA blokir jika size breakdown diisi, TETAPI qty-nya tidak match
+    if (!isSizeBreakdownEmpty && !sizeQtyIsValid) {
+      // (Opsional) Kamu bisa menambahkan toast.error('Total size tidak sesuai') di sini
       return;
     }
+
+    // Gunakan transform untuk membersihkan data sebelum dikirim
+    form.transform((data) => ({
+      ...data,
+      // Jika kosong, kirim array kosong agar backend tidak menerima data default
+      size_breakdowns: isSizeBreakdownEmpty ? null : data.size_breakdowns,
+    }));
 
     form.post(store().url, {
       preserveScroll: true,
@@ -300,13 +317,14 @@ export default function Index({ nextJobTicket, customers }: Props) {
 
             <div
               className={`rounded-md border p-3 text-sm ${
-                sizeQtyIsValid
+                isSizeBreakdownEmpty || sizeQtyIsValid
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : 'border-amber-200 bg-amber-50 text-amber-700'
               }`}
             >
-              Total size breakdown: <strong>{totalSizeQty}</strong> /{' '}
+              Total size breakdown: <strong>{isSizeBreakdownEmpty ? 0 : totalSizeQty}</strong> /{' '}
               <strong>{form.data.q || 0}</strong>
+              {isSizeBreakdownEmpty && <span className="ml-2 italic opacity-80">(Opsional)</span>}
             </div>
 
             {form.errors.size_breakdowns && (
@@ -352,8 +370,8 @@ export default function Index({ nextJobTicket, customers }: Props) {
               <SummaryItem label="Total Size" value={`${totalSizeQty} pcs`} />
               <SummaryItem
                 label="Validasi Size"
-                value={sizeQtyIsValid ? 'Sesuai' : 'Belum sesuai'}
-                success={sizeQtyIsValid}
+                value={isSizeBreakdownEmpty ? 'Opsional (Kosong)' : sizeQtyIsValid ? 'Sesuai' : 'Belum sesuai'}
+                success={isSizeBreakdownEmpty ? true : sizeQtyIsValid}
               />
               <SummaryItem
                 label="Sisa Hari"

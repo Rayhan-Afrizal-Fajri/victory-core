@@ -8,12 +8,17 @@ export function getReceivedQty(purchasing: any) {
     }
 
     return getReceivings(purchasing).reduce((total: number, item: any) => {
-        return total + Number(item.qty_received || 0);
+        return total + Number(item.qty_received || item.received_qty || item.received_qty || 0);
     }, 0);
 }
 
 export function getOrderedQty(purchasing: any) {
-    return Number(purchasing.ordered_qty || 0);
+    return Number(
+        purchasing.purchase_qty ??
+        purchasing.ordered_qty ??
+        purchasing.qty_bahan ??
+        0
+    );
 }
 
 export function getRemainingQty(purchasing: any) {

@@ -74,18 +74,20 @@ class OrderEntryController extends Controller
             'deadline' => ['required', 'date'],
             'customer_notes' => ['nullable', 'string'],
 
-            'size_breakdowns' => ['required', 'array', 'min:1'],
+            'size_breakdowns' => ['nullable', 'array'],
             'size_breakdowns.*.color' => ['nullable', 'string', 'max:100'],
-            'size_breakdowns.*.size_label' => ['required', 'string', 'max:50'],
-            'size_breakdowns.*.qty' => ['required', 'integer', 'min:1'],
+            'size_breakdowns.*.size_label' => ['nullable', 'string', 'max:50'],
+            'size_breakdowns.*.qty' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $totalSizeQty = collect($validated['size_breakdowns'])->sum('qty');
+        if (!empty($validated['size_breakdowns'])) {
+            $totalSizeQty = collect($validated['size_breakdowns'])->sum('qty');
 
-        if ($totalSizeQty !== (int) $validated['q']) {
-            throw ValidationException::withMessages([
-                'size_breakdowns' => 'Total size breakdown harus sama dengan quantity order.',
-            ]);
+            if ($totalSizeQty !== (int) $validated['q']) {
+                throw ValidationException::withMessages([
+                    'size_breakdowns' => 'Total size breakdown harus sama dengan quantity order.',
+                ]);
+            }
         }
 
         $customer = Customer::findOrFail($validated['customer_id']);
@@ -113,13 +115,14 @@ class OrderEntryController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            foreach ($validated['size_breakdowns'] as $index => $row) {
-                $pesanan->sizeBreakdowns()->create([
-                    'color' => $row['color'] ?? null,
-                    'size_label' => $row['size_label'],
-                    'qty' => $row['qty'],
-                    'sort_order' => $index,
-                ]);
+            if (!empty($validated['size_breakdowns'])) {
+                foreach ($validated['size_breakdowns'] as $sizeBreakdown) {
+                    $pesanan->orderSpecification()->create([
+                        'type' => 'size_breakdown',
+                        'key' => $sizeBreakdown['color'] . ' - ' . $sizeBreakdown['size_label'],
+                        'value' => (string) $sizeBreakdown['qty'],
+                    ]);
+                }
             }
 
             $pesanan->workflowStatus()->updateOrCreate(

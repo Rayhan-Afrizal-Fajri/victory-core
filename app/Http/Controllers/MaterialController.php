@@ -6,7 +6,6 @@ use App\Http\Requests\StoreMaterialRequest;
 use App\Http\Requests\UpdateMaterialRequest;
 use App\Models\Material;
 use App\Models\Supplier;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class MaterialController extends Controller
@@ -30,6 +29,7 @@ class MaterialController extends Controller
             'name' => $material->name,
             'category' => $material->category,
             'unit' => $material->unit,
+            // 'default_usage' => $material->productMaterials,
             'supplier_id' => $material->default_supplier_id,
             'supplier_name' => $material->defaultSupplier?->nama_perusahaan,
             'harga_ecer' => (float) $material->harga_ecer,

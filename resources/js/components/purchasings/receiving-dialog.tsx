@@ -38,7 +38,7 @@ const ReceivingDialog = ({
                 <DialogHeader>
                     <DialogTitle>Receive Material</DialogTitle>
                     <DialogDescription>
-                        Catat material yang diterima dari supplier.
+                        Catat bahan yang diterima untuk kebutuhan sample dan production.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -46,7 +46,7 @@ const ReceivingDialog = ({
                     <div className="rounded-2xl border bg-slate-50 p-4">
                         <p className="text-xs text-slate-500">Material</p>
                         <p className="mt-1 font-semibold text-slate-900">
-                            {purchasing.item_bahan}
+                            {purchasing.item || purchasing.item_bahan}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
                             Sisa: {remainingQty} {purchasing.unit}

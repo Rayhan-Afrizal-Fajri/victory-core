@@ -18,7 +18,7 @@ const PurchasingSummaryCard = ({ purchasings }: { purchasings: any[] }) => {
     }).length;
 
     const totalQty = purchasings.reduce((total, item) => {
-        return total + Number(item.qty_bahan || 0);
+        return total + Number(item.purchase_qty || item.ordered_qty || item.qty_bahan || 0);
     }, 0);
 
     const totalReceivedQty = purchasings.reduce((total, item) => {

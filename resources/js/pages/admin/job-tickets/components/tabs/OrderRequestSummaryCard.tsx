@@ -21,10 +21,12 @@ function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakd
                     value={`${job.quantity || job.q || 0} pcs`}
                 />
                 <InfoBox label="Deadline" value={job.deadline || '-'} />
-                <InfoBox
-                    label="Total Size Breakdown"
-                    value={`${totalSize} pcs`}
-                />
+                {totalSize > 0 && (
+                    <InfoBox
+                        label="Total Size Breakdown"
+                        value={`${totalSize} pcs`}
+                    />
+                )}
             </div>
 
             {sizeBreakdowns.length > 0 && (

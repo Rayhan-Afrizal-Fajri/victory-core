@@ -276,6 +276,7 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                             <InvoiceCard
                                 key={invoice.id}
                                 invoice={invoice}
+                                // remainingPayment={getRemainingPayment(invoice)}
                                 onDetail={openDetail}
                                 onPay={openPayment}
                                 onEdit={openEditInvoice}
