@@ -194,7 +194,11 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     }
     
     const workflow = job.workflow_status;
-    console.log('ProductionRunBoard', { job, run, workflow });
+    
+    const isFinalPaymentPaid =
+        workflow?.final_payment_paid === true ||
+        workflow?.final_payment_paid === 1 ||
+        workflow?.final_payment_paid === '1';
 
     const processes = run.processes || [];
     const allQcPassed =
@@ -202,7 +206,13 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
         processes.every((process: any) => process.status === 'completed' && process.qc_status === 'passed');
 
     const canPacking = allQcPassed && !run.packing_completed;
-    const canDelivery = run.packing_completed && !['in_delivery', 'delivered', 'approved'].includes(run.status) && workflow.final_payment_paid !== false;
+    const canDelivery =
+        run.packing_completed &&
+        !['in_delivery', 'delivered', 'approved'].includes(run.status) &&
+        (
+            runType === 'sample' ||
+            isFinalPaymentPaid
+        );
     const canMarkDelivered = run.status === 'in_delivery';
     const canReview = run.status === 'delivered';
 
@@ -264,7 +274,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
             </SectionCard>
 
             <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
-                {canDelivery !== 0 && workflow.final_payment_paid !== false && (
+                {canDelivery && (
                     <form onSubmit={submitDelivery} className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Courier" error={deliveryForm.errors.courier_name}>
