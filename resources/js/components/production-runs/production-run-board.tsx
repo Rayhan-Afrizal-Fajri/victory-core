@@ -336,7 +336,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
 
                 {!canDelivery && !canMarkDelivered && !['delivered', 'approved'].includes(run.status) && (
                     <p className="text-sm text-slate-500">
-                        Delivery bisa dilakukan setelah packing selesai.
+                        Delivery bisa dilakukan setelah packing selesai{runType === 'production' ? ' dan pembayaran final dilakukan' : ''}.
                     </p>
                 )}
             </SectionCard>
