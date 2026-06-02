@@ -192,6 +192,8 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
         if (!word) return "";
         return word.charAt(0).toUpperCase() + word.slice(1);
     }
+    
+    const workflow = job.workflow_status;
 
     const processes = run.processes || [];
     const allQcPassed =
@@ -199,7 +201,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
         processes.every((process: any) => process.status === 'completed' && process.qc_status === 'passed');
 
     const canPacking = allQcPassed && !run.packing_completed;
-    const canDelivery = run.packing_completed && !['in_delivery', 'delivered', 'approved'].includes(run.status);
+    const canDelivery = run.packing_completed && !['in_delivery', 'delivered', 'approved'].includes(run.status) && workflow.final_payment_paid !== false;
     const canMarkDelivered = run.status === 'in_delivery';
     const canReview = run.status === 'delivered';
 
