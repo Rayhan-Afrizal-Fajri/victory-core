@@ -7,6 +7,7 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import jobTickets from '@/routes/job-tickets';
 import StatusBadge from './components/StatusBadge';
+import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/job-tickets/utils';
 
 type Props = { 
     pesanan?: JobTicket;
@@ -71,15 +72,19 @@ Show.layout = (page: React.ReactElement<Props>) => {
 
     const noJobTicket =
         pesanan?.order_number || 'Detail Tiket';
-    
-    const progress =
-        pesanan?.productionProgress?.percent ??
-        (pesanan as any)?.progressPercent ?? 0;
+
+    const workflow = (pesanan as any)?.workflow_status || null;
+
+    const workflowProgress = getWorkflowProgress(workflow);
+
+    const progress = workflowProgress.percent;
 
     const priority =
         pesanan?.productionProgress?.prioritas ??
         (pesanan as any)?.priority ??
         'Normal';
+
+    const status = getJobStatusFromWorkflow(workflow);
 
     return (
         <AppLayout
@@ -102,22 +107,54 @@ Show.layout = (page: React.ReactElement<Props>) => {
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <div className="text-sm text-gray-500">Deadline</div>
-                        <div className="font-medium">{pesanan?.deadline ?? '—'}</div>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-sm text-gray-500">Progress</div>
-                        <div className="w-40 bg-gray-100 rounded-full h-3 overflow-hidden">
-                        <div className="h-3 bg-green-500" style={{ width: `${progress}%` }} />
+                        <div className="font-medium">
+                            {pesanan?.deadline ?? '—'}
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">{progress}%</div>
                     </div>
+
+                    <div className="text-right">
+                        <div className="text-sm text-gray-500">
+                            Progress
+                        </div>
+
+                        <div className="w-40 overflow-hidden rounded-full bg-gray-100 h-3">
+                            <div
+                                className={`h-3 transition-all duration-500 ${
+                                    progress >= 100
+                                        ? 'bg-green-600'
+                                        : progress >= 70
+                                          ? 'bg-green-500'
+                                          : progress >= 40
+                                            ? 'bg-amber-500'
+                                            : 'bg-blue-500'
+                                }`}
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+
+                        <div className="mt-1 text-xs text-gray-600">
+                            {progress}% · {workflowProgress.currentLabel}
+                        </div>
+                    </div>
+
                     <div>
                         <div className="text-sm text-gray-500">Prioritas</div>
-                        <StatusBadge label={priority ?? 'Normal'} variant={priority === 'High' || priority === 'Urgent' ? 'warning' : 'default'} />
+                        <StatusBadge
+                            label={priority ?? 'Normal'}
+                            variant={
+                                priority === 'High' || priority === 'Urgent'
+                                    ? 'warning'
+                                    : 'default'
+                            }
+                        />
                     </div>
+
                     <div>
                         <div className="text-sm text-gray-500">Status</div>
-                        <StatusBadge label={pesanan?.status ?? 'Aktif'} variant={pesanan?.status === 'Done' ? 'success' : 'info'} />
+                        <StatusBadge
+                            label={status}
+                            variant={status === 'Done' ? 'success' : 'info'}
+                        />
                     </div>
                 </div>
             }

@@ -246,6 +246,7 @@ export interface Attachment {
 export interface OrderSpecification {
   id: number;
   pesanan_id?: number;
+  key: string;
   jenis_spesifikasi: string;
   value: string;
   created_at?: string | null;
@@ -353,6 +354,36 @@ export interface ManufacturingSpec {
   cost_per_pcs?: number | null;
 }
 
+export interface ProductionRunProcess {
+  id: number;
+  work_name: string;
+  sequence: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  qc_status?: 'pending' | 'passed' | 'failed' | null;
+  checked_qty?: number | null;
+  passed_qty?: number | null;
+  defect_qty?: number | null;
+  qc_notes?: string | null;
+  corrective_action?: string | null;
+}
+
+export interface ProductionRun {
+  id?: number;
+  type?: string;
+  quantity?: number;
+  status?: string;
+  packing_completed?: boolean;
+  packing_notes?: string;
+  courier_name?: string;
+  tracking_number?: string;
+  tracking_url?: string;
+  delivery_note?: string;
+  delivered_at?: string | null;
+  customer_review_note?: string;
+  approved_at?: string | null;
+  processes?: ProductionRunProcess[];
+}
+
 export interface JobTicket {
   id: number;
 
@@ -391,6 +422,12 @@ export interface JobTicket {
 
   // purchasing
   purchasings?: PurchasingItem[];
+
+  //sample production
+  sampleRun?: ProductionRun | null;
+
+  //production
+  productionRun?: ProductionRun | null;
 
   // production / QC / packing / delivery
   qc?: {

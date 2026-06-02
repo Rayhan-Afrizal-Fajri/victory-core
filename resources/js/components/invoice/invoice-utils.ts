@@ -80,7 +80,7 @@ export function getInvoiceCategory(invoice: any) {
     const text = `${invoice?.title || ''} ${invoice?.no_invoice || ''}`.toLowerCase();
 
     if (text.includes('sample')) return 'sample';
-    if (text.includes('production')) return 'production';
+    if (text.includes('prod')) return 'production';
     if (text.includes('final')) return 'final_billing';
 
     return 'other';

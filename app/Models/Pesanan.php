@@ -19,6 +19,7 @@ class Pesanan extends Model
         'requested_produk_name',
         'q',
         'qs',
+        'sample_qty',
         'deadline',
         'harga_jual_per_pcs',
         'estimasi_hpp_per_pcs',
@@ -124,5 +125,9 @@ class Pesanan extends Model
     {
         return $this->hasOne(Quotation::class, 'pesanan_id')->latestOfMany();
     }
-    
+
+    public function productionRuns()
+    {
+        return $this->hasMany(ProductionRun::class);
+    }    
 }

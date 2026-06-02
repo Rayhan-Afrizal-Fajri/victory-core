@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ManufacturingWork;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ManufacturingWorkSeeder extends Seeder
@@ -17,8 +17,8 @@ class ManufacturingWorkSeeder extends Seeder
             'name' => 'Cutting',
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
-            'default_min_estimate' => 5,
-            'default_max_estimate' => 10,
+            // 'default_min_estimate' => 5,
+            'default_max_estimate' => 1000,
             'is_active' => true,
         ]);
 
@@ -26,8 +26,8 @@ class ManufacturingWorkSeeder extends Seeder
             'name' => 'Jahit',
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
-            'default_min_estimate' => 7,
-            'default_max_estimate' => 14,
+            // 'default_min_estimate' => 7,
+            'default_max_estimate' => 1400,
             'is_active' => true,
         ]);
 
@@ -44,8 +44,8 @@ class ManufacturingWorkSeeder extends Seeder
             'name' => 'Sablon',
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
-            'default_min_estimate' => 8,
-            'default_max_estimate' => 16,
+            // 'default_min_estimate' => 8,
+            'default_max_estimate' => 1600,
             'is_active' => true,
         ]);
 
@@ -53,8 +53,8 @@ class ManufacturingWorkSeeder extends Seeder
             'name' => 'Bordir',
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
-            'default_min_estimate' => 10,
-            'default_max_estimate' => 20,
+            // 'default_min_estimate' => 10,
+            'default_max_estimate' => 200,
             'is_active' => true,
         ]);
 
@@ -62,8 +62,8 @@ class ManufacturingWorkSeeder extends Seeder
             'name' => 'Finishing',
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
-            'default_min_estimate' => 4,
-            'default_max_estimate' => 8,
+            // 'default_min_estimate' => 4,
+            'default_max_estimate' => 800,
             'is_active' => true,
         ]);
 

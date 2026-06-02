@@ -21,6 +21,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductManufacturingWorkController;
 use App\Http\Controllers\ProductMaterialController;
 use App\Http\Controllers\Admin\QuotationController;
+use App\Http\Controllers\Admin\ProductionRunController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -165,6 +166,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
         ->name('invoices.cancel');
+    
+    Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])
+        ->name('invoices.print');
 
     /**
      * Payment
@@ -225,6 +229,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/material-receivings/{receiving}', [PurchasingController::class, 'destroyReceiving'])
         ->name('material-receivings.destroy');
+
+    /**
+     * Production Run
+     */
+
+    Route::post('/pesanan/{pesanan}/production-runs/sample/ensure', [ProductionRunController::class, 'ensureSampleRun'])
+        ->name('production-runs.sample.ensure');
+
+    Route::post('/pesanan/{pesanan}/production-runs/production/ensure', [ProductionRunController::class, 'ensureProductionRun'])
+        ->name('production-runs.production.ensure');
+
+    Route::patch('/production-run-processes/{process}/start', [ProductionRunController::class, 'startProcess'])
+        ->name('production-run-processes.start');
+
+    Route::patch('/production-run-processes/{process}/complete', [ProductionRunController::class, 'completeProcess'])
+        ->name('production-run-processes.complete');
+
+    Route::patch('/production-run-processes/{process}/qc', [ProductionRunController::class, 'submitQc'])
+        ->name('production-run-processes.qc');
+
+    Route::patch('/production-runs/{run}/packing', [ProductionRunController::class, 'completePacking'])
+        ->name('production-runs.packing');
+
+    Route::patch('/production-runs/{run}/delivery', [ProductionRunController::class, 'submitDelivery'])
+        ->name('production-runs.delivery');
+
+    Route::patch('/production-runs/{run}/mark-delivered', [ProductionRunController::class, 'markDelivered'])
+        ->name('production-runs.mark-delivered');
+
+    Route::patch('/production-runs/{run}/approve-sample', [ProductionRunController::class, 'approveSample'])
+        ->name('production-runs.approve-sample');
+
+    Route::patch('/production-runs/{run}/revision-sample', [ProductionRunController::class, 'requestSampleRevision'])
+        ->name('production-runs.revision-sample');
+
+    Route::patch('/production-runs/{run}/reject-sample', [ProductionRunController::class, 'rejectSample'])
+        ->name('production-runs.reject-sample');
 
     /**
      * End of detail job tickets

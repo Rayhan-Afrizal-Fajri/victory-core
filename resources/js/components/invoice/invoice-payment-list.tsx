@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
 import { paymentStatusClass } from './invoice-utils';
+import { useCan } from '@/hooks/use-can';
 
 const InvoicePaymentList = ({
     payments,
@@ -33,6 +34,8 @@ const InvoicePaymentList = ({
     onEditPayment: (payment: any) => void;
     onDeletePayment: (payment: any) => void;
 }) => {
+    const can = useCan();
+
     if (payments.length === 0) {
         return (
             <EmptyState
@@ -88,28 +91,32 @@ const InvoicePaymentList = ({
 
                         {['pending', 'rejected'].includes(payment.status || 'pending') && (
                             <div className="flex shrink-0 flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => onEditPayment(payment)}
-                                >
-                                    <Edit className="size-4" />
-                                    Edit
-                                </Button>
+                                {can('payment.update') && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => onEditPayment(payment)}
+                                    >
+                                        <Edit className="size-4" />
+                                        Edit
+                                    </Button>
+                                )}
 
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-red-200 text-red-700 hover:bg-red-50"
-                                    onClick={() => onDeletePayment(payment)}
-                                >
-                                    <Trash2 className="size-4" />
-                                    Delete
-                                </Button>
+                                {can('payment.delete') && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-red-200 text-red-700 hover:bg-red-50"
+                                        onClick={() => onDeletePayment(payment)}
+                                    >
+                                        <Trash2 className="size-4" />
+                                        Delete
+                                    </Button>
+                                )}
 
-                                {payment.status === 'pending' && (
+                                {can('payment.verify') && payment.status === 'pending' && (
                                     <>
                                         <Button
                                             type="button"

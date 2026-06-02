@@ -117,10 +117,16 @@ class OrderEntryController extends Controller
 
             if (!empty($validated['size_breakdowns'])) {
                 foreach ($validated['size_breakdowns'] as $sizeBreakdown) {
-                    $pesanan->orderSpecification()->create([
-                        'type' => 'size_breakdown',
-                        'key' => $sizeBreakdown['color'] . ' - ' . $sizeBreakdown['size_label'],
-                        'value' => (string) $sizeBreakdown['qty'],
+                    // $pesanan->orderSpecification()->create([
+                    //     'type' => 'size_breakdown',
+                    //     'key' => $sizeBreakdown['color'] . ' - ' . $sizeBreakdown['size_label'],
+                    //     'value' => (string) $sizeBreakdown['qty'],
+                    // ]);
+
+                    $pesanan->sizeBreakdowns()->create([
+                        'color' => $sizeBreakdown['color'] ?? null,
+                        'size_label' => $sizeBreakdown['size_label'] ?? null,
+                        'qty' => $sizeBreakdown['qty'] ?? 0,
                     ]);
                 }
             }

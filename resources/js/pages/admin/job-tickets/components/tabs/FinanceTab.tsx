@@ -25,8 +25,11 @@ import {
     isInvoiceCancelled,
     isInvoicePaid,
 } from '@/components/invoice/invoice-utils';
+import { useCan } from '@/hooks/use-can';
 
 const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
+    const can = useCan();
+
     const workflow = job.workflow_status;
     const invoices = job.invoices || [];
 
@@ -206,7 +209,10 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Payment berhasil diverifikasi.'),
+                onSuccess: () => {
+                    toast.success('Payment berhasil diverifikasi.');
+                    setDetailOpen(false);
+                },
             }
         );
     };
@@ -334,7 +340,7 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
 
             {renderInvoiceGroup('Invoice Sample', groupedInvoices.sample)}
 
-            {workflow?.sample_approved && (
+            {workflow?.sample_approved != false && (
                 <>
                     {renderInvoiceGroup('Invoice Produksi', groupedInvoices.production)}
                     {renderInvoiceGroup('Final Billing', groupedInvoices.final_billing)}

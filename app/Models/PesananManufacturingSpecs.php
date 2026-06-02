@@ -42,4 +42,9 @@ class PesananManufacturingSpecs extends Model
     {
         return $this->belongsTo(Supplier::class, 'vendor_id');
     }
+
+    public function productionRunProcess()
+    {
+        return $this->hasMany(ProductionRunProcess::class);
+    }
 }

@@ -11,7 +11,8 @@ class WorkflowStatus extends Model
         
         'design_uploaded',
         'design_approved',
-
+        'article_synced',
+        'design_specs_completed',
         'quotation_created',
         'quotation_approved',
 

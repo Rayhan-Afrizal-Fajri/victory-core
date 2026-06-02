@@ -45,6 +45,10 @@ class PurchasingController extends Controller
         $sampleQty = (int) $validated['sample_qty'];
         $totalPlannedQty = $productionQty + $sampleQty;
 
+        $pesanan->update([
+            'sample_qty' => $sampleQty,
+        ]);
+
         if ($totalPlannedQty <= 0) {
             abort(422, 'Total quantity belum valid.');
         }
@@ -434,6 +438,8 @@ class PurchasingController extends Controller
             $isReceived = true;
         }
 
+        // dd('Received: '.$receivedQty, 'Qty: '.$qty, 'Status: '.$status, $purchasing->materialReceivings()->get()->toArray());
+
         $purchasing->update([
             'received_qty' => $receivedQty,
             'status' => $status,
@@ -443,6 +449,13 @@ class PurchasingController extends Controller
 
     private function syncPesananPurchasingWorkflow(Pesanan $pesanan): void
     {
+        $pesanan->loadMissing([
+            'workflowStatus',
+            'purchasing',
+            'manufacturingSpecs',
+            'productionRuns.processes',             
+        ]);
+
         $purchasings = $pesanan->purchasing()->get();
 
         $hasPurchasing = $purchasings->count() > 0;
@@ -451,12 +464,64 @@ class PurchasingController extends Controller
             return $item->is_received || $item->status === 'received';
         });
 
+        $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
+            return $item->is_distributed || $item->status === 'distributed';
+        });
+
         $pesanan->workflowStatus()->updateOrCreate(
             ['pesanan_id' => $pesanan->id],
             [
                 'materials_purchased' => $hasPurchasing,
                 'materials_received' => $allReceived,
+                'materials_distributed' => $allDistributed,
             ]
         );
+
+        if ($allReceived) {
+            $this->ensureSampleProductionRun($pesanan);
+        }
+    }
+
+    private function ensureSampleProductionRun(Pesanan $pesanan)
+    {
+        $pesanan->loadMissing([
+            'manufacturingSpecs',
+            'productionRuns',
+        ]);
+
+        $existsingRun = $pesanan->productionRuns()
+            ->where('type', 'sample')
+            ->whereNotIn('status', ['rejected'])
+            ->latest()
+            ->first();
+
+        if ($existsingRun) {
+            return;
+        }
+
+        $sampleQty = (int) ($pesanan->sample_qty ?: 1);
+
+        $run = $pesanan->productionRuns()->create([
+            'type' => 'sample',
+            'quantity' => $sampleQty,
+            'status' => 'draft',
+        ]);
+
+        foreach ($pesanan->manufacturingSpecs as $index => $spec) {
+            $run->processes()->create([
+                'pesanan_manufacturing_spec_id' => $spec->id,
+                'work_name' => $spec->work_name_snapshot,
+                'sequence' => $index + 1,
+                'status' => 'pending',
+                'qc_status' => 'pending',
+            ]);
+        }
+
+        $pesanan->workflowHistory()->create([
+            'step' => 'production',
+            'action' => 'sample_run_created',
+            'user_id' => Auth::id(),
+            'notes' => "Sample production run otomatis dibuat dengan qty {$sampleQty}.",
+        ]);
     }
 }

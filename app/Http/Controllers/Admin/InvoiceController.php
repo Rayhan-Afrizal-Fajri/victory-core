@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceController extends Controller
 {
@@ -174,5 +175,26 @@ class InvoiceController extends Controller
         }); 
 
         return back()->with('success', 'Invoice berhasil dibatalkan.');
+    }
+
+    public function print(string $invoiceId)
+    {
+        $invoice = Invoice::with([
+            'pesanan.customer',
+            'payments',
+        ])->findOrFail($invoiceId);
+
+        $pdf = Pdf::loadView('pdf.invoices.show', [
+            'invoice' => $invoice,
+            'pesanan' => $invoice->pesanan,
+            'customer' => $invoice->pesanan?->customer,
+            'payments' => $invoice->payments,
+        ])->setPaper('a4', 'portrait');
+
+        // Sanitasi nama file: ubah garis miring menjadi strip
+        $rawFilename = $invoice->no_invoice ?? 'invoice';
+        $safeFilename = str_replace(['/', '\\'], '-', $rawFilename) . '.pdf';
+
+        return $pdf->stream($safeFilename);
     }
 }

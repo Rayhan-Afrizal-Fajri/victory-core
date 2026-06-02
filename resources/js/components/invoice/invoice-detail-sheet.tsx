@@ -31,6 +31,7 @@ import {
     getVerifiedPaid,
     invoiceStatusClass,
 } from './invoice-utils';
+import { useCan } from '@/hooks/use-can';
 
 const InvoiceDetailSheet = ({
     open,
@@ -67,6 +68,8 @@ const InvoiceDetailSheet = ({
     onEditPayment: (payment: any) => void;
     onDeletePayment: (payment: any) => void;
 }) => {
+    const can = useCan();
+
     if (!invoice) return null;
 
     const status = invoice.status_tagihan || invoice.status;
@@ -192,7 +195,7 @@ const InvoiceDetailSheet = ({
                                     type="button"
                                     variant="secondary"
                                     onClick={() =>
-                                        window.open(`/invoice/${invoice.id}/print`, '_blank')
+                                        window.open(`/invoices/${invoice.id}/print`, '_blank')
                                     }
                                 >
                                     <Printer className="size-4" />

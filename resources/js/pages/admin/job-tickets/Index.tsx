@@ -24,57 +24,31 @@ type Order = {
   status_divisi: string;
   acc_sample: boolean;
   progress: number;
+  current_step?: string;
 };
-
-const orders: Order[] = [
-  {
-    id: 1,
-    no_job_ticket: 'VL-2026-001',
-    produk: 'Polo Shirt Event',
-    customer: 'PT Maju Bersama',
-    qty: 120,
-    deadline: '2026-05-18',
-    status_divisi: 'Produksi',
-    acc_sample: true,
-    progress: 75,
-  },
-  {
-    id: 2,
-    no_job_ticket: 'VL-2026-002',
-    produk: 'Kemeja Lapangan',
-    customer: 'CV Sinar Abadi',
-    qty: 80,
-    deadline: '2026-05-15',
-    status_divisi: 'Sample',
-    acc_sample: false,
-    progress: 25,
-  },
-  {
-    id: 3,
-    no_job_ticket: 'VL-2026-003',
-    produk: 'Hoodie Komunitas',
-    customer: 'Komunitas Vespa',
-    qty: 200,
-    deadline: '2026-05-13',
-    status_divisi: 'Done',
-    acc_sample: true,
-    progress: 100,
-  },
-];
 
 const statusBadge = (status: string) => {
   const statusStyles: Record<string, string> = {
-    Produksi: 'bg-emerald-100 text-emerald-800',
-    Sample: 'bg-orange-100 text-orange-800',
-    Quote: 'bg-amber-100 text-amber-800',
-    Penawaran: 'bg-slate-100 text-slate-800',
-    Finance: 'bg-cyan-100 text-cyan-800',
-    Pelunasan: 'bg-emerald-100 text-emerald-800',
-    Done: 'bg-slate-100 text-slate-800',
+    Aktif: 'bg-slate-100 text-slate-800',
+    'Design Approved': 'bg-blue-100 text-blue-800',
+    'Quotation Approved': 'bg-amber-100 text-amber-800',
+    'Sample Payment': 'bg-cyan-100 text-cyan-800',
+    Purchasing: 'bg-violet-100 text-violet-800',
+    'Materials Received': 'bg-emerald-100 text-emerald-800',
+    'Sample Created': 'bg-orange-100 text-orange-800',
+    'Sample Delivered': 'bg-orange-100 text-orange-800',
+    'Sample Approved': 'bg-emerald-100 text-emerald-800',
+    'Production Payment': 'bg-cyan-100 text-cyan-800',
+    Production: 'bg-blue-100 text-blue-800',
+    'Production Completed': 'bg-emerald-100 text-emerald-800',
+    Packing: 'bg-violet-100 text-violet-800',
+    'Final Payment': 'bg-cyan-100 text-cyan-800',
+    Delivered: 'bg-emerald-100 text-emerald-800',
+    Done: 'bg-slate-900 text-white',
   };
 
   return (
-    <Badge className={`${statusStyles[status] ?? 'bg-slate-100 text-slate-800'}`}>
+    <Badge className={statusStyles[status] ?? 'bg-slate-100 text-slate-800'}>
       {status}
     </Badge>
   );
@@ -155,9 +129,14 @@ const columns: DataTableColumn<Order>[] = [
   {
     header: 'Progress',
     accessor: 'progress',
-    className: 'w-[220px]',
+    className: 'w-[240px]',
     cell: (row) => (
-      <ProgressBar value={row.progress} showPercentage={true} />
+      <div className="space-y-1">
+        <ProgressBar value={row.progress} showPercentage={true} />
+        <p className="text-xs text-slate-400">
+          {row.current_step || row.status_divisi}
+        </p>
+      </div>
     ),
   },
 

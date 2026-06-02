@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\ProductionRunService;
 
 class PaymentController extends Controller
 {
@@ -154,37 +155,53 @@ class PaymentController extends Controller
         });
     }
 
-    private function handleProductionPaymentVerified(invoice $invoice, float $verifiedTotal, bool $invoicePaid): void
+    private function handleProductionInvoicePaymentStatus($invoice): void
     {
         $pesanan = $invoice->pesanan;
 
-        if (!$pesanan) {
+        if (! $pesanan) {
             return;
         }
 
-        $productionDpPaid = $verifiedTotal > 0;
+        $totalInvoice = (float) ($invoice->total_tagihan ?: $invoice->amount ?: 0);
+
+        $totalVerified = $invoice->payments()
+            ->where('status', 'verified')
+            ->sum('jumlah_bayar');
+
+        $dpMinimum = $totalInvoice * 0.5;
+
+        $productionDpPaid = $totalInvoice > 0 && $totalVerified >= $dpMinimum;
+        $finalPaymentPaid = $totalInvoice > 0 && $totalVerified >= $totalInvoice;
 
         $pesanan->workflowStatus()->updateOrCreate(
             ['pesanan_id' => $pesanan->id],
             [
-                'production_invoice_created' => true,
                 'production_dp_paid' => $productionDpPaid,
-                'final_payment_paid' => $invoicePaid,
+                'final_payment_paid' => $finalPaymentPaid,
             ]
         );
 
-        $pesanan->invoices()->where('id', $invoice->id)->update([
-            'status_tagihan' => $invoicePaid ? 'paid' : 'partially_paid',
-        ]);
+        if ($productionDpPaid) {
+            $pesanan->workflowHistory()->create([
+                'step' => 'production_payment',
+                'action' => 'dp_verified',
+                'user_id' => Auth::id(),
+                'notes' => 'DP produksi minimal 50% sudah terpenuhi.',
+            ]);
 
-        $pesanan->workflowHistory()->create([
-            'step' => 'production_payment',
-            'action' => $invoicePaid ? 'production_payment_paid' : 'production_dp_paid',
-            'user_id' => Auth::user()->id,
-            'notes' => $invoicePaid
-                ? 'Invoice produksi sudah lunas.'
-                : 'DP Produksi telah diverifikasi.',
-        ]);
+            $productionRunService = new ProductionRunService();
+            $productionRunService->ensureProductionRun($pesanan);
+        }
+
+        if ($finalPaymentPaid) {
+            $pesanan->workflowHistory()->create([
+                'step' => 'production_payment',
+                'action' => 'fully_paid',
+                'user_id' => Auth::id(),
+                'notes' => 'Invoice produksi sudah lunas.',
+            ]);
+        }
     }
 
     public function verifyPayment(string $paymentId, InvoiceService $invoiceService)
@@ -221,14 +238,12 @@ class PaymentController extends Controller
             }
 
             if ($category === 'production') {
-                $this->handleProductionPaymentVerified(
+                $this->handleProductionInvoicePaymentStatus(
                     invoice: $invoice,
-                    verifiedTotal: $verifiedTotal,
-                    invoicePaid: $invoicePaid,
                 );
                 return;
             }
-            
+
 
         });
 

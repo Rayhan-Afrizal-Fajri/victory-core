@@ -22,9 +22,6 @@ const tabs = [
   'purchasing',
   'sample',
   'production',
-  'qc',
-  'packing',
-  'delivery',
   'activity',
 ] as const;
 
@@ -43,6 +40,8 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
   function handleLocked(name: string) {
     toast.error('Tab terkunci: ' + name + '. Lengkapi langkah sebelumnya.');
   }
+
+  const unpaidInvoices = job.invoices ? job.invoices.filter((inv: any) => !['paid', 'Paid'].includes(inv.status_tagihan || inv.status)) : [];
 
   return (
     
@@ -70,8 +69,18 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
                 }}
             >
                 <div className="flex items-center gap-2">
-                <span className="capitalize">{t}</span>
-                {((t === 'sample' && locked.sample) || (t === 'purchasing' && locked.purchasing) || (t === 'production' && locked.production) || (t === 'qc' && locked.qc) || (t === 'packing' && locked.packing) || (t === 'delivery' && locked.delivery)) && (
+                <span className="capitalize">
+                    {t} 
+                    {t === 'invoices' && (
+                        // badge jumlah invoice atau yang belum dibayar
+                        unpaidInvoices.length > 0 && (
+                            <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                                {unpaidInvoices.length || 0}
+                            </span>
+                        )
+                    )}
+                </span>
+                {((t === 'sample' && locked.sample) || (t === 'purchasing' && locked.purchasing) || (t === 'production' && locked.production) ) && (
                     <Lock size={14} className="text-gray-400" />
                 )}
                 </div>
@@ -96,15 +105,6 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
         </TabsContent>
         <TabsContent value="production">
             <ProductionTab job={job} />
-        </TabsContent>
-        <TabsContent value="qc">
-            <QCTab job={job} />
-        </TabsContent>
-        <TabsContent value="packing">
-            <PackingTab job={job} />
-        </TabsContent>
-        <TabsContent value="delivery">
-            <DeliveryTab job={job} />
         </TabsContent>
         <TabsContent value="activity">
             <ActivityTab job={job} />

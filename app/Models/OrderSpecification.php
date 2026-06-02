@@ -9,6 +9,7 @@ class OrderSpecification extends Model
     protected $fillable = [
         'pesanan_id',
         'jenis_spesifikasi',
+        'key',
         'value',
     ];
 

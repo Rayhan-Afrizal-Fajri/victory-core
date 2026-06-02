@@ -17,70 +17,181 @@ class JobTicketController extends Controller
      */
     public function index()
     {
-
         $orders = Pesanan::query()
-            ->with('customer', 'productionProgress')
+            ->with([
+                'customer',
+                'workflowStatus',
+            ])
             ->latest()
             ->get()
             ->map(function ($order) {
+                $workflow = $order->workflowStatus;
 
-                //simulasi progress sementara
-                $progress = $order->productionProgress;
-
-                $checklistFields = [
-                    'ppm_bahan',
-                    'ppm_aksesoris',
-                    'ppm_cutting',
-                    'ppm_sablon',
-                    'ppm_jahit',
-
-                    'cut_test_susut',
-                    'cut_test_luntur',
-                    'cut_relax_bahan',
-                    'cut_form_cutting',
-                    'cut_label_potongan',
-                    'cut_sisa_bahan',
-
-                    'sablon_sample_warna',
-                    'sablon_test_muntah',
-
-                    'jahit_kelengkapan_aksesoris',
-                    'jahit_titik_kritis',
-                    'jahit_random_check',
-
-                    'qc_stem_packing',
-                    'qc_sampling_ukuran',
-                    'qc_inspeksi_jahit',
-                    'qc_surat_jalan',
-
-                    'log_foto_confirm',
-                    'log_random_cek',
-                    'log_payment_delivery',
-                ];
-
-                $checkedCount = collect($checklistFields)
-                    ->filter(fn ($field) => $progress?->field)
-                    ->count();
-
-                $progressPercentage = round(($checkedCount/count($checklistFields)) * 100);
+                $progressData = $this->calculateWorkflowProgress($workflow);
+                $status = $this->getWorkflowStatusLabel($workflow);
 
                 return [
                     'id' => $order->id,
                     'no_job_ticket' => $order->no_job_ticket,
-                    'produk' => $order->produk,
-                    'customer' => $order->customer?->nama_perusahaan ?? $order->customer_perusahaan_snapshot,
-                    'qty' => $order->q,
+                    'produk' => $order->requested_product_name
+                        ?: $order->produk
+                        ?: '-',
+                    'customer' => $order->customer?->nama_perusahaan
+                        ?? $order->customer?->nama
+                        ?? $order->customer_perusahaan_snapshot
+                        ?? '-',
+                    'qty' => (int) ($order->quantity ?: $order->q ?: 0),
                     'deadline' => $order->deadline,
-                    'status_divisi' => $order->status_divisi,
-                    'acc_sample' => $progress?->acc_sample ?? false,
-                    'progress' => $progressPercentage,
+                    'status_divisi' => $status,
+                    'acc_sample' => (bool) ($workflow?->sample_approved ?? false),
+                    'progress' => $progressData['percent'],
+                    'current_step' => $progressData['current_label'],
                 ];
             });
 
-        // Di React Index.tsx, tangkap ini sebagai props `orders`
         return Inertia::render('admin/job-tickets/Index', [
             'orders' => $orders,
         ]);
+    }
+
+    private function calculateWorkflowProgress($workflow): array
+    {
+        $steps = [
+            [
+                'label' => 'Order Entry',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->order_entry ?? $w?->pesanan_id ?? false),
+            ],
+            [
+                'label' => 'Design',
+                'weight' => 10,
+                'done' => fn ($w) => (bool) ($w?->design_approved ?? false),
+            ],
+            [
+                'label' => 'Quotation',
+                'weight' => 10,
+                'done' => fn ($w) => (bool) ($w?->quotation_approved ?? false),
+            ],
+            [
+                'label' => 'Sample Payment',
+                'weight' => 7,
+                'done' => fn ($w) => (bool) ($w?->sample_paid ?? false),
+            ],
+            [
+                'label' => 'Purchasing',
+                'weight' => 10,
+                'done' => fn ($w) => (bool) ($w?->materials_purchased ?? false),
+            ],
+            [
+                'label' => 'Materials Received',
+                'weight' => 10,
+                'done' => fn ($w) => (bool) ($w?->materials_received ?? false),
+            ],
+            [
+                'label' => 'Sample Created',
+                'weight' => 8,
+                'done' => fn ($w) => (bool) ($w?->sample_created ?? false),
+            ],
+            [
+                'label' => 'Sample Delivered',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->sample_delivered ?? false),
+            ],
+            [
+                'label' => 'Sample Approved',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->sample_approved ?? false),
+            ],
+            [
+                'label' => 'Production Payment',
+                'weight' => 7,
+                'done' => fn ($w) => (bool) ($w?->production_dp_paid ?? false),
+            ],
+            [
+                'label' => 'Production Started',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->production_started ?? false),
+            ],
+            [
+                'label' => 'Production Completed',
+                'weight' => 8,
+                'done' => fn ($w) => (bool) ($w?->production_completed ?? false),
+            ],
+            [
+                'label' => 'QC Completed',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->qc_completed ?? false),
+            ],
+            [
+                'label' => 'Packing',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->packing_completed ?? false),
+            ],
+            [
+                'label' => 'Final Payment',
+                'weight' => 5,
+                'done' => fn ($w) => (bool) ($w?->final_payment_paid ?? false),
+            ],
+            [
+                'label' => 'Delivered',
+                'weight' => 3,
+                'done' => fn ($w) => (bool) ($w?->delivered ?? false),
+            ],
+            [
+                'label' => 'Done',
+                'weight' => 2,
+                'done' => fn ($w) => (bool) ($w?->completed ?? false),
+            ],
+        ];
+
+        if (! $workflow) {
+            return [
+                'percent' => 0,
+                'current_label' => 'Not Started',
+            ];
+        }
+
+        $totalWeight = collect($steps)->sum('weight');
+
+        $completedWeight = collect($steps)->sum(function ($step) use ($workflow) {
+            return $step['done']($workflow) ? $step['weight'] : 0;
+        });
+
+        $percent = min(100, round(($completedWeight / $totalWeight) * 100));
+
+        $currentStep = collect($steps)->first(function ($step) use ($workflow) {
+            return ! $step['done']($workflow);
+        });
+
+        return [
+            'percent' => $percent,
+            'current_label' => $percent >= 100
+                ? 'Done'
+                : ($currentStep['label'] ?? 'Done'),
+        ];
+    }
+
+    private function getWorkflowStatusLabel($workflow): string
+    {
+        if (! $workflow) return 'Aktif';
+
+        if ($workflow->completed) return 'Done';
+        if ($workflow->delivered) return 'Delivered';
+        if ($workflow->final_payment_paid) return 'Final Payment';
+        if ($workflow->packing_completed) return 'Packing';
+        if ($workflow->production_completed) return 'Production Completed';
+        if ($workflow->production_started) return 'Production';
+        if ($workflow->production_dp_paid) return 'Production Payment';
+        if ($workflow->sample_approved) return 'Sample Approved';
+        if ($workflow->sample_delivered) return 'Sample Delivered';
+        if ($workflow->sample_created) return 'Sample Created';
+        if ($workflow->materials_received) return 'Materials Received';
+        if ($workflow->materials_purchased) return 'Purchasing';
+        if ($workflow->sample_paid) return 'Sample Payment';
+        if ($workflow->quotation_approved) return 'Quotation Approved';
+        if ($workflow->design_approved) return 'Design Approved';
+
+        return 'Aktif';
     }
 
     /**
@@ -108,6 +219,7 @@ class JobTicketController extends Controller
             'purchasing' => function ($query) {
                 $query->with('supplier', 'materialReceiving.checkedBy')->latest();
             },
+            'productionRuns.processes',
             'productionProgress',
             'workflowHistory' => function ($query) {
                 $query->with('user')->latest();
@@ -119,6 +231,52 @@ class JobTicketController extends Controller
             'materialSpecs.supplier',
             'quotations.items',
         ])->findOrFail($id);
+
+        $sampleRun = $pesanan->productionRuns
+            ->where('type', 'sample')
+            ->sortByDesc('id')
+            ->first();
+
+        $productionRun = $pesanan->productionRuns
+            ->where('type', 'production')
+            ->sortByDesc('id')
+            ->first();
+
+        $mapRun = function ($run) {
+            if (! $run) return null;
+
+            return [
+                'id' => $run->id,
+                'type' => $run->type,
+                'quantity' => $run->quantity,
+                'status' => $run->status,
+                'packing_completed' => $run->packing_completed,
+                'packing_notes' => $run->packing_notes,
+                'courier_name' => $run->courier_name,
+                'tracking_number' => $run->tracking_number,
+                'tracking_url' => $run->tracking_url,
+                'delivery_note' => $run->delivery_note,
+                'delivered_at' => $run->delivered_at,
+                'customer_review_note' => $run->customer_review_note,
+                'approved_at' => $run->approved_at,
+                'processes' => $run->processes
+                    ->sortBy('sequence')
+                    ->values()
+                    ->map(fn ($process) => [
+                        'id' => $process->id,
+                        'work_name' => $process->work_name,
+                        'sequence' => $process->sequence,
+                        'status' => $process->status,
+                        'qc_status' => $process->qc_status,
+                        'checked_qty' => $process->checked_qty,
+                        'passed_qty' => $process->passed_qty,
+                        'defect_qty' => $process->defect_qty,
+                        'qc_notes' => $process->qc_notes,
+                        'corrective_action' => $process->corrective_action,
+                    ])
+                    ->toArray(),
+            ];
+        };
 
         $workflowStatus = $pesanan->workflowStatus;
 
@@ -238,6 +396,8 @@ class JobTicketController extends Controller
                     'notes' => $r->notes,
                 ])->toArray(),
             ])->toArray(),
+            'sample_run' => $mapRun($sampleRun),
+            'production_run' => $mapRun($productionRun),
             'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
             'workflowHistories' => $pesanan->workflowHistory->map(fn ($h) => [
                 'id' => $h->id,
@@ -275,7 +435,7 @@ class JobTicketController extends Controller
                 'usage' => $spec->usage,
                 'unit' => $spec->unit,
                 'usage_per_set' => $spec->usage_per_set,
-                'supplier' => $spec->supplier?->nama ?? $spec->supplier?->name,
+                'supplier' => $spec->supplier?->nama_perusahaan ?? $spec->supplier?->name,
                 'harga_ecer' => $spec->harga_ecer,
                 'harga_roll' => $spec->harga_roll,
                 'roll_qty' => $spec->roll_qty,
@@ -289,7 +449,7 @@ class JobTicketController extends Controller
                 'usage' => $spec->usage,
                 'unit' => $spec->unit,
                 'usage_note' => $spec->usage_note,
-                'vendor' => $spec->vendor?->nama ?? $spec->vendor?->name,
+                'vendor' => $spec->vendor?->nama_perusahaan ?? $spec->vendor?->name,
                 'min_estimate' => $spec->min_estimate,
                 'max_estimate' => $spec->max_estimate,
                 'cost_per_pcs' => $spec->cost_per_pcs,

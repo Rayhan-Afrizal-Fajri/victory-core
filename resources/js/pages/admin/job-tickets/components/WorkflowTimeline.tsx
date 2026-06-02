@@ -15,15 +15,29 @@ const workflowGroups = [
   },
   {
     key: 'design',
-    label: 'Design',
-    steps: ['design_uploaded', 'design_approved'],
+    label: 'Design Specs',
+    steps: ['design_uploaded', 'design_approved', 'article_synced', 'design_specs_completed', 'quotation_created', 'quotation_approved'],
+  },
+  {
+    key: 'invoice_sample',
+    label: 'Invoice Sample',
+    steps: [
+      'sample_paid'
+    ],
+  },
+  {
+    key: 'purchasing',
+    label: 'Purchasings',
+    steps: [
+      'materials_purchased',
+      'materials_received',
+    ],
   },
   {
     key: 'sample',
     label: 'Sample',
     steps: [
       'sample_created',
-      'sample_paid',
       'sample_delivered',
       'sample_approved',
     ],
@@ -37,27 +51,18 @@ const workflowGroups = [
     ],
   },
   {
-    key: 'purchasing',
-    label: 'Purchasing',
+    key: 'production',
+    label: 'Production',
     steps: [
-      'materials_purchased',
-      'materials_received',
-      'materials_distributed',
+      'production_started',
+      'production_completed',
+      'qc_completed',
+      'packing_completed',
     ],
   },
   {
-    key: 'production',
-    label: 'Production',
-    steps: ['production_completed'],
-  },
-  {
-    key: 'qc',
-    label: 'Quality Control',
-    steps: ['qc_completed'],
-  },
-  {
     key: 'final_billing',
-    label: 'Final Billing',
+    label: 'Final BiIling',
     steps: ['final_payment_paid'],
   },
   {

@@ -22,6 +22,7 @@ import {
     isInvoiceCancelled,
     isInvoicePaid,
 } from './invoice-utils';
+import { useCan } from '@/hooks/use-can';
 
 const InvoiceCard = ({
     invoice,
@@ -42,6 +43,8 @@ const InvoiceCard = ({
     canEdit?: boolean;
     canCancel?: boolean;
 }) => {
+    const can = useCan();
+
     const total = getInvoiceTotal(invoice);
     const paid = getVerifiedPaid(invoice);
     const remaining = getRemainingPayment(invoice);
@@ -121,13 +124,13 @@ const InvoiceCard = ({
                     type="button"
                     variant="secondary"
                     className="min-w-27.5 flex-1"
-                    onClick={() => window.open(`/invoice/${invoice.id}/print`, '_blank')}
+                    onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}
                 >
                     <Printer className="size-4" />
                     Cetak
                 </Button>
 
-                {canEdit && onEdit && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
+                {canEdit && can('payment.verify') && onEdit && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
                     <Button
                         type="button"
                         variant="secondary"
@@ -139,7 +142,7 @@ const InvoiceCard = ({
                     </Button>
                 )}
 
-                {canCancel && onCancel && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
+                {/* {canCancel && onCancel && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
                     <Button
                         type="button"
                         variant="outline"
@@ -149,7 +152,7 @@ const InvoiceCard = ({
                         <XCircle className="size-4" />
                         Cancel
                     </Button>
-                )}
+                )} */}
 
                 {canPay && onPay && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
                     <Button

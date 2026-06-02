@@ -6,6 +6,7 @@ import Field from "../sample/field";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import formatRupiah from "../ui/format-rupiah";
+import { useCan } from "@/hooks/use-can";
 
 function QuotationSection({
     job,
@@ -14,6 +15,7 @@ function QuotationSection({
     job: any;
     quotations: any[];
 }) {
+    const can = useCan();
 
     const quotationForm = useForm({
         valid_until: '',
@@ -35,7 +37,7 @@ function QuotationSection({
         sample_invoice_amount: 0,
     });
     // const latestQuotation = quotations[0] || null;
-    const canGenerate = Number(job.price_per_piece || 0) > 0;
+    const canGenerate = Number(job.price_per_piece || 0) > 0 && can('quotation.generate');
 
     const submitGenerateQuotation = (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,13 +81,13 @@ function QuotationSection({
 
     return (
         <SectionCard title="Surat Penawaran / Quotation">
-            {!canGenerate && (
+            {!canGenerate && can('quotation.generate') && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                     Simpan harga jual final terlebih dahulu sebelum membuat surat penawaran.
                 </div>
             )}
 
-            {canGenerate && (
+            {canGenerate && quotations.length === 0 && (
                 <form onSubmit={submitGenerateQuotation} className="space-y-4 rounded-2xl border bg-white p-4">
                     <div>
                         <p className="font-semibold text-slate-900">
@@ -204,7 +206,7 @@ function QuotationSection({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    {!quotation.approved_at && (
+                                    {!quotation.approved_at && can('quotation.generate') && (
                                         <Button
                                             type="button"
                                             variant="destructive"
@@ -224,10 +226,10 @@ function QuotationSection({
                                             window.open(`/quotations/${quotation.id}/print`, '_blank')
                                         }
                                     >
-                                        Cetak
+                                        Lihat Surat Penawaran
                                     </Button>
 
-                                    {quotation.status !== 'approved' && (
+                                    {quotation.status !== 'approved' && can('quotation.approve') && (
                                         <Button
                                             type="button"
                                             onClick={() => approveQuotation(quotation)}
@@ -241,31 +243,38 @@ function QuotationSection({
 
                             {quotation.status !== 'approved' && (
                                 <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                    <Field label="Nama Approver" error={approveForm.errors.approved_by_name}>
-                                        <Input
-                                            value={approveForm.data.approved_by_name}
-                                            onChange={(e) =>
-                                                approveForm.setData('approved_by_name', e.target.value)
-                                            }
-                                            placeholder="Nama customer yang menyetujui"
-                                        />
-                                    </Field>
+                                    {can('quotation.approve') && (
+                                        <Field label="Nama Approver" error={approveForm.errors.approved_by_name}>
+                                            <Input
+                                                value={approveForm.data.approved_by_name}
+                                                onChange={(e) =>
+                                                    approveForm.setData('approved_by_name', e.target.value)
+                                                }
+                                                placeholder="Nama customer yang menyetujui"
+                                            />
+                                        </Field>
+                                    )}
 
-                                    <Field label="Nominal Invoice Sample" error={approveForm.errors.sample_invoice_amount}>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            step={1000}
-                                            value={approveForm.data.sample_invoice_amount}
-                                            onChange={(e) =>
-                                                approveForm.setData(
-                                                    'sample_invoice_amount',
-                                                    Number(e.target.value)
-                                                )
-                                            }
-                                            placeholder="Kosongkan/0 untuk default 3 pcs"
-                                        />
-                                    </Field>
+                                    {can('quotation.generate') && (
+                                        <Field label="Nominal Invoice Sample" error={approveForm.errors.sample_invoice_amount}>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                step={1000}
+                                                value={approveForm.data.sample_invoice_amount}
+                                                onChange={(e) =>
+                                                    approveForm.setData(
+                                                        'sample_invoice_amount',
+                                                        Number(e.target.value)
+                                                    )
+                                                }
+                                                placeholder="Kosongkan/0 untuk default 3 pcs"
+                                            />
+                                            <p className="text-xs text-slate-500">
+                                                Kosongkan/0 untuk default 3 pcs x harga jual.
+                                            </p>
+                                        </Field>
+                                    )}
                                 </div>
                             )}
                         </div>

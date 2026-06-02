@@ -1,37 +1,40 @@
-import React, { useState } from 'react';
+import React from 'react';
+
 import type { JobTicket } from '../../types';
-import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
 
+import ProductionRunBoard from '@/components/production-runs/production-run-board';
+
 const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
-  const ws = (job as any).workflow_status ?? {};
+    const workflow = job.workflow_status;
 
-  if (!(ws.sample_approved && ws.production_dp_paid && ws.materials_distributed)) {
-    return <WorkflowGate reason="Produksi terkunci. Pastikan sampel disetujui, pembayaran produksi terverifikasi, dan distribusi material selesai." />;
-  }
+    if (!workflow?.sample_approved) {
+        return (
+            <WorkflowGate reason="Sample belum disetujui. Production terkunci." />
+        );
+    }
 
-  const [checklist, setChecklist] = useState(job.productionProgress?.checklist || ['Potong', 'Sewing', 'Finishing']);
-  const [progress, setProgress] = useState(job.productionProgress?.percent ?? 0);
+    if (!workflow?.production_invoice_created) {
+        return (
+            <WorkflowGate reason="Invoice produksi belum dibuat." />
+        );
+    }
 
-  return (
-    <div className="space-y-4">
-      <SectionCard title="Checklist Produksi">
-        <ul className="space-y-2">
-          {checklist.map((c: string, idx: number) => (
-            <li key={idx} className="flex items-center gap-2">
-              <input type="checkbox" />
-              <span>{c}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-2 text-sm">Progress: {progress}%</div>
-      </SectionCard>
+    if (!workflow?.production_dp_paid) {
+        return (
+            <WorkflowGate reason="DP produksi minimal 50% belum diverifikasi." />
+        );
+    }
 
-      <SectionCard title="Catatan Internal">
-        <textarea className="w-full border rounded-md p-2" rows={4} />
-      </SectionCard>
-    </div>
-  );
+    return (
+        <div className="space-y-6">
+            <ProductionRunBoard
+                job={job}
+                run={(job as any).production_run || null}
+                runType="production"
+            />
+        </div>
+    );
 };
 
 export default ProductionTab;

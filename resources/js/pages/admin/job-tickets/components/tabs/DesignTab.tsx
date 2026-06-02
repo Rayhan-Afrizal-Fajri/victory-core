@@ -26,6 +26,7 @@ import ManufacturingSpecEditDialog from './ManufacturingSpecEditDialog';
 import formatRupiah from '@/components/ui/format-rupiah';
 import { Input } from '@/components/ui/input';
 import QuotationSection from '@/components/designs/quotationSection';
+import { useCan } from '@/hooks/use-can';
 
 
 const emptySpec = {
@@ -38,6 +39,8 @@ const DesignAndSpecsTab: React.FC<{
     products?: ProductOption[] | null;
     suppliers?: Supplier[]
 }> = ({ job, products = [], suppliers = [] }) => {
+    const can = useCan();
+
     const [editingMaterialSpec, setEditingMaterialSpec] = useState<any | null>(null);
     const [editingManufacturingSpec, setEditingManufacturingSpec] = useState<any | null>(null);
 
@@ -352,77 +355,79 @@ const DesignAndSpecsTab: React.FC<{
 
             <SectionCard title="Manajemen Desain & Revisi">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                    <form onSubmit={submitDesign} className="space-y-4">
-                        <FormImageUpload
-                            label={
-                                needsRevisionUpload
-                                    ? 'Upload Desain Revisi'
-                                    : 'Upload Desain'
-                            }
-                            onChange={(file) =>
-                                designForm.setData('file_desain', file)
-                            }
-                            hint="Upload file desain untuk direview owner."
-                            error={designForm.errors.file_desain}
-                        />
+                    {can('design.upload') && (
+                        <form onSubmit={submitDesign} className="space-y-4">
+                            <FormImageUpload
+                                label={
+                                    needsRevisionUpload
+                                        ? 'Upload Desain Revisi'
+                                        : 'Upload Desain'
+                                }
+                                onChange={(file) =>
+                                    designForm.setData('file_desain', file)
+                                }
+                                hint="Upload file desain untuk direview owner."
+                                error={designForm.errors.file_desain}
+                            />
 
-                        {needsRevisionUpload && (
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-slate-700">
-                                    Catatan Perbaikan Designer
-                                </label>
+                            {needsRevisionUpload && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-slate-700">
+                                        Catatan Perbaikan Designer
+                                    </label>
 
-                                <Textarea
-                                    className="w-full rounded-md border-slate-300 text-sm shadow-sm"
-                                    rows={3}
-                                    value={
-                                        designForm.data.designer_revision_note
-                                    }
-                                    onChange={(e) =>
-                                        designForm.setData(
-                                            'designer_revision_note',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Contoh: Warna logo sudah disesuaikan, ukuran tulisan diperbesar, dan posisi desain digeser ke tengah."
-                                />
-
-                                {designForm.errors.designer_revision_note && (
-                                    <p className="text-xs text-red-500">
-                                        {
-                                            designForm.errors
-                                                .designer_revision_note
+                                    <Textarea
+                                        className="w-full rounded-md border-slate-300 text-sm shadow-sm"
+                                        rows={3}
+                                        value={
+                                            designForm.data.designer_revision_note
                                         }
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                                        onChange={(e) =>
+                                            designForm.setData(
+                                                'designer_revision_note',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Contoh: Warna logo sudah disesuaikan, ukuran tulisan diperbesar, dan posisi desain digeser ke tengah."
+                                    />
 
-                        {needsRevisionUpload &&
-                            latestDesign?.revision_note && (
-                                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                                    <p className="font-semibold">
-                                        Catatan revisi:
-                                    </p>
-                                    <p>{latestDesign.revision_note}</p>
+                                    {designForm.errors.designer_revision_note && (
+                                        <p className="text-xs text-red-500">
+                                            {
+                                                designForm.errors
+                                                    .designer_revision_note
+                                            }
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={
-                                designForm.processing ||
-                                !designForm.data.file_desain
-                            }
-                        >
-                            {designForm.processing
-                                ? 'Mengunggah...'
-                                : needsRevisionUpload
-                                    ? 'Upload Revisi Desain'
-                                    : 'Upload Desain'}
-                        </Button>
-                    </form>
+                            {needsRevisionUpload &&
+                                latestDesign?.revision_note && (
+                                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                                        <p className="font-semibold">
+                                            Catatan revisi:
+                                        </p>
+                                        <p>{latestDesign.revision_note}</p>
+                                    </div>
+                                )}
+
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={
+                                    designForm.processing ||
+                                    !designForm.data.file_desain
+                                }
+                            >
+                                {designForm.processing
+                                    ? 'Mengunggah...'
+                                    : needsRevisionUpload
+                                        ? 'Upload Revisi Desain'
+                                        : 'Upload Desain'}
+                            </Button>
+                        </form>
+                    )}
 
                     <div className="space-y-4 rounded-lg border bg-slate-50 p-4">
                         <h4 className="text-sm font-semibold text-slate-700">
@@ -502,7 +507,7 @@ const DesignAndSpecsTab: React.FC<{
                                             </div>
                                         )}
 
-                                        {['waiting_approval', 'approved'].includes(d.status) && (
+                                        {['waiting_approval', 'approved'].includes(d.status) && can('design.approve') && (
                                             <div className="space-y-3">
                                                 <div className="flex gap-2">
                                                     {d.status === 'waiting_approval' && (
@@ -582,65 +587,71 @@ const DesignAndSpecsTab: React.FC<{
                 </div>
             </SectionCard>
 
-            <SectionCard title="Sync Artikel Master">
-                <form onSubmit={submitSyncArticle} method='POST' className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-                        <Select
-                            value={syncArticleForm.data.product_id}
-                            onValueChange={(value) =>
-                                syncArticleForm.setData('product_id', value)
-                            }
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih artikel master" />
-                            </SelectTrigger>
+            {can('design.sync_article') && (
+                <SectionCard title="Sync Artikel Master">
+                    <form onSubmit={submitSyncArticle} method='POST' className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                            <Select
+                                value={syncArticleForm.data.product_id}
+                                onValueChange={(value) =>
+                                    syncArticleForm.setData('product_id', value)
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Pilih artikel master" />
+                                </SelectTrigger>
 
-                            <SelectContent>
-                                {products?.map((product) => (
-                                    <SelectItem
-                                        key={product.id}
-                                        value={String(product.id)}
-                                    >
-                                        {product.name}
-                                        {product.category ? ` — ${product.category}` : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                <SelectContent>
+                                    {products?.map((product) => (
+                                        <SelectItem
+                                            key={product.id}
+                                            value={String(product.id)}
+                                        >
+                                            {product.name}
+                                            {product.category ? ` — ${product.category}` : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                        <Button type="submit" disabled={syncArticleForm.processing}>
-                            {selectedProduct ? 'Sync Ulang Artikel' : 'Sync Artikel'}
-                        </Button>
-                    </div>
-
-                    {selectedProduct && (
-                        <div className="rounded-xl border bg-emerald-50 p-3 text-sm text-emerald-800">
-                            Artikel aktif: <strong>{selectedProduct.name}</strong>
+                            <Button type="submit" disabled={syncArticleForm.processing}>
+                                {selectedProduct ? 'Sync Ulang Artikel' : 'Sync Artikel'}
+                            </Button>
                         </div>
-                    )}
 
-                    {syncArticleForm.errors.product_id && (
-                        <p className="text-xs text-red-500">
-                            {syncArticleForm.errors.product_id}
-                        </p>
-                    )}
-                </form>
-            </SectionCard>
+                        {selectedProduct && (
+                            <div className="rounded-xl border bg-emerald-50 p-3 text-sm text-emerald-800">
+                                Artikel aktif: <strong>{selectedProduct.name}</strong>
+                            </div>
+                        )}
+
+                        {syncArticleForm.errors.product_id && (
+                            <p className="text-xs text-red-500">
+                                {syncArticleForm.errors.product_id}
+                            </p>
+                        )}
+                    </form>
+                </SectionCard>
+            )}
 
             {materialSpecs.length === 0 && manufacturingSpecs.length === 0 ? (
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-500">
                     Belum ada spesifikasi bahan atau manufaktur. Sync artikel master untuk mengisi data spesifikasi, atau tambahkan spesifikasi secara manual.
                 </div>
             ): (
-                <>
-                    <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
-                    <CostingSummaryCard
-                        orderQty={orderQty}
-                        summary={costingSummary}
-                        form={ownerPriceForm}
-                        onSubmit={submitOwnerPrice}
-                    />
-                </>
+                
+                can('design.manage_specs') && (
+                    <>
+                        <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
+                        <CostingSummaryCard
+                            orderQty={orderQty}
+                            summary={costingSummary}
+                            form={ownerPriceForm}
+                            onSubmit={submitOwnerPrice}
+                        />
+                    </>
+                )
+                
             )}
 
             <MaterialSpecEditDialog open={Boolean(editingMaterialSpec)} onOpenChange={(open) => { if (!open) setEditingMaterialSpec(null); }} spec={editingMaterialSpec} form={materialSpecForm} suppliers={suppliers} onSubmit={updateMaterialSpec} />
@@ -670,6 +681,7 @@ function CostingSummaryCard({
     form: any;
     onSubmit: (e: React.FormEvent) => void;
 }) {
+    const can = useCan();
     const ownerPrice = Number(form.data.harga_jual_per_pcs || 0);
     const profitPerPcs = Math.max(ownerPrice - summary.hppPerPcs, 0);
     const totalSelling = ownerPrice * orderQty;
@@ -710,13 +722,14 @@ function CostingSummaryCard({
                         <button
                             key={margin}
                             type="button"
+                            disabled={!can('design.set_selling_price')}
                             onClick={() =>
                                 form.setData(
                                     'harga_jual_per_pcs',
                                     Math.ceil(summary.recommendations[margin] || 0)
                                 )
                             }
-                            className="rounded-xl border bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50"
+                            className="cursor-pointer rounded-xl border bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50"
                         >
                             <p className="text-xs text-slate-500">
                                 Margin {margin}%
@@ -747,7 +760,8 @@ function CostingSummaryCard({
                         <Input
                             type="number"
                             min={0}
-                            step={1000}
+                            disabled={!can('design.set_selling_price')}
+                            // step={1000}
                             value={form.data.harga_jual_per_pcs}
                             onChange={(e) =>
                                 form.setData(
@@ -787,7 +801,7 @@ function CostingSummaryCard({
                 </div>
 
                 <div className="flex justify-end border-t pt-4">
-                    <Button type="submit" disabled={form.processing}>
+                    <Button type="submit" disabled={form.processing || !can('design.set_selling_price')}>
                         Simpan Harga Jual Final
                     </Button>
                 </div>

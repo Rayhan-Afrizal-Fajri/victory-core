@@ -14,6 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { getInvoiceCategoryLabel } from '../invoice/invoice-utils';
 
 const PaymentDialog = ({
     open,
@@ -33,12 +34,14 @@ const PaymentDialog = ({
     mode?: 'create' | 'edit';
 }) => {
 
+    const categoryLabel = getInvoiceCategoryLabel(invoice);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {mode === 'edit' ? 'Edit Payment' : 'Submit Payment'}
+                        {mode === 'edit' ? 'Edit Payment' : 'Submit Payment'} {categoryLabel && <span className="text-sm text-slate-500">({categoryLabel})</span>}
                     </DialogTitle>
 
                     <DialogDescription>
@@ -54,6 +57,11 @@ const PaymentDialog = ({
                                 </>
                             )}
                     </DialogDescription>
+                    {categoryLabel === 'Production' && (
+                        <p className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-700 border border-yellow-200">
+                            Untuk pembayaran produksi, minimal jumlah bayar adalah 50% dari sisa tagihan.
+                        </p>
+                    )}
                 </DialogHeader>
 
                 <form onSubmit={onSubmitPayment} className="space-y-4">
@@ -80,8 +88,8 @@ const PaymentDialog = ({
                         <Field label="Jumlah Bayar" error={paymentForm.errors.jumlah_bayar}>
                             <Input
                                 type="number"
-                                min={0}
-                                step={1000}
+                                min={categoryLabel === 'Production' ? remainingPayment * 0.5 : 0}
+                                // step={1000}
                                 value={paymentForm.data.jumlah_bayar}
                                 onChange={(e) =>
                                     paymentForm.setData('jumlah_bayar', Number(e.target.value))

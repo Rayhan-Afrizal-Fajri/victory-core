@@ -247,7 +247,7 @@ class DesignController extends Controller
                 ['pesanan_id' => $pesanan->id],
                 [
                     'article_synced' => true,
-                    'design_approved' => false,
+                    // 'design_approved' => true,
                 ]
             );
 
