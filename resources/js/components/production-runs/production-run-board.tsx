@@ -194,6 +194,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     }
     
     const workflow = job.workflow_status;
+    console.log('ProductionRunBoard', { job, run, workflow });
 
     const processes = run.processes || [];
     const allQcPassed =
@@ -263,7 +264,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
             </SectionCard>
 
             <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
-                {canDelivery !== 0 && (
+                {canDelivery !== 0 && workflow.final_payment_paid !== false && (
                     <form onSubmit={submitDelivery} className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Courier" error={deliveryForm.errors.courier_name}>
