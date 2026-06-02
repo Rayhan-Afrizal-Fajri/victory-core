@@ -30,6 +30,6 @@ class ProductionRun extends Model
 
     public function processes()
     {
-        return $this->hasMany(productionRunProcess::class);
+        return $this->hasMany(ProductionRunProcess::class);
     }
 }
