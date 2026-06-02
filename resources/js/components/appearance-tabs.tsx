@@ -13,21 +13,21 @@ export default function AppearanceToggleTab({
 
     // DARK MODE DISABLED: Show only light mode, no switching available
     // To re-enable dark mode toggle, uncomment the full tabs array below
-    // const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
-    //     { value: 'light', icon: Sun, label: 'Light' },
-    //     { value: 'dark', icon: Moon, label: 'Dark' },
-    //     { value: 'system', icon: Monitor, label: 'System' },
-    // ];
-    
-    // Light mode only
     const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
         { value: 'light', icon: Sun, label: 'Light' },
+        { value: 'dark', icon: Moon, label: 'Dark' },
+        { value: 'system', icon: Monitor, label: 'System' },
     ];
+    
+    // Light mode only
+    // const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
+    //     { value: 'light', icon: Sun, label: 'Light' },
+    // ];
 
     return (
         <div
             className={cn(
-                'inline-flex gap-1 rounded-lg bg-neutral-100 p-1', // Removed 'dark:bg-neutral-800' since dark mode is disabled
+                'inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800',
                 className,
             )}
             {...props}
@@ -36,12 +36,11 @@ export default function AppearanceToggleTab({
                 <button
                     key={value}
                     onClick={() => updateAppearance(value)}
-                    disabled={true} // DARK MODE DISABLED: Button is disabled
                     className={cn(
-                        'flex items-center rounded-md px-3.5 py-1.5 transition-colors cursor-not-allowed opacity-60',
+                        'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
                         appearance === value
-                            ? 'bg-white shadow-xs' // Removed dark mode classes
-                            : 'text-neutral-500 bg-white shadow-xs', // Light mode always selected
+                            ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white'
+                            : 'text-neutral-500 bg-white shadow-xs dark:bg-slate-900 dark:text-neutral-300',
                     )}
                 >
                     <Icon className="-ml-1 h-4 w-4" />

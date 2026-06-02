@@ -23,15 +23,15 @@ export default function AuthSplitLayout({
                                     <Factory className='size-5'/>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <span className="font-black text-md">Victory Labs</span>
-                                    <span className="text-gray-600 uppercase text-[10px]">ERP Tekstil internal</span>
+                                    <span className="font-black text-md text-white">Victory Labs</span>
+                                    <span className="text-gray-600 uppercase text-[10px] dark:text-blue-200">ERP Tekstil internal</span>
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <h1 className="text-3xl font-bold text-gray-900">
+                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                                     {title}
                                 </h1>
-                                <p className="text-gray-600 text-sm">
+                                <p className="text-gray-600 text-sm dark:text-blue-200">
                                     {description}
                                 </p>
                             </div>

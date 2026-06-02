@@ -155,7 +155,182 @@
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
 }
+@layer utilities {
+    .dark .bg-white,
+    .dark [class*="bg-white"] {
+        background-color: var(--card) !important;
+    }
 
+    .dark .bg-neutral-100,
+    .dark [class*="bg-neutral-100"] {
+        background-color: oklch(0.23 0 0) !important;
+    }
+
+    .dark .bg-neutral-200,
+    .dark [class*="bg-neutral-200"] {
+        background-color: oklch(0.28 0 0) !important;
+    }
+
+    .dark .bg-slate-50,
+    .dark [class*="bg-slate-50"] {
+        background-color: oklch(0.21 0 0) !important;
+    }
+
+    .dark .bg-slate-100,
+    .dark [class*="bg-slate-100"] {
+        background-color: oklch(0.25 0 0) !important;
+    }
+
+    .dark .bg-slate-200,
+    .dark [class*="bg-slate-200"] {
+        background-color: oklch(0.30 0 0) !important;
+    }
+
+    .dark .bg-slate-300,
+    .dark [class*="bg-slate-300"] {
+        background-color: oklch(0.36 0 0) !important;
+    }
+
+    .dark .bg-slate-400,
+    .dark [class*="bg-slate-400"] {
+        background-color: oklch(0.42 0 0) !important;
+    }
+
+    .dark .bg-gray-50,
+    .dark [class*="bg-gray-50"] {
+        background-color: oklch(0.24 0 0) !important;
+    }
+
+    .dark .bg-gray-100,
+    .dark [class*="bg-gray-100"] {
+        background-color: oklch(0.27 0 0) !important;
+    }
+
+    .dark .bg-gray-200,
+    .dark [class*="bg-gray-200"] {
+        background-color: oklch(0.32 0 0) !important;
+    }
+
+    .dark .bg-gray-300,
+    .dark [class*="bg-gray-300"] {
+        background-color: oklch(0.37 0 0) !important;
+    }
+
+    .dark .bg-gray-400,
+    .dark [class*="bg-gray-400"] {
+        background-color: oklch(0.42 0 0) !important;
+    }
+
+    .dark .bg-neutral-100,
+    .dark [class*="bg-neutral-100"] {
+        background-color: oklch(0.24 0 0) !important;
+    }
+
+    .dark .bg-neutral-200,
+    .dark [class*="bg-neutral-200"] {
+        background-color: oklch(0.28 0 0) !important;
+    }
+
+    .dark .bg-black,
+    .dark [class*="bg-black"] {
+        background-color: oklch(0.06 0 0) !important;
+    }
+
+    .dark .border-black,
+    .dark [class*="border-black/"] {
+        border-color: oklch(0.5 0 0) !important;
+    }
+
+    .dark .border-slate-200,
+    .dark [class*="border-slate-200"] {
+        border-color: oklch(0.26 0 0) !important;
+    }
+
+    .dark .border-slate-300,
+    .dark [class*="border-slate-300"] {
+        border-color: oklch(0.30 0 0) !important;
+    }
+
+    .dark .border-slate-400,
+    .dark [class*="border-slate-400"] {
+        border-color: oklch(0.34 0 0) !important;
+    }
+
+    .dark .border-gray-100,
+    .dark [class*="border-gray-100"] {
+        border-color: oklch(0.26 0 0) !important;
+    }
+
+    .dark .border-gray-200,
+    .dark [class*="border-gray-200"] {
+        border-color: oklch(0.30 0 0) !important;
+    }
+
+    .dark .border-gray-300,
+    .dark [class*="border-gray-300"] {
+        border-color: oklch(0.34 0 0) !important;
+    }
+
+    .dark .border-gray-400,
+    .dark [class*="border-gray-400"] {
+        border-color: oklch(0.40 0 0) !important;
+    }
+
+    .dark .text-black,
+    .dark [class*="text-black"] {
+        color: var(--foreground) !important;
+    }
+
+    .dark .text-gray-900,
+    .dark [class*="text-gray-900"] {
+        color: var(--foreground) !important;
+    }
+
+    .dark .text-gray-800,
+    .dark [class*="text-gray-800"] {
+        color: oklch(0.96 0.08 257) !important;
+    }
+
+    .dark .text-gray-700,
+    .dark [class*="text-gray-700"] {
+        color: oklch(0.88 0.06 257) !important;
+    }
+
+    .dark .text-gray-600,
+    .dark [class*="text-gray-600"] {
+        color: oklch(0.80 0.05 257) !important;
+    }
+
+    .dark .text-gray-500,
+    .dark [class*="text-gray-500"] {
+        color: oklch(0.72 0.04 257) !important;
+    }
+
+    .dark .text-slate-900,
+    .dark [class*="text-slate-900"] {
+        color: var(--foreground) !important;
+    }
+
+    .dark .text-slate-800,
+    .dark [class*="text-slate-800"] {
+        color: oklch(0.96 0.08 257) !important;
+    }
+
+    .dark .text-slate-700,
+    .dark [class*="text-slate-700"] {
+        color: oklch(0.92 0.06 257) !important;
+    }
+
+    .dark .text-slate-600,
+    .dark [class*="text-slate-600"] {
+        color: oklch(0.86 0.05 257) !important;
+    }
+
+    .dark .text-slate-500,
+    .dark [class*="text-slate-500"] {
+        color: oklch(0.8 0.04 257) !important;
+    }
+}
 @layer base {
     * {
         @apply border-border;

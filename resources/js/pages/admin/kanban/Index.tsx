@@ -206,7 +206,7 @@ function KanbanCard({
         <div
             draggable
             onDragStart={handleDragStart}
-            className="cursor-grab rounded-sm border-l-4 border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+            className="cursor-grab rounded-sm border-l-4 border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing dark:border-slate-700 dark:bg-slate-950"
         >
             <div className="mb-2 flex items-start justify-between">
                 <h4 className="font-semibold text-slate-900">{card.jobNo}</h4>

@@ -10,7 +10,7 @@ export type UseAppearanceReturn = {
 };
 
 const listeners = new Set<() => void>();
-let currentAppearance: Appearance = 'system';
+let currentAppearance: Appearance = 'light';
 
 const prefersDark = (): boolean => {
     if (typeof window === 'undefined') {
@@ -38,10 +38,7 @@ const getStoredAppearance = (): Appearance => {
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {
-    // DARK MODE DISABLED: System will always use light mode
-    // To enable dark mode, remove this line and uncomment the line below
-    return false;
-    // return appearance === 'dark' || (appearance === 'system' && prefersDark());
+    return appearance === 'dark' || (appearance === 'system' && prefersDark());
 };
 
 const applyTheme = (appearance: Appearance): void => {
@@ -49,14 +46,10 @@ const applyTheme = (appearance: Appearance): void => {
         return;
     }
 
-    // DARK MODE DISABLED: Always apply light theme
-    // To re-enable dark mode, uncomment the lines below and remove the fixed light assignment
-    // const isDark = isDarkMode(appearance);
-    const isDark = false;
+    const isDark = isDarkMode(appearance);
 
     document.documentElement.classList.toggle('dark', isDark);
-    document.documentElement.style.colorScheme = 'light'; // Always light
-    // document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
 };
 
 const subscribe = (callback: () => void) => {
@@ -83,8 +76,8 @@ export function initializeTheme(): void {
     }
 
     if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
-        setCookie('appearance', 'system');
+        localStorage.setItem('appearance', 'light');
+        setCookie('appearance', 'light');
     }
 
     currentAppearance = getStoredAppearance();
@@ -101,15 +94,9 @@ export function useAppearance(): UseAppearanceReturn {
         () => 'system',
     );
 
-    // DARK MODE DISABLED: Always return 'light' as resolved appearance
-    // To re-enable, uncomment the line below and remove the hard-coded 'light'
-    // const resolvedAppearance: ResolvedAppearance = isDarkMode(appearance) ? 'dark' : 'light';
-    const resolvedAppearance: ResolvedAppearance = 'light';
+    const resolvedAppearance: ResolvedAppearance = isDarkMode(appearance) ? 'dark' : 'light';
 
     const updateAppearance = (mode: Appearance): void => {
-        // DARK MODE DISABLED: Appearance updates are now no-ops
-        // To re-enable, uncomment the code below
-        /*
         currentAppearance = mode;
 
         // Store in localStorage for client-side persistence...
@@ -120,7 +107,7 @@ export function useAppearance(): UseAppearanceReturn {
 
         applyTheme(mode);
         notify();
-        */
+        
     };
 
     return { appearance, resolvedAppearance, updateAppearance } as const;

@@ -111,7 +111,7 @@ function MiniBarChart({
   );
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm w-full">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm w-full dark:border-slate-700 dark:bg-slate-950">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">{title}</p>

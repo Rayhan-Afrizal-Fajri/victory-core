@@ -31,7 +31,7 @@ export default function Login({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email" className="text-gray-700 font-semibold">
+                                <Label htmlFor="email" className="text-gray-700 font-semibold dark:text-gray-300">
                                     EMAIL
                                 </Label>
                                 <Input
@@ -43,13 +43,13 @@ export default function Login({
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="owner@victorylabs.com"
-                                    className="px-4 py-3 border border-gray-300"
+                                    className="px-4 py-3 border border-gray-300 dark:border-gray-600"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password" className="text-gray-700 font-semibold">
+                                <Label htmlFor="password" className="text-gray-700 font-semibold dark:text-gray-300">
                                     PASSWORD
                                 </Label>
                                 <PasswordInput
@@ -59,7 +59,7 @@ export default function Login({
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
-                                    className="px-4 py-3 border border-gray-300"
+                                    className="px-4 py-3 border border-gray-300 dark:border-gray-600"
                                 />
                                 <InputError message={errors.password} />
                             </div>

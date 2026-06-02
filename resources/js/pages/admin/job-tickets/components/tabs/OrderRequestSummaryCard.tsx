@@ -30,8 +30,8 @@ function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakd
             </div>
 
             {sizeBreakdowns.length > 0 && (
-                <div className="mt-4 rounded-xl border bg-slate-50 p-4">
-                    <p className="mb-3 text-xs font-semibold uppercase text-slate-500">
+                <div className="mt-4 rounded-xl border bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="mb-3 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                         Size Breakdown
                     </p>
 
@@ -39,13 +39,13 @@ function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakd
                         {sizeBreakdowns.map((row) => (
                             <div
                                 key={row.id || `${row.color}-${row.size_label}`}
-                                className="rounded-lg border bg-white p-3 text-sm"
+                                className="rounded-lg border bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950"
                             >
-                                <p className="font-semibold text-slate-900">
+                                <p className="font-semibold text-slate-900 dark:text-white">
                                     {row.color ? `${row.color} / ` : ''}
                                     {row.size_label}
                                 </p>
-                                <p className="text-xs text-slate-500">{row.qty} pcs</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{row.qty} pcs</p>
                             </div>
                         ))}
                     </div>
@@ -53,8 +53,8 @@ function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakd
             )}
 
             {(job.customer_notes || job.keterangan_tambahan) && (
-                <div className="mt-4 rounded-xl border bg-slate-50 p-4 text-sm text-slate-700">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">
+                <div className="mt-4 rounded-xl border bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                         Catatan Customer
                     </p>
                     {job.customer_notes || job.keterangan_tambahan}

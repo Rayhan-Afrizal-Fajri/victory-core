@@ -55,9 +55,9 @@ export default function DataTable<T extends Record<string, any>>({
   );
 
   return (
-    <div className="overflow-hidden rounded-sm border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-sm border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
       {/* TOOLBAR */}
-      <div className="border-b border-slate-200 p-4">
+      <div className="border-b border-slate-200 p-4 dark:border-slate-700">
         <DataTableToolbar
           search={search}
           onSearchChange={(value) => {

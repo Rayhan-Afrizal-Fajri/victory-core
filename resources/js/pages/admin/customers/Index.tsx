@@ -231,7 +231,7 @@ export default function Index({ customers }: Props) {
 
           {selectedCustomer ? (
             <div className="space-y-6 px-4 pb-10">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Customer</p>
@@ -239,18 +239,18 @@ export default function Index({ customers }: Props) {
                     <p className="mt-1 text-sm text-slate-600">{selectedCustomer.contact}</p>
                     <p className="mt-1 text-sm text-slate-500">{selectedCustomer.address}</p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 p-4 text-center">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Total orders</p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900">{selectedCustomer.total_orders}</p>
+                  <div className="rounded-2xl bg-slate-50 p-4 text-center dark:bg-slate-900">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Total orders</p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{selectedCustomer.total_orders}</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-slate-900">Order History</h3>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                       <tr>
                         <th className="px-4 py-3">Job Ticket</th>
                         <th className="px-4 py-3">Item</th>
