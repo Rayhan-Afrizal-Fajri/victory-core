@@ -162,7 +162,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Invoices
      */
-    Route::resource('invoices', InvoiceController::class);
+    Route::resource('invoices', InvoiceController::class)->only([
+        'index',
+        'store',
+        'update'
+    ]);
 
     Route::patch('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
         ->name('invoices.cancel');

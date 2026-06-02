@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { BarChart3, TrendingUp, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,19 +14,61 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { formatCurrency } from '@/helpers/format';
 
 type ReportStatus = 'penawaran' | 'sample' | 'produksi' | 'done';
 
 type ReportRow = {
-  id: string;
+  id: number;
   jobNo: string;
   product: string;
   customer: string;
   status: ReportStatus;
+  statusLabel: string;
   qty: number;
   price: number;
   hpp: number;
+  revenue: number;
+  cost: number;
+  gop: number;
+  margin: number;
   date: string;
+};
+
+type Summary = {
+  revenue: number;
+  cost: number;
+  gop: number;
+  qty: number;
+  orders: number;
+  margin: number;
+};
+
+type ChartItem = {
+  label: string;
+  revenue?: number;
+  cost?: number;
+  gop?: number;
+  margin?: number;
+  orders?: number;
+  customer?: string;
+};
+
+type PageProps = {
+  filters: {
+    period_type: 'daily' | 'monthly' | 'yearly';
+    date: string;
+    month: string;
+    year: string;
+    status: 'all' | ReportStatus;
+  };
+  rows: ReportRow[];
+  summary: Summary;
+  charts: {
+    period_profitability: ChartItem[];
+    top_gop_orders: ChartItem[];
+    margin_by_status: ChartItem[];
+  };
 };
 
 const PERIOD_OPTIONS = [
@@ -49,135 +92,215 @@ const STATUS_LABELS: Record<ReportStatus, { label: string; className: string }> 
   done: { label: 'DONE', className: 'bg-emerald-100 text-emerald-700' },
 };
 
-const SAMPLE_ROWS: ReportRow[] = [
-  {
-    id: '1',
-    jobNo: 'VL-2026-001',
-    product: 'Kemeja Seragam Kantor',
-    customer: 'PT Sinar Mandiri',
-    status: 'sample',
-    qty: 120,
-    price: 185000,
-    hpp: 110000,
-    date: '2026-05-10',
-  },
-  {
-    id: '2',
-    jobNo: 'VL-2026-002',
-    product: 'Jersey Running Sublim',
-    customer: 'Komunitas Lari Bandung',
-    status: 'sample',
-    qty: 75,
-    price: 135000,
-    hpp: 78000,
-    date: '2026-05-11',
-  },
-  {
-    id: '3',
-    jobNo: 'VL-2026-003',
-    product: 'T-Shirt Cotton Combed 30s',
-    customer: 'Startup Kopi Nusa',
-    status: 'produksi',
-    qty: 200,
-    price: 89000,
-    hpp: 52000,
-    date: '2026-05-12',
-  },
-  {
-    id: '4',
-    jobNo: 'VL-2026-004',
-    product: 'Jaket Almamater',
-    customer: 'SMA Negeri 5',
-    status: 'penawaran',
-    qty: 350,
-    price: 245000,
-    hpp: 158000,
-    date: '2026-05-13',
-  },
-  {
-    id: '5',
-    jobNo: 'VL-2026-005',
-    product: 'Polo Shirt Lacoste CVC',
-    customer: 'Event Organizer Bali Fest',
-    status: 'done',
-    qty: 60,
-    price: 125000,
-    hpp: 72000,
-    date: '2026-05-14',
-  },
-];
+function MiniBarChart({
+  title,
+  description,
+  data,
+  valueKey,
+  formatValue = formatCurrency,
+}: {
+  title: string;
+  description: string;
+  data: ChartItem[];
+  valueKey: keyof ChartItem;
+  formatValue?: (value: number) => string;
+}) {
+  const maxValue = Math.max(
+    ...data.map((item) => Number(item[valueKey] || 0)),
+    1,
+  );
 
-function formatIDR(value: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(value);
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm w-full">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-xs text-slate-500">{description}</p>
+        </div>
+        <BarChart3 className="size-5 text-slate-400" />
+      </div>
+
+      {data.length === 0 ? (
+        <p className="text-sm text-slate-500">Belum ada data.</p>
+      ) : (
+        <div className="space-y-4">
+          {data.map((item) => {
+            const value = Number(item[valueKey] || 0);
+            const percentage = Math.max((value / maxValue) * 100, 4);
+
+            return (
+              <div key={item.label} className="space-y-1">
+                <div className="flex justify-between gap-3 text-xs">
+                  <span className="font-medium text-slate-700">
+                    {item.label}
+                  </span>
+                  <span className="text-slate-500">
+                    {formatValue(value)}
+                  </span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-emerald-500"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+
+                {item.customer && (
+                  <p className="text-[11px] text-slate-400">
+                    {item.customer}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function getPeriodLabel(value: string) {
-  return PERIOD_OPTIONS.find((option) => option.value === value)?.label ?? value;
+function ProfitabilityTrendChart({
+  data,
+}: {
+  data: ChartItem[];
+}) {
+  const maxValue = Math.max(
+    ...data.flatMap((item) => [
+      Number(item.revenue || 0),
+      Number(item.cost || 0),
+      Number(item.gop || 0),
+    ]),
+    1,
+  );
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2 w-full">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            Revenue vs HPP vs GOP
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Perbandingan revenue, cost, dan profit berdasarkan periode terpilih.
+          </p>
+        </div>
+        <TrendingUp className="size-5 text-slate-400" />
+      </div>
+
+      {data.length === 0 ? (
+        <p className="text-sm text-slate-500">Belum ada data.</p>
+      ) : (
+        <div className="space-y-5">
+          {data.map((item) => (
+            <div key={item.label} className="space-y-2">
+              <div className="text-xs font-medium text-slate-700">
+                {item.label}
+              </div>
+
+              <ChartMetricBar
+                label="Revenue"
+                value={Number(item.revenue || 0)}
+                maxValue={maxValue}
+                className="bg-blue-500"
+              />
+
+              <ChartMetricBar
+                label="HPP"
+                value={Number(item.cost || 0)}
+                maxValue={maxValue}
+                className="bg-red-400"
+              />
+
+              <ChartMetricBar
+                label="GOP"
+                value={Number(item.gop || 0)}
+                maxValue={maxValue}
+                className="bg-emerald-500"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default function Index() {
-  const [periodType, setPeriodType] = useState<'daily' | 'monthly' | 'yearly'>('monthly');
-  const [selectedDate, setSelectedDate] = useState('2026-05-14');
-  const [selectedMonth, setSelectedMonth] = useState('2026-05');
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | ReportStatus>('all');
+function ChartMetricBar({
+  label,
+  value,
+  maxValue,
+  className,
+}: {
+  label: string;
+  value: number;
+  maxValue: number;
+  className: string;
+}) {
+  const percentage = Math.max((value / maxValue) * 100, 3);
 
-  const filteredRows = useMemo(() => {
-    return SAMPLE_ROWS.filter((row) => {
-      if (selectedStatus !== 'all' && row.status !== selectedStatus) {
-        return false;
-      }
+  return (
+    <div className="grid grid-cols-[70px_1fr_110px] items-center gap-3 text-xs">
+      <span className="text-slate-500">{label}</span>
 
-      if (periodType === 'daily') {
-        return row.date === selectedDate;
-      }
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full ${className}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
 
-      if (periodType === 'monthly') {
-        return row.date.startsWith(selectedMonth);
-      }
+      <span className="text-right font-medium text-slate-700">
+        {formatCurrency(value)}
+      </span>
+    </div>
+  );
+}
 
-      if (periodType === 'yearly') {
-        return row.date.startsWith(selectedYear);
-      }
+export default function Index({
+  filters,
+  rows = [],
+  summary,
+  charts,
+}: PageProps) {
+  const [periodType, setPeriodType] = useState(filters.period_type || 'monthly');
+  const [selectedDate, setSelectedDate] = useState(filters.date);
+  const [selectedMonth, setSelectedMonth] = useState(filters.month);
+  const [selectedYear, setSelectedYear] = useState(filters.year);
+  const [selectedStatus, setSelectedStatus] = useState<'all' | ReportStatus>(filters.status || 'all');
 
-      return true;
-    });
-  }, [selectedStatus, selectedDate, selectedMonth, selectedYear, periodType]);
-
-  const summary = useMemo(() => {
-    const totals = filteredRows.reduce(
-      (acc, row) => {
-        const revenue = row.qty * row.price;
-        const cost = row.qty * row.hpp;
-        const gop = revenue - cost;
-
-        acc.revenue += revenue;
-        acc.cost += cost;
-        acc.gop += gop;
-        acc.qty += row.qty;
-
-        return acc;
+  const applyFilters = () => {
+    router.get(
+      '/profit-loss-report',
+      {
+        period_type: periodType,
+        date: selectedDate,
+        month: selectedMonth,
+        year: selectedYear,
+        status: selectedStatus,
       },
-      { revenue: 0, cost: 0, gop: 0, qty: 0 }
+      {
+        preserveState: true,
+        preserveScroll: true,
+      },
     );
-
-    return {
-      ...totals,
-      margin: totals.revenue ? (totals.gop / totals.revenue) * 100 : 0,
-      orders: filteredRows.length,
-    };
-  }, [filteredRows]);
+  };
 
   const resetFilters = () => {
-    setPeriodType('monthly');
-    setSelectedDate('2026-05-14');
-    setSelectedMonth('2026-05');
-    setSelectedYear('2026');
-    setSelectedStatus('all');
+    router.get(
+      '/profit-loss-report',
+      {
+        period_type: 'monthly',
+        month: new Date().toISOString().slice(0, 7),
+        date: new Date().toISOString().slice(0, 10),
+        year: String(new Date().getFullYear()),
+        status: 'all',
+      },
+      {
+        preserveState: false,
+        preserveScroll: true,
+      },
+    );
   };
 
   return (
@@ -272,9 +395,13 @@ export default function Index() {
                   </Select>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <Button variant="outline" className="w-full" onClick={resetFilters}>
-                    Reset filter
+                    Reset
+                  </Button>
+
+                  <Button className="w-full" onClick={applyFilters}>
+                    Terapkan
                   </Button>
                 </div>
               </div>
@@ -285,21 +412,21 @@ export default function Index() {
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Total Revenue</p>
               <p className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-                {formatIDR(summary.revenue)}
+                {formatCurrency(summary.revenue)}
               </p>
               <p className="mt-2 text-sm text-slate-500">{summary.qty} pcs · {summary.orders} order</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Total HPP</p>
               <p className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-                {formatIDR(summary.cost)}
+                {formatCurrency(summary.cost)}
               </p>
               <p className="mt-2 text-sm text-slate-500">Cost of goods</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Gross Operating Profit</p>
               <p className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-                {formatIDR(summary.gop)}
+                {formatCurrency(summary.gop)}
               </p>
               <p className="mt-2 text-sm text-slate-500">Revenue - HPP</p>
             </div>
@@ -309,6 +436,27 @@ export default function Index() {
                 {summary.margin.toFixed(1)}%
               </p>
               <p className="mt-2 text-sm text-slate-500">{summary.margin >= 35 ? 'Healthy' : 'Review needed'}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <ProfitabilityTrendChart data={charts.period_profitability || []} />
+
+            <div className="flex gap-4 w-full">
+              <MiniBarChart
+                title="Top 5 GOP Job Ticket"
+                description="Job ticket dengan gross operating profit tertinggi."
+                data={charts.top_gop_orders || []}
+                valueKey="gop"
+              />
+
+              <MiniBarChart
+                title="Margin by Status"
+                description="Rata-rata margin berdasarkan status workflow."
+                data={charts.margin_by_status || []}
+                valueKey="margin"
+                formatValue={(value) => `${value.toFixed(1)}%`}
+              />
             </div>
           </div>
 
@@ -330,7 +478,7 @@ export default function Index() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {filteredRows.map((row) => {
+                  {rows.map((row) => {
                     const revenue = row.qty * row.price;
                     const cost = row.qty * row.hpp;
                     const gop = revenue - cost;
@@ -344,16 +492,16 @@ export default function Index() {
                           <div className="text-xs text-slate-500">{row.customer}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <Badge className={`${STATUS_LABELS[row.status].className}`}>
-                            {STATUS_LABELS[row.status].label}
+                          <Badge className={`${STATUS_LABELS[row.status]?.className ?? 'bg-slate-100 text-slate-700'}`}>
+                            {STATUS_LABELS[row.status]?.label ?? row.statusLabel}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-slate-900">{row.qty}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatIDR(row.price)}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatIDR(row.hpp)}</td>
-                        <td className="px-6 py-4 font-semibold text-slate-900">{formatIDR(revenue)}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatIDR(cost)}</td>
-                        <td className="px-6 py-4 font-semibold text-emerald-600">{formatIDR(gop)}</td>
+                        <td className="px-6 py-4 text-slate-900">{formatCurrency(row.price)}</td>
+                        <td className="px-6 py-4 text-slate-900">{formatCurrency(row.hpp)}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-900">{formatCurrency(revenue)}</td>
+                        <td className="px-6 py-4 text-slate-900">{formatCurrency(cost)}</td>
+                        <td className="px-6 py-4 font-semibold text-emerald-600">{formatCurrency(gop)}</td>
                         <td className="px-6 py-4">
                           <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                             {margin.toFixed(1)}%

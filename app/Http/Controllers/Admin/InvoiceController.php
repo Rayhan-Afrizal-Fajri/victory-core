@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\Pesanan;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,158 @@ class InvoiceController extends Controller
      */
     public function index()
     {
-        return Inertia::render('admin/invoices/Index');
+        $invoices = Invoice::query()
+            ->with([
+                'pesanan.customer',
+                'pesanan.workflowStatus',
+                'payments',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn ($invoice) => $this->mapInvoice($invoice))
+            ->values();
+
+        $eligibleJobTickets = Pesanan::query()
+            ->with([
+                'customer',
+                'workflowStatus',
+                'quotations',
+                'invoices.payments',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn ($pesanan) => $this->mapEligibleJobTicket($pesanan))
+            ->filter(fn ($ticket) => count($ticket['available_invoice_categories']) > 0)
+            ->values();
+
+        return Inertia::render('admin/invoices/Index', [
+            'invoices' => $invoices,
+            'eligibleJobTickets' => $eligibleJobTickets,
+        ]);
+    }
+
+    private function mapInvoice(Invoice $invoice): array
+    {
+        $pesanan = $invoice->pesanan;
+        $payments = $invoice->payments ?? collect();
+
+        return [
+            'id' => $invoice->id,
+            'pesanan_id' => $invoice->pesanan_id,
+            
+            'no_invoice' => $invoice->no_invoice,
+            'title' => $invoice->title ?? 'Invoice',
+            'kategori_invoice' => $invoice->kategori_invoice,
+            'status_tagihan' => $invoice->status_tagihan,
+            
+            'total_tagihan' => (float) $invoice->total_tagihan,
+            'amount' => (float) $invoice->total_tagihan,
+          
+            'tgl_jatuh_tempo' => $invoice->tgl_jatuh_tempo,
+            'issued_at' => $invoice->created_at?->toDateString(),
+
+            'no_job_ticket' => $pesanan?->no_job_ticket,
+            'job_ticket' => [
+                'id' => $pesanan?->id,
+                'no_job_ticket' => $pesanan?->no_job_ticket,
+                'produk' => $pesanan?->requested_product_name ?: $pesanan?->produk,
+                'quantity' => (int) ($pesanan?->quantity ?: $pesanan?->q ?: 0),
+            ],
+
+            'customer' => [
+                'id' => $pesanan?->customer?->id,
+                'nama' => $pesanan?->customer?->nama,
+                'nama_perusahaan' => $pesanan?->customer?->nama_perusahaan
+                    ?? $pesanan?->customer_perusahaan_snapshot,
+            ],
+
+            'payments' => $payments->map(fn ($payment) => [
+                'id' => $payment->id,
+                'jumlah_bayar' => (float) $payment->jumlah_bayar,
+                'amount' => (float) $payment->jumlah_bayar,
+                'tgl_bayar' => $payment->tgl_bayar,
+                'date' => $payment->tgl_bayar,
+                'metode_pembayaran' => $payment->metode_pembayaran,
+                'method' => $payment->metode_pembayaran,
+                'status' => $payment->status,
+                'bukti_transfer_path' => $payment->bukti_transfer_path,
+                'catatan_finance' => $payment->catatan_finance,
+                'rejection_note' => $payment->rejection_note,
+            ])->values(),
+
+            'workflow_status' => $pesanan?->workflowStatus,
+        ];
+    }
+
+    private function mapEligibleJobTicket(Pesanan $pesanan): array
+    {
+        $activeInvoices = $pesanan->invoices
+            ->filter(fn ($invoice) => ! in_array($invoice->status_tagihan, ['cancelled', 'Cancelled']));
+
+        $hasSampleInvoice = $activeInvoices
+            ->contains(fn ($invoice) => $invoice->kategori_invoice === 'sample');
+
+        $hasProductionInvoice = $activeInvoices
+            ->contains(fn ($invoice) => $invoice->kategori_invoice === 'production');
+
+        $workflow = $pesanan->workflowStatus;
+
+        $availableCategories = [];
+
+        if (($workflow?->quotation_approved ?? false) && ! $hasSampleInvoice) {
+            $availableCategories[] = [
+                'value' => 'sample',
+                'label' => 'Sample',
+                'default_amount' => $this->calculateSampleInvoiceAmount($pesanan),
+            ];
+        }
+
+        if (($workflow?->sample_approved ?? false) && ! $hasProductionInvoice) {
+            $availableCategories[] = [
+                'value' => 'production',
+                'label' => 'Production',
+                'default_amount' => $this->calculateProductionInvoiceAmount($pesanan),
+            ];
+        }
+
+        return [
+            'id' => $pesanan->id,
+            'no_job_ticket' => $pesanan->no_job_ticket,
+            'produk' => $pesanan->requested_product_name ?: $pesanan->produk,
+            'customer' => $pesanan->customer?->nama_perusahaan
+                ?? $pesanan->customer?->nama
+                ?? $pesanan->customer_perusahaan_snapshot
+                ?? '-',
+            'quantity' => (int) ($pesanan->quantity ?: $pesanan->q ?: 0),
+            'sample_qty' => (int) ($pesanan->sample_qty ?: 1),
+            'harga_jual_per_pcs' => (float) ($pesanan->harga_jual_per_pcs ?: 0),
+            'available_invoice_categories' => $availableCategories,
+        ];
+    }
+
+    private function calculateSampleInvoiceAmount(Pesanan $pesanan): float
+    {
+        $sampleQty = (int) ($pesanan->sample_qty ?: 1);
+        $pricePerPcs = (float) ($pesanan->harga_jual_per_pcs ?: 0);
+
+        return $sampleQty * $pricePerPcs;
+    }
+
+    private function calculateProductionInvoiceAmount(Pesanan $pesanan): float
+    {
+        $quotation = $pesanan->quotations()
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
+
+        if ($quotation) {
+            return (float) $quotation->grand_total;
+        }
+
+        $quantity = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
+        $pricePerPcs = (float) ($pesanan->harga_jual_per_pcs ?: 0);
+
+        return $quantity * $pricePerPcs;
     }
 
     /**
@@ -32,9 +184,78 @@ class InvoiceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, InvoiceService $invoiceService)
     {
-        //
+        $validated = $request->validate([
+            'pesanan_id' => ['required', 'exists:pesanan,id'],
+            'kategori_invoice' => ['required', 'in:sample,production'],
+            'total_tagihan' => ['required', 'numeric', 'min:1'],
+            'tgl_jatuh_tempo' => ['nullable', 'date'],
+            'title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $pesanan = Pesanan::with(['workflowStatus', 'invoices'])->findOrFail($validated['pesanan_id']);
+
+        $exists = $pesanan->invoices()
+            ->where('kategori_invoice', $validated['kategori_invoice'])
+            ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled'])
+            ->exists();
+
+        if ($exists) {
+            abort(422, 'Job ticket ini sudah memiliki invoice aktif untuk kategori tersebut.');
+        }
+
+        if ($validated['kategori_invoice'] === 'sample' && ! $pesanan->workflowStatus?->quotation_approved) {
+            abort(422, 'Invoice sample hanya bisa dibuat setelah quotation approved.');
+        }
+
+        if ($validated['kategori_invoice'] === 'production' && ! $pesanan->workflowStatus?->sample_approved) {
+            abort(422, 'Invoice production hanya bisa dibuat setelah sample approved.');
+        }
+
+        DB::transaction(function () use ($pesanan, $validated, $invoiceService) {
+            $prefix = $validated['kategori_invoice'] === 'sample' ? 'SAMPLE' : 'PROD';
+
+            $pesanan->invoices()->create([
+                'no_invoice' => $invoiceService->generate($prefix),
+                'kategori_invoice' => $validated['kategori_invoice'],
+                'title' => $validated['title']
+                    ?: ($validated['kategori_invoice'] === 'sample'
+                        ? 'Invoice Sample - ' . ($pesanan->requested_product_name ?: $pesanan->produk)
+                        : 'Invoice Production - ' . ($pesanan->requested_product_name ?: $pesanan->produk)),
+                'total_tagihan' => $validated['total_tagihan'],
+                'status_tagihan' => 'unpaid',
+                'tgl_jatuh_tempo' => $validated['tgl_jatuh_tempo'] ?? now()->addDays(7)->toDateString(),
+            ]);
+
+            $workflowPayload = [];
+
+            if ($validated['kategori_invoice'] === 'sample') {
+                $workflowPayload['sample_invoice_created'] = true;
+            }
+
+            if ($validated['kategori_invoice'] === 'production') {
+                $workflowPayload['production_invoice_created'] = true;
+                $workflowPayload['production_dp_paid'] = false;
+                $workflowPayload['final_payment_paid'] = false;
+            }
+
+            if ($workflowPayload) {
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    $workflowPayload
+                );
+            }
+
+            $pesanan->workflowHistory()->create([
+                'step' => 'invoice',
+                'action' => 'manual_created',
+                'user_id' => Auth::id(),
+                'notes' => 'Invoice manual dibuat dari menu Invoice.',
+            ]);
+        });
+
+        return back()->with('success', 'Invoice berhasil dibuat.');
     }
 
     /**

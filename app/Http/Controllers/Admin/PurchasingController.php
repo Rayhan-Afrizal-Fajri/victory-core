@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MaterialReceiving;
 use App\Models\Pesanan;
 use App\Models\Purchasing;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,123 @@ class PurchasingController extends Controller
      */
     public function index()
     {
-        return Inertia::render('admin/purchasing/Index');
+        $purchasings = Purchasing::query()
+            ->with([
+                'pesanan.customer',
+                'pesanan.workflowStatus',
+                'supplier',
+                'pesananMaterialSpec',
+                'materialReceivings.checkedBy',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn ($purchasing) => $this->mapPurchasing($purchasing))
+            ->values();
+
+        $jobTickets = Pesanan::query()
+            ->with(['customer', 'workflowStatus'])
+            ->whereHas('workflowStatus', function ($query) {
+                $query->where('sample_paid', true);
+            })
+            ->latest()
+            ->get()
+            ->map(fn ($pesanan) => [
+                'id' => $pesanan->id,
+                'no_job_ticket' => $pesanan->no_job_ticket,
+                'customer' => $pesanan->customer?->nama_perusahaan
+                    ?? $pesanan->customer?->nama
+                    ?? $pesanan->customer_perusahaan_snapshot
+                    ?? '-',
+            ])
+            ->values();
+
+        $suppliers = Supplier::query()
+            ->orderBy('nama_perusahaan')
+            ->get()
+            ->map(fn ($supplier) => [
+                'id' => $supplier->id,
+                'nama' => $supplier->nama,
+                'nama_perusahaan' => $supplier->nama_perusahaan,
+                'kategori' => $supplier->kategori,
+                'kontak' => $supplier->kontak,
+                'alamat' => $supplier->alamat,
+            ])
+            ->values();
+
+        return Inertia::render('admin/purchasing/Index', [
+            'purchasings' => $purchasings,
+            'jobTickets' => $jobTickets,
+            'suppliers' => $suppliers,
+        ]);
+    }
+
+    private function mapPurchasing(Purchasing $p): array
+    {
+        $receivedQty = (float) (
+            $p->received_qty
+            ?: $p->materialReceivings->sum('received_qty')
+        );
+
+        $purchaseQty = (float) ($p->purchase_qty ?: $p->qty_bahan);
+        $remainingQty = max($purchaseQty - $receivedQty, 0);
+
+        return [
+            'id' => $p->id,
+            'pesanan_id' => $p->pesanan_id,
+            'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
+
+            'source' => $p->pesanan_material_spec_id ? 'bom' : 'manual',
+
+            'no_job_ticket' => $p->pesanan?->no_job_ticket,
+            'customer' => $p->pesanan?->customer?->nama_perusahaan
+                ?? $p->pesanan?->customer?->nama
+                ?? $p->pesanan?->customer_perusahaan_snapshot
+                ?? '-',
+
+            'supplier_id' => $p->supplier_id,
+            'supplier' => $p->supplier ? [
+                'id' => $p->supplier->id,
+                'nama' => $p->supplier->nama,
+                'nama_perusahaan' => $p->supplier->nama_perusahaan,
+                'kategori' => $p->supplier->kategori,
+                'kontak' => $p->supplier->kontak,
+                'alamat' => $p->supplier->alamat,
+            ] : null,
+
+            'item_bahan' => $p->item_bahan,
+            'item' => $p->item_bahan,
+
+            'qty_bahan' => (float) $p->qty_bahan,
+            'required_qty' => (float) $p->required_qty,
+            'purchase_qty' => $purchaseQty,
+            'stock_qty' => (float) $p->stock_qty,
+            'leftover_qty' => (float) $p->leftover_qty,
+
+            'satuan' => $p->satuan,
+            'unit' => $p->satuan,
+
+            'harga_satuan' => (float) $p->harga_satuan,
+            'total_harga' => (float) $p->total_harga,
+
+            'tgl_pembelian' => $p->tgl_pembelian,
+            'is_received' => (bool) $p->is_received,
+            'received_qty' => $receivedQty,
+            'remaining_qty' => $remainingQty,
+            'status' => $p->status,
+            'purchase_scope' => $p->purchase_scope,
+            'notes' => $p->notes,
+
+            'material_receivings' => $p->materialReceivings
+                ->map(fn ($receiving) => [
+                    'id' => $receiving->id,
+                    'received_qty' => (float) $receiving->received_qty,
+                    'qty_received' => (float) $receiving->received_qty,
+                    'received_at' => $receiving->received_at,
+                    'notes' => $receiving->notes,
+                    'checked_by' => $receiving->checkedBy?->name,
+                ])
+                ->values(),
+        ];
     }
 
     public function generateFromBom(Request $request, string $pesananId)

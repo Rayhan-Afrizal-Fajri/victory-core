@@ -21,13 +21,19 @@ const PurchasingFormDialog = ({
     onSubmit,
     mode = 'create',
     suppliers,
+    jobTickets,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     form: any;
     onSubmit: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
-    suppliers: Supplier[]
+    suppliers: Supplier[];
+    jobTickets?: {
+        id: number;
+        no_job_ticket: string;
+        customer: string;
+    }[];
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +54,25 @@ const PurchasingFormDialog = ({
                             onChange={(e) => form.setData('item_bahan', e.target.value)}
                             placeholder="Contoh: Fleece Navy 330gsm"
                         />
+                    </Field>
+
+                    <Field label="Job Ticket" error={form.errors.pesanan_id}>
+                        <Select
+                            value={form.data.pesanan_id ? String(form.data.pesanan_id) : ''}
+                            onValueChange={(value) => form.setData('pesanan_id', value)}
+                        >
+                            <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pilih Job Ticket" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                            {(jobTickets || []).map((job) => (
+                                <SelectItem key={job.id} value={String(job.id)}>
+                                {job.no_job_ticket} · {job.customer}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
                     </Field>
 
                     <div className="grid gap-4 md:grid-cols-3">
