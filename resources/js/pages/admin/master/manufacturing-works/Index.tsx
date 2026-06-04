@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import type { ManufacturingWork, Supplier } from '@/types';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 type Props = {
   works: ManufacturingWork[];
@@ -216,20 +217,20 @@ export default function Index({ works, suppliers }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Min Estimate</label>
-                    <Input
-                      type="number"
-                      value={workForm.data.default_min_estimate}
-                      onChange={(e) => workForm.setData('default_min_estimate', parseFloat(e.target.value))}
+                    <FormattedNumberInput
+                        value={workForm.data.default_min_estimate}
+                        onValueChange={(value) => workForm.setData('default_min_estimate', value)}
+                        placeholder='cth: 35.000'
                     />
                     <InputError message={workForm.errors.default_min_estimate as string} />
                   </div>
 
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Max Estimate</label>
-                    <Input
-                      type="number"
-                      value={workForm.data.default_max_estimate}
-                      onChange={(e) => workForm.setData('default_max_estimate', parseFloat(e.target.value))}
+                    <FormattedNumberInput
+                        value={workForm.data.default_max_estimate}
+                        onValueChange={(value) => workForm.setData('default_max_estimate', value)}
+                        placeholder='cth: 35.000'
                     />
                     <InputError message={workForm.errors.default_max_estimate as string} />
                   </div>

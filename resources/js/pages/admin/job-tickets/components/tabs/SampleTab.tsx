@@ -8,9 +8,9 @@ import ProductionRunBoard from '@/components/production-runs/production-run-boar
 const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const workflow = job.workflow_status;
 
-    if (!workflow?.materials_received) {
+    if (!workflow?.sample_materials_ready) {
         return (
-            <WorkflowGate reason="Material belum diterima semua. Sample production terkunci." />
+            <WorkflowGate reason="Material untuk sample belum cukup diterima. Sample production terkunci." />
         );
     }
 

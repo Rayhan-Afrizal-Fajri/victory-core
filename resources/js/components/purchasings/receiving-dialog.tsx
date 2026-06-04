@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { getRemainingQty } from './purchasing-utils';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const ReceivingDialog = ({
     open,
@@ -55,13 +56,20 @@ const ReceivingDialog = ({
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="Qty Diterima" error={form.errors.received_qty}>
-                            <Input
+                            {/* <Input
                                 type="number"
                                 min={0}
                                 step="0.01"
                                 max={remainingQty}
                                 value={form.data.received_qty}
                                 onChange={(e) => form.setData('received_qty', Number(e.target.value))}
+                            /> */}
+                            <FormattedNumberInput
+                                min={0}
+                                max={remainingQty}
+                                value={form.data.received_qty}
+                                onValueChange={(value) => form.setData('received_qty', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
 

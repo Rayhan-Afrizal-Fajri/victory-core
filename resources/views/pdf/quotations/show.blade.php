@@ -183,30 +183,6 @@
         @endif
     </div>
 
-    @if ($pesanan->sizeBreakdowns && $pesanan->sizeBreakdowns->count())
-        <div class="terms">
-            <p><strong>Size Breakdown:</strong></p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Color</th>
-                        <th>Size</th>
-                        <th class="text-right">Qty</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($pesanan->sizeBreakdowns as $size)
-                        <tr>
-                            <td>{{ $size->color ?? '-' }}</td>
-                            <td>{{ $size->size_label }}</td>
-                            <td class="text-right">{{ number_format($size->qty, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
     <div class="signature">
         <div class="signature-col">
             <p>Hormat Kami,</p>

@@ -24,6 +24,7 @@ import {
 
 import type { Supplier } from '@/pages/admin/job-tickets/types';
 import { formatDecimal } from '@/helpers/format';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const EditPoDialog = ({
     open,
@@ -60,7 +61,7 @@ const EditPoDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl">
+            <DialogContent className="sm:max-w-3xl max-h-screen overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit PO Item</DialogTitle>
                     <DialogDescription>
@@ -116,26 +117,18 @@ const EditPoDialog = ({
 
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Qty dari Stok" error={form.errors.stock_qty}>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="0.1"
+                            <FormattedNumberInput
                                 value={form.data.stock_qty}
-                                onChange={(e) =>
-                                    form.setData('stock_qty', Number(e.target.value))
-                                }
+                                onValueChange={(value) => form.setData('stock_qty', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
 
                         <Field label="Qty Beli" error={form.errors.purchase_qty}>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="0.1"
+                            <FormattedNumberInput
                                 value={form.data.purchase_qty}
-                                onChange={(e) =>
-                                    form.setData('purchase_qty', Number(e.target.value))
-                                }
+                                onValueChange={(value) => form.setData('purchase_qty', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
 
@@ -183,13 +176,10 @@ const EditPoDialog = ({
                         </Field>
 
                         <Field label="Harga Satuan" error={form.errors.harga_satuan}>
-                            <Input
-                                type="number"
-                                min={0}
+                            <FormattedNumberInput
                                 value={form.data.harga_satuan}
-                                onChange={(e) =>
-                                    form.setData('harga_satuan', Number(e.target.value))
-                                }
+                                onValueChange={(value) => form.setData('harga_satuan', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
                     </div>

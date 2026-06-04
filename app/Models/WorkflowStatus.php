@@ -28,6 +28,9 @@ class WorkflowStatus extends Model
         'materials_received',
         'materials_distributed',
 
+        'sample_materials_ready',
+        'production_materials_ready',
+
         'production_started',
         'production_completed',
         

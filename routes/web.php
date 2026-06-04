@@ -22,6 +22,8 @@ use App\Http\Controllers\ProductManufacturingWorkController;
 use App\Http\Controllers\ProductMaterialController;
 use App\Http\Controllers\Admin\QuotationController;
 use App\Http\Controllers\Admin\ProductionRunController;
+use App\Http\Controllers\Admin\PesananMaterialSpecController;
+use App\Http\Controllers\Admin\PesananManufacturingSpecController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -95,14 +97,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pesanan/{pesanan}/sync-article', [DesignController::class, 'syncArticle'])
         ->name('designs.sync-article');
 
-    Route::patch('/design-material-specs/{spec}', [DesignController::class, 'updateMaterialSpec'])
-        ->name('design-material-specs.update');
-
-    Route::patch('/design-manufacturing-specs/{spec}', [DesignController::class, 'updateManufacturingSpec'])
-        ->name('design-manufacturing-specs.update');
-
     Route::patch('/pesanan/{pesanan}/owner-selling-price', [DesignController::class, 'updateOwnerSellingPrice'])
         ->name('designs.owner-selling-price');
+
+    /**
+     * Specs
+     */
+
+    Route::post('/pesanan/{pesanan}/material-specs', [PesananMaterialSpecController::class, 'store'])
+    ->name('pesanan.material-specs.store');
+
+    Route::patch('/design-material-specs/{spec}', [PesananMaterialSpecController::class, 'update'])
+        ->name('design-material-specs.update');
+
+    Route::delete('/design-material-specs/{spec}', [PesananMaterialSpecController::class, 'destroy'])
+        ->name('design-material-specs.destroy');
+
+
+    Route::post('/pesanan/{pesanan}/manufacturing-specs', [PesananManufacturingSpecController::class, 'store'])
+        ->name('pesanan.manufacturing-specs.store');
+
+    Route::patch('/design-manufacturing-specs/{spec}', [PesananManufacturingSpecController::class, 'update'])
+        ->name('design-manufacturing-specs.update');
 
     /**
      * Quotations

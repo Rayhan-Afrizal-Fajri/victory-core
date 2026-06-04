@@ -5,6 +5,7 @@ import { Textarea } from "../ui/textarea";
 import FormImageUpload from "../ui/form-image";
 import { Button } from "../ui/button";
 import { Upload } from "lucide-react";
+import FormattedNumberInput from "../ui/formatted-number-input";
 
 const SampleCreateCard = ({
     form,
@@ -49,20 +50,18 @@ const SampleCreateCard = ({
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Qty Sample" error={form.errors.qty}>
-                        <Input
-                            type="number"
-                            min={1}
+                        <FormattedNumberInput
                             value={form.data.qty}
-                            onChange={(e) => form.setData('qty', Number(e.target.value))}
+                            onValueChange={(value) => form.setData('qty', value)}
+                            placeholder='cth: 2'
                         />
                     </Field>
 
                     <Field label="Harga Sample" error={form.errors.sample_price}>
-                        <Input
-                            type="number"
-                            min={0}
+                        <FormattedNumberInput
                             value={form.data.sample_price}
-                            onChange={(e) => form.setData('sample_price', Number(e.target.value))}
+                            onValueChange={(value) => form.setData('sample_price', value)}
+                            placeholder='cth: 35.000'
                         />
                     </Field>
                 </div>

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { Material, Supplier } from '@/types';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 type Props = {
   materials: Material[];
@@ -30,7 +31,7 @@ export default function Index({ materials, suppliers }: Props) {
     default_supplier_id: '',
     harga_ecer: 0,
     harga_roll: 0,
-    roll_qty: '',
+    roll_qty: 0,
     roll_unit: '',
     is_active: true,
   });
@@ -46,7 +47,7 @@ export default function Index({ materials, suppliers }: Props) {
       default_supplier_id: material.supplier_id?.toString() || '',
       harga_ecer: material.harga_ecer,
       harga_roll: material.harga_roll,
-      roll_qty: material.roll_qty?.toString() || '',
+      roll_qty: material.roll_qty || 0,
       roll_unit: material.roll_unit || '',
       is_active: material.is_active,
     });
@@ -249,20 +250,20 @@ export default function Index({ materials, suppliers }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Harga Ecer</label>
-                    <Input
-                      type="number"
-                      value={materialForm.data.harga_ecer}
-                      onChange={(e) => materialForm.setData('harga_ecer', parseFloat(e.target.value))}
+                    <FormattedNumberInput
+                        value={materialForm.data.harga_ecer}
+                        onValueChange={(value) => materialForm.setData('harga_ecer', value)}
+                        placeholder='cth: 35.000'
                     />
                     <InputError message={materialForm.errors.harga_ecer as string} />
                   </div>
 
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Harga Roll</label>
-                    <Input
-                      type="number"
-                      value={materialForm.data.harga_roll}
-                      onChange={(e) => materialForm.setData('harga_roll', parseFloat(e.target.value))}
+                    <FormattedNumberInput
+                        value={materialForm.data.harga_roll}
+                        onValueChange={(value) => materialForm.setData('harga_roll', value)}
+                        placeholder='cth: 35.000'
                     />
                     <InputError message={materialForm.errors.harga_roll as string} />
                   </div>
@@ -271,10 +272,10 @@ export default function Index({ materials, suppliers }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Roll Qty</label>
-                    <Input
-                      type="number"
-                      value={materialForm.data.roll_qty}
-                      onChange={(e) => materialForm.setData('roll_qty', e.target.value)}
+                    <FormattedNumberInput
+                        value={materialForm.data.roll_qty}
+                        onValueChange={(value) => materialForm.setData('roll_qty', value)}
+                        placeholder='cth: 25'
                     />
                     <InputError message={materialForm.errors.roll_qty as string} />
                   </div>
@@ -319,4 +320,4 @@ export default function Index({ materials, suppliers }: Props) {
   );
 }
 
-Index.layout = (page) => <AppLayout children={page} />;
+Index.layout = (page) => <AppLayout title="" children={page} />;

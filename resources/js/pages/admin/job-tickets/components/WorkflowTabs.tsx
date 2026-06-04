@@ -18,6 +18,7 @@ import SampleTab from './tabs/SampleTab';
 const tabs = [
   'overview',
   'design',
+  'costing & quotation',
   'invoices',
   'purchasing',
   'sample',
@@ -29,9 +30,9 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
   const ws = (job as any).workflow_status ?? (job as any).workflowFlags ?? {};
   const locked = {
     purchasing: !ws.sample_paid,
-    sample: !ws.materials_received,
+    sample: !ws.sample_materials_ready,
     productionInvoice: !ws.sample_approved,
-    production: !(ws.sample_approved && ws.production_dp_paid && ws.materials_received),
+    production: !(ws.sample_approved && ws.production_dp_paid && ws.production_materials_ready),
     qc: !ws.production_completed,
     packing: !ws.qc_completed,
     delivery: !(ws.packing_completed && ws.final_payment_paid),
@@ -46,7 +47,7 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
   return (
     
     <Tabs defaultValue="overview" className="mt-4 w-full">
-        <TabsList className='w-full justify-between'>
+        <TabsList className='w-full justify-between overflow-x-auto overflow-y-hidden gap-2 h-full'>
             {tabs.map((t) => (
             <TabsTrigger
                 key={t}

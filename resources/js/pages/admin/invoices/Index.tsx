@@ -29,6 +29,7 @@ import AppLayout from '@/layouts/app-layout';
 import InvoiceDetailSheet from '@/components/invoice/invoice-detail-sheet';
 import PaymentDialog from '@/components/sample/payment-dialog';
 import InvoiceEditDialog from '@/components/invoice/invoice-edit-dialog';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -605,18 +606,11 @@ export default function Index({
                               <label className="text-sm font-medium text-slate-700">
                                   Total Tagihan
                               </label>
-
-                              <Input
-                                  type="number"
-                                  min={0}
-                                  value={createInvoiceForm.data.total_tagihan}
-                                  onChange={(event) =>
-                                      createInvoiceForm.setData(
-                                          'total_tagihan',
-                                          Number(event.target.value),
-                                      )
-                                  }
-                              />
+                              <FormattedNumberInput
+                                    value={createInvoiceForm.data.total_tagihan}
+                                    onValueChange={(value) => createInvoiceForm.setData('total_tagihan', value)}
+                                    placeholder='cth: 35.000'
+                                />
 
                               <InputError message={createInvoiceForm.errors.total_tagihan} />
                           </div>

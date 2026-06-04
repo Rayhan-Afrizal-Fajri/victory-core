@@ -7,6 +7,7 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
+import FormattedNumberInput from "../ui/formatted-number-input";
 
 function QuotationSection({
     job,
@@ -17,8 +18,13 @@ function QuotationSection({
 }) {
     const can = useCan();
 
+    const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+
     const quotationForm = useForm({
-        valid_until: '',
+        valid_until: defaultValidUntil,
+        sample_qty: job.sample_qty || 1,
         payment_terms:
             'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
         delivery_terms:
@@ -109,17 +115,22 @@ function QuotationSection({
                             />
                         </Field>
 
-                        <Field label="Delivery Cost" error={quotationForm.errors.delivery_cost}>
-                            <Input
-                                type="number"
-                                min={0}
-                                step={1000}
-                                value={quotationForm.data.delivery_cost}
-                                onChange={(e) =>
-                                    quotationForm.setData('delivery_cost', Number(e.target.value))
-                                }
-                            />
-                        </Field>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Delivery Cost" error={quotationForm.errors.delivery_cost}>
+                                <FormattedNumberInput
+                                    value={quotationForm.data.delivery_cost}
+                                    onValueChange={(value) => quotationForm.setData('delivery_cost', value)}
+                                    placeholder='cth: 35.000'
+                                />
+                            </Field>
+                            <Field label="Jumlah Sample" error={quotationForm.errors.sample_qty}>
+                                <FormattedNumberInput
+                                    value={quotationForm.data.sample_qty}
+                                    onValueChange={(value) => quotationForm.setData('sample_qty', value)}
+                                    placeholder='cth: 5'
+                                />
+                            </Field>
+                        </div>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
@@ -257,18 +268,10 @@ function QuotationSection({
 
                                     {can('quotation.generate') && (
                                         <Field label="Nominal Invoice Sample" error={approveForm.errors.sample_invoice_amount}>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                step={1000}
+                                            <FormattedNumberInput
                                                 value={approveForm.data.sample_invoice_amount}
-                                                onChange={(e) =>
-                                                    approveForm.setData(
-                                                        'sample_invoice_amount',
-                                                        Number(e.target.value)
-                                                    )
-                                                }
-                                                placeholder="Kosongkan/0 untuk default 3 pcs"
+                                                onValueChange={(value) => approveForm.setData('sample_invoice_amount', value)}
+                                                placeholder='cth: 35.000'
                                             />
                                             <p className="text-xs text-slate-500">
                                                 Kosongkan/0 untuk default 3 pcs x harga jual.

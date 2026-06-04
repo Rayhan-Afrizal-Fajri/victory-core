@@ -26,11 +26,10 @@ const workflowGroups = [
     ],
   },
   {
-    key: 'purchasing',
-    label: 'Purchasings',
+    key: 'sample_purchasing',
+    label: 'Sample Purchasings',
     steps: [
-      'materials_purchased',
-      'materials_received',
+      'sample_materials_ready',
     ],
   },
   {
@@ -48,6 +47,13 @@ const workflowGroups = [
     steps: [
       'production_invoice_created',
       'production_dp_paid',
+    ],
+  },
+  {
+    key: 'production_purchasing',
+    label: 'Production Purchasings',
+    steps: [
+      'production_materials_ready',
     ],
   },
   {
@@ -112,11 +118,14 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
             let status = getGroupStatus(progress.percentage);
             let isLast = index === workflowGroups.length - 1;
 
-            if (group.label === 'Final Billing') {
+            if (group.label === 'Final Billing' && getGroupProgress(workflowGroups[index-1], flags).percentage == 0) {
               progress = getGroupProgress(workflowGroups[6], flags);
               status = getGroupStatus(progress.percentage);
             }
 
+            if (group.label === 'Production Purchasings' && getGroupProgress(workflowGroups[index-1], flags).percentage == 0) {
+              progress = getGroupProgress(workflowGroups[index], flags);
+            }
 
             return (
               <div

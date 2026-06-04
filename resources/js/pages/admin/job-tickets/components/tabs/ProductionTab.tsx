@@ -26,6 +26,12 @@ const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
         );
     }
 
+    if (!workflow?.production_materials_ready || !workflow?.materials_received) {
+        return (
+            <WorkflowGate reason="Material produksi belum cukup diterima." />
+        );
+    }
+
     return (
         <div className="space-y-6">
             <ProductionRunBoard

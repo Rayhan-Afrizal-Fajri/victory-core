@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ProductMaterial, Material } from '@/types';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 interface Props {
   productId: number;
@@ -127,11 +128,10 @@ export default function ProductMaterialSection({ productId, materials, available
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Default Usage</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.data.default_usage}
-                    onChange={(e) => form.setData('default_usage', parseFloat(e.target.value))}
+                   <FormattedNumberInput
+                      value={form.data.default_usage}
+                      onValueChange={(value) => form.setData('default_usage', value)}
+                      placeholder='cth: 0,9'
                   />
                   <InputError message={form.errors.default_usage as string} />
                 </div>

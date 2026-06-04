@@ -14,6 +14,7 @@ import {
 import Field from "./field";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import FormattedNumberInput from "../ui/formatted-number-input";
 
 const statusLabel: Record<string, string> = {
     draft: 'Draft',
@@ -117,20 +118,18 @@ const SampleOverviewCard = ({
                         <form onSubmit={onUpdate} className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Field label="Qty Sample" error={editForm.errors.qty}>
-                                    <Input
-                                        type="number"
-                                        min={1}
+                                    <FormattedNumberInput
                                         value={editForm.data.qty}
-                                        onChange={(e) => editForm.setData('qty', Number(e.target.value))}
+                                        onValueChange={(value) => editForm.setData('qty', value)}
+                                        placeholder='cth: 35.000'
                                     />
                                 </Field>
 
                                 <Field label="Harga Sample" error={editForm.errors.sample_price}>
-                                    <Input
-                                        type="number"
-                                        min={0}
+                                    <FormattedNumberInput
                                         value={editForm.data.sample_price}
-                                        onChange={(e) => editForm.setData('sample_price', Number(e.target.value))}
+                                        onValueChange={(value) => editForm.setData('sample_price', value)}
+                                        placeholder='cth: 35.000'
                                     />
                                 </Field>
                             </div>

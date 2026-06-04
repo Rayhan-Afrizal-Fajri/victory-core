@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { getInvoiceNumber } from './invoice-utils';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const InvoiceEditDialog = ({
     open,
@@ -48,13 +49,10 @@ const InvoiceEditDialog = ({
                     </div>
 
                     <Field label="Total Tagihan" error={invoiceForm.errors.total_tagihan}>
-                        <Input
-                            type="number"
-                            min={0}
+                        <FormattedNumberInput
                             value={invoiceForm.data.total_tagihan}
-                            onChange={(e) =>
-                                invoiceForm.setData('total_tagihan', Number(e.target.value))
-                            }
+                            onValueChange={(value) => invoiceForm.setData('total_tagihan', value)}
+                            placeholder='cth: 35.000'
                         />
                     </Field>
 

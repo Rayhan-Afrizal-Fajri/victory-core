@@ -27,6 +27,8 @@ import formatRupiah from '@/components/ui/format-rupiah';
 import { Input } from '@/components/ui/input';
 import QuotationSection from '@/components/designs/quotationSection';
 import { useCan } from '@/hooks/use-can';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
+import DesignPreviewDialog from '@/components/designs/design-preview-dialog';
 
 
 const emptySpec = {
@@ -41,14 +43,29 @@ const DesignAndSpecsTab: React.FC<{
 }> = ({ job, products = [], suppliers = [] }) => {
     const can = useCan();
 
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [selectedPreview, setSelectedPreview] = useState<{
+        url: string;
+        title: string;
+    } | null>(null);
+
+    const openDesignPreview = (url: string, title = 'Preview Design') => {
+        setSelectedPreview({url, title});
+        setPreviewOpen(true);
+    }
+
     const [editingMaterialSpec, setEditingMaterialSpec] = useState<any | null>(null);
     const [editingManufacturingSpec, setEditingManufacturingSpec] = useState<any | null>(null);
+    const [materialSpecDialogOpen, setMaterialSpecDialogOpen] = useState(false);
+    const [manufacturingSpecDialogOpen, setManufacturingSpecDialogOpen] = useState(false);
 
     const materialSpecForm = useForm({
+        type: 'bahan',
+        material_name_snapshot: '',
+        material_id: null as number | null,
         color: '',
         usage: 0,
         unit: '',
-        usage_per_set: 1,
         supplier_id: null as number | null,
         harga_ecer: 0,
         harga_roll: 0,
@@ -57,42 +74,92 @@ const DesignAndSpecsTab: React.FC<{
     });
 
     const manufacturingSpecForm = useForm({
+        work_name_snapshot: '',
+        manufacturing_work_id: null as number | null,
         usage: 0,
         unit: '',
         usage_note: '',
         vendor_id: null as number | null,
         min_estimate: 0,
         max_estimate: 0,
+        process_behavior: 'production_process',
     });
 
-    useEffect(() => {
-        if (editingMaterialSpec) {
-            materialSpecForm.setData({
-                color: editingMaterialSpec.color || '',
-                usage: Number(editingMaterialSpec.usage || 0),
-                unit: editingMaterialSpec.unit || '',
-                usage_per_set: Number(editingMaterialSpec.usage_per_set || 1),
-                supplier_id: editingMaterialSpec.supplier_id || null,
-                harga_ecer: Number(editingMaterialSpec.harga_ecer || 0),
-                harga_roll: Number(editingMaterialSpec.harga_roll || 0),
-                price_type: editingMaterialSpec.price_type || 'ecer',
-                roll_qty: Number(editingMaterialSpec.roll_qty) || 25,
-            });
-        }
-    }, [editingMaterialSpec?.id]);
+    const openCreateMaterialSpec = () => {
+        setEditingMaterialSpec(null);
 
-    useEffect(() => {
-        if (editingManufacturingSpec) {
-            manufacturingSpecForm.setData({
-                usage: Number(editingManufacturingSpec.usage || 0),
-                unit: editingManufacturingSpec.unit || '',
-                usage_note: editingManufacturingSpec.usage_note || '',
-                vendor_id: editingManufacturingSpec.vendor_id || null,
-                min_estimate: Number(editingManufacturingSpec.min_estimate || 0),
-                max_estimate: Number(editingManufacturingSpec.max_estimate || 0),
-            });
-        }
-    }, [editingManufacturingSpec?.id]);
+        materialSpecForm.setData({
+            type: 'bahan',
+            material_name_snapshot: '',
+            material_id: null,
+            color: '',
+            usage: 0,
+            unit: '',
+            supplier_id: null,
+            harga_ecer: 0,
+            harga_roll: 0,
+            price_type: 'ecer',
+            roll_qty: 25,
+        });
+
+        setMaterialSpecDialogOpen(true);
+    };
+
+    const openEditMaterialSpec = (spec: any) => {
+        setEditingMaterialSpec(spec);
+
+        materialSpecForm.setData({
+            type: spec.type || 'bahan',
+            material_name_snapshot: spec.material_name_snapshot || '',
+            material_id: spec.material_id || null,
+            color: spec.color || '',
+            usage: Number(spec.usage || 0),
+            unit: spec.unit || '',
+            supplier_id: spec.supplier_id || null,
+            harga_ecer: Number(spec.harga_ecer || 0),
+            harga_roll: Number(spec.harga_roll || 0),
+            price_type: spec.price_type || 'ecer',
+            roll_qty: Number(spec.roll_qty) || 25,
+        });
+
+        setMaterialSpecDialogOpen(true);
+    };
+
+    const openCreateManufacturingSpec = () => {
+        setEditingManufacturingSpec(null);
+
+        manufacturingSpecForm.setData({
+            work_name_snapshot: '',
+            manufacturing_work_id: null,
+            usage: 0,
+            unit: '',
+            usage_note: '',
+            vendor_id: null,
+            min_estimate: 0,
+            max_estimate: 0,
+            process_behavior: 'production_process',
+        });
+
+        setManufacturingSpecDialogOpen(true);
+    };
+
+    const openEditManufacturingSpec = (spec: any) => {
+        setEditingManufacturingSpec(spec);
+
+        manufacturingSpecForm.setData({
+            work_name_snapshot: spec.work_name_snapshot || '',
+            manufacturing_work_id: spec.manufacturing_work_id || null,
+            usage: Number(spec.usage || 0),
+            unit: spec.unit || '',
+            usage_note: spec.usage_note || '',
+            vendor_id: spec.vendor_id || null,
+            min_estimate: Number(spec.min_estimate || 0),
+            max_estimate: Number(spec.max_estimate || 0),
+            process_behavior: spec.process_behavior || 'production_process',
+        });
+
+        setManufacturingSpecDialogOpen(true);
+    };
 
     const updateMaterialSpec = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,6 +194,78 @@ const DesignAndSpecsTab: React.FC<{
                 setEditingManufacturingSpec(null);
                 manufacturingSpecForm.reset();
             },
+        });
+    };
+
+    const submitMaterialSpec = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (editingMaterialSpec) {
+            materialSpecForm.patch(`/design-material-specs/${editingMaterialSpec.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Spesifikasi material berhasil diperbarui.');
+                    setEditingMaterialSpec(null);
+                    setMaterialSpecDialogOpen(false);
+                    materialSpecForm.reset();
+                },
+            });
+
+            return;
+        }
+
+        materialSpecForm.post(`/pesanan/${job.id}/material-specs`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Spesifikasi material berhasil ditambahkan.');
+                setMaterialSpecDialogOpen(false);
+                materialSpecForm.reset();
+            },
+        });
+    };
+
+    const submitManufacturingSpec = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (editingManufacturingSpec) {
+            manufacturingSpecForm.patch(`/design-manufacturing-specs/${editingManufacturingSpec.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Spesifikasi manufaktur berhasil diperbarui.');
+                    setEditingManufacturingSpec(null);
+                    setManufacturingSpecDialogOpen(false);
+                    manufacturingSpecForm.reset();
+                },
+            });
+
+            return;
+        }
+
+        manufacturingSpecForm.post(`/pesanan/${job.id}/manufacturing-specs`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Spesifikasi manufaktur berhasil ditambahkan.');
+                setManufacturingSpecDialogOpen(false);
+                manufacturingSpecForm.reset();
+            },
+        });
+    };
+
+    const deleteMaterialSpec = (spec: any) => {
+        if (!confirm(`Hapus material spec ${spec.material_name_snapshot}?`)) return;
+
+        router.delete(`/design-material-specs/${spec.id}`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Spesifikasi material berhasil dihapus.'),
+        });
+    };
+
+    const deleteManufacturingSpec = (spec: any) => {
+        if (!confirm(`Hapus manufacturing spec ${spec.work_name_snapshot}?`)) return;
+
+        router.delete(`/design-manufacturing-specs/${spec.id}`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Spesifikasi manufaktur berhasil dihapus.'),
         });
     };
 
@@ -363,6 +502,9 @@ const DesignAndSpecsTab: React.FC<{
                                         ? 'Upload Desain Revisi'
                                         : 'Upload Desain'
                                 }
+                                accept='image/*,.pdf'
+                                preview=''
+                                subtitle='PNG, JPG, WEBP, PDF (MAX.10MB)'
                                 onChange={(file) =>
                                     designForm.setData('file_desain', file)
                                 }
@@ -416,8 +558,8 @@ const DesignAndSpecsTab: React.FC<{
                                 type="submit"
                                 className="w-full"
                                 disabled={
-                                    designForm.processing ||
-                                    !designForm.data.file_desain
+                                    (designForm.processing || !designForm.data.file_desain) ||
+                                    job?.workflow_status?.design_approved
                                 }
                             >
                                 {designForm.processing
@@ -475,10 +617,14 @@ const DesignAndSpecsTab: React.FC<{
                                         </div>
 
                                         {d.file_path && (
-                                            <a
-                                                href={`/storage/${d.file_path}`}
-                                                target="_blank"
-                                                rel="noreferrer"
+                                            <button
+                                                type='button'
+                                                onClick={() => 
+                                                    openDesignPreview(
+                                                        `/storage/${d.file_path}`,
+                                                        `Design #${d.id}`,
+                                                    )
+                                                }
                                                 className="block"
                                             >
                                                 <img
@@ -486,7 +632,7 @@ const DesignAndSpecsTab: React.FC<{
                                                     alt="Thumbnail desain"
                                                     className="mb-2 h-72 w-72 rounded border object-cover"
                                                 />
-                                            </a>
+                                            </button>
                                         )}
 
                                         {d.revision_note && (
@@ -583,6 +729,12 @@ const DesignAndSpecsTab: React.FC<{
                                 ))
                             )}
                         </div>
+                        <DesignPreviewDialog
+                            open={previewOpen}
+                            onOpenChange={setPreviewOpen}
+                            fileUrl={selectedPreview?.url || null}
+                            title={selectedPreview?.title || 'Preview Design'}
+                        />
                     </div>
                 </div>
             </SectionCard>
@@ -614,7 +766,7 @@ const DesignAndSpecsTab: React.FC<{
                                 </SelectContent>
                             </Select>
 
-                            <Button type="submit" disabled={syncArticleForm.processing}>
+                            <Button type="submit" disabled={syncArticleForm.processing || job?.workflow_status?.quotation_created}>
                                 {selectedProduct ? 'Sync Ulang Artikel' : 'Sync Artikel'}
                             </Button>
                         </div>
@@ -642,21 +794,63 @@ const DesignAndSpecsTab: React.FC<{
                 
                 can('design.manage_specs') && (
                     <>
-                        <DesignSpecsPreview materialSpecs={materialSpecs} manufacturingSpecs={manufacturingSpecs} onEditMaterial={setEditingMaterialSpec} onEditManufacturing={setEditingManufacturingSpec} />
+                        <DesignSpecsPreview
+                            job={job}
+                            materialSpecs={materialSpecs}
+                            manufacturingSpecs={manufacturingSpecs}
+                            onEditMaterial={openEditMaterialSpec}
+                            onEditManufacturing={openEditManufacturingSpec}
+                            onCreateMaterial={openCreateMaterialSpec}
+                            onCreateManufacturing={openCreateManufacturingSpec}
+                            onDeleteMaterial={deleteMaterialSpec}
+                            onDeleteManufacturing={deleteManufacturingSpec}
+                        />
                         <CostingSummaryCard
                             orderQty={orderQty}
                             summary={costingSummary}
                             form={ownerPriceForm}
                             onSubmit={submitOwnerPrice}
+                            job={job}
                         />
                     </>
                 )
                 
             )}
 
-            <MaterialSpecEditDialog open={Boolean(editingMaterialSpec)} onOpenChange={(open) => { if (!open) setEditingMaterialSpec(null); }} spec={editingMaterialSpec} form={materialSpecForm} suppliers={suppliers} onSubmit={updateMaterialSpec} />
-            <ManufacturingSpecEditDialog open={Boolean(editingManufacturingSpec)} onOpenChange={(open) => { if (!open) setEditingManufacturingSpec(null); }} spec={editingManufacturingSpec} form={manufacturingSpecForm} suppliers={suppliers} onSubmit={updateManufacturingSpec} />
+            <MaterialSpecEditDialog
+                open={materialSpecDialogOpen}
+                onOpenChange={(open) => {
+                    setMaterialSpecDialogOpen(open);
 
+                    if (!open) {
+                        setEditingMaterialSpec(null);
+                        materialSpecForm.reset();
+                    }
+                }}
+                spec={editingMaterialSpec}
+                form={materialSpecForm}
+                suppliers={suppliers}
+                onSubmit={submitMaterialSpec}
+                mode={editingMaterialSpec ? 'edit' : 'create'}
+            />
+
+            <ManufacturingSpecEditDialog
+                open={manufacturingSpecDialogOpen}
+                onOpenChange={(open) => {
+                    setManufacturingSpecDialogOpen(open);
+
+                    if (!open) {
+                        setEditingManufacturingSpec(null);
+                        manufacturingSpecForm.reset();
+                    }
+                }}
+                spec={editingManufacturingSpec}
+                form={manufacturingSpecForm}
+                suppliers={suppliers}
+                onSubmit={submitManufacturingSpec}
+                mode={editingManufacturingSpec ? 'edit' : 'create'}
+                enableProcessBehavior={false}
+            />
             {selectedProduct && (
                 <QuotationSection
                     job={job}
@@ -675,11 +869,13 @@ function CostingSummaryCard({
     summary,
     form,
     onSubmit,
+    job
 }: {
     orderQty: number;
     summary: any;
     form: any;
     onSubmit: (e: React.FormEvent) => void;
+    job?: any
 }) {
     const can = useCan();
     const ownerPrice = Number(form.data.harga_jual_per_pcs || 0);
@@ -757,18 +953,11 @@ function CostingSummaryCard({
                         <label className="text-sm font-medium text-slate-700">
                             Harga Jual / pcs
                         </label>
-                        <Input
-                            type="number"
-                            min={0}
-                            disabled={!can('design.set_selling_price')}
-                            // step={1000}
+                        <FormattedNumberInput
                             value={form.data.harga_jual_per_pcs}
-                            onChange={(e) =>
-                                form.setData(
-                                    'harga_jual_per_pcs',
-                                    Number(e.target.value)
-                                )
-                            }
+                            disabled={!can('design.set_selling_price')}
+                            onValueChange={(value) => form.setData('harga_jual_per_pcs', value)}
+                            placeholder='cth: 35.000'
                         />
                         {form.errors.harga_jual_per_pcs && (
                             <p className="text-xs text-red-500">
@@ -801,7 +990,7 @@ function CostingSummaryCard({
                 </div>
 
                 <div className="flex justify-end border-t pt-4">
-                    <Button type="submit" disabled={form.processing || !can('design.set_selling_price')}>
+                    <Button type="submit" disabled={form.processing || !can('design.set_selling_price') || job?.workflow_status?.quotation_created}>
                         Simpan Harga Jual Final
                     </Button>
                 </div>

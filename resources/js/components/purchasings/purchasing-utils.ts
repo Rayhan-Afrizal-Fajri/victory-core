@@ -84,3 +84,80 @@ export function getSupplierName(purchasing: any) {
 
     return supplier.nama_perusahaan || supplier.nama || supplier.name || '-';
 }
+
+function getTotalPlannedQty(job: any) {
+    return Number(job?.sample_qty || 0) + Number(job?.quantity || job?.q || 0);
+}
+
+function getTotalRequiredQty(purchasing: any) {
+    return Number(
+        purchasing.required_qty ??
+        purchasing.qty_bahan ??
+        purchasing.purchase_qty ??
+        0
+    );
+}
+
+export function getRequiredQty(
+    purchasing: any,
+    job: any,
+    type: 'sample' | 'production',
+) {
+    const scope = purchasing.purchase_scope || 'sample_and_production';
+    const totalRequiredQty = getTotalRequiredQty(purchasing);
+
+    if (scope === 'additional') {
+        return 0;
+    }
+
+    if (type === 'sample' && scope === 'production') {
+        return 0;
+    }
+
+    if (type === 'production' && scope === 'sample') {
+        return 0;
+    }
+
+    if (scope === type) {
+        return totalRequiredQty;
+    }
+
+    if (scope !== 'sample_and_production') {
+        return 0;
+    }
+
+    const sampleQty = Number(job?.sample_qty || 0);
+    const productionQty = Number(job?.quantity || job?.q || 0);
+
+    const qty = type === 'sample' ? sampleQty : productionQty;
+    const totalOrderQty = sampleQty + productionQty;
+
+    if (qty <= 0 || totalOrderQty <= 0) {
+        return 0;
+    }
+
+    return totalRequiredQty * (qty / totalOrderQty);
+}
+
+export function getSampleReceivedQty(purchasing: any, job: any) {
+    const receivedQty = getReceivedQty(purchasing);
+    const sampleRequiredQty =  getRequiredQty(purchasing, job, 'sample');
+
+    return Math.min(receivedQty, sampleRequiredQty);
+}
+
+export function getProductionReceivedQty(purchasing: any, job: any) {
+    const receivedQty = getReceivedQty(purchasing);
+    const sampleRequiredQty = getRequiredQty(purchasing, job, 'sample');
+    const productionRequiredQty = getRequiredQty(purchasing, job, 'production');
+
+    const remainingAfterSample = Math.max(receivedQty - sampleRequiredQty, 0);
+
+    return Math.min(remainingAfterSample, productionRequiredQty);
+}
+
+export function getProgressPercentage(received: number, required: number) {
+    if (!required || required <= 0) return 0;
+
+    return Math.min(Math.max((received / required) * 100, 0), 100);
+}

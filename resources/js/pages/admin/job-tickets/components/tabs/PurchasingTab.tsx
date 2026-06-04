@@ -18,7 +18,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
     const verified = workflow?.sample_paid ?? false;
 
     const generateBomForm = useForm({
-        sample_qty: 3,
+        sample_qty: job.sample_qty || 1,
     });
 
     const generatePurchasingFromBom = (e: React.FormEvent) => {
@@ -75,6 +75,8 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
         satuan: '',
         harga_satuan: 0,
         tgl_pembelian: new Date().toISOString().slice(0, 10),
+        purchase_scope: 'sample_and_production',
+        notes: '',
     });
 
     const receivingForm = useForm({
@@ -94,6 +96,8 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                 tgl_pembelian:
                     editingPurchasing.tgl_pembelian ||
                     new Date().toISOString().slice(0, 10),
+                purchase_scope: editingPurchasing.purchase_scope,
+                notes: editingPurchasing.notes,
             });
         }
     }, [editingPurchasing?.id]);
@@ -121,10 +125,12 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
         purchasingForm.setData({
             supplier_id: null,
             item_bahan: '',
-            qty_bahan: 1,
+            qty_bahan: 10,
             satuan: '',
             harga_satuan: 0,
             tgl_pembelian: new Date().toISOString().slice(0, 10),
+            purchase_scope: 'sample_and_production',
+            notes: '',
         });
 
         setOpenPurchasingForm(true);
@@ -246,7 +252,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                 />
             ) : (
                 <>
-                    <PurchasingSummaryCard purchasings={purchasings} />
+                    <PurchasingSummaryCard purchasings={purchasings} job={job} />
 
                     <PurchasingMaterialTable
                         purchasings={purchasings}
@@ -289,6 +295,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                 form={purchasingForm}
                 onSubmit={submitPurchasing}
                 mode={purchasingMode}
+                job={job}
             />
 
             <ReceivingDialog

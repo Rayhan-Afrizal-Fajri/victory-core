@@ -11,6 +11,7 @@ class Quotation extends Model
         'quotation_number',
         'status',
         'valid_until',
+        'sample_qty',
         'payment_terms',
         'delivery_terms',
         'notes',

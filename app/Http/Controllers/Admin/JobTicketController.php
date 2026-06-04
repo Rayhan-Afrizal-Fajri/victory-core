@@ -289,6 +289,7 @@ class JobTicketController extends Controller
                 'company' => $pesanan->customer?->nama_perusahaan ?? $pesanan->customer_perusahaan_snapshot,
             ],
             'quantity' => $pesanan->q,
+            'sample_qty' => $pesanan->sample_qty,
             'deadline' => $pesanan->deadline,
             'created_at' => $pesanan->created_at,
             'status' => $pesanan->status_divisi,
@@ -372,6 +373,7 @@ class JobTicketController extends Controller
                 ] : null,
 
                 'color' => $p->materialSpec?->color,
+                'qty_bahan' => (float) $p->qty_bahan,
                 'required_qty' => (float) $p->required_qty,
                 'purchase_qty' => (float) $p->purchase_qty,
                 'stock_qty' => (float) $p->stock_qty,
@@ -387,6 +389,9 @@ class JobTicketController extends Controller
                 'notes' => $p->notes,
                 'tgl_pembelian' => $p->tgl_pembelian,
                 'status' => $p->status,
+
+                'purchase_scope' => $p->purchase_scope,
+                'notes' => $p->notes,
 
                 'material_receivings' => $p->materialReceiving->map(fn ($r) => [
                     'id' => $r->id,
@@ -460,6 +465,7 @@ class JobTicketController extends Controller
                 'quotation_number' => $q->quotation_number,
                 'status' => $q->status,
                 'valid_until' => $q->valid_until?->toDateString(),
+                'sample_qty' => $q->sample_qty,
                 'payment_terms' => $q->payment_terms,
                 'delivery_terms' => $q->delivery_terms,
                 'notes' => $q->notes,

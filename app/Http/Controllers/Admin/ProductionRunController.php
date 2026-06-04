@@ -87,6 +87,15 @@ class ProductionRunController extends Controller
                     ]
                 );
             }
+
+            if ($run->type === 'sample') {
+                $run->pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $run->pesanan->id],
+                    [
+                        'sample_created' => true,
+                    ]
+                );
+            }
         });
 
         return back()->with('success', 'Process dimulai.');
@@ -275,7 +284,7 @@ class ProductionRunController extends Controller
             'title' => 'Invoice Production - ' . ($pesanan->requested_product_name ?: $pesanan->produk),
             'total_tagihan' => $total,
             'status_tagihan' => 'unpaid',
-            'tgl_jatuh_tempo' => now()->addDays(7)->toDateString(),
+            'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);
 
         $pesanan->workflowStatus()->updateOrCreate(

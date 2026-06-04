@@ -37,11 +37,11 @@ const generalWorkspace: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-    // {
-    //     title: 'Kanban Board',
-    //     href: kanbanBoard.index(),
-    //     icon: SquareKanban,
-    // },
+    {
+        title: 'Kanban Board',
+        href: kanbanBoard.index(),
+        icon: SquareKanban,
+    },
 ];
 
 const salesWorkspace: NavItem[] = [

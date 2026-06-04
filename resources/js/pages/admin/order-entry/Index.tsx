@@ -9,6 +9,7 @@ import { dashboard } from '@/routes';
 import { show as jobTicketShow } from '@/routes/job-tickets';
 import { store, update } from '@/routes/order-entry';
 import { Textarea } from '@/components/ui/textarea';
+import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 function formatIDR(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -238,14 +239,10 @@ export default function Index({ nextJobTicket, customers }: Props) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="qty">Total Quantity *</Label>
-              <Input
-                id="qty"
-                type="number"
-                min={1}
-                value={form.data.q}
-                onChange={(event) =>
-                  form.setData('q', Number(event.target.value))
-                }
+              <FormattedNumberInput
+                  value={form.data.q}
+                  onValueChange={(value) => form.setData('q', value)}
+                  placeholder='cth: 40'
               />
             </div>
 
@@ -293,13 +290,10 @@ export default function Index({ nextJobTicket, customers }: Props) {
                     }
                   />
 
-                  <Input
-                    type="number"
-                    min={1}
-                    value={row.qty}
-                    onChange={(event) =>
-                      handleSizeChange(index, 'qty', Number(event.target.value))
-                    }
+                  <FormattedNumberInput
+                      value={row.qty}
+                      onValueChange={(event) => handleSizeChange(index, 'qty', Number(event))}
+                      // placeholder='cth: 0,9'
                   />
 
                   <Button

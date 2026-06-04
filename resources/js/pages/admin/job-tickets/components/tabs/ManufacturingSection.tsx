@@ -3,7 +3,7 @@ import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/button';
 
 // Renders manufacturing specs table with cost estimates.
-function ManufacturingSection({ items, onEdit }: { items: any[]; onEdit: (items: any) => void }) {
+function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdit: (items: any) => void; onDelete?: (items: any) => void }) {
     return (
         <SectionCard title="Manufaktur">
             {items.length === 0 ? (
@@ -38,6 +38,17 @@ function ManufacturingSection({ items, onEdit }: { items: any[]; onEdit: (items:
                                         <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)}>
                                             Edit
                                         </Button>
+                                        {onDelete && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                                onClick={() => onDelete(item)}
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

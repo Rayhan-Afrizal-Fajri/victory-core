@@ -1,6 +1,7 @@
 import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 function GenerateBomPoCard({
     job,
@@ -11,8 +12,9 @@ function GenerateBomPoCard({
     form: any;
     onSubmit: (e: React.FormEvent) => void;
 }) {
+
     const productionQty = Number(job.quantity || job.q || 0);
-    const sampleQty = Number(form.data.sample_qty || 0);
+    const sampleQty = Number(job.sample_qty || 1);
     const totalPlannedQty = productionQty + sampleQty;
 
     return (
@@ -33,27 +35,10 @@ function GenerateBomPoCard({
                         value={`${productionQty} pcs`}
                     />
 
-                    <div className="rounded-xl border bg-white p-4">
-                        <p className="text-xs font-medium uppercase text-slate-500">
-                            Sample Qty
-                        </p>
-
-                        <Input
-                            className="mt-2"
-                            type="number"
-                            min={0}
-                            value={form.data.sample_qty}
-                            onChange={(e) =>
-                                form.setData('sample_qty', Number(e.target.value))
-                            }
-                        />
-
-                        {form.errors.sample_qty && (
-                            <p className="mt-1 text-xs text-red-500">
-                                {form.errors.sample_qty}
-                            </p>
-                        )}
-                    </div>
+                    <InfoBox
+                        label="Sample Qty"
+                        value={`${sampleQty} pcs`}
+                    />
 
                     <InfoBox
                         label="Total Planned Qty"

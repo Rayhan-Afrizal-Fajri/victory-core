@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { ProductManufacturingWork, ManufacturingWork } from '@/types';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 
 interface Props {
   productId: number;
@@ -123,11 +124,10 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Default Usage</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.data.default_usage}
-                    onChange={(e) => form.setData('default_usage', parseFloat(e.target.value))}
+                  <FormattedNumberInput
+                      value={form.data.default_usage}
+                      onValueChange={(value) => form.setData('default_usage', value)}
+                      placeholder='cth: 0,9'
                   />
                   <InputError message={form.errors.default_usage as string} />
                 </div>

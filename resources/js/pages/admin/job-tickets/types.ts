@@ -187,12 +187,14 @@ export interface MaterialReceiving {
 
 export interface PurchasingItem {
   id: number;
+  pesanan_material_spec_id?: number;
 
   item: string;
   supplier?: Supplier | string | null;
 
   supplier_id?: number | null;
 
+  qty_bahan: number;
   ordered_qty: number;
   received_qty: number;
   remaining_qty?: number;
@@ -204,6 +206,9 @@ export interface PurchasingItem {
   tgl_pembelian?: string | null;
 
   status?: string;
+
+  purchase_scope?: string;
+  notes?: string
 
   material_receivings?: MaterialReceiving[];
 }
@@ -259,6 +264,11 @@ export interface WorkflowStatus {
 
   design_uploaded?: boolean;
   design_approved?: boolean;
+  article_synced?: boolean;
+  design_specs_completed?: boolean;
+
+  quotation_created?: boolean;
+  quotation_approved?: boolean;
 
   sample_created?: boolean;
   sample_paid?: boolean;
@@ -271,6 +281,9 @@ export interface WorkflowStatus {
   materials_purchased?: boolean;
   materials_received?: boolean;
   materials_distributed?: boolean;
+
+  sample_materials_ready?: boolean;
+  production_materials_ready?: boolean;
 
   production_started?: boolean;
   production_completed?: boolean;
@@ -384,6 +397,37 @@ export interface ProductionRun {
   processes?: ProductionRunProcess[];
 }
 
+export interface QuotationItem {
+  id: number;
+  item_name: string;
+  fabric?: string | null;
+  print_method?: string | null;
+  quantity?: number | null;
+  price_per_pcs?: number | null;
+  subtotal?: number | null;  
+}
+
+export interface Quotation {
+  id: number;
+  quotation_number: string;
+  status: string;
+  valid_until?: string | null;
+  sample_qty?: number;
+  payment_terms?: string;
+  delivery_terms?: string;
+  notes?: string | null;
+  price_per_pcs?: number | null;
+  quantity?: number | null;
+  subtotal?: number | null;
+  tax?: number | null;
+  delivery_cost?: number | null;
+  grand_total?: number | null;
+  approved_at?: string | null;
+  approved_by_name?: string | null;
+  signature_path?: string | null;
+  items?: QuotationItem[];
+}
+
 export interface JobTicket {
   id: number;
 
@@ -393,6 +437,7 @@ export interface JobTicket {
   customer: Customer;
 
   quantity?: number;
+  sample_qty?: number;
   deadline?: string | null;
   priority?: string;
 
@@ -412,6 +457,9 @@ export interface JobTicket {
 
   // design
   designs?: DesignRevision[];
+
+  //quotation
+  quotations?: Quotation;
 
   // sample
   samples?: Sample[];

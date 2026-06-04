@@ -42,7 +42,7 @@ class SampleController extends Controller
                     'kategori_invoice' => 'sample',
                     'total_tagihan' => $request->sample_price,
                     'status_tagihan' => 'unpaid',
-                    'tgl_jatuh_tempo' => now()->addDays(3)->toDateString(),
+                    'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
                 ]);
             }
 
@@ -139,7 +139,7 @@ class SampleController extends Controller
                         'kategori_invoice' => 'sample',
                         'total_tagihan' => $request->sample_price,
                         'status_tagihan' => 'unpaid',
-                        'tgl_jatuh_tempo' => now()->addDays(3)->toDateString(),
+                        'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
                     ]);
 
                     $sample->update([
@@ -237,7 +237,7 @@ class SampleController extends Controller
                 'kategori_invoice' => 'production',
                 'total_tagihan' => $total_tagihan,
                 'status_tagihan' => 'unpaid',
-                'tgl_jatuh_tempo' => now()->addDays(3)->toDateString(),
+                'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
             ]);
             $pesanan->workflowStatus()->update([
                 'production_invoice_created' => true

@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/sheet';
 import Field from './field';
 import { Input } from '../ui/input';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const invoiceStatusClass: Record<string, string> = {
   unpaid: 'bg-red-100 text-red-700 border-red-200',
@@ -656,13 +657,10 @@ function InvoiceEditDialog({
           </div>
 
           <Field label="Total Tagihan" error={invoiceForm.errors.total_tagihan}>
-            <Input
-              type="number"
-              min={0}
-              value={invoiceForm.data.total_tagihan}
-              onChange={(e) =>
-                invoiceForm.setData('total_tagihan', Number(e.target.value))
-              }
+            <FormattedNumberInput
+                value={invoiceForm.data.total_tagihan}
+                onValueChange={(value) => invoiceForm.setData('total_tagihan', value)}
+                placeholder='cth: 35.000'
             />
           </Field>
 

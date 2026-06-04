@@ -10,6 +10,7 @@ import Badge from '@/components/sample/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 type ProductionRunBoardProps = {
     job: any;
@@ -169,13 +170,10 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
 
                     <div className="max-w-xs">
                         <Field label="Sample Qty" error={ensureRunForm.errors.quantity}>
-                            <Input
-                                type="number"
-                                min={1}
+                            <FormattedNumberInput
                                 value={ensureRunForm.data.quantity}
-                                onChange={(e) =>
-                                    ensureRunForm.setData('quantity', Number(e.target.value))
-                                }
+                                onValueChange={(value) => ensureRunForm.setData('quantity', value)}
+                                placeholder='cth: 5'
                             />
                         </Field>
                     </div>
@@ -477,35 +475,26 @@ const ProductionProcessCard = ({ process }: { process: any }) => {
                 <form onSubmit={submitQc} className="mt-4 space-y-4 rounded-xl border bg-slate-50 p-4">
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Checked Qty" error={qcForm.errors.checked_qty}>
-                            <Input
-                                type="number"
-                                min={0}
+                            <FormattedNumberInput
                                 value={qcForm.data.checked_qty}
-                                onChange={(e) =>
-                                    qcForm.setData('checked_qty', Number(e.target.value))
-                                }
+                                onValueChange={(value) => qcForm.setData('checked_qty', value)}
+                                placeholder='cth: 5'
                             />
                         </Field>
 
                         <Field label="Passed Qty" error={qcForm.errors.passed_qty}>
-                            <Input
-                                type="number"
-                                min={0}
+                            <FormattedNumberInput
                                 value={qcForm.data.passed_qty}
-                                onChange={(e) =>
-                                    qcForm.setData('passed_qty', Number(e.target.value))
-                                }
+                                onValueChange={(value) => qcForm.setData('passed_qty', value)}
+                                placeholder='cth: 5'
                             />
                         </Field>
 
                         <Field label="Defect Qty" error={qcForm.errors.defect_qty}>
-                            <Input
-                                type="number"
-                                min={0}
+                            <FormattedNumberInput
                                 value={qcForm.data.defect_qty}
-                                onChange={(e) =>
-                                    qcForm.setData('defect_qty', Number(e.target.value))
-                                }
+                                onValueChange={(value) => qcForm.setData('defect_qty', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
                     </div>

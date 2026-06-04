@@ -127,7 +127,7 @@ const PurchasingMaterialTable = ({
                                             </Button>
                                         )}
 
-                                        {canDeletePurchasing(item) && (
+                                        {canDeletePurchasing(item) && !isGeneratedFromBom && (
                                             <Button
                                                 type="button"
                                                 size="sm"

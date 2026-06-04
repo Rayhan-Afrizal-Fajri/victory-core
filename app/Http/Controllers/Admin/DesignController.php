@@ -24,7 +24,7 @@ class DesignController extends Controller
             ->first();
 
         $rules = [
-            'file_desain' => 'required|image|max:2048',
+            'file_desain' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
             'designer_revision_note' => $latestRevision
                 ? 'required|string'
                 : 'nullable|string',

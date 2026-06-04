@@ -86,7 +86,7 @@ class DashboardController extends Controller
                     ],
                     [
                         'key' => 'total_gop',
-                        'title' => 'Total GOP',
+                        'title' => 'Total Revenue',
                         'value' => 'Rp ' . number_format($totalGop, 0, ',', '.'),
                         'type' => 'money',
                     ],

@@ -18,6 +18,7 @@ class QuotationController extends Controller
     {
         $validated = $request->validate([
             'valid_until' => ['nullable', 'date'],
+            'sample_qty' => ['required', 'integer', 'min:1'],
             'payment_terms' => ['nullable', 'string'],
             'delivery_terms' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
@@ -63,7 +64,8 @@ class QuotationController extends Controller
             $quotation = $pesanan->quotations()->create([
                 'quotation_number' => $this->generateQuotationNumber(),
                 'status' => 'draft',
-                'valid_until' => $validated['valid_until'] ?? now()->addDays(30)->toDateString(),
+                'valid_until' => now()->addDays(30)->toDateString(),
+                'sample_qty' => $validated['sample_qty'],
                 'payment_terms' => $validated['payment_terms']
                     ?? 'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
                 'delivery_terms' => $validated['delivery_terms']
@@ -77,6 +79,10 @@ class QuotationController extends Controller
                 'delivery_cost' => $deliveryCost,
                 'grand_total' => $grandTotal,
                 'created_by' => Auth::id(),
+            ]);
+
+            $pesanan->update([
+                'sample_qty' => $validated['sample_qty'],
             ]);
 
             $quotation->items()->create([
@@ -229,7 +235,7 @@ class QuotationController extends Controller
             'title' => 'Invoice Sample - ' . ($pesanan->requested_product_name ?: $pesanan->produk),
             'total_tagihan' => $amount,
             'status_tagihan' => 'unpaid',
-            'tgl_jatuh_tempo' => now()->addDays(3)->toDateString(),
+            'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);
 
         $pesanan->workflowStatus()->updateOrCreate(
@@ -343,12 +349,23 @@ class QuotationController extends Controller
     public function destroy(string $quotationId)
     {
         $quotation = Quotation::findOrFail($quotationId);
+        $pesanan = $quotation->pesanan;
 
         if ($quotation->status === 'approved') {
             abort(422, 'Quotation yang sudah disetujui tidak bisa dihapus.');
         }
 
         $quotation->delete();
+
+        if (!Quotation::where('pesanan_id', $pesanan->id)->exists()) {
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                [
+                    'quotation_created' => false,
+                    'quotation_approved' => false,
+                ]
+            );
+        }
 
         return back()->with('success', 'Quotation berhasil dihapus.');
     }

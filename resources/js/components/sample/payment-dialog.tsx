@@ -15,6 +15,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { getInvoiceCategoryLabel } from '../invoice/invoice-utils';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const PaymentDialog = ({
     open,
@@ -86,14 +87,11 @@ const PaymentDialog = ({
                         </Field>
 
                         <Field label="Jumlah Bayar" error={paymentForm.errors.jumlah_bayar}>
-                            <Input
-                                type="number"
+                            <FormattedNumberInput
                                 min={categoryLabel === 'Production' ? remainingPayment * 0.5 : 0}
-                                // step={1000}
                                 value={paymentForm.data.jumlah_bayar}
-                                onChange={(e) =>
-                                    paymentForm.setData('jumlah_bayar', Number(e.target.value))
-                                }
+                                onValueChange={(value) => paymentForm.setData('jumlah_bayar', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
 

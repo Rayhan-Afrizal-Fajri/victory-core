@@ -130,4 +130,18 @@ class Pesanan extends Model
     {
         return $this->hasMany(ProductionRun::class);
     }    
+
+    public function sampleRun()
+    {
+        return $this->hasOne(ProductionRun::class, 'pesanan_id')
+            ->where('type', 'sample')
+            ->latestOfMany();
+    }
+
+    public function productionRun()
+    {
+        return $this->hasOne(ProductionRun::class, 'pesanan_id')
+            ->where('type', 'production')
+            ->latestOfMany();
+    }
 }

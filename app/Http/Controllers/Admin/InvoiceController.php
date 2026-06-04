@@ -225,7 +225,7 @@ class InvoiceController extends Controller
                         : 'Invoice Production - ' . ($pesanan->requested_product_name ?: $pesanan->produk)),
                 'total_tagihan' => $validated['total_tagihan'],
                 'status_tagihan' => 'unpaid',
-                'tgl_jatuh_tempo' => $validated['tgl_jatuh_tempo'] ?? now()->addDays(7)->toDateString(),
+                'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
             ]);
 
             $workflowPayload = [];
@@ -308,7 +308,7 @@ class InvoiceController extends Controller
         DB::transaction(function () use ($request, $invoice, $invoiceService){
             $invoice->update([
                 'total_tagihan' => $request->total_tagihan,
-                'tgl_jatuh_tempo' => $request->tgl_jatuh_tempo
+                'tgl_jatuh_tempo' => $request->tgl_jatuh_tempo,
             ]);
 
             $invoice = $invoiceService->recalculateStatus($invoice);

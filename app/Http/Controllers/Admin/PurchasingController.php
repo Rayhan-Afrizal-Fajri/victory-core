@@ -11,9 +11,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Services\ProductionRunService;
 
 class PurchasingController extends Controller
 {
+
+    public function __construct(
+        protected ProductionRunService $productionRunService,
+    ) {}
     /**
      * Display a listing of the resource.
      */
@@ -148,6 +153,7 @@ class PurchasingController extends Controller
             'workflowStatus',
             'materialSpecs.supplier',
             'purchasing',
+            'quotations',
         ])->findOrFail($pesananId);
 
         if (! $pesanan->workflowStatus?->sample_paid) {
@@ -158,8 +164,10 @@ class PurchasingController extends Controller
             abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
         }
 
+        $quotation = $pesanan->quotations;
+
         $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-        $sampleQty = (int) $validated['sample_qty'];
+        $sampleQty = (int) ($quotation->sample_qty ?: $validated['sample_qty'] ?: $pesanan->sample_qty ?: 1);
         $totalPlannedQty = $productionQty + $sampleQty;
 
         $pesanan->update([
@@ -297,6 +305,8 @@ class PurchasingController extends Controller
             'satuan' => ['required', 'string'],
             'harga_satuan' => ['required', 'numeric', 'min:0'],
             'tgl_pembelian' => ['nullable', 'date'],
+            'purchase_scope' => ['nullable', 'in:sample_and_production,sample_only,production_only'],
+            'notes' => ['nullable', 'string']
         ]);
 
         $pesanan = Pesanan::with('workflowStatus')->findOrFail($pesananId);
@@ -308,27 +318,39 @@ class PurchasingController extends Controller
         DB::transaction(function () use ($request, $pesanan) {
             $qty = (float) $request->qty_bahan;
             $price = (float) $request->harga_satuan;
+            $purchaseScope = $request->purchase_scope ?: 'sample_and_production';
 
             $pesanan->purchasing()->create([
                 'supplier_id' => $request->supplier_id,
                 'item_bahan' => $request->item_bahan,
+
                 'qty_bahan' => $qty,
+
+                'required_qty' => $qty,
+                'purchase_qty' => $qty,
+                'stock_qty' => 0,
+                'leftover_qty' => 0,
+
                 'satuan' => $request->satuan,
                 'harga_satuan' => $price,
                 'total_harga' => $qty * $price,
                 'tgl_pembelian' => $request->tgl_pembelian,
                 'is_received' => false,
                 'status' => 'draft',
+                'purchase_scope' => $purchaseScope,
+                'notes' => $request->notes,
             ]);
 
-            $pesanan->workflowStatus()->updateOrCreate(
-                ['pesanan_id' => $pesanan->id],
-                [
-                    'materials_purchased' => true,
-                    'materials_received' => false,
-                    'materials_distributed' => false,
-                ]
-            );
+            $this->syncPesananPurchasingWorkflow($pesanan);
+
+            // $pesanan->workflowStatus()->updateOrCreate(
+            //     ['pesanan_id' => $pesanan->id],
+            //     [
+            //         'materials_purchased' => true,
+            //         'materials_received' => false,
+            //         'materials_distributed' => false,
+            //     ]
+            // );
 
             $pesanan->workflowHistory()->create([
                 'step' => 'purchasing',
@@ -564,22 +586,167 @@ class PurchasingController extends Controller
         ]);
     }
 
+    private function getPurchasingSampleRequiredQty(Purchasing $purchasing, Pesanan $pesanan): float
+    {
+        $scope = $purchasing->purchase_scope ?: 'sample_and_production';
+        $totalRequiredQty = (float) ($purchasing->required_qty ?: $purchasing->qty_bahan ?: 0);
+
+        if (in_array($scope, ['additional', 'production'])) {
+            return 0;
+        }
+
+        if ($scope === 'sample') {
+            return $totalRequiredQty;
+        }
+
+        $sampleQty = (float) ($pesanan->sample_qty ?: 0);
+        $productionQty = (float) ($pesanan->quantity ?: $pesanan->q ?: 0);
+        $totalQty = $sampleQty + $productionQty;
+
+        if ($sampleQty <= 0 || $totalQty <= 0) {
+            return  0;
+        }
+
+        return $totalRequiredQty * ($sampleQty / $totalQty);
+    }
+
+    private function getPurchasingProductionRequiredQty(Purchasing $purchasing, Pesanan $pesanan): float
+    {
+        $scope = $purchasing->purchase_scope ?: 'sample_and_production';
+        $totalRequiredQty = (float) ($purchasing->required_qty ?: $purchasing->qty_bahan ?: 0);
+
+        if (in_array($scope, ['additional', 'sample'])) {
+            return 0;
+        }
+
+        if ($scope === 'production') {
+            return $totalRequiredQty;
+        }
+
+        $sampleQty = (float) ($pesanan->sample_qty ?: 0);
+        $productionQty = (float) ($pesanan->quantity ?: $pesanan->q ?: 0);
+        $totalQty = $sampleQty + $productionQty;
+
+        if ($productionQty <= 0 || $totalQty <= 0) {
+            return 0;
+        }
+
+        return $totalRequiredQty * ($productionQty / $totalQty);
+    }
+    
+    private function getPurchasingReceivedQty(Purchasing $purchasing): float
+    {
+        return (float) $purchasing->materialReceivings()->sum('received_qty');
+    }
+
+    private function isSampleMaterialsReady(Pesanan $pesanan): bool
+    {
+        $purchasings = $pesanan->purchasing()
+            ->with('materialReceivings')
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        if ($purchasings->isEmpty()) {
+            return false;
+        }
+
+        $relevantPurchasings = $purchasings->filter(function ($purchasing) use ($pesanan) {
+            return $this->getPurchasingSampleRequiredQty($purchasing, $pesanan) > 0;
+        });
+
+        if ($relevantPurchasings->isEmpty()) {
+            return false;
+        }
+
+        return $relevantPurchasings->every(function ($purchasing) use ($pesanan) {
+            $required = $this->getPurchasingSampleRequiredQty($purchasing, $pesanan);
+            $received = $this->getPurchasingReceivedQty($purchasing);
+
+            return $received >= $required;
+        });
+    }
+
+    private function getReceivedQtyForMaterialSpec(Pesanan $pesanan, int $materialSpecId): float
+    {
+        return (float) $pesanan->purchasing
+            ->where('pesanan_material_spec_id', $materialSpecId)
+            ->flatMap(function ($purchasing) {
+                return $purchasing->materialReceivings;
+            })
+            ->sum('received_qty');
+    }
+
+    private function isProductionMaterialsReady(Pesanan $pesanan): bool
+    {
+        $purchasings = $pesanan->purchasing()
+            ->with('materialReceivings')
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        if ($purchasings->isEmpty()) {
+            return false;
+        }
+
+        $relevantPurchasings = $purchasings->filter(function ($purchasing) use ($pesanan) {
+            return $this->getPurchasingProductionRequiredQty($purchasing, $pesanan) > 0;
+        });
+
+        if ($relevantPurchasings->isEmpty()) {
+            return false;
+        }
+
+        return $relevantPurchasings->every(function ($purchasing) use ($pesanan) {
+            $required = $this->getPurchasingProductionRequiredQty($purchasing, $pesanan);
+            $received = $this->getPurchasingReceivedQty($purchasing);
+
+            return $received >= $required;
+        });
+    }
+
     private function syncPesananPurchasingWorkflow(Pesanan $pesanan): void
     {
         $pesanan->loadMissing([
             'workflowStatus',
             'purchasing',
             'manufacturingSpecs',
-            'productionRuns.processes',             
+            'productionRuns.processes',  
+            'materialSpecs'           
         ]);
 
-        $purchasings = $pesanan->purchasing()->get();
+        $purchasings = $pesanan->purchasing()->with('materialReceivings')->get();
 
         $hasPurchasing = $purchasings->count() > 0;
 
         $allReceived = $hasPurchasing && $purchasings->every(function ($item) {
             return $item->is_received || $item->status === 'received';
         });
+
+        $currentWorkflow = $pesanan->workflowStatus;
+
+        $sampleMaterialsReady = $this->isSampleMaterialsReady($pesanan);
+        $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
+
+        //down downgrade if sample is already started / ready before
+        if ($currentWorkflow?->sample_materials_ready) {
+            $sampleMaterialReady = true;
+        }
+
+        if ($pesanan->productionRuns()->where('type', 'sample')->exists()) {
+            $sampleMaterialReady = true;
+        }
+
+        //dont downgrade if production is already started / ready before
+        if ($currentWorkflow?->production_materials_ready) {
+            $productionMaterialReady = true;
+        }
+
+        if ($pesanan->productionRuns()
+            ->where('type', 'production')
+            ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
+            ->exists()
+        ) {
+            $productionMaterialsReady = true;
+        }
 
         $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
             return $item->is_distributed || $item->status === 'distributed';
@@ -591,11 +758,14 @@ class PurchasingController extends Controller
                 'materials_purchased' => $hasPurchasing,
                 'materials_received' => $allReceived,
                 'materials_distributed' => $allDistributed,
+
+                'sample_materials_ready' => $sampleMaterialsReady,
+                'production_materials_ready' => $productionMaterialsReady,
             ]
         );
 
-        if ($allReceived) {
-            $this->ensureSampleProductionRun($pesanan);
+        if ($sampleMaterialsReady) {
+            $this->productionRunService->ensureSampleRun($pesanan);
         }
     }
 

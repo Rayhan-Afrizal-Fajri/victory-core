@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDecimal } from '@/helpers/format';
 
 // Renders a specification table for materials or accessories with an Edit action.
-function SpecSection({ title, items, onEdit }: { title: string; items: any[]; onEdit: (spec: any) => void }) {
+function SpecSection({ title, items, onEdit, onDelete }: { title: string; items: any[]; onEdit: (spec: any) => void; onDelete?: (spec: any) => void }) {
     return (
         <SectionCard title={title}>
             {items && items.length === 0 ? (
@@ -43,6 +43,17 @@ function SpecSection({ title, items, onEdit }: { title: string; items: any[]; on
                                         <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)}>
                                             Edit
                                         </Button>
+                                        {onDelete && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                                onClick={() => onDelete(item)}
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Supplier } from '@/pages/admin/job-tickets/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 const PurchasingFormDialog = ({
     open,
@@ -22,6 +23,7 @@ const PurchasingFormDialog = ({
     mode = 'create',
     suppliers,
     jobTickets,
+    job,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -34,10 +36,11 @@ const PurchasingFormDialog = ({
         no_job_ticket: string;
         customer: string;
     }[];
+    job: any;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl overflow-y-auto max-h-screen">
                 <DialogHeader>
                     <DialogTitle>
                         {mode === 'edit' ? 'Edit Material Purchasing' : 'Tambah Material Purchasing'}
@@ -46,6 +49,17 @@ const PurchasingFormDialog = ({
                         Input bahan/material yang dibutuhkan untuk proses produksi.
                     </DialogDescription>
                 </DialogHeader>
+
+                {job?.workflow_status?.sample_materials_ready !== 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                        Sample production sudah berjalan. Item manual baru akan dianggap sebagai pembelian tambahan dan tidak akan mengunci ulang Sample Tab.
+                    </div>
+                )}
+                {job?.workflow_status?.production_started !== 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                        Production sudah berjalan. Item manual baru akan dianggap sebagai pembelian tambahan dan tidak akan mengunci ulang Production Tab.
+                    </div>
+                )}
 
                 <form onSubmit={onSubmit} className="space-y-4">
                     <Field label="Nama Bahan" error={form.errors.item_bahan}>
@@ -56,33 +70,63 @@ const PurchasingFormDialog = ({
                         />
                     </Field>
 
-                    <Field label="Job Ticket" error={form.errors.pesanan_id}>
+                    {jobTickets && jobTickets.length > 0 && (
+                        <Field label="Job Ticket" error={form.errors.pesanan_id}>
+                            <Select
+                                value={form.data.pesanan_id ? String(form.data.pesanan_id) : ''}
+                                onValueChange={(value) => form.setData('pesanan_id', value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Pilih Job Ticket" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {jobTickets.map((job) => (
+                                        <SelectItem key={job.id} value={String(job.id)}>
+                                            {job.no_job_ticket} · {job.customer}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    )}
+
+                    <Field label="Scope Kebutuhan" error={form.errors.purchase_scope}>
                         <Select
-                            value={form.data.pesanan_id ? String(form.data.pesanan_id) : ''}
-                            onValueChange={(value) => form.setData('pesanan_id', value)}
+                            value={form.data.purchase_scope || 'sample_and_production'}
+                            onValueChange={(value) => form.setData('purchase_scope', value)}
                         >
                             <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pilih Job Ticket" />
+                                <SelectValue placeholder="Pilih scope" />
                             </SelectTrigger>
 
                             <SelectContent>
-                            {(jobTickets || []).map((job) => (
-                                <SelectItem key={job.id} value={String(job.id)}>
-                                {job.no_job_ticket} · {job.customer}
+                                <SelectItem value="sample_and_production">
+                                    Sample & Production
                                 </SelectItem>
-                            ))}
+                                <SelectItem value="sample">
+                                    Sample Only
+                                </SelectItem>
+                                <SelectItem value="production">
+                                    Production Only
+                                </SelectItem>
+                                <SelectItem value="additional">
+                                    Additional / Tidak Memblokir
+                                </SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                            Scope menentukan apakah item ini ikut memengaruhi kesiapan material sample/production.
+                        </p>
                     </Field>
 
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Qty" error={form.errors.qty_bahan}>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
+                            <FormattedNumberInput
                                 value={form.data.qty_bahan}
-                                onChange={(e) => form.setData('qty_bahan', Number(e.target.value))}
+                                onValueChange={(value) => form.setData('qty_bahan', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
 
@@ -136,14 +180,20 @@ const PurchasingFormDialog = ({
                         </Field>
 
                         <Field label="Harga Satuan" error={form.errors.harga_satuan}>
-                            <Input
-                                type="number"
-                                min={0}
+                            <FormattedNumberInput
                                 value={form.data.harga_satuan}
-                                onChange={(e) => form.setData('harga_satuan', Number(e.target.value))}
+                                onValueChange={(value) => form.setData('harga_satuan', value)}
+                                placeholder='cth: 35.000'
                             />
                         </Field>
                     </div>
+                    <Field label="Catatan" error={form.errors.notes}>
+                        <Input
+                            value={form.data.notes || ''}
+                            onChange={(e) => form.setData('notes', e.target.value)}
+                            placeholder="Contoh: pembelian tambahan karena rework / kebutuhan manual"
+                        />
+                    </Field>
 
                     <div className="rounded-xl border bg-slate-50 p-4">
                         <p className="text-xs text-slate-500">Total Harga</p>
