@@ -168,9 +168,20 @@ class PaymentController extends Controller
             return;
         }
 
+        $pesanan->loadMissing([
+            'workflowStatus',
+            'manufacturingSpecs',
+            'productionRuns',
+        ]);
+
+        $workflow = $pesanan->workflowStatus;
+
+        $wasProductionDpPaid = (bool) ($workflow?->production_dp_paid ?? false);
+        $wasFinalPaymentPaid = (bool) ($workflow?->final_payment_paid ?? false);
+
         $totalInvoice = (float) ($invoice->total_tagihan ?: $invoice->amount ?: 0);
 
-        $totalVerified = $invoice->payments()
+        $totalVerified = (float) $invoice->payments()
             ->where('status', 'verified')
             ->sum('jumlah_bayar');
 
@@ -187,19 +198,24 @@ class PaymentController extends Controller
             ]
         );
 
-        if ($productionDpPaid && !$finalPaymentPaid) {
+        if ($productionDpPaid && ! $wasProductionDpPaid) {
             $pesanan->workflowHistory()->create([
                 'step' => 'production_payment',
                 'action' => 'dp_verified',
                 'user_id' => Auth::id(),
                 'notes' => 'DP produksi minimal 50% sudah terpenuhi.',
             ]);
-
-            $productionRunService = new ProductionRunService();
-            $productionRunService->ensureProductionRun($pesanan);
         }
 
-        if ($finalPaymentPaid) {
+        if ($productionDpPaid) {
+            app(ProductionRunService::class)->ensureProductionRun($pesanan->fresh([
+                'workflowStatus',
+                'manufacturingSpecs',
+                'productionRuns',
+            ]));
+        }
+
+        if ($finalPaymentPaid && ! $wasFinalPaymentPaid) {
             $pesanan->workflowHistory()->create([
                 'step' => 'production_payment',
                 'action' => 'fully_paid',
