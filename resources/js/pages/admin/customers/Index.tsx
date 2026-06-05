@@ -142,6 +142,11 @@ export default function Index({ customers }: Props) {
       cell: (row) => <span className="font-medium text-slate-900">{row.name}</span>,
     },
     {
+      header: 'Nama Perusahaan',
+      accessor: 'company_name',
+      cell: (row) => <span className="font-medium text-slate-900">{row.company_name}</span>,
+    },
+    {
       header: 'Kontak',
       accessor: 'contact',
     },
