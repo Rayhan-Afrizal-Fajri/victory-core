@@ -230,6 +230,7 @@ class ProductionRunController extends Controller
 
             $pesanan = $run->pesanan;
             $workflow = $pesanan->workflowStatus;
+            $workflowHistory = $pesanan->workflowHistory();
 
             if ($run->type === 'sample') {
                 $workflow->updateOrCreate(
@@ -238,6 +239,13 @@ class ProductionRunController extends Controller
                         'sample_delivered' => true,
                     ]
                 );
+
+                $workflowHistory->create([
+                    'step' => 'sample',
+                    'action' => 'delivered',
+                    'user_id' => Auth::id(),
+                    'notes' => 'Sample telah dikirim ke customer.',
+                ]);
             } elseif ($run->type === 'production') {
                 $isFinalPaid = (bool) ($workflow?->final_payment_paid ?? false);
 
@@ -248,6 +256,13 @@ class ProductionRunController extends Controller
                         'completed' => $isFinalPaid, // Mark as completed if final payment sudah dibayar
                     ]
                 );
+
+                $workflowHistory->create([
+                    'step' => 'production',
+                    'action' => 'delivered',
+                    'user_id' => Auth::id(),
+                    'notes' => 'Produk telah dikirim ke customer.',
+                ]);
             }
         });
 

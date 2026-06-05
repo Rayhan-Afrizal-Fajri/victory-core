@@ -35,15 +35,20 @@ class PaymentController extends Controller
      */
     public function store(Request $request, string $invoiceId)
     {
+        $invoice = Invoice::findOrFail($invoiceId);
+        $workflowStatus = $invoice->pesanan->workflowStatus;
+
+        $minimumPayment = $workflowStatus->production_dp_paid ? 1 : $invoice->total_tagihan * 0.5;
+        $maximumPayment = $invoice->total_tagihan - $this->getVerifiedTotal($invoice);
+
         $request->validate([
             'tgl_bayar' => ['required', 'date'],
-            'jumlah_bayar' => ['required', 'numeric', 'min:1'],
+            'jumlah_bayar' => ['required', 'numeric', 'min:' . $minimumPayment, 'max:' . $maximumPayment],
             'metode_pembayaran' => ['required', 'string'],
             'bukti_transfer' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'catatan_finance' => ['nullable', 'string'],
         ]);
 
-        $invoice = Invoice::findOrFail($invoiceId);
 
         if (in_array($invoice->status_tagihan, ['paid', 'Paid'])) {
             abort(422, 'Invoice sudah lunas.');

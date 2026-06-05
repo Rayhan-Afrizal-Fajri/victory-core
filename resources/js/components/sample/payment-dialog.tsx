@@ -88,7 +88,7 @@ const PaymentDialog = ({
 
                         <Field label="Jumlah Bayar" error={paymentForm.errors.jumlah_bayar}>
                             <FormattedNumberInput
-                                min={categoryLabel === 'Production' ? remainingPayment * 0.5 : 0}
+                                min={0}
                                 value={paymentForm.data.jumlah_bayar}
                                 onValueChange={(value) => paymentForm.setData('jumlah_bayar', value)}
                                 placeholder='cth: 35.000'
