@@ -1,0 +1,1 @@
+import{n as e}from"./jsx-runtime-BCV00E_w.js";import{c as t}from"./dist-CxG3YgGQ.js";var n=e();function r(){let e=(0,n.c)(2),{auth:r}=t().props,i;return e[0]===r?.permissions?i=e[1]:(i=e=>r?.permissions?.includes(e),e[0]=r?.permissions,e[1]=i),i}export{r as t};

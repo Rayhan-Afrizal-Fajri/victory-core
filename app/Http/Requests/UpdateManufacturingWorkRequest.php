@@ -25,6 +25,7 @@ class UpdateManufacturingWorkRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'default_unit' => ['nullable', 'string', 'max:255'],
             'default_vendor_id' => ['nullable', 'integer', 'exists:suppliers,id'],
+            'process_behavior' => ['required', 'string', 'in:production_process,costing_only'],
             'default_min_estimate' => ['numeric', 'min:0'],
             'default_max_estimate' => ['numeric', 'min:0'],
             'is_active' => ['boolean'],

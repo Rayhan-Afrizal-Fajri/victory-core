@@ -136,14 +136,14 @@ export function getRequiredQty(
         return 0;
     }
 
-    return totalRequiredQty * (qty / totalOrderQty);
+    return roundQty(totalRequiredQty * (qty / totalOrderQty));
 }
 
 export function getSampleReceivedQty(purchasing: any, job: any) {
     const receivedQty = getReceivedQty(purchasing);
     const sampleRequiredQty =  getRequiredQty(purchasing, job, 'sample');
 
-    return Math.min(receivedQty, sampleRequiredQty);
+    return roundQty(Math.min(receivedQty, sampleRequiredQty));
 }
 
 export function getProductionReceivedQty(purchasing: any, job: any) {
@@ -153,11 +153,28 @@ export function getProductionReceivedQty(purchasing: any, job: any) {
 
     const remainingAfterSample = Math.max(receivedQty - sampleRequiredQty, 0);
 
-    return Math.min(remainingAfterSample, productionRequiredQty);
+    return roundQty(Math.min(remainingAfterSample, productionRequiredQty));
 }
 
 export function getProgressPercentage(received: number, required: number) {
     if (!required || required <= 0) return 0;
 
     return Math.min(Math.max((received / required) * 100, 0), 100);
+}
+
+function roundQty(value: number, precision = 4) {
+    const multiplier = Math.pow(10, precision);
+
+    return Math.round((Number(value || 0) + Number.EPSILON) * multiplier) / multiplier;
+}
+
+export function formatMaterialQty(value: number, unit?: string) {
+    const normalizedUnit = (unit || '').toLowerCase();
+
+    const isWholeNumberUnit = ['pcs', 'pc', 'set', 'unit'].includes(normalizedUnit);
+
+    return Number(value || 0).toLocaleString('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: isWholeNumberUnit ? 0 : 2,
+    });
 }

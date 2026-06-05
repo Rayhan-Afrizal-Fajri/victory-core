@@ -30,8 +30,8 @@ class ProductionRunController extends Controller
             'manufacturingSpecs',
         ])->findOrFail($pesananId);
 
-        if (! $pesanan->workflowStatus?->materials_received) {
-            abort(422, 'Material belum diterima semua.');
+        if (! $pesanan->workflowStatus?->sample_materials_ready) {
+            abort(422, 'Material sample belum cukup diterima.');
         }
 
         $this->productionRunService->ensureSampleRun(
@@ -51,6 +51,10 @@ class ProductionRunController extends Controller
 
         if (! $pesanan->workflowStatus?->production_dp_paid) {
             abort(422, 'DP produksi belum terpenuhi.');
+        }
+
+        if (! $pesanan->workflowStatus?->production_materials_ready) {
+            abort(422, 'Material produksi belum cukup diterima.');
         }
 
         $this->productionRunService->ensureProductionRun($pesanan);
@@ -122,15 +126,16 @@ class ProductionRunController extends Controller
 
     public function submitQc(Request $request, string $processId)
     {
+        $process = ProductionRunProcess::with('productionRun')->findOrFail($processId);
+        $runQty = (int) ($process->productionRun?->quantity ?? 0);
+
         $validated = $request->validate([
-            'checked_qty' => ['required', 'integer', 'min:0'],
+            'checked_qty' => ['required', 'integer', 'min:1', 'max:' . $runQty],
             'passed_qty' => ['required', 'integer', 'min:0'],
             'defect_qty' => ['required', 'integer', 'min:0'],
             'qc_notes' => ['nullable', 'string'],
             'corrective_action' => ['nullable', 'string'],
         ]);
-
-        $process = ProductionRunProcess::with('productionRun')->findOrFail($processId);
 
         if ($process->status !== 'completed') {
             abort(422, 'Process harus selesai sebelum QC.');

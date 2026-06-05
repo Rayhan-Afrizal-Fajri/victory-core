@@ -11,6 +11,7 @@ class ManufacturingWork extends Model
     protected $fillable = [
         'name',
         'default_unit',
+        'process_behavior',
         'default_vendor_id',
         'default_min_estimate',
         'default_max_estimate',

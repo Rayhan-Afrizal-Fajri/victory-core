@@ -20,6 +20,7 @@ class ManufacturingWorkSeeder extends Seeder
             // 'default_min_estimate' => 5,
             'default_max_estimate' => 1000,
             'is_active' => true,
+            'process_behavior' => 'production_process',
         ]);
 
         ManufacturingWork::create([
@@ -29,6 +30,7 @@ class ManufacturingWorkSeeder extends Seeder
             // 'default_min_estimate' => 7,
             'default_max_estimate' => 1400,
             'is_active' => true,
+            'process_behavior' => 'production_process',
         ]);
 
         ManufacturingWork::create([
@@ -38,6 +40,7 @@ class ManufacturingWorkSeeder extends Seeder
             'default_min_estimate' => 3,
             'default_max_estimate' => 5,
             'is_active' => true,
+            'process_behavior' => 'costing_only',
         ]);
 
         ManufacturingWork::create([
@@ -47,6 +50,7 @@ class ManufacturingWorkSeeder extends Seeder
             // 'default_min_estimate' => 8,
             'default_max_estimate' => 1600,
             'is_active' => true,
+            'process_behavior' => 'production_process',
         ]);
 
         ManufacturingWork::create([
@@ -56,6 +60,7 @@ class ManufacturingWorkSeeder extends Seeder
             // 'default_min_estimate' => 10,
             'default_max_estimate' => 200,
             'is_active' => true,
+            'process_behavior' => 'production_process',
         ]);
 
         ManufacturingWork::create([
@@ -65,6 +70,7 @@ class ManufacturingWorkSeeder extends Seeder
             // 'default_min_estimate' => 4,
             'default_max_estimate' => 800,
             'is_active' => true,
+            'process_behavior' => 'production_process',
         ]);
 
         ManufacturingWork::create([
@@ -74,6 +80,7 @@ class ManufacturingWorkSeeder extends Seeder
             'default_min_estimate' => 2,
             'default_max_estimate' => 4,
             'is_active' => true,
+            'process_behavior' => 'costing_only',
         ]);
     }
 }

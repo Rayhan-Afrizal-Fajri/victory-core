@@ -100,6 +100,7 @@ class ProductController extends Controller
                     'work_name' => $pmw->manufacturingWork->name,
                     'default_usage' => (float) $pmw->default_usage,
                     'default_unit' => $pmw->default_unit,
+                    'process_behavior' => $pmw->manufacturingWork->process_behavior,
                     'usage_note' => $pmw->usage_note,
                     'sort_order' => $pmw->sort_order,
                     'is_required' => $pmw->is_required,
@@ -115,6 +116,7 @@ class ProductController extends Controller
                 'id' => $w->id,
                 'name' => $w->name,
                 'default_unit' => $w->default_unit,
+                'process_behavior' => $w->process_behavior,
             ])->values(),
         ]);
     }

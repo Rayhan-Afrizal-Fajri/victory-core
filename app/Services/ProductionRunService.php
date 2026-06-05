@@ -39,7 +39,9 @@ class ProductionRunService
                 'status' => 'draft',
             ]);
 
-            foreach ($pesanan->manufacturingSpecs as $index => $spec) {
+            $executableSpecs = $this->executableManufacturingSpecs($pesanan);
+
+            foreach ($executableSpecs as $index => $spec) {
                 $run->processes()->create([
                     'pesanan_manufacturing_spec_id' => $spec->id,
                     'work_name' => $spec->work_name_snapshot,
@@ -90,7 +92,9 @@ class ProductionRunService
                 'status' => 'draft',
             ]);
 
-            foreach ($pesanan->manufacturingSpecs as $index => $spec) {
+            $executableSpecs = $this->executableManufacturingSpecs($pesanan);
+
+            foreach ($executableSpecs as $index => $spec) {
                 $run->processes()->create([
                     'pesanan_manufacturing_spec_id' => $spec->id,
                     'work_name' => $spec->work_name_snapshot,
@@ -109,5 +113,35 @@ class ProductionRunService
 
             return $run;
         });
+    }
+
+    private function executableManufacturingSpecs(Pesanan $pesanan)
+    {
+        return $pesanan->manufacturingSpecs
+            ->filter(function ($spec) {
+                $behavior = $spec->process_behavior ?: null;
+
+                if ($behavior) {
+                    return $behavior === 'production_process';
+                }
+
+                $workName = strtolower($spec->work_name_snapshot ?? '');
+
+                $costingOnlyKeywords = [
+                    'qc',
+                    'quality control',
+                    'packing',
+                    'packaging',
+                ];
+
+                foreach ($costingOnlyKeywords as $keyword) {
+                    if (str_contains($workName, $keyword)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
     }
 }

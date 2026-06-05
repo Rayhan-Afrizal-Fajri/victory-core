@@ -18,6 +18,7 @@ class PesananManufacturingSpecs extends Model
         'usage',
         'unit',
         'usage_note',
+        'process_behavior',
         'min_estimate',
         'max_estimate',
         'cost_per_pcs',

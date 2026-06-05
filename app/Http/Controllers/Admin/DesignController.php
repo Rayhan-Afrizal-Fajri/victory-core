@@ -237,6 +237,8 @@ class DesignController extends Controller
                     'unit' => $component->default_unit ?: $work?->default_unit,
                     'usage_note' => $component->usage_note,
 
+                    'process_behavior' => $work?->process_behavior ?? 'production_process',
+
                     'min_estimate' => $work?->default_min_estimate ?? 0,
                     'max_estimate' => $work?->default_max_estimate ?? 0,
                     'cost_per_pcs' => $costPerPcs,

@@ -182,7 +182,7 @@ class PaymentController extends Controller
             ]
         );
 
-        if ($productionDpPaid) {
+        if ($productionDpPaid && !$finalPaymentPaid) {
             $pesanan->workflowHistory()->create([
                 'step' => 'production_payment',
                 'action' => 'dp_verified',

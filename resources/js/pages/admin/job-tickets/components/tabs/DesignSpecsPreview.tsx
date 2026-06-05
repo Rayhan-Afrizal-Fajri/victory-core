@@ -51,7 +51,7 @@ function DesignSpecsPreview({
                         size="sm"
                         variant="outline"
                         onClick={onCreateManufacturing}
-                        disabled
+                        disabled={workflow.quotation_created}
                     >
                         <Plus className="size-4" />
                         Tambah Manufaktur

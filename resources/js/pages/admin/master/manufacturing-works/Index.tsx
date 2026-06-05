@@ -26,6 +26,7 @@ export default function Index({ works, suppliers }: Props) {
   const workForm = useForm({
     name: '',
     default_unit: '',
+    process_behavior: '',
     default_vendor_id: '',
     default_min_estimate: 0,
     default_max_estimate: 0,
@@ -39,6 +40,7 @@ export default function Index({ works, suppliers }: Props) {
     workForm.setData({
       name: work.name,
       default_unit: work.default_unit || '',
+      process_behavior: work.process_behavior || '',
       default_vendor_id: work.vendor_id?.toString() || '',
       default_min_estimate: work.default_min_estimate,
       default_max_estimate: work.default_max_estimate,
@@ -94,6 +96,11 @@ export default function Index({ works, suppliers }: Props) {
       header: 'Default Unit',
       accessor: 'default_unit',
       cell: (row) => <span className="text-slate-700">{row.default_unit || '-'}</span>,
+    },
+    {
+      header: 'Process Behavior',
+      accessor: 'behavior',
+      cell: (row) => <span className="text-slate-700">{row.behavior || '-'}</span>,
     },
     {
       header: 'Vendor',
@@ -175,18 +182,17 @@ export default function Index({ works, suppliers }: Props) {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Nama Work</label>
-                  <Input
-                    value={workForm.data.name}
-                    onChange={(e) => workForm.setData('name', e.target.value)}
-                    placeholder="Cutting, Jahit, QC, Sablon, etc"
-                  />
-                  <InputError message={workForm.errors.name as string} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
+                <div className="flex w-full gap-4">
+                  <div className="grid gap-2 w-full">
+                    <label className="text-sm font-medium text-slate-700">Nama Work</label>
+                    <Input
+                      value={workForm.data.name}
+                      onChange={(e) => workForm.setData('name', e.target.value)}
+                      placeholder="Cutting, Jahit, QC, Sablon, etc"
+                    />
+                    <InputError message={workForm.errors.name as string} />
+                  </div>
+                  <div className="grid gap-2 w-1/2">
                     <label className="text-sm font-medium text-slate-700">Default Unit</label>
                     <Input
                       value={workForm.data.default_unit}
@@ -195,14 +201,34 @@ export default function Index({ works, suppliers }: Props) {
                     />
                     <InputError message={workForm.errors.default_unit as string} />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
+
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-slate-700">Process Behavior</label>
+                    <Select value={workForm.data.process_behavior} onValueChange={(val) => workForm.setData('process_behavior', val)}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Pilih proses..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="production_process">
+                              Production Process
+                          </SelectItem>
+                          <SelectItem value="costing_only">
+                              Costing Only
+                          </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <InputError message={workForm.errors.default_vendor_id as string} />
+                  </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Default Vendor</label>
                     <Select value={workForm.data.default_vendor_id} onValueChange={(val) => workForm.setData('default_vendor_id', val)}>
-                      <SelectTrigger>
+                      <SelectTrigger className='w-full'>
                         <SelectValue placeholder="Pilih vendor..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className=''>
                         {suppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
                             {supplier.nama}

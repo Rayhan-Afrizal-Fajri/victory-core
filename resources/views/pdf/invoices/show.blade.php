@@ -103,7 +103,7 @@
         <tbody>
             <tr>
                 <td>{{ $invoice->title ?? $pesanan->requested_product_name ?? $pesanan->produk ?? '-' }}</td>
-                <td class="text-right">{{ number_format($pesanan->quantity ?? $pesanan->q ?? 1, 0, ',', '.') }}</td>
+                <td class="text-right">{{ number_format($invoice->kategori_invoice === 'sample' ? $pesanan->sample_qty : $pesanan->q) }}</td>
                 <td class="text-right">
                     Rp{{ number_format($pesanan->harga_jual_per_pcs ?? 0, 0, ',', '.') }}
                 </td>

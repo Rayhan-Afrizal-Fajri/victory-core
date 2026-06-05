@@ -27,6 +27,8 @@ class ManufacturingWorkController extends Controller
         $works = $works->map(fn ($work) => [
             'id' => $work->id,
             'name' => $work->name,
+            'process_behavior' => $work->process_behavior,
+            'behavior' => ucwords(str_replace('_', ' ', $work->process_behavior)),
             'default_unit' => $work->default_unit,
             'vendor_id' => $work->default_vendor_id,
             'vendor_name' => $work->defaultVendor?->nama_perusahaan,
@@ -55,6 +57,7 @@ class ManufacturingWorkController extends Controller
     public function store(StoreManufacturingWorkRequest $request)
     {
         $validated = $request->validated();
+
         
         ManufacturingWork::create($validated);
 

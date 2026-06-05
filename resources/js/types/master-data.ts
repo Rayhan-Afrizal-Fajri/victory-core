@@ -32,6 +32,8 @@ export interface ManufacturingWork {
   id: number;
   name: string;
   default_unit?: string;
+  behavior?: string;
+  process_behavior?: string;
   vendor_id?: number;
   vendor_name?: string;
   default_min_estimate: number;
@@ -57,6 +59,7 @@ export interface ProductManufacturingWork {
   work_name: string;
   default_usage: number;
   default_unit?: string;
+  process_behavior?: string;
   usage_note?: string;
   sort_order: number;
   is_required: boolean;

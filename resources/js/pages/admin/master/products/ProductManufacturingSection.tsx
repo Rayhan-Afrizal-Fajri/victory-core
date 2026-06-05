@@ -185,6 +185,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-slate-900">{work.work_name}</span>
                     {work.is_required && <Badge variant="default" className="text-xs">Required</Badge>}
+                    {work.process_behavior && <Badge variant="default" className="text-xs">{work.process_behavior}</Badge>}
                   </div>
                   <p className="text-xs text-slate-500">
                     {work.default_usage} {work.default_unit || '-'}

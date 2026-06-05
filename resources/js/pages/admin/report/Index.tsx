@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { BarChart3, TrendingUp, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,26 +17,62 @@ import AppLayout from '@/layouts/app-layout';
 import { formatCurrency } from '@/helpers/format';
 
 type ReportStatus = 'penawaran' | 'sample' | 'produksi' | 'done';
+type ReportScope = 'sample' | 'production';
+
+type CostBreakdownItem = {
+  label: string;
+  unit?: string;
+  behavior?: string;
+  cost_per_pcs: number;
+  total: number;
+};
+
+type CostBreakdown = {
+  materials: {
+    bahan: {
+      label: string;
+      total: number;
+      items: CostBreakdownItem[];
+    };
+    aksesoris: {
+      label: string;
+      total: number;
+      items: CostBreakdownItem[];
+    };
+  };
+  manufacturing: Array<{
+    label: string;
+    total: number;
+    items: CostBreakdownItem[];
+  }>;
+  material_total: number;
+  manufacturing_total: number;
+  total: number;
+};
 
 type ReportRow = {
-  id: number;
+  id: string;
+  orderId: number;
   jobNo: string;
   product: string;
   customer: string;
-  status: ReportStatus;
-  statusLabel: string;
+  scope: ReportScope;
+  scopeLabel: string;
   qty: number;
   price: number;
   hpp: number;
   revenue: number;
+  paidRevenue: number;
   cost: number;
   gop: number;
   margin: number;
   date: string;
+  costBreakdown: CostBreakdown;
 };
 
 type Summary = {
   revenue: number;
+  paidRevenue: number;
   cost: number;
   gop: number;
   qty: number;
@@ -60,14 +96,14 @@ type PageProps = {
     date: string;
     month: string;
     year: string;
-    status: 'all' | ReportStatus;
+    scope: 'all' | ReportScope;
   };
   rows: ReportRow[];
   summary: Summary;
   charts: {
     period_profitability: ChartItem[];
     top_gop_orders: ChartItem[];
-    margin_by_status: ChartItem[];
+    margin_by_scope: ChartItem[];
   };
 };
 
@@ -77,19 +113,15 @@ const PERIOD_OPTIONS = [
   { value: 'yearly', label: 'Yearly' },
 ];
 
-const STATUSES: Array<{ value: ReportStatus | 'all'; label: string }> = [
-  { value: 'all', label: 'Semua Status' },
-  { value: 'penawaran', label: 'Penawaran' },
+const SCOPES: Array<{ value: ReportScope | 'all'; label: string }> = [
+  { value: 'all', label: 'Semua Scope' },
   { value: 'sample', label: 'Sample' },
-  { value: 'produksi', label: 'Produksi' },
-  { value: 'done', label: 'Done' },
+  { value: 'production', label: 'Production' },
 ];
 
-const STATUS_LABELS: Record<ReportStatus, { label: string; className: string }> = {
-  penawaran: { label: 'PENAWARAN', className: 'bg-slate-100 text-slate-700' },
+const SCOPE_LABELS: Record<ReportScope, { label: string; className: string }> = {
   sample: { label: 'SAMPLE', className: 'bg-amber-100 text-amber-700' },
-  produksi: { label: 'PRODUKSI', className: 'bg-sky-100 text-sky-700' },
-  done: { label: 'DONE', className: 'bg-emerald-100 text-emerald-700' },
+  production: { label: 'PRODUCTION', className: 'bg-sky-100 text-sky-700' },
 };
 
 function MiniBarChart({
@@ -267,7 +299,10 @@ export default function Index({
   const [selectedDate, setSelectedDate] = useState(filters.date);
   const [selectedMonth, setSelectedMonth] = useState(filters.month);
   const [selectedYear, setSelectedYear] = useState(filters.year);
-  const [selectedStatus, setSelectedStatus] = useState<'all' | ReportStatus>(filters.status || 'all');
+  // const [selectedStatus, setSelectedStatus] = useState<'all' | ReportStatus>(filters.status || 'all');
+  const [selectedScope, setSelectedScope] = useState<'all' | ReportScope>(
+    filters.scope || 'all',
+  );
 
   const applyFilters = () => {
     router.get(
@@ -277,7 +312,7 @@ export default function Index({
         date: selectedDate,
         month: selectedMonth,
         year: selectedYear,
-        status: selectedStatus,
+        scope: selectedScope,
       },
       {
         preserveState: true,
@@ -294,7 +329,7 @@ export default function Index({
         month: new Date().toISOString().slice(0, 7),
         date: new Date().toISOString().slice(0, 10),
         year: String(new Date().getFullYear()),
-        status: 'all',
+        scope: 'all',
       },
       {
         preserveState: false,
@@ -312,7 +347,7 @@ export default function Index({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                  Filter periode & status
+                  Filter periode & scope
                 </p>
                 <h2 className="text-xl font-semibold text-slate-900">Lihat data berdasarkan periode</h2>
               </div>
@@ -326,18 +361,15 @@ export default function Index({
                     <SelectContent>
                       <SelectContent>
                         <SelectGroup>
-                            <SelectLabel>Periode</SelectLabel>
+                          <SelectLabel>Periode</SelectLabel>
 
-                            {PERIOD_OPTIONS.map((option) => (
-                            <SelectItem
-                                key={option.value}
-                                value={option.value}
-                            >
-                                {option.label}
+                          {PERIOD_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
                             </SelectItem>
-                            ))}
+                          ))}
                         </SelectGroup>
-                        </SelectContent>
+                      </SelectContent>
                     </SelectContent>
                   </Select>
                 </div>
@@ -368,29 +400,24 @@ export default function Index({
                 </div>
 
                 <div>
-                  <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as 'all' | ReportStatus)}>
+                  <Select
+                    value={selectedScope}
+                    onValueChange={(value) => setSelectedScope(value as 'all' | ReportScope)}
+                  >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih status" />
+                      <SelectValue placeholder="Pilih scope" />
                     </SelectTrigger>
+
                     <SelectContent>
                       <SelectGroup>
-                        <SelectLabel>Status</SelectLabel>
+                        <SelectLabel>Scope P&L</SelectLabel>
 
-                        <SelectItem value="all">
-                        Semua Status
-                        </SelectItem>
-
-                        {STATUSES
-                        .filter((status) => status.value !== 'all')
-                        .map((option) => (
-                            <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            >
+                        {SCOPES.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
                             {option.label}
-                            </SelectItem>
+                          </SelectItem>
                         ))}
-                    </SelectGroup>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>
@@ -451,9 +478,9 @@ export default function Index({
               />
 
               <MiniBarChart
-                title="Margin by Status"
-                description="Rata-rata margin berdasarkan status workflow."
-                data={charts.margin_by_status || []}
+                title="Margin by Scope"
+                description="Rata-rata margin berdasarkan sample dan production."
+                data={charts.margin_by_scope || []}
                 valueKey="margin"
                 formatValue={(value) => `${value.toFixed(1)}%`}
               />
@@ -467,7 +494,7 @@ export default function Index({
                   <tr>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">Job No</th>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">Produk / Customer</th>
-                    <th className="whitespace-nowrap px-6 py-4 font-semibold">Status</th>
+                    <th className="whitespace-nowrap px-6 py-4 font-semibold">Scope</th>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">Qty</th>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">Harga Jual</th>
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">HPP</th>
@@ -479,35 +506,45 @@ export default function Index({
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
                   {rows.map((row) => {
-                    const revenue = row.qty * row.price;
-                    const cost = row.qty * row.hpp;
-                    const gop = revenue - cost;
-                    const margin = revenue ? (gop / revenue) * 100 : 0;
 
                     return (
-                      <tr key={row.id} className="even:bg-slate-50">
-                        <td className="px-6 py-4 font-medium text-slate-900">{row.jobNo}</td>
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-slate-900">{row.product}</div>
-                          <div className="text-xs text-slate-500">{row.customer}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge className={`${STATUS_LABELS[row.status]?.className ?? 'bg-slate-100 text-slate-700'}`}>
-                            {STATUS_LABELS[row.status]?.label ?? row.statusLabel}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-slate-900">{row.qty}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatCurrency(row.price)}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatCurrency(row.hpp)}</td>
-                        <td className="px-6 py-4 font-semibold text-slate-900">{formatCurrency(revenue)}</td>
-                        <td className="px-6 py-4 text-slate-900">{formatCurrency(cost)}</td>
-                        <td className="px-6 py-4 font-semibold text-emerald-600">{formatCurrency(gop)}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            {margin.toFixed(1)}%
-                          </span>
-                        </td>
-                      </tr>
+                      <React.Fragment key={row.id}>
+                        <tr className="even:bg-slate-50">
+                          <td className="px-6 py-4 font-medium text-slate-900">{row.jobNo}</td>
+                          <td className="px-6 py-4">
+                            <div className="font-semibold text-slate-900">{row.product}</div>
+                            <div className="text-xs text-slate-500">{row.customer}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge className={`${SCOPE_LABELS[row.scope]?.className ?? 'bg-slate-100 text-slate-700'}`}>
+                              {SCOPE_LABELS[row.scope]?.label ?? row.scopeLabel}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-slate-900">{row.qty}</td>
+                          <td className="px-6 py-4 text-slate-900">{formatCurrency(row.price)}</td>
+                          <td className="px-6 py-4 text-slate-900">{formatCurrency(row.hpp)}</td>
+                          <td className="px-6 py-4 font-semibold text-slate-900">
+                            {formatCurrency(row.revenue)}
+                          </td>
+                          <td className="px-6 py-4 text-slate-900">
+                            {formatCurrency(row.cost)}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-emerald-600">
+                            {formatCurrency(row.gop)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                              {row.margin.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr key={`${row.id}-detail`} className="bg-white">
+                          <td colSpan={10} className="px-6 pb-5">
+                            <CostBreakdownPanel row={row} />
+                          </td>
+                        </tr>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -516,6 +553,140 @@ export default function Index({
           </div>
         </div>
     </>
+  );
+}
+
+function CostBreakdownPanel({ row }: { row: ReportRow }) {
+  const materials = row.costBreakdown?.materials;
+  const manufacturing = row.costBreakdown?.manufacturing || [];
+
+  return (
+    <div className="rounded-xl border bg-slate-50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Detail Biaya
+      </p>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <CostGroup
+          title="Bahan"
+          total={materials?.bahan?.total || 0}
+          items={materials?.bahan?.items || []}
+        />
+
+        <CostGroup
+          title="Aksesoris"
+          total={materials?.aksesoris?.total || 0}
+          items={materials?.aksesoris?.items || []}
+        />
+
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase text-slate-500">
+            Manufaktur
+          </p>
+
+          {manufacturing.length === 0 ? (
+            <p className="text-xs text-slate-500">Belum ada biaya manufaktur.</p>
+          ) : (
+            manufacturing.map((group) => (
+              <div key={group.label} className="rounded-lg bg-white p-3">
+                <div className="flex justify-between gap-3 text-xs">
+                  <span className="font-semibold text-slate-700">
+                    {group.label}
+                  </span>
+                  <span className="font-semibold text-slate-900">
+                    {formatCurrency(group.total)}
+                  </span>
+                </div>
+
+                <div className="mt-2 space-y-1">
+                  {group.items.map((item) => (
+                    <div
+                      key={`${group.label}-${item.label}-${item.total}`}
+                      className="flex justify-between gap-3 text-[11px] text-slate-500"
+                    >
+                      <span>
+                        {item.label}
+                        {item.behavior === 'costing_only' ? ' · costing only' : ''}
+                      </span>
+                      <span>{formatCurrency(item.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <MiniCostBox
+          label="Total Material"
+          value={row.costBreakdown.material_total}
+        />
+        <MiniCostBox
+          label="Total Manufaktur"
+          value={row.costBreakdown.manufacturing_total}
+        />
+        <MiniCostBox
+          label="Total Cost"
+          value={row.costBreakdown.total}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CostGroup({
+  title,
+  total,
+  items,
+}: {
+  title: string;
+  total: number;
+  items: CostBreakdownItem[];
+}) {
+  return (
+    <div className="rounded-lg bg-white p-3">
+      <div className="flex justify-between gap-3 text-xs">
+        <span className="font-semibold uppercase text-slate-500">{title}</span>
+        <span className="font-semibold text-slate-900">
+          {formatCurrency(total)}
+        </span>
+      </div>
+
+      <div className="mt-2 space-y-1">
+        {items.length === 0 ? (
+          <p className="text-[11px] text-slate-500">Belum ada item.</p>
+        ) : (
+          items.map((item) => (
+            <div
+              key={`${title}-${item.label}-${item.total}`}
+              className="flex justify-between gap-3 text-[11px] text-slate-500"
+            >
+              <span>{item.label}</span>
+              <span>{formatCurrency(item.total)}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniCostBox({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border bg-white p-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 font-semibold text-slate-900">
+        {formatCurrency(value)}
+      </p>
+    </div>
   );
 }
 

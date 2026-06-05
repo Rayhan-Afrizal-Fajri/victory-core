@@ -164,7 +164,7 @@ class PurchasingController extends Controller
             abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
         }
 
-        $quotation = $pesanan->quotations;
+        $quotation = $pesanan->quotations->first();
 
         $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
         $sampleQty = (int) ($quotation->sample_qty ?: $validated['sample_qty'] ?: $pesanan->sample_qty ?: 1);
@@ -305,7 +305,7 @@ class PurchasingController extends Controller
             'satuan' => ['required', 'string'],
             'harga_satuan' => ['required', 'numeric', 'min:0'],
             'tgl_pembelian' => ['nullable', 'date'],
-            'purchase_scope' => ['nullable', 'in:sample_and_production,sample_only,production_only'],
+            'purchase_scope' => ['nullable', 'in:sample_and_production,sample,production,additional'],
             'notes' => ['nullable', 'string']
         ]);
 
@@ -607,7 +607,7 @@ class PurchasingController extends Controller
             return  0;
         }
 
-        return $totalRequiredQty * ($sampleQty / $totalQty);
+        return $this->roundQty($totalRequiredQty * ($sampleQty / $totalQty));
     }
 
     private function getPurchasingProductionRequiredQty(Purchasing $purchasing, Pesanan $pesanan): float
@@ -631,12 +631,22 @@ class PurchasingController extends Controller
             return 0;
         }
 
-        return $totalRequiredQty * ($productionQty / $totalQty);
+        return $this->roundQty($totalRequiredQty * ($productionQty / $totalQty));
     }
     
     private function getPurchasingReceivedQty(Purchasing $purchasing): float
     {
         return (float) $purchasing->materialReceivings()->sum('received_qty');
+    }
+
+    private function roundQty(float $value, int $precision = 4): float
+    {
+        return round($value, $precision);
+    }
+
+    private function isQtyEnough(float $received, float $required): bool
+    {
+        return $this->roundQty($received) + 0.0001 >= $this->roundQty($required);
     }
 
     private function isSampleMaterialsReady(Pesanan $pesanan): bool
@@ -662,7 +672,7 @@ class PurchasingController extends Controller
             $required = $this->getPurchasingSampleRequiredQty($purchasing, $pesanan);
             $received = $this->getPurchasingReceivedQty($purchasing);
 
-            return $received >= $required;
+            return $this->isQtyEnough($received, $required);
         });
     }
 
@@ -699,7 +709,7 @@ class PurchasingController extends Controller
             $required = $this->getPurchasingProductionRequiredQty($purchasing, $pesanan);
             $received = $this->getPurchasingReceivedQty($purchasing);
 
-            return $received >= $required;
+            return $this->isQtyEnough($received, $required);
         });
     }
 
@@ -728,16 +738,16 @@ class PurchasingController extends Controller
 
         //down downgrade if sample is already started / ready before
         if ($currentWorkflow?->sample_materials_ready) {
-            $sampleMaterialReady = true;
+            $sampleMaterialsReady = true;
         }
 
         if ($pesanan->productionRuns()->where('type', 'sample')->exists()) {
-            $sampleMaterialReady = true;
+            $sampleMaterialsReady = true;
         }
 
         //dont downgrade if production is already started / ready before
         if ($currentWorkflow?->production_materials_ready) {
-            $productionMaterialReady = true;
+            $productionMaterialsReady = true;
         }
 
         if ($pesanan->productionRuns()

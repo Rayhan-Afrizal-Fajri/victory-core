@@ -24,11 +24,17 @@ import {
     getReceivings,
     purchasingStatusClass,
     getSupplierName,
+    getRequiredQty,
+    getSampleReceivedQty,
+    getProductionReceivedQty,
+    getProgressPercentage,
+    formatMaterialQty,
 } from './purchasing-utils';
 import { formatCurrency, formatDecimal } from '@/helpers/format';
 
 const PurchasingMaterialTable = ({
     purchasings,
+    job,
     onCreate,
     onEditPo,
     onEditManual,
@@ -38,6 +44,7 @@ const PurchasingMaterialTable = ({
     onDeleteReceiving,
 }: {
     purchasings: any[];
+    job: any;
     onCreate: () => void;
     onEditPo: (purchasing: any) => void;
     onEditManual: (purchasing: any) => void;
@@ -69,6 +76,24 @@ const PurchasingMaterialTable = ({
                         const progress = getReceivingProgress(item);
                         const receivings = getReceivings(item);
                         const isGeneratedFromBom = Boolean(item.pesanan_material_spec_id);
+
+                        const sampleRequiredQty = getRequiredQty(item, job, 'sample');
+                        const productionRequiredQty = getRequiredQty(item, job, 'production');
+
+                        const sampleReceivedQty = getSampleReceivedQty(item, job);
+                        const productionReceivedQty = getProductionReceivedQty(item, job);
+
+                        const sampleProgress = getProgressPercentage(
+                            sampleReceivedQty,
+                            sampleRequiredQty,
+                        );
+
+                        const productionProgress = getProgressPercentage(
+                            productionReceivedQty,
+                            productionRequiredQty,
+                        );
+
+                        const purchaseScope = item.purchase_scope || 'sample_and_production';
 
                         return (
                             <div key={item.id} className="rounded-2xl border bg-white p-4">
@@ -196,6 +221,27 @@ const PurchasingMaterialTable = ({
                                         value={formatCurrency(item.total_harga || 0)}
                                     />
                                 </div>
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    <RequirementProgressBox
+                                        title="Kebutuhan Sample"
+                                        scope={purchaseScope}
+                                        requiredQty={sampleRequiredQty}
+                                        receivedQty={sampleReceivedQty}
+                                        progress={sampleProgress}
+                                        unit={item.unit || item.satuan || ''}
+                                        disabled={sampleRequiredQty <= 0}
+                                    />
+
+                                    <RequirementProgressBox
+                                        title="Kebutuhan Production"
+                                        scope={purchaseScope}
+                                        requiredQty={productionRequiredQty}
+                                        receivedQty={productionReceivedQty}
+                                        progress={productionProgress}
+                                        unit={item.unit || item.satuan || ''}
+                                        disabled={productionRequiredQty <= 0}
+                                    />
+                                </div>
 
                                 <div className="mt-4">
                                     <div className="flex justify-between text-xs">
@@ -281,6 +327,100 @@ function InfoBox({
             </p>
         </div>
     );
+}
+
+function RequirementProgressBox({
+    title,
+    scope,
+    requiredQty,
+    receivedQty,
+    progress,
+    unit,
+    disabled = false,
+}: {
+    title: string;
+    scope: string;
+    requiredQty: number;
+    receivedQty: number;
+    progress: number;
+    unit: string;
+    disabled?: boolean;
+}) {
+    return (
+        <div
+            className={`rounded-xl border p-3 ${
+                disabled
+                    ? 'border-slate-200 bg-slate-50'
+                    : progress >= 100
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : 'border-amber-200 bg-amber-50'
+            }`}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        {title}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                        Scope: {getPurchaseScopeLabel(scope)}
+                    </p>
+                </div>
+
+                <span
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                        disabled
+                            ? 'bg-slate-100 text-slate-500'
+                            : progress >= 100
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-amber-100 text-amber-700'
+                    }`}
+                >
+                    {disabled ? '-' : `${Math.round(progress)}%`}
+                </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div>
+                    <p className="text-slate-500">Required</p>
+                    <p className="font-semibold text-slate-900">
+                        {formatMaterialQty(requiredQty)} {unit}
+                    </p>
+                </div>
+
+                <div>
+                    <p className="text-slate-500">Allocated Received</p>
+                    <p className="font-semibold text-slate-900">
+                        {formatMaterialQty(receivedQty)} {unit}
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/80">
+                <div
+                    className={`h-full rounded-full transition-all ${
+                        disabled
+                            ? 'bg-slate-300'
+                            : progress >= 100
+                              ? 'bg-emerald-500'
+                              : 'bg-amber-500'
+                    }`}
+                    style={{
+                        width: `${disabled ? 0 : progress}%`,
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function getPurchaseScopeLabel(scope?: string) {
+    if (scope === 'sample') return 'Sample Only';
+    if (scope === 'production') return 'Production Only';
+    if (scope === 'additional') return 'Additional';
+    if (scope === 'sample_and_production') return 'Sample & Production';
+
+    return scope || '-';
 }
 
 export default PurchasingMaterialTable;

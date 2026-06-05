@@ -256,6 +256,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
                     <PurchasingMaterialTable
                         purchasings={purchasings}
+                        job={job}
                         onCreate={openCreatePurchasing}
                         onEditManual={openEditPurchasing}
                         onEditPo={setEditingPo}

@@ -236,7 +236,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
             <SectionCard title="Production Process + QC">
                 <div className="space-y-4">
                     {processes.map((process: any) => (
-                        <ProductionProcessCard key={process.id} process={process} />
+                        <ProductionProcessCard key={process.id} process={process} runQuantity={Number(run.quantity || 0)} />
                     ))}
                 </div>
             </SectionCard>
@@ -388,7 +388,7 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     );
 };
 
-const ProductionProcessCard = ({ process }: { process: any }) => {
+const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuantity: number }) => {
     const qcForm = useForm({
         checked_qty: Number(process.checked_qty || 0),
         passed_qty: Number(process.passed_qty || 0),
@@ -396,6 +396,53 @@ const ProductionProcessCard = ({ process }: { process: any }) => {
         qc_notes: process.qc_notes || '',
         corrective_action: process.corrective_action || '',
     });
+
+    const clampQty = (value: number, min = 0, max = runQuantity) => {
+        const number = Number(value || 0);
+
+        if (Number.isNaN(number)) return min;
+
+        return Math.min(Math.max(number, min), max);
+    };
+
+    const setCheckedQty = (value: number) => {
+        const checkedQty = clampQty(value);
+
+        const currentPassed = Number(qcForm.data.passed_qty || 0);
+        const nextPassed = Math.min(currentPassed, checkedQty);
+        const nextDefect = Math.max(checkedQty - nextPassed, 0);
+
+        qcForm.setData({
+            ...qcForm.data,
+            checked_qty: checkedQty,
+            passed_qty: nextPassed,
+            defect_qty: nextDefect,
+        });
+    };
+
+    const setPassedQty = (value: number) => {
+        const checkedQty = clampQty(Number(qcForm.data.checked_qty || 0));
+        const passedQty = clampQty(value, 0, checkedQty);
+        const defectQty = Math.max(checkedQty - passedQty, 0);
+
+        qcForm.setData({
+            ...qcForm.data,
+            passed_qty: passedQty,
+            defect_qty: defectQty,
+        });
+    };
+
+    const setDefectQty = (value: number) => {
+        const checkedQty = clampQty(Number(qcForm.data.checked_qty || 0));
+        const defectQty = clampQty(value, 0, checkedQty);
+        const passedQty = Math.max(checkedQty - defectQty, 0);
+
+        qcForm.setData({
+            ...qcForm.data,
+            defect_qty: defectQty,
+            passed_qty: passedQty,
+        });
+    };
 
     const startProcess = () => {
         router.patch(
@@ -427,6 +474,17 @@ const ProductionProcessCard = ({ process }: { process: any }) => {
             onSuccess: () => toast.success('QC berhasil disimpan.'),
         });
     };
+
+    const checkedQty = Number(qcForm.data.checked_qty || 0);
+    const passedQty = Number(qcForm.data.passed_qty || 0);
+    const defectQty = Number(qcForm.data.defect_qty || 0);
+
+    const qcInvalid =
+        checkedQty <= 0 ||
+        checkedQty > runQuantity ||
+        passedQty < 0 ||
+        defectQty < 0 ||
+        passedQty + defectQty !== checkedQty;
 
     return (
         <div className="rounded-2xl border bg-white p-4">
@@ -473,28 +531,36 @@ const ProductionProcessCard = ({ process }: { process: any }) => {
 
             {process.status === 'completed' && process.qc_status !== 'passed' && (
                 <form onSubmit={submitQc} className="mt-4 space-y-4 rounded-xl border bg-slate-50 p-4">
+                    <div className="rounded-lg border bg-white p-3 text-xs text-slate-600">
+                        Qty {process.work_name} yang dikerjakan:{' '}
+                        <span className="font-semibold text-slate-900">
+                            {runQuantity} pcs
+                        </span>
+                        . Checked qty tidak boleh melebihi jumlah ini.
+                    </div>
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Checked Qty" error={qcForm.errors.checked_qty}>
                             <FormattedNumberInput
                                 value={qcForm.data.checked_qty}
-                                onValueChange={(value) => qcForm.setData('checked_qty', value)}
-                                placeholder='cth: 5'
+                                max={runQuantity}
+                                onValueChange={setCheckedQty}
+                                placeholder={`Maks ${runQuantity}`}
                             />
                         </Field>
 
                         <Field label="Passed Qty" error={qcForm.errors.passed_qty}>
                             <FormattedNumberInput
                                 value={qcForm.data.passed_qty}
-                                onValueChange={(value) => qcForm.setData('passed_qty', value)}
-                                placeholder='cth: 5'
+                                onValueChange={setPassedQty}
+                                placeholder={`Maks ${qcForm.data.checked_qty || runQuantity}`}
                             />
                         </Field>
 
                         <Field label="Defect Qty" error={qcForm.errors.defect_qty}>
                             <FormattedNumberInput
                                 value={qcForm.data.defect_qty}
-                                onValueChange={(value) => qcForm.setData('defect_qty', value)}
-                                placeholder='cth: 35.000'
+                                onValueChange={setDefectQty}
+                                placeholder={`Maks ${qcForm.data.checked_qty || runQuantity}`}
                             />
                         </Field>
                     </div>
@@ -516,8 +582,14 @@ const ProductionProcessCard = ({ process }: { process: any }) => {
                             placeholder="use_stock / repurchase / rework_only"
                         />
                     </Field>
+                    {qcInvalid && (
+                        <p className="text-xs text-red-500">
+                            Checked qty wajib lebih dari 0, tidak boleh melebihi {runQuantity} pcs,
+                            dan Passed + Defect harus sama dengan Checked.
+                        </p>
+                    )}
 
-                    <Button type="submit" disabled={qcForm.processing}>
+                    <Button type="submit" disabled={qcForm.processing || qcInvalid}>
                         Submit QC
                     </Button>
                 </form>

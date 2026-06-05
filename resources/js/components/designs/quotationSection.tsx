@@ -65,6 +65,9 @@ function QuotationSection({
         });
     };
 
+    const hasSellingPrice =
+        Number((job as any).harga_jual_per_pcs || (job as any).price_per_piece || 0) > 0;
+
     const handleDeleteCustomer = (quotation: any) => {
         //triger warning
         toast.warning(`Apakah Anda yakin ingin menghapus surat penawaran ini?`, {
@@ -186,7 +189,7 @@ function QuotationSection({
                     </Field>
 
                     <div className="flex justify-end border-t pt-4">
-                        <Button type="submit" disabled={quotationForm.processing}>
+                        <Button type="submit" disabled={quotationForm.processing || !hasSellingPrice}>
                             Generate Quotation
                         </Button>
                     </div>

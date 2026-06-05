@@ -14,11 +14,12 @@ import ProductionTab from './tabs/ProductionTab';
 import PurchasingTab from './tabs/PurchasingTab';
 import QCTab from './tabs/QCTab';
 import SampleTab from './tabs/SampleTab';
+import CostingTab from './tabs/CostingTab';
 
 const tabs = [
   'overview',
   'design',
-  'costing & quotation',
+  'costing',
   'invoices',
   'purchasing',
   'sample',
@@ -94,6 +95,9 @@ export const WorkflowTabs: React.FC<{ job: JobTicket, suppliers: Supplier[], pro
         </TabsContent>
         <TabsContent value="design">
             <DesignTab job={job} products={productOptions} suppliers={suppliers} />
+        </TabsContent>
+        <TabsContent value="costing">
+            <CostingTab job={job} />
         </TabsContent>
         <TabsContent value="invoices">
             <FinanceTab job={job} />
