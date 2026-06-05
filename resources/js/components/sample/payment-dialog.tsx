@@ -25,6 +25,7 @@ const PaymentDialog = ({
     remainingPayment,
     onSubmitPayment,
     mode = 'create',
+    job,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -33,6 +34,7 @@ const PaymentDialog = ({
     remainingPayment: number;
     onSubmitPayment: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
+    job?: any;
 }) => {
 
     const categoryLabel = getInvoiceCategoryLabel(invoice);
@@ -74,6 +76,16 @@ const PaymentDialog = ({
                             </p>
                         </div>
                     </div>
+                    {invoice?.kategori_invoice === 'production' && !job?.workflow_status?.production_dp_paid && (
+                        <div className="rounded-2xl border bg-slate-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-slate-500">Minimal Bayar</p>
+                                <p className="font-bold text-red-500">
+                                    {formatRupiah(remainingPayment * 0.5)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid gap-3 md:grid-cols-3">
                         <Field label="Tanggal Bayar" error={paymentForm.errors.tgl_bayar}>

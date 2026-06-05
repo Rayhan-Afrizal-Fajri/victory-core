@@ -384,6 +384,7 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                 remainingPayment={selectedRemainingPayment}
                 onSubmitPayment={paymentDialogMode === 'edit' ? updatePayment : submitPayment}
                 mode={paymentDialogMode}
+                job={job}
             />
 
             <InvoiceEditDialog
