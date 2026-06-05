@@ -127,8 +127,7 @@ class OrderEntryController extends Controller
                     'user_id' => $user->id,
                     'nama' => $validated['new_customer_name'],
                     'nama_perusahaan' => $validated['new_customer_company'] ?? $validated['new_customer_name'],
-                    'email' => $validated['new_customer_email'] ?? null,
-                    'kontak' => $validated['new_customer_phone'] ?? null,
+                    'no_hp' => $validated['new_customer_phone'] ?? null,
                     'alamat' => $validated['new_customer_address'] ?? null,
                 ]);
             }
