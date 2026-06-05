@@ -9,32 +9,32 @@ function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdi
             {items.length === 0 ? (
                 <p className="text-sm text-slate-500">Belum ada data manufaktur. Sync artikel terlebih dahulu.</p>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b text-left text-xs uppercase text-slate-500">
-                                <th className="py-2">Work</th>
-                                <th className="py-2">Pemakaian</th>
-                                <th className="py-2">Unit</th>
-                                <th className="py-2">Keterangan</th>
-                                <th className="py-2">Vendor</th>
-                                <th className="py-2">Estimasi Min</th>
-                                <th className="py-2">Estimasi Max</th>
-                                <th className="py-2 text-right">Total/Pcs</th>
+                <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className='bg-slate-50'>
+                            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                <th className="px-4 py-3.5 whitespace-nowrap">Work</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Pemakaian</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Unit</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Keterangan</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Vendor</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Estimasi Min</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap">Estimasi Max</th>
+                                <th className="px-4 py-3.5 whitespace-nowrap text-right">Total/Pcs</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className='divide-y divide-slate-200 bg-white'>
                             {items.map((item) => (
-                                <tr key={item.id} className="border-b">
-                                    <td className="py-2 font-medium">{item.work_name}</td>
-                                    <td className="py-2">{item.usage}</td>
-                                    <td className="py-2">{item.unit || '-'}</td>
-                                    <td className="py-2">{item.usage_note || '-'}</td>
-                                    <td className="py-2">{item.vendor || '-'}</td>
-                                    <td className="py-2">{Number(item.min_estimate || 0).toLocaleString('id-ID')}</td>
-                                    <td className="py-2">{Number(item.max_estimate || 0).toLocaleString('id-ID')}</td>
-                                    <td className="py-2 text-right">{Number(item.cost_per_pcs || 0).toLocaleString('id-ID')}</td>
-                                    <td className="py-2 text-right">
+                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{item.work_name}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.usage}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.unit || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.usage_note || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.vendor || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{Number(item.min_estimate || 0).toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{Number(item.max_estimate || 0).toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-slate-900 whitespace-nowrap">{Number(item.cost_per_pcs || 0).toLocaleString('id-ID')}</td>
+                                    <td className="px-4 py-3 text-right whitespace-nowrap gap-2 space-x-2">
                                         <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)}>
                                             Edit
                                         </Button>

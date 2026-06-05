@@ -22,8 +22,16 @@ class ProductionRunProcess extends Model
         'defect_qty',
         
         'qc_status',
+        'qc_checked_at',
+        'qc_checked_by',
         'qc_notes',
         'corrective_action',
+    ];
+
+    protected $casts = [
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'qc_checked_at' => 'datetime',
     ];
 
     public function productionRun()
@@ -34,5 +42,10 @@ class ProductionRunProcess extends Model
     public function pesananManufacturingSpec()
     {
         return $this->belongsTo(PesananManufacturingSpecs::class);
+    }
+
+    public function qcCheckedBy()
+    {
+        return $this->belongsTo(User::class, 'qc_checked_by');
     }
 }

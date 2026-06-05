@@ -31,6 +31,18 @@ const statusClass: Record<string, string> = {
     rejected: 'bg-red-100 text-red-700 border-red-200',
 };
 
+function formatDateTime(value?: string | null) {
+    if (!value) return '-';
+
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value));
+}
+
 const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     const ensureRunForm = useForm({
         quantity: Number((job as any).sample_qty || 3),
@@ -511,6 +523,27 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                             QC: {process.qc_status}
                         </Badge>
                     </div>
+
+                    <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-3">
+                        <ProcessTimeBox
+                            label="Started"
+                            value={formatDateTime(process.started_at)}
+                            active={Boolean(process.started_at)}
+                        />
+
+                        <ProcessTimeBox
+                            label="Completed"
+                            value={formatDateTime(process.completed_at)}
+                            active={Boolean(process.completed_at)}
+                        />
+
+                        <ProcessTimeBox
+                            label="QC Checked"
+                            value={formatDateTime(process.qc_checked_at)}
+                            active={Boolean(process.qc_checked_at)}
+                            note={process.qc_checked_by ? `by ${process.qc_checked_by}` : undefined}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -543,6 +576,7 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                             <FormattedNumberInput
                                 value={qcForm.data.checked_qty}
                                 max={runQuantity}
+                                min={0}
                                 onValueChange={setCheckedQty}
                                 placeholder={`Maks ${runQuantity}`}
                             />
@@ -551,6 +585,8 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                         <Field label="Passed Qty" error={qcForm.errors.passed_qty}>
                             <FormattedNumberInput
                                 value={qcForm.data.passed_qty}
+                                max={qcForm.data.checked_qty}
+                                min={0}
                                 onValueChange={setPassedQty}
                                 placeholder={`Maks ${qcForm.data.checked_qty || runQuantity}`}
                             />
@@ -560,6 +596,8 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                             <FormattedNumberInput
                                 value={qcForm.data.defect_qty}
                                 onValueChange={setDefectQty}
+                                max={qcForm.data.checked_qty}
+                                min={0}
                                 placeholder={`Maks ${qcForm.data.checked_qty || runQuantity}`}
                             />
                         </Field>
@@ -597,5 +635,35 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
         </div>
     );
 };
+
+function ProcessTimeBox({
+    label,
+    value,
+    active = false,
+    note,
+}: {
+    label: string;
+    value: string;
+    active?: boolean;
+    note?: string;
+}) {
+    return (
+        <div
+            className={`rounded-lg border p-3 ${
+                active
+                    ? 'border-emerald-200 bg-emerald-50'
+                    : 'border-slate-200 bg-slate-50'
+            }`}
+        >
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                {label}
+            </p>
+            <p className={`mt-1 font-medium ${active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                {value}
+            </p>
+            {note && <p className="mt-1 text-[11px] text-slate-500">{note}</p>}
+        </div>
+    );
+}
 
 export default ProductionRunBoard;

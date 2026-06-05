@@ -116,7 +116,7 @@ class ProductionRunController extends Controller
         $process->update([
             'status' => 'completed',
             'completed_at' => now(),
-            'qc_status' => 'pending',
+            'qc_status' => $process->qc_status ?: 'pending',
         ]);
 
         $this->syncRunStatus($process->productionRun);
@@ -148,6 +148,8 @@ class ProductionRunController extends Controller
             'passed_qty' => $validated['passed_qty'],
             'defect_qty' => $validated['defect_qty'],
             'qc_status' => $qcStatus,
+            'qc_checked_at' => now(),
+            'qc_checked_by' => Auth::id(),
             'qc_notes' => $validated['qc_notes'] ?? null,
             'corrective_action' => $validated['corrective_action'] ?? null,
         ]);

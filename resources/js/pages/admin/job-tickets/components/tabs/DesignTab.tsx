@@ -396,6 +396,11 @@ const DesignAndSpecsTab: React.FC<{
     const submitSyncArticle = (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!job.workflow_status?.design_approved) {
+            toast.error('Desain belum diapprove.');
+            return;
+        }
+
         if (!syncArticleForm.data.product_id) {
             toast.error('Pilih artikel terlebih dahulu.');
             return;

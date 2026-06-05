@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { BarChart3, TrendingUp, WalletCards } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { formatCurrency } from '@/helpers/format';
+import { cn } from '@/lib/utils';
 
 type ReportStatus = 'penawaran' | 'sample' | 'produksi' | 'done';
 type ReportScope = 'sample' | 'production';
@@ -303,6 +304,32 @@ export default function Index({
   const [selectedScope, setSelectedScope] = useState<'all' | ReportScope>(
     filters.scope || 'all',
   );
+  const [openDetailCostId, setOpenDetailCostId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  const pageSize = 5;
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+
+  const pageIndex = Math.min(page - 1, pageCount - 1);
+
+  const paginatedRows = useMemo(() => {
+    return rows.slice(
+      pageIndex * pageSize,
+      pageIndex * pageSize + pageSize,
+    );
+  }, [rows, pageIndex]);
+
+  useEffect(() => {
+    setPage(1);
+    setOpenDetailCostId(null);
+  }, [periodType, selectedDate, selectedMonth, selectedYear, selectedScope]);
+
+  const handleToggleDetailCost = (rowId: string) => {
+    setOpenDetailCostId((current) => {
+      return current === rowId ? null : rowId;
+    });
+  };
 
   const applyFilters = () => {
     router.get(
@@ -487,6 +514,12 @@ export default function Index({
             </div>
           </div>
 
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            Klik salah satu row pada tabel untuk membuka atau menutup detail biaya per data.
+            Detail biaya meliputi bahan, aksesoris, dan biaya manufaktur seperti cutting,
+            jahit, QC, packing, dan lainnya.
+          </div>
+
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
@@ -504,51 +537,124 @@ export default function Index({
                     <th className="whitespace-nowrap px-6 py-4 font-semibold">Margin</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {rows.map((row) => {
+                  {paginatedRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="px-6 py-10 text-center text-sm text-slate-500">
+                        Belum ada data Profit & Loss.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedRows.map((row: ReportRow) => {
+                      const isDetailOpen = openDetailCostId === row.id;
 
-                    return (
-                      <React.Fragment key={row.id}>
-                        <tr className="even:bg-slate-50">
-                          <td className="px-6 py-4 font-medium text-slate-900">{row.jobNo}</td>
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-900">{row.product}</div>
-                            <div className="text-xs text-slate-500">{row.customer}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge className={`${SCOPE_LABELS[row.scope]?.className ?? 'bg-slate-100 text-slate-700'}`}>
-                              {SCOPE_LABELS[row.scope]?.label ?? row.scopeLabel}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-slate-900">{row.qty}</td>
-                          <td className="px-6 py-4 text-slate-900">{formatCurrency(row.price)}</td>
-                          <td className="px-6 py-4 text-slate-900">{formatCurrency(row.hpp)}</td>
-                          <td className="px-6 py-4 font-semibold text-slate-900">
-                            {formatCurrency(row.revenue)}
-                          </td>
-                          <td className="px-6 py-4 text-slate-900">
-                            {formatCurrency(row.cost)}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-emerald-600">
-                            {formatCurrency(row.gop)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                              {row.margin.toFixed(1)}%
-                            </span>
-                          </td>
-                        </tr>
+                      return (
+                        <React.Fragment key={row.id}>
+                          <tr
+                            className={cn(
+                              'cursor-pointer transition hover:bg-slate-50',
+                              isDetailOpen ? 'bg-blue-50/60' : 'even:bg-slate-50',
+                            )}
+                            onClick={() => handleToggleDetailCost(row.id)}
+                          >
+                            <td className="px-6 py-4 font-medium text-slate-900">
+                              {row.jobNo}
+                            </td>
 
-                        <tr key={`${row.id}-detail`} className="bg-white">
-                          <td colSpan={10} className="px-6 pb-5">
-                            <CostBreakdownPanel row={row} />
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  })}
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-slate-900">{row.product}</div>
+                              <div className="text-xs text-slate-500">{row.customer}</div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <Badge className={`${SCOPE_LABELS[row.scope]?.className ?? 'bg-slate-100 text-slate-700'}`}>
+                                {SCOPE_LABELS[row.scope]?.label ?? row.scopeLabel}
+                              </Badge>
+                            </td>
+
+                            <td className="px-6 py-4 text-slate-900">{row.qty}</td>
+                            <td className="px-6 py-4 text-slate-900">{formatCurrency(row.price)}</td>
+                            <td className="px-6 py-4 text-slate-900">{formatCurrency(row.hpp)}</td>
+
+                            <td className="px-6 py-4 font-semibold text-slate-900">
+                              {formatCurrency(row.revenue)}
+                            </td>
+
+                            <td className="px-6 py-4 text-slate-900">
+                              {formatCurrency(row.cost)}
+                            </td>
+
+                            <td className="px-6 py-4 font-semibold text-emerald-600">
+                              {formatCurrency(row.gop)}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                {row.margin.toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+
+                          {isDetailOpen && (
+                            <tr className="bg-white">
+                              <td colSpan={10} className="px-6 pb-5">
+                                <CostBreakdownPanel row={row} />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                Menampilkan{' '}
+                <span className="font-medium text-slate-700">
+                  {paginatedRows.length}
+                </span>{' '}
+                dari{' '}
+                <span className="font-medium text-slate-700">
+                  {rows.length}
+                </span>{' '}
+                data
+              </p>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => {
+                    setPage((prev) => Math.max(prev - 1, 1));
+                    setOpenDetailCostId(null);
+                  }}
+                >
+                  Previous
+                </Button>
+
+                <span className="text-sm text-slate-600">
+                  Page {pageIndex + 1} / {pageCount}
+                </span>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pageIndex + 1 >= pageCount}
+                  onClick={() => {
+                    setPage((prev) => Math.min(prev + 1, pageCount));
+                    setOpenDetailCostId(null);
+                  }}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           </div>
         </div>

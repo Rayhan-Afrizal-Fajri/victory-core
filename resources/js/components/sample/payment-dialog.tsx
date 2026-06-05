@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { getInvoiceCategoryLabel } from '../invoice/invoice-utils';
 import FormattedNumberInput from '../ui/formatted-number-input';
+import { formatCurrency } from '@/helpers/format';
 
 const PaymentDialog = ({
     open,
@@ -62,7 +63,7 @@ const PaymentDialog = ({
                     </DialogDescription>
                     {categoryLabel === 'Production' && (
                         <p className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-700 border border-yellow-200">
-                            Untuk pembayaran produksi, minimal jumlah bayar adalah 50% dari sisa tagihan.
+                            Untuk pembayaran produksi, minimal jumlah bayar adalah 50% dari sisa tagihan ({formatCurrency(remainingPayment * 0.5)}).
                         </p>
                     )}
                 </DialogHeader>
@@ -76,16 +77,6 @@ const PaymentDialog = ({
                             </p>
                         </div>
                     </div>
-                    {invoice?.kategori_invoice === 'production' && !job?.workflow_status?.production_dp_paid && (
-                        <div className="rounded-2xl border bg-slate-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-slate-500">Minimal Bayar</p>
-                                <p className="font-bold text-red-500">
-                                    {formatRupiah(remainingPayment * 0.5)}
-                                </p>
-                            </div>
-                        </div>
-                    )}
 
                     <div className="grid gap-3 md:grid-cols-3">
                         <Field label="Tanggal Bayar" error={paymentForm.errors.tgl_bayar}>

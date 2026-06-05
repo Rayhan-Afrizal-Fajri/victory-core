@@ -23,6 +23,7 @@ import {
     isInvoicePaid,
 } from './invoice-utils';
 import { useCan } from '@/hooks/use-can';
+import { Payment } from '@/pages/admin/job-tickets/types';
 
 const InvoiceCard = ({
     invoice,
@@ -50,6 +51,8 @@ const InvoiceCard = ({
     const remaining = getRemainingPayment(invoice);
     const progress = getPaymentProgress(invoice);
     const status = invoice.status_tagihan || invoice.status;
+
+    const unverifiedPayment = invoice.payments?.filter((payment: Payment) => payment.status === 'pending') || [];
 
     return (
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -118,6 +121,11 @@ const InvoiceCard = ({
                 >
                     <Eye className="size-4" />
                     Detail
+                    {unverifiedPayment.length > 0 && (
+                        <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                            {unverifiedPayment.length || 0}
+                        </span>
+                    )}
                 </Button>
 
                 <Button

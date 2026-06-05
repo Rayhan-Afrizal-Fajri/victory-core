@@ -343,6 +343,7 @@ export interface MaterialSpec {
   id: number;
   type: string;
   material_name: string;
+  material_name_snapshot: string;
   color?: string | null;
   usage?: number | null;
   unit?: string | null;
@@ -358,10 +359,12 @@ export interface MaterialSpec {
 export interface ManufacturingSpec {
   id: number;
   work_name: string;
+  work_name_snapshot: string;
   usage?: number | null;
   unit?: string | null;
   usage_note?: string | null;
   vendor?: Supplier | string | null;
+  vendor_id?: number;
   min_estimate?: number | null;
   max_estimate?: number | null;
   cost_per_pcs?: number | null;
@@ -378,6 +381,10 @@ export interface ProductionRunProcess {
   defect_qty?: number | null;
   qc_notes?: string | null;
   corrective_action?: string | null;
+  started_at?: string;
+  completed_at?: string;
+  qc_checked_at?: string;
+  qc_checked_by?: string;
 }
 
 export interface ProductionRun {

@@ -68,7 +68,7 @@ const workflowGroups = [
   },
   {
     key: 'final_billing',
-    label: 'Final BiIling',
+    label: 'Final Billing',
     steps: ['final_payment_paid'],
   },
   {
@@ -118,13 +118,21 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
             let status = getGroupStatus(progress.percentage);
             let isLast = index === workflowGroups.length - 1;
 
-            if (group.label === 'Final Billing' && getGroupProgress(workflowGroups[index-1], flags).percentage == 0) {
-              progress = getGroupProgress(workflowGroups[6], flags);
-              status = getGroupStatus(progress.percentage);
-            }
+            // 2. Kunci progress jika proses sebelumnya belum 'completed'
+            if (index > 0) {
+              const prevGroup = workflowGroups[index - 1];
+              const prevProgress = getGroupProgress(prevGroup, flags);
+              const prevStatus = getGroupStatus(prevProgress.percentage);
 
-            if (group.label === 'Production Purchasings' && getGroupProgress(workflowGroups[index-1], flags).percentage == 0) {
-              progress = getGroupProgress(workflowGroups[index], flags);
+              if (prevStatus !== 'completed') {
+                // Jika proses sebelumnya belum kelar, paksa progress grup ini jadi 0%
+                progress = {
+                  total: group.steps.length,
+                  completed: 0,
+                  percentage: 0,
+                };
+                status = 'pending'; // Perbaikan: dari 'penting' menjadi 'pending'
+              }
             }
 
             return (

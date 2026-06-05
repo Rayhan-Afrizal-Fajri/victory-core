@@ -38,7 +38,7 @@ class PaymentController extends Controller
         $invoice = Invoice::findOrFail($invoiceId);
         $workflowStatus = $invoice->pesanan->workflowStatus;
 
-        $minimumPayment = $workflowStatus->production_dp_paid ? 1 : $invoice->total_tagihan * 0.5;
+        $minimumPayment = $invoice->kategori_invoice == 'sample' ? 1 : ($workflowStatus->production_dp_paid ? 1 : $invoice->total_tagihan * 0.5);
         $maximumPayment = $invoice->total_tagihan - $this->getVerifiedTotal($invoice);
 
         $request->validate([
