@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Pesanan;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -67,7 +68,13 @@ class OrderEntryController extends Controller
     {
         $validated = $request->validate([
             'no_job_ticket' => ['required', 'string', 'unique:pesanan,no_job_ticket'],
-            'customer_id' => ['required', 'exists:customers,id'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
+
+            'new_customer_name' => ['nullable', 'string', 'max:255'],
+            'new_customer_company' => ['nullable', 'string', 'max:255'],
+            'new_customer_email' => ['nullable', 'email', 'max:255'],
+            'new_customer_phone' => ['nullable', 'string', 'max:50'],
+            'new_customer_address' => ['nullable', 'string'],
 
             'requested_product_name' => ['required', 'string', 'max:255'],
             'q' => ['required', 'integer', 'min:1'],
@@ -80,6 +87,13 @@ class OrderEntryController extends Controller
             'size_breakdowns.*.qty' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        if (empty($validated['customer_id']) && empty($validated['new_customer_name'])) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'Pilih customer atau buat customer baru.',
+                'new_customer_name' => 'Nama customer baru wajib diisi jika tidak memilih customer existing.',
+            ]);
+        }
+
         if (!empty($validated['size_breakdowns'])) {
             $totalSizeQty = collect($validated['size_breakdowns'])->sum('qty');
 
@@ -90,7 +104,36 @@ class OrderEntryController extends Controller
             }
         }
 
-        $customer = Customer::findOrFail($validated['customer_id']);
+        $customer = null;
+
+        if (! empty($validated['customer_id'])) {
+            $customer = Customer::findOrFail($validated['customer_id']);
+        } else {
+            // Optional: kalau mau langsung buat akun customer
+            // Pastikan kolom dan model User kamu sesuai.
+            
+            if (! empty($validated['new_customer_email'])) {
+                $user = User::firstOrCreate(
+                    ['email' => $validated['new_customer_email']],
+                    [
+                        'name' => $validated['new_customer_name'],
+                        'password' => bcrypt('password'),
+                    ]
+                );
+
+                $user->assignRole('Customer');
+
+                $customer = Customer::create([
+                    'user_id' => $user->id,
+                    'nama' => $validated['new_customer_name'],
+                    'nama_perusahaan' => $validated['new_customer_company'] ?? $validated['new_customer_name'],
+                    'email' => $validated['new_customer_email'] ?? null,
+                    'kontak' => $validated['new_customer_phone'] ?? null,
+                    'alamat' => $validated['new_customer_address'] ?? null,
+                ]);
+            }
+            
+        }
 
         $pesanan = DB::transaction(function () use ($validated, $customer) {
             $pesanan = Pesanan::create([

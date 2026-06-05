@@ -1,12 +1,10 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useMemo, useState  } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {FormEvent} from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dashboard } from '@/routes';
-import { show as jobTicketShow } from '@/routes/job-tickets';
 import { store, update } from '@/routes/order-entry';
 import { Textarea } from '@/components/ui/textarea';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
@@ -54,9 +52,21 @@ export default function Index({ nextJobTicket, customers }: Props) {
     qty: 1,
   };
 
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const form = useForm({
     no_job_ticket: nextJobTicket || 'VL-2026-001',
     customer_id: '',
+
+    new_customer_name: '',
+    new_customer_company: '',
+    new_customer_email: '',
+    new_customer_phone: '',
+    new_customer_address: '',
+
     produk: '',
     requested_product_name: '',
     q: 0,
@@ -66,8 +76,43 @@ export default function Index({ nextJobTicket, customers }: Props) {
     estimasi_hpp_per_pcs: 0,
     keterangan_tambahan: '',
     customer_notes: '',
-    size_breakdowns: [{...emptySizeRow}],
+    size_breakdowns: [{ ...emptySizeRow }],
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const filteredCustomers = useMemo(() => {
+    const keyword = customerSearch.toLowerCase().trim();
+
+    if (!keyword) {
+      return customers.slice(0, 20);
+    }
+
+    return customers
+      .filter((customer) => customer.name.toLowerCase().includes(keyword))
+      .slice(0, 20);
+  }, [customers, customerSearch]);
+
+  const selectedCustomer = useMemo(() => {
+    return customers.find((customer) => {
+      return String(customer.id) === String(form.data.customer_id);
+    });
+  }, [customers, form.data.customer_id]);
 
   //handle size breakdown
   const totalSizeQty = useMemo(() => {
@@ -151,6 +196,13 @@ export default function Index({ nextJobTicket, customers }: Props) {
     form.setData({
       no_job_ticket: nextJobTicket || 'VL-2026-001',
       customer_id: '',
+
+      new_customer_name: '',
+      new_customer_company: '',
+      new_customer_email: '',
+      new_customer_phone: '',
+      new_customer_address: '',
+
       produk: '',
       requested_product_name: '',
       q: 1,
@@ -163,6 +215,9 @@ export default function Index({ nextJobTicket, customers }: Props) {
       size_breakdowns: [{ ...emptySizeRow }],
     });
 
+    setCustomerMode('existing');
+    setCustomerSearch('');
+    setIsDropdownOpen(false);
     setEdited(false);
   };
 
@@ -178,7 +233,20 @@ export default function Index({ nextJobTicket, customers }: Props) {
     // Gunakan transform untuk membersihkan data sebelum dikirim
     form.transform((data) => ({
       ...data,
-      // Jika kosong, kirim array kosong agar backend tidak menerima data default
+
+      customer_id: customerMode === 'existing' ? data.customer_id : null,
+
+      new_customer_name:
+        customerMode === 'new' ? data.new_customer_name : null,
+      new_customer_company:
+        customerMode === 'new' ? data.new_customer_company : null,
+      new_customer_email:
+        customerMode === 'new' ? data.new_customer_email : null,
+      new_customer_phone:
+        customerMode === 'new' ? data.new_customer_phone : null,
+      new_customer_address:
+        customerMode === 'new' ? data.new_customer_address : null,
+
       size_breakdowns: isSizeBreakdownEmpty ? null : data.size_breakdowns,
     }));
 
@@ -204,24 +272,199 @@ export default function Index({ nextJobTicket, customers }: Props) {
                   onChange={(event) => form.setData('no_job_ticket', event.target.value)}
                 />
               </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer">Customer / Brand *</Label>
-              <Select
-                value={form.data.customer_id}
-                onValueChange={(value) => form.setData('customer_id', value)}
-              >
-                <SelectTrigger className='w-full'>
-                  <SelectValue placeholder="Pilih Customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((cust) => (
-                    <SelectItem key={cust.id} value={cust.id.toString()}>
-                      {cust.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2" ref={dropdownRef}>
+                <Label>Customer / Brand *</Label>
+
+                {customerMode === 'existing' ? (
+                  <div className="relative">
+                    <Input
+                      value={
+                        selectedCustomer && !isDropdownOpen
+                          ? selectedCustomer.name
+                          : customerSearch
+                      }
+                      onChange={(event) => {
+                        setCustomerSearch(event.target.value);
+                        setIsDropdownOpen(true);
+
+                        if (form.data.customer_id) {
+                          form.setData('customer_id', '');
+                        }
+                      }}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      placeholder="Cari customer, contoh: Budi / CV Maju..."
+                      className="w-full"
+                    />
+
+                    {isDropdownOpen && (
+                      <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">
+                        {filteredCustomers.length > 0 ? (
+                          filteredCustomers.map((customer) => (
+                            <button
+                              key={customer.id}
+                              type="button"
+                              onClick={() => {
+                                form.setData('customer_id', String(customer.id));
+                                setCustomerSearch(customer.name);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`block w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-slate-100 ${
+                                String(form.data.customer_id) === String(customer.id)
+                                  ? 'bg-emerald-50 font-medium text-emerald-700'
+                                  : 'text-slate-700'
+                              }`}
+                            >
+                              {customer.name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-3 text-sm text-slate-500">
+                            Data tidak ditemukan.
+                          </div>
+                        )}
+
+                        <div className="my-1 border-t border-slate-100" />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomerMode('new');
+                            form.setData('customer_id', '');
+                            form.setData('new_customer_name', customerSearch);
+                            form.setData('new_customer_company', customerSearch);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="flex w-full items-center rounded-sm bg-slate-50 px-3 py-2 text-left text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                        >
+                          + Buat Customer
+                          {customerSearch ? ` "${customerSearch}"` : ' Baru'}
+                        </button>
+                      </div>
+                    )}
+
+                    {form.errors.customer_id && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {form.errors.customer_id}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4 rounded-md border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-blue-900">
+                        Data Customer Baru
+                      </h4>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCustomerMode('existing');
+                          form.setData('new_customer_name', '');
+                          form.setData('new_customer_company', '');
+                          form.setData('new_customer_email', '');
+                          form.setData('new_customer_phone', '');
+                          form.setData('new_customer_address', '');
+                        }}
+                        className="h-8 bg-white text-xs"
+                      >
+                        Batal & Cari Existing
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Nama Customer *</Label>
+                        <Input
+                          value={form.data.new_customer_name}
+                          onChange={(event) =>
+                            form.setData('new_customer_name', event.target.value)
+                          }
+                          placeholder="Nama PIC"
+                          className="h-8 bg-white text-sm"
+                        />
+                        {form.errors.new_customer_name && (
+                          <p className="text-xs text-red-500">
+                            {form.errors.new_customer_name}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Perusahaan / Brand *</Label>
+                        <Input
+                          value={form.data.new_customer_company}
+                          onChange={(event) =>
+                            form.setData('new_customer_company', event.target.value)
+                          }
+                          placeholder="CV / PT / Brand"
+                          className="h-8 bg-white text-sm"
+                        />
+                        {form.errors.new_customer_company && (
+                          <p className="text-xs text-red-500">
+                            {form.errors.new_customer_company}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Email</Label>
+                        <Input
+                          type="email"
+                          value={form.data.new_customer_email}
+                          onChange={(event) =>
+                            form.setData('new_customer_email', event.target.value)
+                          }
+                          placeholder="Email"
+                          className="h-8 bg-white text-sm"
+                        />
+                        {form.errors.new_customer_email && (
+                          <p className="text-xs text-red-500">
+                            {form.errors.new_customer_email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">No HP</Label>
+                        <Input
+                          value={form.data.new_customer_phone}
+                          onChange={(event) =>
+                            form.setData('new_customer_phone', event.target.value)
+                          }
+                          placeholder="08xxxx"
+                          className="h-8 bg-white text-sm"
+                        />
+                        {form.errors.new_customer_phone && (
+                          <p className="text-xs text-red-500">
+                            {form.errors.new_customer_phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Alamat</Label>
+                      <Textarea
+                        value={form.data.new_customer_address}
+                        onChange={(event) =>
+                          form.setData('new_customer_address', event.target.value)
+                        }
+                        placeholder="Alamat lengkap"
+                        className="min-h-16 bg-white text-sm"
+                      />
+                      {form.errors.new_customer_address && (
+                        <p className="text-xs text-red-500">
+                          {form.errors.new_customer_address}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
 
           <div className="space-y-2">
