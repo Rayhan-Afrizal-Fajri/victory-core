@@ -1,5 +1,5 @@
-import { Head, Link } from "@inertiajs/react";
-import { ArrowUpRight} from "lucide-react";
+import { Head, Link, router } from "@inertiajs/react";
+import { ArrowUpRight, Edit, Trash2} from "lucide-react";
 import type { ReactNode } from "react";
 import ProgressBar from "@/components/dashboard/progress-bar";
 import {
@@ -13,6 +13,7 @@ import DeadlineBadge from "@/components/ui/deadline-badge";
 import AppLayout from "@/layouts/app-layout";
 import jobTickets from "@/routes/job-tickets";
 import orderEntry from "@/routes/order-entry";
+import { toast } from "sonner";
 
 type Order = {
   id: number;
@@ -25,6 +26,8 @@ type Order = {
   acc_sample: boolean;
   progress: number;
   current_step?: string;
+  can_edit: boolean;
+  can_delete: boolean;
 };
 
 const statusBadge = (status: string) => {
@@ -54,116 +57,170 @@ const statusBadge = (status: string) => {
   );
 };
 
-const columns: DataTableColumn<Order>[] = [
-  {
-    header: 'Job Ticket',
-    accessor: 'no_job_ticket',
-
-    className: 'w-[180px]',
-
-    cell: (row) => (
-      <div>
-        {/* Menggunakan route() bawaan Laravel via Inertia */}
-        <Link 
-          href={jobTickets.show(row.id)} 
-          className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-        >
-          {row.no_job_ticket}
-        </Link>
-      </div>
-    ),
-  },
-
-  {
-    header: 'Customer / Produk',
-    accessor: 'produk',
-
-    cell: (row) => (
-      <div className="space-y-1">
-        <p className="font-medium text-slate-700">
-          {row.produk}
-        </p>
-
-        <p className="text-xs text-slate-400">
-          {row.customer}
-        </p>
-      </div>
-    ),
-  },
-
-  {
-    header: 'Qty',
-    accessor: 'qty',
-    className: 'w-[100px]',
-    cell: (row) => (
-      <span className="font-medium">
-        {row.qty} pcs
-      </span>
-    ),
-  },
-
-  {
-    header: 'Status',
-    accessor: 'status_divisi',
-    cell: (row) => (
-      statusBadge(row.status_divisi)
-    ),
-  },
-
-  {
-    header: 'ACC Sample',
-    accessor: 'acc_sample',
-    cell: (row) => (
-      <span
-        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-          row.acc_sample
-            ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-amber-100 text-amber-700'
-        }`}
-      >
-        {row.acc_sample ? 'ACC' : 'Pending'}
-      </span>
-    ),
-  },
-
-  {
-    header: 'Progress',
-    accessor: 'progress',
-    className: 'w-[240px]',
-    cell: (row) => (
-      <div className="space-y-1">
-        <ProgressBar value={row.progress} showPercentage={true} />
-        <p className="text-xs text-slate-400">
-          {row.current_step || row.status_divisi}
-        </p>
-      </div>
-    ),
-  },
-
-  {
-    header: 'Deadline',
-    accessor: 'deadline',
-    cell: (row) => (
-      <DeadlineBadge deadline={row.deadline} />
-    ),
-  },
-];
-
-
-
-
 export default function Index({ orders }: { orders: Order[] }) {
-    return (
-        <>
-            <Head title="Job Tickets" />
-            <DataTable
-                columns={columns}
-                data={orders}
-                searchKeys={['no_job_ticket', 'customer']}
-            />
 
-        </>
-    )
+  const deleteOrder = (order: Order) => {
+    const confirmed = window.confirm(
+      `Hapus Job Ticket ${order.no_job_ticket}? Data yang dihapus tidak dapat dikembalikan.`,
+    );
+
+    if (!confirmed) return;
+
+    router.delete(orderEntry.destroy(order.id).url, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Job Ticket berhasil dihapus.');
+      },
+    });
+  };
+
+  const columns: DataTableColumn<Order>[] = [
+    {
+      header: 'Job Ticket',
+      accessor: 'no_job_ticket',
+
+      className: 'w-[180px]',
+
+      cell: (row) => (
+        <div>
+          {/* Menggunakan route() bawaan Laravel via Inertia */}
+          <Link 
+            href={jobTickets.show(row.id)} 
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+          >
+            {row.no_job_ticket}
+          </Link>
+        </div>
+      ),
+    },
+
+    {
+      header: 'Customer / Produk',
+      accessor: 'produk',
+
+      cell: (row) => (
+        <div className="space-y-1">
+          <p className="font-medium text-slate-700">
+            {row.produk}
+          </p>
+
+          <p className="text-xs text-slate-400">
+            {row.customer}
+          </p>
+        </div>
+      ),
+    },
+
+    {
+      header: 'Qty',
+      accessor: 'qty',
+      className: 'w-[100px]',
+      cell: (row) => (
+        <span className="font-medium">
+          {row.qty} pcs
+        </span>
+      ),
+    },
+
+    {
+      header: 'Status',
+      accessor: 'status_divisi',
+      cell: (row) => (
+        statusBadge(row.status_divisi)
+      ),
+    },
+
+    {
+      header: 'ACC Sample',
+      accessor: 'acc_sample',
+      cell: (row) => (
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+            row.acc_sample
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-amber-100 text-amber-700'
+          }`}
+        >
+          {row.acc_sample ? 'ACC' : 'Pending'}
+        </span>
+      ),
+    },
+
+    {
+      header: 'Progress',
+      accessor: 'progress',
+      className: 'w-[240px]',
+      cell: (row) => (
+        <div className="space-y-1">
+          <ProgressBar value={row.progress} showPercentage={true} />
+          <p className="text-xs text-slate-400">
+            {row.current_step || row.status_divisi}
+          </p>
+        </div>
+      ),
+    },
+
+    {
+      header: 'Deadline',
+      accessor: 'deadline',
+      cell: (row) => (
+        <DeadlineBadge deadline={row.deadline} />
+      ),
+    },
+
+    {
+      header: 'Aksi',
+      accessor: 'id',
+      className: 'w-[180px]',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          {row.can_edit && (
+            <Link href={orderEntry.edit(row.id).url}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+              >
+                <Edit className="size-4" />
+                Edit
+              </Button>
+            </Link>
+          )}
+
+          {row.can_delete && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-red-200 text-red-600 hover:bg-red-50"
+              onClick={() => deleteOrder(row)}
+            >
+              <Trash2 className="size-4" />
+              Hapus
+            </Button>
+          )}
+
+          {!row.can_edit && !row.can_delete && (
+            <span className="text-xs text-slate-400">
+              Pesanan tidak bisa diubah/dihapus
+            </span>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+      <>
+          <Head title="Job Tickets" />
+          <DataTable
+              columns={columns}
+              data={orders}
+              searchKeys={['no_job_ticket', 'customer']}
+          />
+
+      </>
+  )
 }
 
 Index.layout = (page: ReactNode) => {

@@ -26,6 +26,10 @@ class Pesanan extends Model
         'keterangan_tambahan',        
     ];
 
+    protected $casts = [
+        'deadline' => 'date',
+    ];
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -83,7 +87,7 @@ class Pesanan extends Model
 
     public function workflowHistory()
     {
-        return $this->hasMany(WorkflowHistory::class);
+        return $this->hasMany(WorkflowHistory::class, 'pesanan_id');
     }
 
     public function attachment()
@@ -143,5 +147,27 @@ class Pesanan extends Model
         return $this->hasOne(ProductionRun::class, 'pesanan_id')
             ->where('type', 'production')
             ->latestOfMany();
+    }
+
+    public function canModifyOrderEntry(): bool
+    {
+        $this->loadMissing([
+            'workflowStatus',
+            'designs',
+            'materialSpecs',
+            'manufacturingSpecs',
+        ]);
+
+        $workflow = $this->workflowStatus;
+
+        $designStarted = 
+            (bool) $workflow?->article_synced ||
+            (bool) $workflow?->design_uploaded ||
+            (bool) $workflow?->design_approved ||
+            $this->designs->isNotEmpty() ||
+            $this->materialSpecs->isNotEmpty() ||
+            $this->manufacturingSpecs->isNotEmpty();
+
+        return ! $designStarted;
     }
 }

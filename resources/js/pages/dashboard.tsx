@@ -177,7 +177,7 @@ export default function Dashboard({ dashboard }: DashboardProps) {
           columns={columns}
           data={tableData}
           searchKeys={['ticket', 'customer', 'product', 'status', 'daysLeft']}
-          pageSize={4}
+          pageSize={5}
         />
       </div>
     </>

@@ -432,10 +432,10 @@ export default function Index({
             </p>
           </div>
 
-          <Button variant="default" className="inline-flex items-center gap-2" onClick={openCreatePurchasing}>
+          {/* <Button variant="default" className="inline-flex items-center gap-2" onClick={openCreatePurchasing}>
             <Plus className="size-4" />
             Tambah Item Manual
-          </Button>
+          </Button> */}
         </div>
 
         <Card>

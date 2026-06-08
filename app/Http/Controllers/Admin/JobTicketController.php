@@ -46,6 +46,8 @@ class JobTicketController extends Controller
                     'acc_sample' => (bool) ($workflow?->sample_approved ?? false),
                     'progress' => $progressData['percent'],
                     'current_step' => $progressData['current_label'],
+                    'can_edit' => $order->canModifyOrderEntry(),
+                    'can_delete' => $order->canModifyOrderEntry(),
                 ];
             });
 

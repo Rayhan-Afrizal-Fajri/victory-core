@@ -8,6 +8,7 @@ import { dashboard } from '@/routes';
 import { store, update } from '@/routes/order-entry';
 import { Textarea } from '@/components/ui/textarea';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
+import { toast } from 'sonner';
 
 function formatIDR(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -39,12 +40,32 @@ type Customer = {
   name: string;
 }
 
+type EditingOrder = {
+  id: number;
+  no_job_ticket: string;
+  customer_id: number | null;
+  requested_product_name: string;
+  q: number;
+  deadline: string;
+  customer_notes: string;
+  size_breakdowns: Array<{
+    color: string;
+    size_label: string;
+    qty: number;
+  }>;
+};
+
 type Props = {
   nextJobTicket: string | null;
   customers: Customer[];
-}
+  editingOrder?: EditingOrder | null;
+};
 
-export default function Index({ nextJobTicket, customers }: Props) {
+export default function Index({
+  nextJobTicket,
+  customers,
+  editingOrder = null,
+}: Props) {
 
   const emptySizeRow = {
     color: '',
@@ -57,9 +78,17 @@ export default function Index({ nextJobTicket, customers }: Props) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const isEditing = Boolean(editingOrder);
+
   const form = useForm({
-    no_job_ticket: nextJobTicket || 'VL-2026-001',
-    customer_id: '',
+    no_job_ticket:
+      editingOrder?.no_job_ticket
+      ?? nextJobTicket
+      ?? 'VL-2026-001',
+
+    customer_id: editingOrder?.customer_id
+      ? String(editingOrder.customer_id)
+      : '',
 
     new_customer_name: '',
     new_customer_company: '',
@@ -68,16 +97,34 @@ export default function Index({ nextJobTicket, customers }: Props) {
     new_customer_address: '',
 
     produk: '',
-    requested_product_name: '',
-    q: 0,
+    requested_product_name:
+      editingOrder?.requested_product_name ?? '',
+
+    q: Number(editingOrder?.q ?? 0),
     qs: 3,
-    deadline: '',
+    deadline: editingOrder?.deadline ?? '',
     harga_jual_per_pcs: 0,
     estimasi_hpp_per_pcs: 0,
     keterangan_tambahan: '',
-    customer_notes: '',
-    size_breakdowns: [{ ...emptySizeRow }],
+    customer_notes: editingOrder?.customer_notes ?? '',
+
+    size_breakdowns:
+      editingOrder?.size_breakdowns?.length
+        ? editingOrder.size_breakdowns
+        : [{ ...emptySizeRow }],
   });
+
+  useEffect(() => {
+    if (!editingOrder?.customer_id) return;
+
+    const customer = customers.find(
+      (item) => item.id === editingOrder.customer_id,
+    );
+
+    if (customer) {
+      setCustomerSearch(customer.name);
+    }
+  }, [editingOrder?.customer_id, customers]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -191,34 +238,29 @@ export default function Index({ nextJobTicket, customers }: Props) {
   }, [form.data.harga_jual_per_pcs, form.data.estimasi_hpp_per_pcs]);
 
   const handleReset = () => {
-    form.reset();
+    if (isEditing && editingOrder) {
+      form.setData({
+        ...form.data,
+        no_job_ticket: editingOrder.no_job_ticket,
+        customer_id: editingOrder.customer_id
+          ? String(editingOrder.customer_id)
+          : '',
+        requested_product_name:
+          editingOrder.requested_product_name,
+        q: editingOrder.q,
+        deadline: editingOrder.deadline,
+        customer_notes: editingOrder.customer_notes ?? '',
+        size_breakdowns:
+          editingOrder.size_breakdowns.length > 0
+            ? editingOrder.size_breakdowns
+            : [{ ...emptySizeRow }],
+      });
 
-    form.setData({
-      no_job_ticket: nextJobTicket || 'VL-2026-001',
-      customer_id: '',
+      setCustomerMode('existing');
+      return;
+    }
 
-      new_customer_name: '',
-      new_customer_company: '',
-      new_customer_email: '',
-      new_customer_phone: '',
-      new_customer_address: '',
-
-      produk: '',
-      requested_product_name: '',
-      q: 1,
-      qs: 3,
-      deadline: '',
-      harga_jual_per_pcs: 0,
-      estimasi_hpp_per_pcs: 0,
-      keterangan_tambahan: '',
-      customer_notes: '',
-      size_breakdowns: [{ ...emptySizeRow }],
-    });
-
-    setCustomerMode('existing');
-    setCustomerSearch('');
-    setIsDropdownOpen(false);
-    setEdited(false);
+    // reset create seperti sebelumnya
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -234,30 +276,86 @@ export default function Index({ nextJobTicket, customers }: Props) {
     form.transform((data) => ({
       ...data,
 
-      customer_id: customerMode === 'existing' ? data.customer_id : null,
+      customer_id:
+        customerMode === 'existing'
+          ? data.customer_id
+          : null,
 
       new_customer_name:
-        customerMode === 'new' ? data.new_customer_name : null,
-      new_customer_company:
-        customerMode === 'new' ? data.new_customer_company : null,
-      new_customer_email:
-        customerMode === 'new' ? data.new_customer_email : null,
-      new_customer_phone:
-        customerMode === 'new' ? data.new_customer_phone : null,
-      new_customer_address:
-        customerMode === 'new' ? data.new_customer_address : null,
+        customerMode === 'new'
+          ? data.new_customer_name
+          : null,
 
-      size_breakdowns: isSizeBreakdownEmpty ? null : data.size_breakdowns,
+      new_customer_company:
+        customerMode === 'new'
+          ? data.new_customer_company
+          : null,
+
+      new_customer_email:
+        customerMode === 'new'
+          ? data.new_customer_email
+          : null,
+
+      new_customer_phone:
+        customerMode === 'new'
+          ? data.new_customer_phone
+          : null,
+
+      new_customer_address:
+        customerMode === 'new'
+          ? data.new_customer_address
+          : null,
+
+      size_breakdowns:
+        isSizeBreakdownEmpty
+          ? null
+          : data.size_breakdowns,
     }));
+
+    if (isEditing && editingOrder) {
+      form.patch(update(editingOrder.id).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success('Job Ticket berhasil diperbarui.');
+        },
+        onError: (errors) => {
+          console.error('Update order entry errors:', errors);
+
+          const firstError = Object.values(errors)[0];
+
+          toast.error(
+            typeof firstError === 'string'
+              ? firstError
+              : 'Gagal menyimpan perubahan. Cek kembali form.'
+          );
+        },
+      });
+
+      return;
+    }
 
     form.post(store().url, {
       preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Job Ticket berhasil dibuat.');
+      },
+      onError: (errors) => {
+        console.error('Store order entry errors:', errors);
+
+        const firstError = Object.values(errors)[0];
+
+        toast.error(
+          typeof firstError === 'string'
+            ? firstError
+            : 'Gagal menyimpan order. Cek kembali form.'
+        );
+      },
     });
   };
 
   return (
     <>
-      <Head title="Order Entry" />
+      <Head title={isEditing ? 'Edit Job Ticket' : 'Order Entry'} />
 
       <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
         <div className="space-y-6 rounded-sm border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
@@ -581,9 +679,14 @@ export default function Index({ nextJobTicket, customers }: Props) {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button type="submit" className="w-full sm:w-auto">
-              Simpan Order
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={form.processing}
+            >
+              {isEditing ? 'Simpan Perubahan' : 'Simpan Order'}
             </Button>
+
             <Button
               type="button"
               variant="outline"

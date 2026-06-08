@@ -36,7 +36,7 @@ const PurchasingFormDialog = ({
         no_job_ticket: string;
         customer: string;
     }[];
-    job: any;
+    job?: any;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
