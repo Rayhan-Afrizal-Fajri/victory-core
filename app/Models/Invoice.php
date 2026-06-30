@@ -18,7 +18,7 @@ class Invoice extends Model
 
     public function jobTicket()
     {
-        return $this->belongsTo(jobTicket::class);
+        return $this->belongsTo(JobTicket::class);
     }
 
     public function payments()
