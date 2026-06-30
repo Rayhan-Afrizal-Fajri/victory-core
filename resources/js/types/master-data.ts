@@ -9,6 +9,18 @@ export interface Product {
   manufacturing_count: number;
 }
 
+export interface CompanyProfile {
+  id: number;
+  company_name: string;
+  company_type: 'pkp' | 'non_pkp';
+  bank_type: string;
+  tax_percentage: number;
+  account_number: string;
+  account_name: string;
+  address: string;
+  swift_code?: string;
+}
+
 export interface ProductDetail extends Product {
   materials: ProductMaterial[];
   manufacturing_works: ProductManufacturingWork[];

@@ -364,51 +364,51 @@ export default function Index({
       accessor: 'status',
       cell: (row) => statusBadge(row.status),
     },
-    {
-      header: 'Action',
-      accessor: 'id',
-      cell: (row) => (
-        <div className="flex flex-wrap gap-2">
-          {row.status === 'draft' && (
-            <Button size="sm" variant="secondary" onClick={() => markOrdered(row)}>
-              Mark Ordered
-            </Button>
-          )}
+    // {
+    //   header: 'Action',
+    //   accessor: 'id',
+    //   cell: (row) => (
+    //     <div className="flex flex-wrap gap-2">
+    //       {row.status === 'draft' && (
+    //         <Button size="sm" variant="secondary" onClick={() => markOrdered(row)}>
+    //           Mark Ordered
+    //         </Button>
+    //       )}
 
-          {!['received', 'cancelled'].includes(row.status) && (
-            <Button size="sm" onClick={() => openReceiving(row)}>
-              Receiving
-            </Button>
-          )}
+    //       {!['received', 'cancelled'].includes(row.status) && (
+    //         <Button size="sm" onClick={() => openReceiving(row)}>
+    //           Receiving
+    //         </Button>
+    //       )}
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (row.source === 'bom') {
-                openEditPo(row);
-                return;
-              }
+    //       <Button
+    //         size="sm"
+    //         variant="outline"
+    //         onClick={() => {
+    //           if (row.source === 'bom') {
+    //             openEditPo(row);
+    //             return;
+    //           }
 
-              openEditManual(row);
-            }}
-          >
-            Edit
-          </Button>
+    //           openEditManual(row);
+    //         }}
+    //       >
+    //         Edit
+    //       </Button>
 
-          {row.source === 'manual' && row.status === 'draft' && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-red-200 text-red-700 hover:bg-red-50"
-              onClick={() => deletePurchasing(row)}
-            >
-              Delete
-            </Button>
-          )}
-        </div>
-      ),
-    },
+    //       {row.source === 'manual' && row.status === 'draft' && (
+    //         <Button
+    //           size="sm"
+    //           variant="outline"
+    //           className="border-red-200 text-red-700 hover:bg-red-50"
+    //           onClick={() => deletePurchasing(row)}
+    //         >
+    //           Delete
+    //         </Button>
+    //       )}
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (

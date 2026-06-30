@@ -71,6 +71,7 @@ const InvoiceDetailSheet = ({
     const can = useCan();
 
     if (!invoice) return null;
+    
 
     const status = invoice.status_tagihan || invoice.status;
     const payments = getInvoicePayments(invoice);

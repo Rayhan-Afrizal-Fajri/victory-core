@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
-import type { JobTicket, Supplier } from '../../types';
+import type { JobTicket, Pesanan, Supplier } from '../../types';
 import WorkflowGate from '../WorkflowGate';
 
 import DesignSpecsReferenceCard from '@/components/purchasings/design-specs-reference-card';
@@ -14,23 +14,25 @@ import GenerateBomPoCard from '@/components/purchasings/generate-bom-po-card';
 import EditPoDialog from '@/components/purchasings/edit-po-dialog';
 
 const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
-    const workflow = job.workflow_status;
-    const verified = workflow?.sample_paid ?? false;
+    // const workflow = job.workflow_status;
+    // const verified = workflow?.sample_paid ?? false;
+    const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
+    const activerOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
 
     const generateBomForm = useForm({
-        sample_qty: job.sample_qty || 1,
+        sample_qty: activerOrder.sample_qty || 1,
     });
 
     const generatePurchasingFromBom = (e: React.FormEvent) => {
         e.preventDefault();
 
-        generateBomForm.post(`/pesanan/${job.id}/purchasings/generate-from-bom`, {
+        generateBomForm.post(`/pesanan/${activerOrder.id}/purchasings/generate-from-bom`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Purchasing BOM/PO berhasil digenerate.'),
         });
     };
 
-    const purchasings = job.purchasings || [];
+    const purchasings = activerOrder.purchasings || [];
 
     const [openPurchasingForm, setOpenPurchasingForm] = useState(false);
     const [purchasingMode, setPurchasingMode] = useState<'create' | 'edit'>('create');
@@ -112,11 +114,11 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
         }
     }, [selectedPurchasing?.id]);
 
-    if (!verified) {
-        return (
-            <WorkflowGate reason="Invoice sample belum lunas. Purchasing terkunci." />
-        );
-    }
+    // if (!verified) {
+    //     return (
+    //         <WorkflowGate reason="Invoice sample belum lunas. Purchasing terkunci." />
+    //     );
+    // }
 
     const openCreatePurchasing = () => {
         setPurchasingMode('create');
@@ -159,7 +161,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
             return;
         }
 
-        purchasingForm.post(`/pesanan/${job.id}/purchasings`, {
+        purchasingForm.post(`/pesanan/${activerOrder.id}/purchasings`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Material purchasing berhasil dibuat.');
@@ -242,21 +244,46 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     return (
         <div className="space-y-6">
-            <DesignSpecsReferenceCard job={job} />
+            {/* SWITCHER PESANAN */}
+            {job.orders && job.orders.length > 1 && (
+                <div className="mb-6 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pilih Produk Pesanan:</p>
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {job.orders.map((order, index) => (
+                            <button
+                                key={order.id}
+                                onClick={() => setActiveOrderIndex(index)}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap ${
+                                    activeOrderIndex === index
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                }`}
+                            >
+                                <span className={`mr-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeOrderIndex === index ? 'bg-blue-500/50' : 'bg-slate-200'}`}>
+                                    {index + 1}
+                                </span>
+                                {order.requested_product_name || order.product_name || `Produk #${index + 1}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <DesignSpecsReferenceCard job={activerOrder} />
 
             {purchasings.length === 0 ? (
                 <GenerateBomPoCard
-                    job={job}
+                    job={activerOrder}
                     form={generateBomForm}
                     onSubmit={generatePurchasingFromBom}
                 />
             ) : (
                 <>
-                    <PurchasingSummaryCard purchasings={purchasings} job={job} />
+                    <PurchasingSummaryCard purchasings={purchasings} job={activerOrder} />
 
                     <PurchasingMaterialTable
                         purchasings={purchasings}
-                        job={job}
+                        job={activerOrder}
                         onCreate={openCreatePurchasing}
                         onEditManual={openEditPurchasing}
                         onEditPo={setEditingPo}
@@ -296,7 +323,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                 form={purchasingForm}
                 onSubmit={submitPurchasing}
                 mode={purchasingMode}
-                job={job}
+                job={activerOrder}
             />
 
             <ReceivingDialog

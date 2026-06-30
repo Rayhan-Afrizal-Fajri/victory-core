@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pesanan;
+use Illuminate\Support\Facades\Auth;
+use App\Models\JobTicket;
+// use App\Models\Pesanan;
 use App\Models\Supplier;
 use App\Models\Product;
-use App\Models\User;
+use App\Models\CompanyProfile;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,236 +19,144 @@ class JobTicketController extends Controller
      */
     public function index()
     {
-        $orders = Pesanan::query()
+        $user = Auth::user();
+        $isAdmin = $user->can('dashboard.admin');
+
+        $jobTicketsQuery = JobTicket::query()
             ->with([
                 'customer',
-                'workflowStatus',
+                'pesanans.workflowStatus',
             ])
-            ->latest()
-            ->get()
-            ->map(function ($order) {
-                $workflow = $order->workflowStatus;
+            ->latest();
 
+        if (!$isAdmin) {
+            $jobTicketsQuery->where('customer_id', $user->customer?->id);
+        }
+
+        $jobTickets = $jobTicketsQuery->get()->map(function ($ticket) {
+            $pesanans = $ticket->pesanans;
+            
+            // Hitung agregasi progress dari semua pesanan di dalam job ticket
+            $totalProgress = 0;
+            $allSampleAcc = true;
+            $hasStartedProduction = false;
+            
+            $produkNames = [];
+
+            foreach ($pesanans as $pesanan) {
+                $workflow = $pesanan->workflowStatus;
                 $progressData = $this->calculateWorkflowProgress($workflow);
-                $status = $this->getWorkflowStatusLabel($workflow);
+                
+                $totalProgress += $progressData['percent'];
+                
+                if (!($workflow?->sample_approved)) {
+                    $allSampleAcc = false;
+                }
+                
+                if ($workflow?->design_approved) {
+                    $hasStartedProduction = true;
+                }
 
-                return [
-                    'id' => $order->id,
-                    'no_job_ticket' => $order->no_job_ticket,
-                    'produk' => $order->requested_product_name
-                        ?: $order->produk
-                        ?: '-',
-                    'customer' => $order->customer?->nama_perusahaan
-                        ?? $order->customer?->nama
-                        ?? $order->customer_perusahaan_snapshot
-                        ?? '-',
-                    'qty' => (int) ($order->quantity ?: $order->q ?: 0),
-                    'deadline' => $order->deadline,
-                    'status_divisi' => $status,
-                    'acc_sample' => (bool) ($workflow?->sample_approved ?? false),
-                    'progress' => $progressData['percent'],
-                    'current_step' => $progressData['current_label'],
-                    'can_edit' => $order->canModifyOrderEntry(),
-                    'can_delete' => $order->canModifyOrderEntry(),
-                ];
-            });
+                $produkNames[] = $pesanan->requested_product_name ?: $pesanan->produk;
+            }
+
+            $avgProgress = $pesanans->count() > 0 ? round($totalProgress / $pesanans->count()) : 0;
+            $canModify = !$hasStartedProduction;
+
+            return [
+                'id' => $ticket->id,
+                'no_job_ticket' => $ticket->no_job_ticket,
+                'produk' => !empty($produkNames) ? implode(', ', array_unique($produkNames)) : '-',
+                'customer' => $ticket->customer?->nama_perusahaan
+                    ?? $ticket->customer?->nama
+                    ?? $ticket->customer_perusahaan_snapshot
+                    ?? '-',
+                'qty' => (int) $pesanans->sum('q'),
+                'deadline' => $ticket->deadline,
+                'status_divisi' => $ticket->status ?? 'Order Entry',
+                'acc_sample' => $pesanans->count() > 0 ? $allSampleAcc : false,
+                'progress' => $avgProgress,
+                'current_step' => $ticket->status ?? 'Menunggu Proses',
+                'can_edit' => $canModify,
+                'can_delete' => $canModify,
+            ];
+        });
 
         return Inertia::render('admin/job-tickets/Index', [
-            'orders' => $orders,
+            'orders' => $jobTickets,
         ]);
     }
 
     private function calculateWorkflowProgress($workflow): array
     {
         $steps = [
-            [
-                'label' => 'Order Entry',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->order_entry ?? $w?->pesanan_id ?? false),
-            ],
-            [
-                'label' => 'Design',
-                'weight' => 10,
-                'done' => fn ($w) => (bool) ($w?->design_approved ?? false),
-            ],
-            [
-                'label' => 'Quotation',
-                'weight' => 10,
-                'done' => fn ($w) => (bool) ($w?->quotation_approved ?? false),
-            ],
-            [
-                'label' => 'Sample Payment',
-                'weight' => 7,
-                'done' => fn ($w) => (bool) ($w?->sample_paid ?? false),
-            ],
-            [
-                'label' => 'Purchasing',
-                'weight' => 10,
-                'done' => fn ($w) => (bool) ($w?->materials_purchased ?? false),
-            ],
-            [
-                'label' => 'Materials Received',
-                'weight' => 10,
-                'done' => fn ($w) => (bool) ($w?->materials_received ?? false),
-            ],
-            [
-                'label' => 'Sample Created',
-                'weight' => 8,
-                'done' => fn ($w) => (bool) ($w?->sample_created ?? false),
-            ],
-            [
-                'label' => 'Sample Delivered',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->sample_delivered ?? false),
-            ],
-            [
-                'label' => 'Sample Approved',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->sample_approved ?? false),
-            ],
-            [
-                'label' => 'Production Payment',
-                'weight' => 7,
-                'done' => fn ($w) => (bool) ($w?->production_dp_paid ?? false),
-            ],
-            [
-                'label' => 'Production Started',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->production_started ?? false),
-            ],
-            [
-                'label' => 'Production Completed',
-                'weight' => 8,
-                'done' => fn ($w) => (bool) ($w?->production_completed ?? false),
-            ],
-            [
-                'label' => 'QC Completed',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->qc_completed ?? false),
-            ],
-            [
-                'label' => 'Packing',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->packing_completed ?? false),
-            ],
-            [
-                'label' => 'Final Payment',
-                'weight' => 5,
-                'done' => fn ($w) => (bool) ($w?->final_payment_paid ?? false),
-            ],
-            [
-                'label' => 'Delivered',
-                'weight' => 3,
-                'done' => fn ($w) => (bool) ($w?->delivered ?? false),
-            ],
-            [
-                'label' => 'Done',
-                'weight' => 2,
-                'done' => fn ($w) => (bool) ($w?->completed ?? false),
-            ],
+            ['label' => 'Order Entry', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->order_entry ?? $w?->pesanan_id ?? false)],
+            ['label' => 'Design', 'weight' => 10, 'done' => fn ($w) => (bool) ($w?->design_approved ?? false)],
+            ['label' => 'Quotation', 'weight' => 10, 'done' => fn ($w) => (bool) ($w?->quotation_approved ?? false)],
+            ['label' => 'Sample Payment', 'weight' => 7, 'done' => fn ($w) => (bool) ($w?->sample_paid ?? false)],
+            ['label' => 'Purchasing', 'weight' => 10, 'done' => fn ($w) => (bool) ($w?->materials_purchased ?? false)],
+            ['label' => 'Materials Received', 'weight' => 10, 'done' => fn ($w) => (bool) ($w?->materials_received ?? false)],
+            ['label' => 'Sample Created', 'weight' => 8, 'done' => fn ($w) => (bool) ($w?->sample_created ?? false)],
+            ['label' => 'Sample Delivered', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->sample_delivered ?? false)],
+            ['label' => 'Sample Approved', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->sample_approved ?? false)],
+            ['label' => 'Production Payment', 'weight' => 7, 'done' => fn ($w) => (bool) ($w?->production_dp_paid ?? false)],
+            ['label' => 'Production Started', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->production_started ?? false)],
+            ['label' => 'Production Completed', 'weight' => 8, 'done' => fn ($w) => (bool) ($w?->production_completed ?? false)],
+            ['label' => 'QC Completed', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->qc_completed ?? false)],
+            ['label' => 'Packing', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->packing_completed ?? false)],
+            ['label' => 'Final Payment', 'weight' => 5, 'done' => fn ($w) => (bool) ($w?->final_payment_paid ?? false)],
+            ['label' => 'Delivered', 'weight' => 3, 'done' => fn ($w) => (bool) ($w?->delivered ?? false)],
+            ['label' => 'Done', 'weight' => 2, 'done' => fn ($w) => (bool) ($w?->completed ?? false)],
         ];
 
-        if (! $workflow) {
-            return [
-                'percent' => 0,
-                'current_label' => 'Not Started',
-            ];
-        }
+        if (! $workflow) return ['percent' => 0, 'current_label' => 'Not Started'];
 
         $totalWeight = collect($steps)->sum('weight');
-
-        $completedWeight = collect($steps)->sum(function ($step) use ($workflow) {
-            return $step['done']($workflow) ? $step['weight'] : 0;
-        });
+        $completedWeight = collect($steps)->sum(fn($step) => $step['done']($workflow) ? $step['weight'] : 0);
 
         $percent = min(100, round(($completedWeight / $totalWeight) * 100));
-
-        $currentStep = collect($steps)->first(function ($step) use ($workflow) {
-            return ! $step['done']($workflow);
-        });
+        $currentStep = collect($steps)->first(fn($step) => ! $step['done']($workflow));
 
         return [
             'percent' => $percent,
-            'current_label' => $percent >= 100
-                ? 'Done'
-                : ($currentStep['label'] ?? 'Done'),
+            'current_label' => $percent >= 100 ? 'Done' : ($currentStep['label'] ?? 'Done'),
         ];
-    }
-
-    private function getWorkflowStatusLabel($workflow): string
-    {
-        if (! $workflow) return 'Aktif';
-
-        if ($workflow->completed) return 'Done';
-        if ($workflow->delivered) return 'Delivered';
-        if ($workflow->final_payment_paid) return 'Final Payment';
-        if ($workflow->packing_completed) return 'Packing';
-        if ($workflow->production_completed) return 'Production Completed';
-        if ($workflow->production_started) return 'Production';
-        if ($workflow->production_dp_paid) return 'Production Payment';
-        if ($workflow->sample_approved) return 'Sample Approved';
-        if ($workflow->sample_delivered) return 'Sample Delivered';
-        if ($workflow->sample_created) return 'Sample Created';
-        if ($workflow->materials_received) return 'Materials Received';
-        if ($workflow->materials_purchased) return 'Purchasing';
-        if ($workflow->sample_paid) return 'Sample Payment';
-        if ($workflow->quotation_approved) return 'Quotation Approved';
-        if ($workflow->design_approved) return 'Design Approved';
-
-        return 'Aktif';
     }
 
     /**
      * Display the specified resource.
      */
+    /**
+     * Display the specified resource.
+     */
     public function show(string $id)
     {        
-        // Cari order berdasarkan ID
-        $pesanan = Pesanan::with([
+        // Eager load disesuaikan: Invoices dan Quotations kini milik JobTicket
+        $jobTicket = JobTicket::with([
             'customer',
-            'designs'=> function ($query) {
-                $query->latest();
-            },
-            'orderSpecification',
-            'samples' => function ($query) {
-                $query->with([
-                    'invoice.payments',
-                    'media',
-                    'delivery'
-                ])->latest();
-            },
-            'invoices.payments',
-            // 'purchasing.materialReceiving.checkedBy',
-            // 'purchasing.supplier',
-            'purchasing' => function ($query) {
-                $query->with('supplier', 'materialReceiving.checkedBy')->latest();
-            },
-            'productionRuns.processes',
-            'productionProgress',
-            'workflowHistory' => function ($query) {
-                $query->with('user')->latest();
-            },
-            'attachment',
-            'workflowStatus',
-            'sizeBreakdowns',
-            'manufacturingSpecs.vendor',
-            'materialSpecs.supplier',
-            'quotations.items',
+            'invoices.payments', // Pindah ke JobTicket
+            'quotations.items',  // Pindah ke JobTicket
+            'productionRuns.processes.qcCheckedBy',
+            'productionRuns.processes.pesanan',
+            
+            // Relasi yang tetap di Pesanan
+            'pesanans.designs' => fn($q) => $q->latest(),
+            'pesanans.orderSpecification',
+            'pesanans.samples' => fn($q) => $q->with(['invoice.payments', 'media', 'delivery'])->latest(),
+            'pesanans.purchasing' => fn($q) => $q->with('supplier', 'materialReceiving.checkedBy')->latest(),
+            // 'pesanans.productionRuns.processes.qcCheckedBy', // Tambahkan eager load user QC
+            'pesanans.productionProgress',
+            'workflowHistory' => fn($q) => $q->with('user')->latest(),
+            'pesanans.attachment',
+            'pesanans.workflowStatus',
+            'pesanans.sizeBreakdowns',
+            'pesanans.manufacturingSpecs.vendor',
+            'pesanans.materialSpecs.supplier',
+            'pesanans.product',
         ])->findOrFail($id);
-
-        $sampleRun = $pesanan->productionRuns
-            ->where('type', 'sample')
-            ->sortByDesc('id')
-            ->first();
-
-        $productionRun = $pesanan->productionRuns
-            ->where('type', 'production')
-            ->sortByDesc('id')
-            ->first();
 
         $mapRun = function ($run) {
             if (! $run) return null;
-
             return [
                 'id' => $run->id,
                 'type' => $run->type,
@@ -254,250 +164,205 @@ class JobTicketController extends Controller
                 'status' => $run->status,
                 'packing_completed' => $run->packing_completed,
                 'packing_notes' => $run->packing_notes,
+                'customer_review_note' => $run->customer_review_note,
                 'courier_name' => $run->courier_name,
                 'tracking_number' => $run->tracking_number,
                 'tracking_url' => $run->tracking_url,
                 'delivery_note' => $run->delivery_note,
                 'delivered_at' => $run->delivered_at,
-                'customer_review_note' => $run->customer_review_note,
                 'approved_at' => $run->approved_at,
-                'processes' => $run->processes
-                    ->sortBy('sequence')
-                    ->values()
-                    ->map(fn ($process) => [
-                        'id' => $process->id,
-                        'work_name' => $process->work_name,
-                        'sequence' => $process->sequence,
-                        'status' => $process->status,
-                        'started_at' => $process->started_at?->format('Y-m-d H:i:s'),
-                        'completed_at' => $process->completed_at?->format('Y-m-d H:i:s'),
-                        'qc_checked_at' => $process->qc_checked_at?->format('Y-m-d H:i:s'),
-                        'qc_checked_by' => $process->qcCheckedBy?->name,
-                        'qc_status' => $process->qc_status,
-                        'checked_qty' => $process->checked_qty,
-                        'checked_qty' => $process->checked_qty,
-                        'passed_qty' => $process->passed_qty,
-                        'defect_qty' => $process->defect_qty,
-                        'qc_notes' => $process->qc_notes,
-                        'corrective_action' => $process->corrective_action,
-                    ])
-                    ->toArray(),
+                'processes' => $run->processes->sortBy('sequence')->values()->map(fn ($process) => [
+                    'id' => $process->id,
+                    'pesanan_id' => $process->pesanan_id,
+                    'work_name' => $process->work_name,
+                    'sequence' => $process->sequence,
+                    'status' => $process->status,
+                    'quantity' => $process->quantity,
+                    'started_at' => $process->started_at?->format('Y-m-d H:i:s'),
+                    'completed_at' => $process->completed_at?->format('Y-m-d H:i:s'),
+                    'qc_checked_at' => $process->qc_checked_at?->format('Y-m-d H:i:s'),
+                    'qc_checked_by' => $process->qcCheckedBy?->name,
+                    'qc_status' => $process->qc_status,
+                    'checked_qty' => $process->checked_qty,
+                    'passed_qty' => $process->passed_qty,
+                    'defect_qty' => $process->defect_qty,
+                    'qc_notes' => $process->qc_notes,
+                ])->toArray(),
             ];
         };
 
-        $workflowStatus = $pesanan->workflowStatus;
+        $sampleRun = $jobTicket->productionRuns?->where('type', 'sample')->sortByDesc('id')->first();
+        $productionRun = $jobTicket->productionRuns?->where('type', 'production')->sortByDesc('id')->first();
 
+        // Memetakan struktur Data Job Ticket
         $mapped = [
-            'id' => $pesanan->id,
-            'order_number' => $pesanan->no_job_ticket,
-            'product_name' => $pesanan->produk,
+            'id' => $jobTicket->id,
+            'no_job_ticket' => $jobTicket->no_job_ticket,
             'customer' => [
-                'name' => $pesanan->customer?->nama ?? $pesanan->customer_nama_snapshot,
-                'company' => $pesanan->customer?->nama_perusahaan ?? $pesanan->customer_perusahaan_snapshot,
+                'name' => $jobTicket->customer?->nama ?? $jobTicket->customer_nama_snapshot,
+                'company' => $jobTicket->customer?->nama_perusahaan ?? $jobTicket->customer_perusahaan_snapshot,
+                'email' => $jobTicket->customer?->user->email,
+                'phone' => $jobTicket->customer?->no_hp,
             ],
-            'quantity' => $pesanan->q,
-            'sample_qty' => $pesanan->sample_qty,
-            'deadline' => $pesanan->deadline,
-            'created_at' => $pesanan->created_at,
-            'status' => $pesanan->status_divisi,
-            'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
-            'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
-            'specs' => $pesanan->orderSpecification?->map(fn ($s) => [
-                'id' => $s->id,
-                'jenis_spesifikasi' => $s->jenis_spesifikasi,
-                'value' => $s->value,
-            ])->toArray(),
-            'designs' => $pesanan->designs->map(fn ($d) => [
-                'id' => $d->id,
-                'file_path' => $d->file_path,
-                'note' => $d->revision_note,
-                'customer_revision_note' => $d->customer_revision_note,
-                'designer_revision_note' => $d->designer_revision_note,
-                'status' => $d->status,
-                'approved' => (bool) $d->approved_at,
-                'approved_at' => $d->approved_at,
-                'created_at' => $d->uploaded_at,
-            ])->toArray(),
-            'samples' => $pesanan->samples->map(fn ($s) => [
-                'id' => $s->id,
-                'pesanan_id' => $s->pesanan_id,
-                'qty' => $s->qty,
-                'sample_price' => $s->sample_price,
-                'invoice_id' => $s->invoice_id,
-                'parent_sample_id' => $s->parent_sample_id,
-                'is_chargeable' => $s->is_chargeable,
-                'status' => $s->status,
-                'catatan' => $s->catatan,
-                'customer_review_note' => $s->customer_review_note,
-                'internal_note' => $s->internal_note,
-                'created_by' => $s->created_by,
-                'created_sample_at' => $s->created_sample_at,
-                'paid_at' => $s->paid_at,
-                'sent_at' => $s->sent_at,
-                'approved_at' => $s->approved_at,
-                'approved_by' => $s->approved_by,
-                'invoice' => $s->invoice,
-                'media' => $s->media,
-                'delivery' => $s->delivery,
-                'created_at' => $s->created_at,
-                'updated_at' => $s->updated_at,
-            ])->toArray(),
-            'invoices' => $pesanan->invoices->map(fn ($inv) => [
+            'company_profile' => [
+                'company_name' => $jobTicket->companyProfile?->company_name,
+                'company_type' => str_replace('_', ' ' , $jobTicket->companyProfile?->company_type),
+                'bank_type' => $jobTicket->companyProfile?->bank_type,
+                'account_number' => $jobTicket->companyProfile?->account_number,
+                'tax_percentage' => $jobTicket->companyProfile?->tax_percentage,
+                'address' => $jobTicket->companyProfile?->address,
+            ],
+            'deadline' => $jobTicket->deadline,
+            'customer_notes' => $jobTicket->customer_notes,
+            'status' => $jobTicket->status,
+            'created_at' => $jobTicket->created_at,
+
+            // INVOICES - Kini levelnya global di Job Ticket
+            'invoices' => $jobTicket->invoices->map(fn ($inv) => [
                 'id' => $inv->id,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
                 'amount' => (float) $inv->total_tagihan,
                 'status' => $inv->status_tagihan ?? 'unpaid',
-                'issued_at' => $inv->tgl_jatuh_tempo,
-                'payments' => $inv->payments->map(fn ($p) => [
-                    'id' => $p->id,
-                    'invoice_id' => $p->invoice_id,
-                    'tgl_bayar' => $p->tgl_bayar,
-                    'jumlah_bayar' => (float) $p->jumlah_bayar,
-                    'metode_pembayaran' => $p->metode_pembayaran,
-                    'bukti_transfer_path' => $p->bukti_transfer_path,
-                    'catatan_finance' => $p->catatan_finance,
-                    'status' => $p->status,
-                    'rejection_note' => $p->rejection_note,
-                    'verified_by' => $p->verified_by,
-                    'verified_at' => $p->verified_at,
-                    'created_at' => $p->created_at,
-                    'updated_at' => $p->updated_at,
+                'due_date' => $inv->tgl_jatuh_tempo,
+                'payments' => $inv->payments->toArray(),
+            ])->toArray(),
+
+            // QUOTATIONS - Kini levelnya global di Job Ticket
+            'quotations' => $jobTicket->quotations->sortByDesc('id')->values()->map(fn ($q) => [
+                'id' => $q->id,
+                'quotation_number' => $q->quotation_number,
+                'status' => $q->status,
+                'grand_total' => (float) $q->grand_total,
+                'valid_until' => $q->valid_until,
+                'sample_qty' => $q->sample_qty,
+                'items' => $q->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'pesanan_id' => $item->pesanan_id, // Link untuk tahu ini produk yang mana
+                    'item_name' => $item->item_name,
+                    'quantity' => $item->quantity,
+                    'price_per_pcs' => (float) $item->price_per_pcs,
+                    'subtotal' => (float) $item->subtotal,
                 ])->toArray(),
             ])->toArray(),
-            'purchasings' => $pesanan->purchasing->map(fn ($p) => [
-                'id' => $p->id,
-                'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
 
-                'item' => $p->item_bahan,
-                'supplier_id' => $p->supplier_id,
-                'supplier' => $p->supplier ? [
-                    'id' => $p->supplier->id,
-                    'nama' => $p->supplier->nama ?? null,
-                    'nama_perusahaan' => $p->supplier->nama_perusahaan ?? null,
-                    'kategori' => $p->supplier->kategori ?? null,
-                    'alamat' => $p->supplier->alamat ?? null,
-                    'kontak' => $p->supplier->kontak ?? null,
-                ] : null,
-
-                'color' => $p->materialSpec?->color,
-                'qty_bahan' => (float) $p->qty_bahan,
-                'required_qty' => (float) $p->required_qty,
-                'purchase_qty' => (float) $p->purchase_qty,
-                'stock_qty' => (float) $p->stock_qty,
-                'leftover_qty' => (float) $p->leftover_qty,
-
-                'ordered_qty' => (float) $p->qty_bahan,
-                'received_qty' => (float) $p->materialReceiving->sum('received_qty'),
-
-                'unit' => $p->satuan,
-                'harga_satuan' => (float) $p->harga_satuan,
-                'total_harga' => (float) $p->total_harga,
-
-                'notes' => $p->notes,
-                'tgl_pembelian' => $p->tgl_pembelian,
-                'status' => $p->status,
-
-                'purchase_scope' => $p->purchase_scope,
-                'notes' => $p->notes,
-
-                'material_receivings' => $p->materialReceiving->map(fn ($r) => [
-                    'id' => $r->id,
-                    'qty_received' => (float) $r->received_qty,
-                    'checked_by' => User::find($r->checked_by) ?? null,
-                    'received_at' => $r->received_at ?? $r->created_at?->toDateString(),
-                    'notes' => $r->notes,
-                ])->toArray(),
-            ])->toArray(),
             'sample_run' => $mapRun($sampleRun),
             'production_run' => $mapRun($productionRun),
-            'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
-            'workflowHistories' => $pesanan->workflowHistory->map(fn ($h) => [
+
+            'workflow_histories' => $jobTicket->workflowHistory->map(fn ($h) => [
                 'id' => $h->id,
                 'actor' => $h->user?->name ?? 'System',
                 'action' => $h->action,
                 'note' => $h->notes,
-                'created_at' => $h->created_at,
+                'created_at' => optional($h->created_at)->format('Y-m-d H:i:s'),
             ])->toArray(),
-            'attachments' => $pesanan->attachment->map(fn ($a) => [
-                'id' => $a->id,
-                'category' => $a->kategori,
-                'file_path' => $a->file_path,
-                'notes' => $a->catatan,
-            ])->toArray(),
-            'workflow_status' => $workflowStatus?->toArray() ?? [],
-            'size_breakdowns' => $pesanan->sizeBreakdowns->map(fn ($row) => [
-                'id' => $row->id,
-                'color' => $row->color,
-                'size_label' => $row->size_label,
-                'qty' => $row->qty,
-            ]),
+            
+            // ORDERS (Pesanans)
+            'orders' => $jobTicket->pesanans->map(function($pesanan) {
 
-            'product' => $pesanan->product ? [
-                'id' => $pesanan->product->id,
-                'name' => $pesanan->product->name,
-                'category' => $pesanan->product->category,
-            ] : null,
+                return [
+                    'id' => $pesanan->id,
+                    'product_name' => $pesanan->produk,
+                    'requested_product_name' => $pesanan->requested_product_name,
+                    'quantity' => $pesanan->q,
+                    'sample_qty' => $pesanan->sample_qty,
+                    'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
+                    'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
+                    'status' => $pesanan->status_divisi,
+                    
+                    'product' => $pesanan->product ? [
+                        'id' => $pesanan->product->id,
+                        'name' => $pesanan->product->name,
+                        'category' => $pesanan->product->category,
+                    ] : null,
 
-            'material_specs' => $pesanan->materialSpecs->map(fn ($spec) => [
-                'id' => $spec->id,
-                'supplier_id' => $spec->supplier_id,
-                'type' => $spec->type,
-                'material_name' => $spec->material_name_snapshot,
-                'material_name_snapshot' => $spec->material_name_snapshot,
-                'color' => $spec->color,
-                'usage' => $spec->usage,
-                'unit' => $spec->unit,
-                'usage_per_set' => $spec->usage_per_set,
-                'supplier' => $spec->supplier?->nama_perusahaan ?? $spec->supplier?->name,
-                'harga_ecer' => $spec->harga_ecer,
-                'harga_roll' => $spec->harga_roll,
-                'roll_qty' => $spec->roll_qty,
-                'price_type' => $spec->price_type,
-                'cost_per_pcs' => $spec->cost_per_pcs,
-            ]),
+                    'size_breakdowns' => $pesanan->sizeBreakdowns->map(fn ($row) => [
+                        'id' => $row->id,
+                        'color' => $row->color,
+                        'size_label' => $row->size_label,
+                        'fabric_spec' => $row->fabric_spec,
+                        'qty' => $row->qty,
+                    ])->toArray(),
 
-            'manufacturing_specs' => $pesanan->manufacturingSpecs->map(fn ($spec) => [
-                'id' => $spec->id,
-                'work_name' => $spec->work_name_snapshot,
-                'work_name_snapshot' => $spec->work_name_snapshot,
-                'usage' => $spec->usage,
-                'unit' => $spec->unit,
-                'usage_note' => $spec->usage_note,
-                'vendor' => $spec->vendor?->nama_perusahaan ?? $spec->vendor?->name,
-                'vendor_id' => $spec->vendor?->id ?? null,
-                'min_estimate' => $spec->min_estimate,
-                'max_estimate' => $spec->max_estimate,
-                'cost_per_pcs' => $spec->cost_per_pcs,
-            ]),
+                    'workflow_status' => $pesanan->workflowStatus?->toArray() ?? [],
 
-            'quotations' => $pesanan->quotations->sortByDesc('id')->values()->map(fn ($q) => [
-                'id' => $q->id,
-                'quotation_number' => $q->quotation_number,
-                'status' => $q->status,
-                'valid_until' => $q->valid_until?->toDateString(),
-                'sample_qty' => $q->sample_qty,
-                'payment_terms' => $q->payment_terms,
-                'delivery_terms' => $q->delivery_terms,
-                'notes' => $q->notes,
-                'price_per_pcs' => (float) $q->price_per_pcs,
-                'quantity' => (int) $q->quantity,
-                'subtotal' => (float) $q->subtotal,
-                'tax' => (float) $q->tax,
-                'delivery_cost' => (float) $q->delivery_cost,
-                'grand_total' => (float) $q->grand_total,
-                'approved_at' => $q->approved_at?->toDateTimeString(),
-                'approved_by_name' => $q->approved_by_name,
-                'signature_path' => $q->signature_path,
-                'items' => $q->items->map(fn ($item) => [
-                    'id' => $item->id,
-                    'item_name' => $item->item_name,
-                    'fabric' => $item->fabric,
-                    'print_method' => $item->print_method,
-                    'quantity' => $item->quantity,
-                    'price_per_pcs' => (float) $item->price_per_pcs,
-                    'subtotal' => (float) $item->subtotal,
-                ]),
-            ]),
+                    'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
+
+                    'specs' => $pesanan->orderSpecification?->map(fn ($s) => [
+                        'id' => $s->id,
+                        'jenis_spesifikasi' => $s->jenis_spesifikasi,
+                        'value' => $s->value,
+                    ])->toArray(),
+
+                    'designs' => $pesanan->designs->map(fn ($d) => [
+                        'id' => $d->id,
+                        'file_path' => $d->file_path,
+                        'note' => $d->revision_note,
+                        'status' => $d->status,
+                        'approved' => (bool) $d->approved_at,
+                        'created_at' => $d->uploaded_at,
+                    ])->toArray(),
+
+                    'samples' => $pesanan->samples->map(fn ($s) => [
+                        'id' => $s->id,
+                        'qty' => $s->qty,
+                        'status' => $s->status,
+                        'approved_at' => $s->approved_at,
+                        'invoice' => $s->invoice,
+                    ])->toArray(),
+
+                    'purchasings' => $pesanan->purchasing->map(fn ($p) => [
+                        'id' => $p->id,
+                        'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
+                        'supplier' => $p->supplier ? ['nama' => $p->supplier->nama_perusahaan] : null,
+                        'item' => $p->item_bahan,
+                        'status' => $p->status,
+                        'qty_bahan' => $p->qty_bahan,
+                        'required_qty' => $p->required_qty,
+                        'purchase_qty' => $p->purchase_qty,
+                        'stock_qty' => $p->stock_qty,
+                        'leftover_qty' => $p->leftover_qty,
+                        'unit' => $p->satuan,
+                        'harga_satuan' => $p->harga_satuan,
+                        'total_harga' => $p->total_harga,
+                        'purchase_scope' => $p->purchase_scope,
+                        'remaining_qty' => $p->remaining_qty,
+                        'receiving_status' => $p->receiving_status,
+                        'material_receivings' => $p->materialReceiving->toArray(),
+                    ])->toArray(),
+
+                    'material_specs' => $pesanan->materialSpecs->map(fn ($spec) => [
+                        'id' => $spec->id,
+                        'type' => $spec->type,
+                        'material_name' => $spec->material_name_snapshot,
+                        'material_name_snapshot' => $spec->material_name_snapshot,
+                        'color' => $spec->color,
+                        'usage' => $spec->usage,
+                        'unit' => $spec->unit,
+                        'supplier' => $spec->supplier?->nama_perusahaan,
+                        'supplier_id' => $spec->supplier?->id,
+                        'harga_ecer' => $spec->harga_ecer,
+                        'harga_roll' => $spec->harga_roll,
+                        'price_type' => $spec->price_type,
+                        'cost_per_pcs' => $spec->cost_per_pcs,
+                    ])->toArray(),
+
+                    'manufacturing_specs' => $pesanan->manufacturingSpecs->map(fn ($spec) => [
+                        'id' => $spec->id,
+                        'work_name' => $spec->work_name_snapshot,
+                        'work_name_snapshot' => $spec->work_name_snapshot,
+                        'usage' => $spec->usage,
+                        'unit' => $spec->unit,
+                        'usage_note' => $spec->usage_note,
+                        'min_estimate' => $spec->min_estimate,
+                        'max_estimate' => $spec->max_estimate,
+                        'vendor' => $spec->vendor?->nama_perusahaan,
+                        'vendor_id' => $spec->vendor?->id,
+                        'cost_per_pcs' => $spec->cost_per_pcs,
+                    ])->toArray(),
+
+                    'attachments' => $pesanan->attachment->toArray(),
+                ];
+            })->toArray(),
         ];
 
         $productOption = Product::all()->map(fn ($p) => [
@@ -506,22 +371,21 @@ class JobTicketController extends Controller
             'category' => $p->category,
         ]);
 
-
         $suppliers = Supplier::all();
 
         return Inertia::render('admin/job-tickets/Show', [
-            'pesanan' => $mapped,
+            'jobTicket' => $mapped,
             'suppliers' => $suppliers,
             'productOptions' => $productOption,
+            'companyProfile' => CompanyProfile::all()
         ]);
     }
 
     /**
-     * Update status divisi (Untuk dropdown perpindahan divisi / Kanban simulation)
+     * Update status divisi tingkat Global Job Ticket
      */
     public function updateStatus(Request $request, string $id)
     {
-        // Validasi input
         $request->validate([
             'status_divisi' => [
                 'required',
@@ -529,38 +393,33 @@ class JobTicketController extends Controller
             ]
         ]);
 
-        $pesanan = Pesanan::findOrFail($id);
+        $jobTicket = JobTicket::findOrFail($id);
 
-        $pesanan->update([
-            'status_divisi' => $request->status_divisi,
+        $jobTicket->update([
+            'status' => $request->status_divisi,
         ]);
 
-        // Karena ini dummy, kembalikan redirect dengan flash message sukses
-        return back();
+        return back()->with('success', 'Status Job Ticket berhasil diperbarui.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
-        //
+        return redirect()->route('order-entry.edit', $id);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+        // Logika update ditangani oleh OrderEntryController
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Pesanan $pesanan)
+    public function destroy(JobTicket $jobTicket)
     {
-        $pesanan->delete();
-        return back();
+        // Pastikan relasi model di setting cascadeOnDelete pada DB / Eloquent
+        $jobTicket->delete();
+        
+        return back()->with('success', 'Job Ticket beserta pesanannya berhasil dihapus.');
     }
 }

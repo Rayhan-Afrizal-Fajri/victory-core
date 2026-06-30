@@ -11,15 +11,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Select,
+    Select as Select1,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 
+import Select from 'react-select';
+
 import Field from '@/components/sample/field';
-import type { Supplier } from '../../types';
+import type { SupplierOption } from '../../types';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 function ManufacturingSpecEditDialog({
@@ -36,7 +38,7 @@ function ManufacturingSpecEditDialog({
     onOpenChange: (open: boolean) => void;
     spec: any | null;
     form: any;
-    suppliers: Supplier[];
+    suppliers: SupplierOption[];
     onSubmit: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
     enableProcessBehavior?: boolean;
@@ -126,7 +128,7 @@ function ManufacturingSpecEditDialog({
                     </Field>
 
                     <Field label="Vendor" error={form.errors.vendor_id}>
-                        <Select
+                        {/* <Select1
                             value={
                                 form.data.vendor_id
                                     ? String(form.data.vendor_id)
@@ -155,7 +157,22 @@ function ManufacturingSpecEditDialog({
                                     </SelectItem>
                                 ))}
                             </SelectContent>
-                        </Select>
+                        </Select1> */}
+                        <Select
+                            className='text-sm rounded-full'
+                            classNamePrefix='select'
+                            options={suppliers}
+                            value={
+                                suppliers?.find(
+                                    x => x.value === form.data.vendor_id
+                                )
+                            }
+                            onChange={(option) => {
+                                form.setData('vendor_id', Number(option?.value ?? ""))
+                            }}
+                            placeholder="Pilih supplier..."
+                            isSearchable={true}
+                        />
                     </Field>
 
                     <div className="grid gap-4 md:grid-cols-2">
@@ -191,7 +208,7 @@ function ManufacturingSpecEditDialog({
                             label="Behavior"
                             error={form.errors.process_behavior}
                         >
-                            <Select
+                            <Select1
                                 value={
                                     form.data.process_behavior ||
                                     'production_process'
@@ -212,7 +229,7 @@ function ManufacturingSpecEditDialog({
                                         Costing Only
                                     </SelectItem>
                                 </SelectContent>
-                            </Select>
+                            </Select1>
 
                             <p className="mt-1 text-xs text-slate-500">
                                 Costing Only cocok untuk QC/Packing agar masuk

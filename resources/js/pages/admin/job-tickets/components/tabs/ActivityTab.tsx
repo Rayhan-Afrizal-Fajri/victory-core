@@ -7,7 +7,7 @@ const ActivityTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     <div className="space-y-4">
       <SectionCard title="Activity Log">
         <ul className="space-y-2 text-sm">
-          {(job.workflowHistories || []).map((a) => (
+          {(job.workflow_histories || []).map((a) => (
             <li key={a.id} className="border p-2 rounded-md">
               <div className="text-sm font-medium">{a.actor}</div>
               <div className="text-xs text-gray-600">{a.action} — {a.note}</div>

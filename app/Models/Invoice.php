@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Invoice extends Model
 {
     protected $fillable = [
-        'pesanan_id',
+        'job_ticket_id',
         'no_invoice',
         'kategori_invoice',
         'total_tagihan',
@@ -16,9 +16,9 @@ class Invoice extends Model
     ];
 
 
-    public function pesanan()
+    public function jobTicket()
     {
-        return $this->belongsTo(Pesanan::class);
+        return $this->belongsTo(jobTicket::class);
     }
 
     public function payments()

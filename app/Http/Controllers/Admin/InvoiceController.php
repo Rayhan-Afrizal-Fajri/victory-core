@@ -21,8 +21,8 @@ class InvoiceController extends Controller
     {
         $invoices = Invoice::query()
             ->with([
-                'pesanan.customer',
-                'pesanan.workflowStatus',
+                'jobTicket.customer',
+                'jobTicket.pesanans.workflowStatus',
                 'payments',
             ])
             ->latest()
@@ -30,75 +30,118 @@ class InvoiceController extends Controller
             ->map(fn ($invoice) => $this->mapInvoice($invoice))
             ->values();
 
-        $eligibleJobTickets = Pesanan::query()
-            ->with([
-                'customer',
-                'workflowStatus',
-                'quotations',
-                'invoices.payments',
-            ])
-            ->latest()
-            ->get()
-            ->map(fn ($pesanan) => $this->mapEligibleJobTicket($pesanan))
-            ->filter(fn ($ticket) => count($ticket['available_invoice_categories']) > 0)
-            ->values();
+        // $eligibleJobTickets = Pesanan::query()
+        //     ->with([
+        //         'customer',
+        //         'workflowStatus',
+        //         'quotations',
+        //         'invoices.payments',
+        //     ])
+        //     ->latest()
+        //     ->get()
+        //     ->map(fn ($pesanan) => $this->mapEligibleJobTicket($pesanan))
+        //     ->filter(fn ($ticket) => count($ticket['available_invoice_categories']) > 0)
+        //     ->values();
 
         return Inertia::render('admin/invoices/Index', [
             'invoices' => $invoices,
-            'eligibleJobTickets' => $eligibleJobTickets,
+            // 'eligibleJobTickets' => $eligibleJobTickets,
         ]);
     }
 
     private function mapInvoice(Invoice $invoice): array
     {
-        $pesanan = $invoice->pesanan;
+        $jobTicket = $invoice->jobTicket;
         $payments = $invoice->payments ?? collect();
 
         return [
             'id' => $invoice->id,
-            'pesanan_id' => $invoice->pesanan_id,
-            
+
+            'job_ticket_id' => $invoice->job_ticket_id,
+
+            'jobTicket' => $jobTicket ? [
+                'id' => $jobTicket->id,
+                'no_job_ticket' => $jobTicket->no_job_ticket,
+
+                'customer' => [
+                    'id' => $jobTicket->customer?->id,
+                    'nama' => $jobTicket->customer?->nama,
+                    'nama_perusahaan' => $jobTicket->customer?->nama_perusahaan,
+                    'email' => $jobTicket->customer?->user?->email,
+                    'no_hp' => $jobTicket->customer?->no_hp,
+                ],
+
+                'company_profile' => [
+                    'id' => $jobTicket->companyProfile?->id,
+                    'company_name' => $jobTicket->companyProfile?->company_name,
+                    'company_type' => $jobTicket->companyProfile?->company_type,
+                    'bank_type' => $jobTicket->companyProfile?->bank_type,
+                    'account_number' => $jobTicket->companyProfile?->account_number,
+                    'address' => $jobTicket->companyProfile?->address,
+                ],
+
+                'deadline' => $jobTicket->deadline,
+                'customer_notes' => $jobTicket->customer_notes,
+                'status' => $jobTicket->status,
+                'created_at' => optional($jobTicket->created_at)->toDateTimeString(),
+            ] : null,
+
             'no_invoice' => $invoice->no_invoice,
-            'title' => $invoice->title ?? 'Invoice',
+
             'kategori_invoice' => $invoice->kategori_invoice,
-            'status_tagihan' => $invoice->status_tagihan,
-            
+
             'total_tagihan' => (float) $invoice->total_tagihan,
-            'amount' => (float) $invoice->total_tagihan,
-          
+
+            'status_tagihan' => $invoice->status_tagihan,
+
             'tgl_jatuh_tempo' => $invoice->tgl_jatuh_tempo,
-            'issued_at' => $invoice->created_at?->toDateString(),
-
-            'no_job_ticket' => $pesanan?->no_job_ticket,
-            'job_ticket' => [
-                'id' => $pesanan?->id,
-                'no_job_ticket' => $pesanan?->no_job_ticket,
-                'produk' => $pesanan?->requested_product_name ?: $pesanan?->produk,
-                'quantity' => (int) ($pesanan?->quantity ?: $pesanan?->q ?: 0),
-            ],
-
-            'customer' => [
-                'id' => $pesanan?->customer?->id,
-                'nama' => $pesanan?->customer?->nama,
-                'nama_perusahaan' => $pesanan?->customer?->nama_perusahaan
-                    ?? $pesanan?->customer_perusahaan_snapshot,
-            ],
 
             'payments' => $payments->map(fn ($payment) => [
+
                 'id' => $payment->id,
+
                 'jumlah_bayar' => (float) $payment->jumlah_bayar,
+
                 'amount' => (float) $payment->jumlah_bayar,
+
                 'tgl_bayar' => $payment->tgl_bayar,
+
                 'date' => $payment->tgl_bayar,
+
                 'metode_pembayaran' => $payment->metode_pembayaran,
+
                 'method' => $payment->metode_pembayaran,
+
                 'status' => $payment->status,
+
+                'verified_at' => optional($payment->verified_at)?->toDateTimeString(),
+
+                'verified_by' => $payment->verified_by,
+
                 'bukti_transfer_path' => $payment->bukti_transfer_path,
+
                 'catatan_finance' => $payment->catatan_finance,
+
                 'rejection_note' => $payment->rejection_note,
+
+                'created_at' => optional($payment->created_at)->toDateTimeString(),
+
+                'updated_at' => optional($payment->updated_at)->toDateTimeString(),
+
             ])->values(),
 
-            'workflow_status' => $pesanan?->workflowStatus,
+            // Legacy frontend
+            'title' => $invoice->title ?? 'Invoice',
+
+            'amount' => (float) $invoice->total_tagihan,
+
+            'status' => $invoice->status_tagihan,
+
+            'due_date' => $invoice->tgl_jatuh_tempo,
+
+            'created_at' => optional($invoice->created_at)->toDateTimeString(),
+
+            'updated_at' => optional($invoice->updated_at)->toDateTimeString(),
         ];
     }
 
@@ -247,7 +290,7 @@ class InvoiceController extends Controller
                 );
             }
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'invoice',
                 'action' => 'manual_created',
                 'user_id' => Auth::id(),
@@ -325,7 +368,7 @@ class InvoiceController extends Controller
                     'sample_paid' => false,
                 ]);
 
-                $sample->pesanan->workflowHistory()->create([
+                $sample->pesanan->jobTicket->workflowHistory()->create([
                     'step' => 'sample',
                     'action' => 'invoice_updated',
                     'user_id' => Auth::user()->id,
@@ -386,7 +429,7 @@ class InvoiceController extends Controller
                     'sample_paid' => true,
                 ]);
 
-                $sample->pesanan->workflowHistory()->create([
+                $sample->pesanan->jobTicket->workflowHistory()->create([
                     'step' => 'sample',
                     'action' => 'invoice_cancelled',
                     'user_id' => Auth::user()->id,
@@ -401,14 +444,19 @@ class InvoiceController extends Controller
     public function print(string $invoiceId)
     {
         $invoice = Invoice::with([
-            'pesanan.customer',
+            'jobTicket.customer',
+            'jobTicket.companyProfile',
+            'jobTicket.pesanans.sizeBreakdowns',
             'payments',
         ])->findOrFail($invoiceId);
 
+        // dd($invoice, $invoice->jobTicket->pesanans, $invoice->jobTicket->customer, $invoice->payments);
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
-            'pesanan' => $invoice->pesanan,
-            'customer' => $invoice->pesanan?->customer,
+            'company' => $invoice->jobTicket->companyProfile,
+            'pesanans' => $invoice->jobTicket->pesanans,
+            'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
         ])->setPaper('a4', 'portrait');
 

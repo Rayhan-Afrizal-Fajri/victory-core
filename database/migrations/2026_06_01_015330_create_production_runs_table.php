@@ -14,12 +14,11 @@ return new class extends Migration
         Schema::create('production_runs', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('pesanan_id')
-                ->constrained('pesanan')
+            $table->foreignId('job_ticket_id')
+                ->constrained('job_tickets')
                 ->cascadeOnDelete();
 
             $table->enum('type', ['sample', 'production']);
-            $table->integer('quantity')->default(0);
 
             $table->enum('status', [
                 'draft',

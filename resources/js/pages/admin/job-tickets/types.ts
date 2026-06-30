@@ -47,21 +47,16 @@ export interface DesignRevision {
   id: number;
   pesanan_id?: number;
   designer_id?: number;
-
   file_path?: string;
-  note?: string; // legacy / optional
-  revision_note?: string | null; // legacy dari tabel lama
-
+  note?: string; 
+  revision_note?: string | null;
   customer_revision_note?: string | null;
   designer_revision_note?: string | null;
-
   status?: DesignStatus;
-  approved?: boolean; // legacy / optional
-
+  approved?: boolean; 
   uploaded_at?: string | null;
   approved_at?: string | null;
   approved_by?: number | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -72,7 +67,6 @@ export interface SampleMedia {
   file_path: string;
   type: 'image' | 'video';
   caption?: string | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -80,62 +74,49 @@ export interface SampleMedia {
 export interface SampleDelivery {
   id: number;
   sample_id: number;
-
   courier_name?: string | null;
   tracking_number?: string | null;
   tracking_url?: string | null;
-
   status: SampleDeliveryStatus;
-
   sent_at?: string | null;
   received_at?: string | null;
-
   delivery_note?: string | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
 
 export interface Payment {
   id: number;
-
-  // field baru sesuai tabel payments
   invoice_id?: number;
   tgl_bayar?: string;
   jumlah_bayar?: number;
   metode_pembayaran?: string;
   bukti_transfer_path?: string | null;
   catatan_finance?: string | null;
-
   status?: PaymentStatus;
   rejection_note?: string | null;
-
   verified_by?: number | null;
   verified_at?: string | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
 
 export interface Invoice {
   id: number;
-
-  // field baru sesuai tabel invoices
-  pesanan_id?: number;
+  job_ticket_id?: number; // BERUBAH: Naik level ke Job Ticket
+  jobTicket?: JobTicket;
   no_invoice?: string;
   kategori_invoice?: string;
   total_tagihan?: number;
   status_tagihan?: InvoiceStatus;
   tgl_jatuh_tempo?: string;
-
   payments?: Payment[];
-
-  // field lama agar kode existing tidak langsung error
+  
+  // legacy (jika masih dipanggil di frontend)
   title?: string;
   amount?: number;
   status?: string;
-  issued_at?: string | null;
-
+  due_date?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -143,33 +124,25 @@ export interface Invoice {
 export interface Sample {
   id: number;
   pesanan_id?: number;
-
   qty: number;
   sample_price?: number;
   invoice_id?: number | null;
-
   parent_sample_id?: number | null;
   revision_number?: number;
   is_chargeable?: boolean;
-
   status: SampleStatus | string;
-
   catatan?: string | null;
   customer_review_note?: string | null;
   internal_note?: string | null;
-
   created_by?: number | null;
   created_sample_at?: string | null;
   paid_at?: string | null;
-
   sent_at?: string | null;
   approved_at?: string | null;
   approved_by?: number | null;
-
   invoice?: Invoice | null;
   media?: SampleMedia[];
   delivery?: SampleDelivery | null;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -188,28 +161,21 @@ export interface MaterialReceiving {
 export interface PurchasingItem {
   id: number;
   pesanan_material_spec_id?: number;
-
+  pesanan_id?: number;
   item: string;
   supplier?: Supplier | string | null;
-
   supplier_id?: number | null;
-
   qty_bahan: number;
   ordered_qty: number;
   received_qty: number;
   remaining_qty?: number;
-
   unit?: string | null;
-
   harga_satuan?: number;
   total_harga?: number;
   tgl_pembelian?: string | null;
-
   status?: string;
-
   purchase_scope?: string;
   notes?: string
-
   material_receivings?: MaterialReceiving[];
 }
 
@@ -222,21 +188,15 @@ export interface WorkflowUser {
 
 export interface WorkflowHistory {
   id: number;
-
   pesanan_id?: number;
   user_id?: number | null;
-
   step?: string;
   action: string;
-
   notes?: string | null;
-  note?: string; // legacy
-
+  note?: string; 
   user?: WorkflowUser | null;
-
   actor?: string;
   role?: Role;
-
   created_at: string;
   updated_at?: string | null;
 }
@@ -261,41 +221,31 @@ export interface OrderSpecification {
 export interface WorkflowStatus {
   id?: number;
   pesanan_id?: number;
-
   design_uploaded?: boolean;
   design_approved?: boolean;
   article_synced?: boolean;
   design_specs_completed?: boolean;
-
   quotation_created?: boolean;
   quotation_approved?: boolean;
-
   sample_created?: boolean;
   sample_paid?: boolean;
   sample_delivered?: boolean;
   sample_approved?: boolean;
-
   production_invoice_created?: boolean;
   production_dp_paid?: boolean;
-
   materials_purchased?: boolean;
   materials_received?: boolean;
   materials_distributed?: boolean;
-
   sample_materials_ready?: boolean;
   production_materials_ready?: boolean;
-
   production_started?: boolean;
   production_completed?: boolean;
   production_payment_verified?: boolean;
-
   qc_completed?: boolean;
   packing_completed?: boolean;
-
   final_payment_paid?: boolean;
   delivered?: boolean;
   completed?: boolean;
-
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -326,10 +276,16 @@ export interface Supplier {
   alamat:string;
 }
 
+export interface SupplierOption {
+  value: number;
+  label: string;
+}
+
 export interface SizeBreakdown {
   id: number;
   color?: string;
   size_label?: string;
+  fabric_spec?: string;
   qty?: number;
 }
 
@@ -354,6 +310,7 @@ export interface MaterialSpec {
   roll_qty?: number | null;
   price_type?: string | null;
   cost_per_piece?: number | null;
+  cost_per_pcs?: number | null;
 }
 
 export interface ManufacturingSpec {
@@ -372,10 +329,12 @@ export interface ManufacturingSpec {
 
 export interface ProductionRunProcess {
   id: number;
+  pesanan_id: number;
   work_name: string;
   sequence: number;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   qc_status?: 'pending' | 'passed' | 'failed' | null;
+  quantity: number;
   checked_qty?: number | null;
   passed_qty?: number | null;
   defect_qty?: number | null;
@@ -406,6 +365,7 @@ export interface ProductionRun {
 
 export interface QuotationItem {
   id: number;
+  pesanan_id?: number; // Tautkan item ini ke pesanan yang mana
   item_name: string;
   fabric?: string | null;
   print_method?: string | null;
@@ -419,7 +379,7 @@ export interface Quotation {
   quotation_number: string;
   status: string;
   valid_until?: string | null;
-  sample_qty?: number;
+  sample_qty?: number | null;
   payment_terms?: string;
   delivery_terms?: string;
   notes?: string | null;
@@ -435,89 +395,63 @@ export interface Quotation {
   items?: QuotationItem[];
 }
 
-export interface JobTicket {
+/** * NEW: Pesanan (Order) entity
+ * Menyimpan data spesifik per produk dalam 1 Job Ticket
+ */
+export interface Pesanan {
   id: number;
-
-  order_number: string;
   product_name: string;
-
-  customer: Customer;
-
-  quantity?: number;
+  requested_product_name: string;
+  quantity: number;
   sample_qty?: number;
-  deadline?: string | null;
-  priority?: string;
-
-  progressPercent?: number;
-
-  created_at?: string | null;
-  updated_at?: string | null;
-
-  status?: string;
-
   price_per_piece?: number;
   estimated_hpp_per_piece?: number;
+  status?: string;
 
-  // specifications
-  specs?: OrderSpecification[]; // legacy kalau masih ada
-  specifications?: OrderSpecification[]; // relasi yang kita pakai sekarang
-
-  // design
-  designs?: DesignRevision[];
-
-  //quotation
-  quotations?: Quotation;
-
-  // sample
-  samples?: Sample[];
-
-  // finance
-  invoices?: Invoice[];
-  payments?: Payment[];
-
-  // purchasing
-  purchasings?: PurchasingItem[];
-
-  //sample production
-  sampleRun?: ProductionRun | null;
-
-  //production
-  productionRun?: ProductionRun | null;
-
-  // production / QC / packing / delivery
-  qc?: {
-    reject_count: number;
-  };
-
-  packing?: {
-    weight?: number;
-    dimensions?: string;
-  };
-
-  delivery?: {
-    address?: string;
-    delivered_at?: string | null;
-    tracking_number?: string;
-  };
-
-  // workflow logs
-  activity_logs?: WorkflowHistory[]; // legacy
-  workflowHistories?: WorkflowHistory[]; // kalau backend pakai camelCase
-  workflow_history?: WorkflowHistory[]; // kalau backend return snake_case
-
-  productionProgress?: ProductionProgress | null;
-  production_progress?: ProductionProgress | null;
-
-  attachments?: Attachment[];
-
-  workflow_status?: WorkflowStatus;
-  workflowStatus?: WorkflowStatus; // optional kalau backend return camelCase
-
+  product?: ProductOption | null;
   size_breakdowns?: SizeBreakdown[];
+  workflow_status?: WorkflowStatus;
+  
+  productionProgress?: ProductionProgress | null;
 
-  product?: ProductOption;
-
+  specs?: OrderSpecification[];
+  designs?: DesignRevision[];
+  samples?: Sample[];
+  purchasings?: PurchasingItem[];
   material_specs?: MaterialSpec[];
   manufacturing_specs?: ManufacturingSpec[];
+  attachments?: Attachment[];
 }
 
+export interface CompanyProfile {
+  id: number;
+  company_name: string;
+  company_type: string;
+  bank_type: string;
+  account_number: string;
+  address: string;
+  tax_percentage: number;
+}
+
+/** * UPDATED: JobTicket root entity 
+ */
+export interface JobTicket {
+  id: number;
+  no_job_ticket: string; // Updated dari order_number
+  customer: Customer;
+  company_profile: CompanyProfile;
+  deadline?: string | null;
+  customer_notes?: string | null;
+  status?: string;
+  created_at?: string | null;
+  
+  // Array Global di Job Ticket
+  invoices?: Invoice[];
+  quotations?: Quotation[];
+  sample_run?: ProductionRun | null;
+  production_run?: ProductionRun | null;
+  workflow_histories?: WorkflowHistory[] | null;
+  
+  // Anak dari Job Ticket (Pesanans)
+  orders: Pesanan[];
+}

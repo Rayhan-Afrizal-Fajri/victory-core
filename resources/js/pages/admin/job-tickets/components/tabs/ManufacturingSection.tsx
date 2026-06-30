@@ -1,6 +1,7 @@
 import React from 'react';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/button';
+import { formatNumber } from '@/helpers/format';
 
 // Renders manufacturing specs table with cost estimates.
 function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdit: (items: any) => void; onDelete?: (items: any) => void }) {
@@ -27,7 +28,7 @@ function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdi
                             {items.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{item.work_name}</td>
-                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.usage}</td>
+                                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{formatNumber(item.usage)}</td>
                                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.unit || '-'}</td>
                                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.usage_note || '-'}</td>
                                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{item.vendor || '-'}</td>

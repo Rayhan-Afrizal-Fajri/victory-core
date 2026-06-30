@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Quotation extends Model
 {
     protected $fillable = [
-        'pesanan_id',
+        'job_ticket_id',
         'quotation_number',
         'status',
         'valid_until',
@@ -33,9 +33,9 @@ class Quotation extends Model
         'approved_at' => 'datetime',
     ];
 
-    public function pesanan()
+    public function jobTicket()
     {
-        return $this->belongsTo(Pesanan::class);
+        return $this->belongsTo(JobTicket::class);
     }
 
     public function createdBy()

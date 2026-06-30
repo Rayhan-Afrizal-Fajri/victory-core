@@ -10,6 +10,7 @@ class PesananSizeBreakdown extends Model
         'pesanan_id',
         'color',
         'size_label',
+        'fabric_spec',
         'qty',
         'sort_order',
     ];

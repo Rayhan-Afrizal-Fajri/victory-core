@@ -8,6 +8,7 @@ class QuotationItem extends Model
 {
     protected $fillable = [
         'quotation_id',
+        'pesanan_id',
         'item_name',
         'fabric',
         'print_method',
@@ -19,5 +20,10 @@ class QuotationItem extends Model
     public function quotation()
     {
         return $this->belongsTo(Quotation::class);
+    }
+
+    public function pesanan()
+    {
+        return $this->belongsTo(Pesanan::class);
     }
 }

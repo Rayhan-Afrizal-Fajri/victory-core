@@ -48,7 +48,7 @@ class PesananManufacturingSpecController extends Controller
                 'process_behavior' => $validated['process_behavior'] ?? 'production_process',
             ]);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'manufacturing_spec_created',
                 'user_id' => Auth::id(),
@@ -97,7 +97,7 @@ class PesananManufacturingSpecController extends Controller
                 'process_behavior' => $validated['process_behavior'] ?? $spec->process_behavior ?? 'production_process',
             ]);
 
-            $spec->pesanan->workflowHistory()->create([
+            $spec->pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'manufacturing_spec_updated',
                 'user_id' => Auth::id(),
@@ -122,7 +122,7 @@ class PesananManufacturingSpecController extends Controller
 
             $spec->delete();
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'manufacturing_spec_deleted',
                 'user_id' => Auth::id(),

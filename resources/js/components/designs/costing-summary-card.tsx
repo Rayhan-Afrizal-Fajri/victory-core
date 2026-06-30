@@ -1,50 +1,80 @@
+import React, { useEffect } from "react";
 import { formatCurrency } from "@/helpers/format";
 import { useCan } from "@/hooks/use-can";
 import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import FormattedNumberInput from "../ui/formatted-number-input";
 import { Button } from "../ui/button";
+import { Pesanan } from "@/pages/admin/job-tickets/types";
 
 function CostingSummaryCard({
-    orderQty,
-    summary,
     form,
     onSubmit,
-    job
+    activeOrder
 }: {
-    orderQty: number;
-    summary: any;
     form: any;
     onSubmit: (e: React.FormEvent) => void;
-    job?: any
+    activeOrder: Pesanan;
 }) {
     const can = useCan();
+    
+    // 1. Ambil Quantity Order
+    const orderQty = activeOrder?.quantity || 0;
+
+    // 2. Kalkulasi Costing secara dinamis dari spesifikasi yang sudah diinput
+    const materialCostPerPcs = activeOrder?.material_specs?.reduce(
+        (sum, spec) => sum + (Number(spec.cost_per_pcs || spec.cost_per_piece) || 0), 0
+    ) || 0;
+
+    const manufacturingCostPerPcs = activeOrder?.manufacturing_specs?.reduce(
+        (sum, spec) => sum + (Number(spec.cost_per_pcs) || 0), 0
+    ) || 0;
+
+    const hppPerPcs = materialCostPerPcs + manufacturingCostPerPcs;
+    const totalHpp = hppPerPcs * orderQty;
+
+    // 3. Kalkulasi Rekomendasi Harga (Rumus Margin: Harga = HPP / (1 - Margin%))
+    const recommendations = {
+        25: hppPerPcs / (1 - 0.25),
+        30: hppPerPcs / (1 - 0.30),
+        35: hppPerPcs / (1 - 0.35),
+        40: hppPerPcs / (1 - 0.40),
+    };
+
+    // 4. Kalkulasi Profit aktual berdasarkan input user
     const ownerPrice = Number(form.data.harga_jual_per_pcs || 0);
-    const profitPerPcs = Math.max(ownerPrice - summary.hppPerPcs, 0);
+    const profitPerPcs = Math.max(ownerPrice - hppPerPcs, 0);
     const totalSelling = ownerPrice * orderQty;
     const totalProfit = profitPerPcs * orderQty;
     const margin =
         ownerPrice > 0
-            ? ((ownerPrice - summary.hppPerPcs) / ownerPrice) * 100
+            ? ((ownerPrice - hppPerPcs) / ownerPrice) * 100
             : 0;
+
+    // 5. Sinkronisasi estimasi HPP ke Form untuk dikirim ke backend
+    useEffect(() => {
+        if (form.data.estimasi_hpp_per_pcs !== hppPerPcs) {
+            form.setData('estimasi_hpp_per_pcs', hppPerPcs);
+        }
+    }, [hppPerPcs]);
 
     return (
         <SectionCard title="Costing Summary & Rekomendasi Harga Jual per pcs">
             <div className="grid gap-4 md:grid-cols-4">
                 <SummaryBox
                     label="Bahan / pcs"
-                    value={formatCurrency(summary.materialCostPerPcs)}
+                    value={formatCurrency(materialCostPerPcs)}
                 />
                 <SummaryBox
                     label="Manufaktur / pcs"
-                    value={formatCurrency(summary.manufacturingCostPerPcs)}
+                    value={formatCurrency(manufacturingCostPerPcs)}
                 />
                 <SummaryBox
                     label="Modal / HPP per pcs"
-                    value={formatCurrency(summary.hppPerPcs)}
+                    value={formatCurrency(hppPerPcs)}
                 />
                 <SummaryBox
                     label="Total Modal"
-                    value={formatCurrency(summary.totalHpp)}
+                    value={formatCurrency(totalHpp)}
                 />
             </div>
 
@@ -54,24 +84,24 @@ function CostingSummaryCard({
                 </p>
 
                 <div className="grid gap-3 md:grid-cols-4">
-                    {[25, 30, 35, 40].map((margin) => (
+                    {[25, 30, 35, 40].map((marginValue) => (
                         <button
-                            key={margin}
+                            key={marginValue}
                             type="button"
                             disabled={!can('design.set_selling_price')}
                             onClick={() =>
                                 form.setData(
                                     'harga_jual_per_pcs',
-                                    Math.ceil(summary.recommendations[margin] || 0)
+                                    Math.ceil(recommendations[marginValue as keyof typeof recommendations] || 0)
                                 )
                             }
                             className="cursor-pointer rounded-xl border bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50"
                         >
                             <p className="text-xs text-slate-500">
-                                Margin {margin}%
+                                Margin {marginValue}%
                             </p>
                             <p className="mt-1 text-lg font-bold text-slate-900">
-                                {formatCurrency(summary.recommendations[margin] || 0)}
+                                {formatCurrency(recommendations[marginValue as keyof typeof recommendations] || 0)}
                             </p>
                         </button>
                     ))}
@@ -109,7 +139,7 @@ function CostingSummaryCard({
                     <SummaryBox
                         label="Estimasi Margin"
                         value={`${Math.max(margin, 0).toFixed(1)}%`}
-                        danger={margin < 25}
+                        danger={margin < 25 && ownerPrice > 0}
                     />
 
                     <SummaryBox
@@ -130,7 +160,10 @@ function CostingSummaryCard({
                 </div>
 
                 <div className="flex justify-end border-t pt-4">
-                    <Button type="submit" disabled={form.processing || !can('design.set_selling_price') || job?.workflow_status?.quotation_created}>
+                    <Button 
+                        type="submit" 
+                        disabled={form.processing || !can('design.set_selling_price') || activeOrder?.workflow_status?.quotation_created}
+                    >
                         Simpan Harga Jual Final
                     </Button>
                 </div>

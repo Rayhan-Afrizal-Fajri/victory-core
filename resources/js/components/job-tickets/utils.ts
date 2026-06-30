@@ -1,11 +1,11 @@
-type WorkflowStatus = Record<string, boolean | number | null | undefined>;
+import type { WorkflowStatus } from '../../pages/admin/job-tickets/types';
 
 const workflowProgressSteps = [
     {
         key: 'order_entry',
         label: 'Order Entry',
         weight: 5,
-        isDone: (w: WorkflowStatus) => Boolean(w.order_entry || w.pesanan_id),
+        isDone: (w: WorkflowStatus) => Boolean(w.pesanan_id),
     },
     {
         key: 'design',
@@ -115,9 +115,7 @@ export function getWorkflowProgress(workflow?: WorkflowStatus | null) {
         };
     }
 
-    const totalWeight = workflowProgressSteps.reduce((sum, step) => {
-        return sum + step.weight;
-    }, 0);
+    const totalWeight = workflowProgressSteps.reduce((sum, step) => sum + step.weight, 0);
 
     const completedWeight = workflowProgressSteps.reduce((sum, step) => {
         return sum + (step.isDone(workflow) ? step.weight : 0);

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import SpecSection from './SpecSection';
 import ManufacturingSection from './ManufacturingSection';
+import type { Pesanan } from '../../types';
 
 function DesignSpecsPreview({
     materialSpecs,
@@ -14,7 +14,7 @@ function DesignSpecsPreview({
     onCreateManufacturing,
     onDeleteMaterial,
     onDeleteManufacturing,
-    job
+    activeOrder
 }: {
     materialSpecs: any[];
     manufacturingSpecs: any[];
@@ -24,11 +24,11 @@ function DesignSpecsPreview({
     onCreateManufacturing?: () => void;
     onDeleteMaterial?: (spec: any) => void;
     onDeleteManufacturing?: (spec: any) => void;
-    job?: any;
+    activeOrder: Pesanan;
 }) {
     const bahan = materialSpecs.filter((item) => item.type === 'bahan');
     const aksesoris = materialSpecs.filter((item) => item.type === 'aksesoris');
-    const workflow = job?.workflow_status;
+    const workflow = activeOrder?.workflow_status || {};
 
     return (
         <div className="space-y-4">
@@ -40,8 +40,7 @@ function DesignSpecsPreview({
                         onClick={onCreateMaterial}
                         disabled={workflow.quotation_created}
                     >
-                        <Plus className="size-4" />
-                        Tambah Bahan / Aksesoris
+                        <Plus className="size-4 mr-2" /> Tambah Bahan / Aksesoris
                     </Button>
                 )}
 
@@ -53,21 +52,20 @@ function DesignSpecsPreview({
                         onClick={onCreateManufacturing}
                         disabled={workflow.quotation_created}
                     >
-                        <Plus className="size-4" />
-                        Tambah Manufaktur
+                        <Plus className="size-4 mr-2" /> Tambah Manufaktur
                     </Button>
                 )}
             </div>
 
             <SpecSection
-                title="Bahan"
+                title="Bahan Baku"
                 items={bahan}
                 onEdit={onEditMaterial}
                 onDelete={onDeleteMaterial}
             />
 
             <SpecSection
-                title="Aksesoris"
+                title="Aksesoris Tambahan"
                 items={aksesoris}
                 onEdit={onEditMaterial}
                 onDelete={onDeleteMaterial}

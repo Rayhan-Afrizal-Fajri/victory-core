@@ -357,7 +357,7 @@ export default function Index({ suppliers }: Props) {
       </div>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="right" className="max-w-2xl">
+        <SheetContent side="right" className="max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Supplier Detail</SheetTitle>
             <SheetDescription>

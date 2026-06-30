@@ -22,8 +22,8 @@ class ProductController extends Controller
                 'productMaterials as accessories_count' => fn ($q) => $q->where('type', 'aksesoris'),
                 'productManufacturingWorks as manufacturing_count'
             ])
-            ->latest()
-            ->paginate(15);
+            ->latest()->get();
+            // ->paginate(10);
 
         $products = $products->map(fn ($product) => [
             'id' => $product->id,

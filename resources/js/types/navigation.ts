@@ -1,3 +1,4 @@
+import { RouteDefinition } from '@/wayfinder';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -12,3 +13,9 @@ export type NavItem = {
     icon?: LucideIcon | null;
     isActive?: boolean;
 };
+
+export type NavItemProps = {
+    label: string;
+    href: RouteDefinition<"get">;
+    icon?: React.ComponentType<{ className?: string }>;
+}

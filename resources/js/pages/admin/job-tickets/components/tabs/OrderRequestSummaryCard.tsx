@@ -1,26 +1,28 @@
 import React from 'react';
 import SectionCard from '../SectionCard';
 import InfoBox from './InfoBox';
+import type { Pesanan } from '../../types';
 
-// Displays a compact summary of the customer's order request and size breakdown.
-function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakdowns: any[] }) {
-    // Calculate the total quantity across all size breakdown rows.
-    const totalSize = sizeBreakdowns.reduce((total, row) => {
-        return total + Number(row.qty || 0);
-    }, 0);
+function OrderRequestSummaryCard({ activeOrder }: { activeOrder: Pesanan }) {
+    // Karena kita sudah memparsing size_breakdowns ke activeOrder, kita bisa langsung mapping
+    const sizeBreakdowns = activeOrder.size_breakdowns || [];
+    const totalSize = sizeBreakdowns.reduce((total, row) => total + Number(row.qty || 0), 0);
 
     return (
         <SectionCard title="Request Customer">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <InfoBox
                     label="Produk Diminta"
-                    value={job.requested_product_name || job.product_name || '-'}
+                    value={activeOrder.requested_product_name || activeOrder.product_name || '-'}
                 />
                 <InfoBox
-                    label="Quantity"
-                    value={`${job.quantity || job.q || 0} pcs`}
+                    label="Quantity Massal"
+                    value={`${activeOrder.quantity || 0} pcs`}
                 />
-                <InfoBox label="Deadline" value={job.deadline || '-'} />
+                <InfoBox 
+                    label="Quantity Sample" 
+                    value={`${activeOrder.sample_qty || 0} pcs`} 
+                />
                 {totalSize > 0 && (
                     <InfoBox
                         label="Total Size Breakdown"
@@ -34,30 +36,19 @@ function OrderRequestSummaryCard({ job, sizeBreakdowns }: { job: any; sizeBreakd
                     <p className="mb-3 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                         Size Breakdown
                     </p>
-
-                    <div className="grid gap-2 md:grid-cols-4">
+                    <div className="flex flex-wrap gap-2">
                         {sizeBreakdowns.map((row) => (
                             <div
                                 key={row.id || `${row.color}-${row.size_label}`}
-                                className="rounded-lg border bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+                                className="rounded-lg border bg-white px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950"
                             >
-                                <p className="font-semibold text-slate-900 dark:text-white">
-                                    {row.color ? `${row.color} / ` : ''}
-                                    {row.size_label}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{row.qty} pcs</p>
+                                <span className="font-semibold text-slate-900 dark:text-white mr-2">
+                                    {row.color ? `${row.color} / ` : ''}{row.fabric_spec ? `${row.fabric_spec} / ` : ''}{row.size_label ? `${row.size_label}  ` : ''}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{row.qty} pcs</span>
                             </div>
                         ))}
                     </div>
-                </div>
-            )}
-
-            {(job.customer_notes || job.keterangan_tambahan) && (
-                <div className="mt-4 rounded-xl border bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                        Catatan Customer
-                    </p>
-                    {job.customer_notes || job.keterangan_tambahan}
                 </div>
             )}
         </SectionCard>

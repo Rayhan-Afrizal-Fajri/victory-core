@@ -3,55 +3,82 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
+use App\Models\JobTicket;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\Pesanan;
-use App\Models\Invoice;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-
     public function index()
     {
-        $orders = Pesanan::query()
+        $user = Auth::user();
+
+        $isAdmin = $user->can('dashboard.admin');
+
+        $ordersQuery = JobTicket::query()
             ->with([
                 'customer',
-                'workflowStatus',
-            ])
-            ->get();
+                'pesanans.workflowStatus',
+            ]);
+
+        /**
+         * Jika bukan admin, filter berdasarkan customer milik user login.
+         */
+        if (! $isAdmin) {
+            $ordersQuery->where('customer_id', $user->customer?->id);
+        }
+
+        $orders = $ordersQuery->get();
 
         $totalOrders = $orders->count();
 
-        $activeOrders = $orders->filter(function ($order) {
-            return ! ($order->workflowStatus?->completed ?? false);
-        })->count();
+        $activeOrders = $orders
+            ->filter(fn ($order) => ! $this->isJobTicketCompleted($order))
+            ->count();
 
-        $totalGop = Invoice::query()
-            ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled'])
-            ->sum('total_tagihan');
+        /**
+         * Invoice sekarang berada di level JobTicket.
+         */
+        $invoiceQuery = Invoice::query()
+            ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled']);
 
-        $deadlineUnderThreeDays = $orders->filter(function ($order) {
-            if (! $order->deadline) {
-                return false;
-            }
+        if (! $isAdmin) {
+            $invoiceQuery->whereHas('jobTicket', function ($query) use ($user) {
+                $query->where('customer_id', $user->customer?->id);
+            });
+        }
 
-            $deadline = Carbon::parse($order->deadline)->startOfDay();
-            $today = now()->startOfDay();
+        $totalRevenue = $invoiceQuery->sum('total_tagihan');
 
-            return $deadline->greaterThanOrEqualTo($today)
-                && $deadline->diffInDays($today) <= 3
-                && ! ($order->workflowStatus?->completed ?? false);
-        })->count();
+        $deadlineUnderThreeDays = $orders
+            ->filter(function ($order) {
+                if (! $order->deadline) {
+                    return false;
+                }
+
+                if ($this->isJobTicketCompleted($order)) {
+                    return false;
+                }
+
+                $deadline = Carbon::parse($order->deadline)->startOfDay();
+                $today = now()->startOfDay();
+
+                return $deadline->greaterThanOrEqualTo($today)
+                    && $today->diffInDays($deadline) <= 3;
+            })
+            ->count();
 
         $statusItems = $this->buildStatusDistribution($orders);
 
         $deadlineOrders = $orders
             ->filter(fn ($order) => $order->deadline)
+            ->reject(fn ($order) => $this->isJobTicketCompleted($order))
             ->sortBy(fn ($order) => Carbon::parse($order->deadline))
             ->take(5)
             ->map(function ($order) {
-                $status = $this->getWorkflowStatusLabel($order->workflowStatus);
+                $status = $this->getJobTicketStatusLabel($order);
 
                 return [
                     'id' => $order->id,
@@ -60,8 +87,17 @@ class DashboardController extends Controller
                         ?? $order->customer?->nama
                         ?? $order->customer_perusahaan_snapshot
                         ?? '-',
-                    'product' => ($order->requested_product_name ?: $order->produk ?: '-')
-                        . ' (' . (int) ($order->quantity ?: $order->q ?: 0) . ' pcs)',
+
+                    /**
+                     * Untuk dashboard, tampilkan ringkasan banyak artikel.
+                     */
+                    'pesanan' => $this->getPesananSummary($order),
+
+                    /**
+                     * Kalau frontend masih pakai key product, isi juga.
+                     */
+                    'product' => $this->getPesananSummary($order),
+
                     'status' => $status,
                     'deadline' => $order->deadline,
                     'daysLeft' => $this->getDaysLeftLabel($order->deadline),
@@ -69,44 +105,53 @@ class DashboardController extends Controller
             })
             ->values();
 
+        $summaryCards = [
+            [
+                'key' => 'total_orders',
+                'title' => 'Total Job Ticket',
+                'value' => $totalOrders,
+                'type' => 'total',
+            ],
+            [
+                'key' => 'active_orders',
+                'title' => 'Job Ticket Aktif',
+                'value' => $activeOrders,
+                'type' => 'active',
+            ],
+        ];
+
+        if ($isAdmin) {
+            array_push(
+                $summaryCards,
+                [
+                    'key' => 'total_revenue',
+                    'title' => 'Total Revenue',
+                    'value' => 'Rp ' . number_format($totalRevenue, 0, ',', '.'),
+                    'type' => 'money',
+                ],
+                [
+                    'key' => 'deadline_soon',
+                    'title' => 'Deadline < 3 hari',
+                    'value' => $deadlineUnderThreeDays,
+                    'type' => 'warning',
+                ],
+            );
+        }
+
         return Inertia::render('dashboard', [
             'dashboard' => [
-                'summaryCards' => [
-                    [
-                        'key' => 'total_orders',
-                        'title' => 'Total Pesanan',
-                        'value' => $totalOrders,
-                        'type' => 'total',
-                    ],
-                    [
-                        'key' => 'active_orders',
-                        'title' => 'Pesanan Aktif',
-                        'value' => $activeOrders,
-                        'type' => 'active',
-                    ],
-                    [
-                        'key' => 'total_gop',
-                        'title' => 'Total Revenue',
-                        'value' => 'Rp ' . number_format($totalGop, 0, ',', '.'),
-                        'type' => 'money',
-                    ],
-                    [
-                        'key' => 'deadline_soon',
-                        'title' => 'Deadline < 3 hari',
-                        'value' => $deadlineUnderThreeDays,
-                        'type' => 'warning',
-                    ],
-                ],
+                'summaryCards' => $summaryCards,
                 'statusItems' => $statusItems,
                 'deadlineOrders' => $deadlineOrders,
             ],
-            'user' => Auth::user(),
+            'user' => $user,
         ]);
     }
 
     private function buildStatusDistribution($orders): array
     {
         $statusMap = [
+            'Order Entry' => 0,
             'Design' => 0,
             'Quotation' => 0,
             'Sample Payment' => 0,
@@ -120,7 +165,7 @@ class DashboardController extends Controller
         ];
 
         foreach ($orders as $order) {
-            $status = $this->getWorkflowStatusLabel($order->workflowStatus);
+            $status = $this->getJobTicketStatusLabel($order);
 
             if (isset($statusMap[$status])) {
                 $statusMap[$status]++;
@@ -143,22 +188,118 @@ class DashboardController extends Controller
             ->toArray();
     }
 
-    private function getWorkflowStatusLabel($workflow): string
+    /**
+     * Status Job Ticket dihitung dari semua pesanan di dalamnya.
+     */
+    private function getJobTicketStatusLabel($jobTicket): string
     {
-        if (! $workflow) return 'Design';
+        $pesanans = $jobTicket->pesanans ?? collect();
 
-        if ($workflow->completed) return 'Done';
-        if ($workflow->delivered) return 'Delivery';
-        if ($workflow->packing_completed) return 'Packing';
-        if ($workflow->production_completed || $workflow->production_started) return 'Produksi';
-        if ($workflow->production_dp_paid || $workflow->production_invoice_created) return 'Production Payment';
-        if ($workflow->sample_approved || $workflow->sample_delivered || $workflow->sample_created) return 'Sample';
-        if ($workflow->materials_received || $workflow->materials_purchased) return 'Purchasing';
-        if ($workflow->sample_paid) return 'Sample Payment';
-        if ($workflow->quotation_approved) return 'Quotation';
-        if ($workflow->design_approved) return 'Design';
+        if ($pesanans->isEmpty()) {
+            return 'Order Entry';
+        }
 
-        return 'Design';
+        $workflows = $pesanans
+            ->pluck('workflowStatus')
+            ->filter();
+
+        if ($workflows->isEmpty()) {
+            return 'Order Entry';
+        }
+
+        /**
+         * Jika semua artikel completed, maka Job Ticket Done.
+         */
+        if (
+            $workflows->count() === $pesanans->count() &&
+            $workflows->every(fn ($workflow) => (bool) $workflow->completed)
+        ) {
+            return 'Done';
+        }
+
+        /**
+         * Selain Done, status Job Ticket mengikuti progress terjauh
+         * dari salah satu artikel/pesanan.
+         */
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->delivered)) {
+            return 'Delivery';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->packing_completed)) {
+            return 'Packing';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->production_completed || (bool) $workflow->production_started)) {
+            return 'Produksi';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->production_dp_paid || (bool) $workflow->production_invoice_created)) {
+            return 'Production Payment';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->sample_approved || (bool) $workflow->sample_delivered || (bool) $workflow->sample_created)) {
+            return 'Sample';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->materials_received || (bool) $workflow->materials_purchased)) {
+            return 'Purchasing';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->sample_paid)) {
+            return 'Sample Payment';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->quotation_approved || (bool) $workflow->quotation_created)) {
+            return 'Quotation';
+        }
+
+        if ($workflows->contains(fn ($workflow) => (bool) $workflow->design_approved || (bool) $workflow->design_uploaded || (bool) $workflow->article_synced)) {
+            return 'Design';
+        }
+
+        return 'Order Entry';
+    }
+
+    private function isJobTicketCompleted($jobTicket): bool
+    {
+        $pesanans = $jobTicket->pesanans ?? collect();
+
+        if ($pesanans->isEmpty()) {
+            return false;
+        }
+
+        return $pesanans->every(function ($pesanan) {
+            return (bool) ($pesanan->workflowStatus?->completed ?? false);
+        });
+    }
+
+    private function getPesananSummary($jobTicket): string
+    {
+        $pesanans = $jobTicket->pesanans ?? collect();
+
+        if ($pesanans->isEmpty()) {
+            return 'Belum ada artikel';
+        }
+
+        $totalQty = $pesanans->sum(fn ($pesanan) => (int) ($pesanan->q ?? 0));
+        $articleCount = $pesanans->count();
+
+        $preview = $pesanans
+            ->take(2)
+            ->map(function ($pesanan) {
+                $name = $pesanan->produk
+                    ?: $pesanan->requested_product_name
+                    ?: 'Artikel';
+
+                return $name . ' (' . (int) ($pesanan->q ?? 0) . ' pcs)';
+            })
+            ->implode(', ');
+
+        if ($articleCount > 2) {
+            $preview .= ', +' . ($articleCount - 2) . ' artikel lain';
+        }
+
+        return "{$preview} · Total {$totalQty} pcs";
     }
 
     private function getDaysLeftLabel(?string $deadline): string
@@ -184,6 +325,7 @@ class DashboardController extends Controller
     private function getStatusColorClass(string $status): string
     {
         return match ($status) {
+            'Order Entry' => 'bg-slate-500',
             'Design' => 'bg-blue-500',
             'Quotation' => 'bg-amber-500',
             'Sample Payment' => 'bg-cyan-500',
@@ -193,7 +335,7 @@ class DashboardController extends Controller
             'Produksi' => 'bg-emerald-500',
             'Packing' => 'bg-purple-500',
             'Delivery' => 'bg-green-600',
-            'Done' => 'bg-slate-500',
+            'Done' => 'bg-slate-700',
             default => 'bg-slate-500',
         };
     }
@@ -201,6 +343,7 @@ class DashboardController extends Controller
     private function getStatusChipClass(string $status): string
     {
         return match ($status) {
+            'Order Entry' => 'bg-slate-100 text-slate-700',
             'Design' => 'bg-blue-100 text-blue-700',
             'Quotation' => 'bg-amber-100 text-amber-700',
             'Sample Payment' => 'bg-cyan-100 text-cyan-700',

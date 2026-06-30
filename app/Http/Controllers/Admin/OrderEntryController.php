@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\DefaultSizeBreakdown;
+use App\Models\JobTicket;
 use App\Models\Pesanan;
 use App\Models\User;
+use App\Models\CompanyProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,97 +17,109 @@ use Illuminate\Validation\ValidationException;
 
 class OrderEntryController extends Controller
 {
-    private function orderEntryRules(?Pesanan $pesanan = null): array
+    /**
+     * Rules Validation (Mendukung Multiple Orders)
+     */
+    private function orderEntryRules(): array
     {
         return [
-            'no_job_ticket' => [
-                'required',
-                'string',
-                'max:100',
-            ],
-
+            'no_job_ticket' => ['required', 'string', 'max:100'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-
+            'company_profile_id' => ['nullable', 'exists:company_profiles,id'],
             'new_customer_name' => ['nullable', 'string', 'max:255'],
             'new_customer_company' => ['nullable', 'string', 'max:255'],
             'new_customer_email' => ['nullable', 'email', 'max:255'],
             'new_customer_phone' => ['nullable', 'string', 'max:50'],
             'new_customer_address' => ['nullable', 'string'],
-
-            'requested_product_name' => ['required', 'string', 'max:255'],
-            'q' => ['required', 'integer', 'min:1'],
             'deadline' => ['required', 'date'],
             'customer_notes' => ['nullable', 'string'],
 
-            'size_breakdowns' => ['nullable', 'array'],
-            'size_breakdowns.*.color' => ['nullable', 'string', 'max:100'],
-            'size_breakdowns.*.size_label' => [
-                'required_with:size_breakdowns',
-                'nullable',
-                'string',
-                'max:50',
-            ],
-            'size_breakdowns.*.qty' => [
-                'required_with:size_breakdowns',
-                'nullable',
-                'integer',
-                'min:1',
-            ],
+            // Validasi Array Multiple Orders
+            'orders' => ['required', 'array', 'min:1'],
+            'orders.*.id' => ['nullable', 'exists:pesanan,id'],
+            'orders.*.requested_product_name' => ['required', 'string', 'max:255'],
+            'orders.*.q' => ['required', 'integer', 'min:1'],
+            
+            // Validasi Size Breakdown per Order
+            'orders.*.size_breakdowns' => ['nullable', 'array'],
+            'orders.*.size_breakdowns.*.color' => ['nullable', 'string', 'max:100'],
+            'orders.*.size_breakdowns.*.fabric_spec' => ['nullable', 'string', 'max:50'],
+            'orders.*.size_breakdowns.*.size_label' => ['nullable', 'string', 'max:50'],
+            'orders.*.size_breakdowns.*.qty' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
+    /**
+     * Custom Data Validation Logic
+     */
     private function validateOrderEntryData(array $validated): void
     {
-        if (
-            empty($validated['customer_id']) &&
-            empty($validated['new_customer_name'])
-        ) {
+        if (empty($validated['customer_id']) && empty($validated['new_customer_name'])) {
             throw ValidationException::withMessages([
                 'customer_id' => 'Pilih customer atau buat customer baru.',
-                'new_customer_name' => 'Nama customer baru wajib diisi.',
             ]);
         }
 
-        if (
-            empty($validated['customer_id']) &&
-            empty($validated['new_customer_company'])
-        ) {
-            throw ValidationException::withMessages([
-                'new_customer_company' => 'Perusahaan atau brand wajib diisi.',
-            ]);
-        }
+        $seenProductNames = [];
 
-        if (! empty($validated['size_breakdowns'])) {
-            $totalSizeQty = collect($validated['size_breakdowns'])
-                ->sum(fn ($row) => (int) ($row['qty'] ?? 0));
+        foreach ($validated['orders'] as $index => $order) {
+            $normalizedProductName = mb_strtolower(trim((string) ($order['requested_product_name'] ?? '')));
 
-            if ($totalSizeQty !== (int) $validated['q']) {
+            if ($normalizedProductName !== '' && isset($seenProductNames[$normalizedProductName])) {
                 throw ValidationException::withMessages([
-                    'size_breakdowns' =>
-                        'Total size breakdown harus sama dengan quantity order.',
+                    "orders.{$index}.requested_product_name" => "Nama produk pada pesanan ke-".($index + 1)." harus unik dan tidak boleh sama dengan pesanan lain.",
                 ]);
+            }
+
+            if ($normalizedProductName !== '') {
+                $seenProductNames[$normalizedProductName] = true;
+            }
+
+            if (!empty($order['size_breakdowns'])) {
+                $totalSizeQty = collect($order['size_breakdowns'])->sum(fn ($row) => (int) ($row['qty'] ?? 0));
+
+                $isSizeEmpty = count($order['size_breakdowns']) === 1
+                    && empty($order['size_breakdowns'][0]['color'])
+                    && empty($order['size_breakdowns'][0]['size_label'])
+                    && empty($order['size_breakdowns'][0]['fabric_spec']);
+
+                if (!$isSizeEmpty && $totalSizeQty !== (int) $order['q']) {
+                    throw ValidationException::withMessages([
+                        "orders.{$index}.size_breakdowns" => "Total size breakdown pada pesanan ke-".($index + 1)." harus sama dengan quantity order.",
+                    ]);
+                }
             }
         }
     }
 
+    private function defaultSizeBreakdownOptions(): array
+    {
+        $grouped = DefaultSizeBreakdown::query()
+            ->select('type', 'label')
+            ->orderBy('label')
+            ->get()
+            ->groupBy('type');
+
+        return [
+            'color' => $grouped->get('color', collect())->pluck('label')->values()->all(),
+            'fabric' => $grouped->get('fabric', collect())->pluck('label')->values()->all(),
+            'size' => $grouped->get('size', collect())->pluck('label')->values()->all(),
+        ];
+    }
+
     private function resolveCustomer(array $validated): Customer
     {
-        if (! empty($validated['customer_id'])) {
+        if (!empty($validated['customer_id'])) {
             return Customer::findOrFail($validated['customer_id']);
         }
 
         $user = null;
-
-        if (! empty($validated['new_customer_email'])) {
+        if (!empty($validated['new_customer_email'])) {
             $user = User::firstOrCreate(
                 ['email' => $validated['new_customer_email']],
-                [
-                    'name' => $validated['new_customer_name'],
-                    'password' => bcrypt('password'),
-                ],
+                ['name' => $validated['new_customer_name'], 'password' => bcrypt('password')]
             );
-
-            if (! $user->hasRole('Customer')) {
+            if (!$user->hasRole('Customer')) {
                 $user->assignRole('Customer');
             }
         }
@@ -112,20 +127,16 @@ class OrderEntryController extends Controller
         return Customer::create([
             'user_id' => $user?->id,
             'nama' => $validated['new_customer_name'],
-            'nama_perusahaan' =>
-                $validated['new_customer_company']
-                ?? $validated['new_customer_name'],
+            'nama_perusahaan' => $validated['new_customer_company'] ?? $validated['new_customer_name'],
             'email' => $validated['new_customer_email'] ?? null,
             'no_hp' => $validated['new_customer_phone'] ?? null,
             'alamat' => $validated['new_customer_address'] ?? null,
         ]);
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $lastJobTicket = Pesanan::latest('id')->first()?->no_job_ticket;
+        $lastJobTicket = JobTicket::latest('id')->first()?->no_job_ticket;
         $nextJobTicket = $lastJobTicket ? $this->generateNextJobTicket($lastJobTicket) : "VL-".date('Y')."-001";
 
         $customers = Customer::all()->map(fn ($customer) => [
@@ -133,271 +144,227 @@ class OrderEntryController extends Controller
             'name' => $customer->nama,
         ]);
 
+        $companyProfiles = CompanyProfile::all()->map(fn ($company) => [
+            'id' => $company->id,
+            'name' => $company->company_name,
+            'type' => $company->company_type,
+        ]);
 
         return Inertia::render('admin/order-entry/Index', [
             'nextJobTicket' => $nextJobTicket,
             'customers' => $customers,
+            'companyProfiles' => $companyProfiles,
+            'customer' => Auth::user()->customer,
+            'defaultSizeBreakdowns' => $this->defaultSizeBreakdownOptions(),
         ]);
     }
 
     private function generateNextJobTicket(string $lastJobTicket)
     {
-        // Assuming the format is "VL-YYYY-NNN"
         $parts = explode('-', $lastJobTicket);
-        if (count($parts) !== 3) {
-            throw new \Exception("Invalid job ticket format");
-        }
+        if (count($parts) !== 3) return "VL-".date('Y')."-001";
 
-        $prefix = $parts[0];
-        $year = $parts[1];
-        $number = (int)$parts[2];
-
-        // Increment the number
-        $number++;
-
-        // Format the new job ticket
-        return sprintf("%s-%s-%03d", $prefix, $year, $number);
-    }
-
-    private function syncSizeBreakdowns(
-        Pesanan $pesanan,
-        array $sizeBreakdowns,
-    ): void {
-        $pesanan->sizeBreakdowns()->delete();
-
-        foreach ($sizeBreakdowns as $row) {
-            $pesanan->sizeBreakdowns()->create([
-                'color' => $row['color'] ?? null,
-                'size_label' => $row['size_label'] ?? null,
-                'qty' => (int) ($row['qty'] ?? 0),
-            ]);
-        }
+        return sprintf("%s-%s-%03d", $parts[0], $parts[1], (int)$parts[2] + 1);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store (Membuat 1 JobTicket dengan multiple Pesanan)
      */
     public function store(Request $request)
     {
-        
         $validated = $request->validate($this->orderEntryRules());
-
         $this->validateOrderEntryData($validated);
 
-        $pesanan = DB::transaction(function () use ($validated) {
+        $jobTicket = DB::transaction(function () use ($validated) {
             $customer = $this->resolveCustomer($validated);
 
-            $pesanan = Pesanan::create([
+            // 1. Buat Job Ticket
+            $jobTicket = JobTicket::create([
                 'no_job_ticket' => $validated['no_job_ticket'],
-                'customer_id' => $customer->id,
-
-                'produk' => $validated['requested_product_name'],
-                'q' => $validated['q'],
-                'keterangan_tambahan' =>
-                    $validated['customer_notes'] ?? null,
-
-                'requested_product_name' =>
-                    $validated['requested_product_name'],
-                'deadline' => $validated['deadline'],
-                'customer_notes' =>
-                    $validated['customer_notes'] ?? null,
-
                 'date' => now(),
+                'customer_id' => $customer->id,
+                'company_profile_id' => $validated['company_profile_id'],
                 'customer_nama_snapshot' => $customer->nama,
-                'customer_perusahaan_snapshot' =>
-                    $customer->nama_perusahaan,
-
-                'status_divisi' => 'Order Entry',
+                'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
+                'deadline' => $validated['deadline'],
+                'customer_notes' => $validated['customer_notes'] ?? null,
+                'status' => 'Order Entry',
                 'created_by' => Auth::id(),
             ]);
 
-            $this->syncSizeBreakdowns(
-                $pesanan,
-                $validated['size_breakdowns'] ?? [],
-            );
+            // 2. Looping Pembuatan Pesanan
+            foreach ($validated['orders'] as $orderData) {
+                $pesanan = $jobTicket->pesanans()->create([
+                    'produk' => $orderData['requested_product_name'],
+                    'requested_product_name' => $orderData['requested_product_name'],
+                    'q' => $orderData['q'],
+                    'deadline' => $validated['deadline'],
+                ]);
 
-            $pesanan->workflowStatus()->create([
-                'order_entry' => true,
-                'design_uploaded' => false,
-                'design_approved' => false,
-            ]);
+                // Sync Size Breakdowns
+                if (!empty($orderData['size_breakdowns'])) {
+                    foreach ($orderData['size_breakdowns'] as $row) {
+                        if(!empty($row['color']) || !empty($row['size_label'])) {
+                            $pesanan->sizeBreakdowns()->create([
+                                'color' => $row['color'] ?? null,
+                                'size_label' => $row['size_label'] ?? null,
+                                'fabric_spec' => $row['fabric_spec'] ?? null,
+                                'qty' => (int) ($row['qty'] ?? 0),
+                            ]);
+                        }
+                    }
+                }
 
-            $pesanan->productionProgress()->create([]);
+                // Default Workflow Status
+                $pesanan->workflowStatus()->create([
+                    'order_entry' => true,
+                    'design_uploaded' => false,
+                    'design_approved' => false,
+                ]);
+                $pesanan->productionProgress()->create([]);
+                $pesanan->jobTicket->workflowHistory()->create([
+                    'step' => 'order_entry',
+                    'action' => 'created',
+                    'user_id' => Auth::id(),
+                    'notes' => "Pesanan {$pesanan->produk} masuk dalam Job Ticket.",
+                ]);
+            }
 
-            $pesanan->workflowHistory()->create([
-                'step' => 'order_entry',
-                'action' => 'created',
-                'user_id' => Auth::id(),
-                'notes' => 'Job Ticket dibuat.',
-            ]);
-
-            return $pesanan;
+            return $jobTicket;
         });
 
-        return redirect()
-            ->route('job-tickets.show', $pesanan->id)
-            ->with('success', 'Job Ticket berhasil dibuat.');
+        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Job Ticket berhasil dibuat.');
     }
 
+    /**
+     * Edit
+     */
     public function edit(string $id)
     {
-        $pesanan = Pesanan::findOrFail($id);
+        $jobTicket = JobTicket::with(['customer', 'pesanans.sizeBreakdowns', 'companyProfile'])->findOrFail($id);
 
-        $pesanan->load([
-            'customer',
-            'workflowStatus',
-            'designs',
-            'materialSpecs',
-            'manufacturingSpecs',
-            'sizeBreakdowns',
+        $customers = Customer::orderBy('nama')->get()->map(fn ($customer) => [
+            'id' => $customer->id,
+            'name' => $customer->nama_perusahaan ? "{$customer->nama} — {$customer->nama_perusahaan}" : $customer->nama,
         ]);
 
-        if (! $pesanan->canModifyOrderEntry()) {
-            abort(
-                422,
-                'Job Ticket tidak bisa diedit karena proses desain sudah dimulai.',
-            );
-        }
+        $companyProfiles = CompanyProfile::all()->map(fn ($company) => [
+            'id' => $company->id,
+            'name' => $company->company_name,
+            'type' => $company->company_type,
+        ]);
 
-        $customers = Customer::query()
-            ->orderBy('nama')
-            ->get()
-            ->map(fn ($customer) => [
-                'id' => $customer->id,
-                'name' => $customer->nama_perusahaan
-                    ? "{$customer->nama} — {$customer->nama_perusahaan}"
-                    : $customer->nama,
-            ]);
+        $mappedOrders = $jobTicket->pesanans->map(fn($pesanan) => [
+            'id' => $pesanan->id,
+            'requested_product_name' => $pesanan->requested_product_name ?: $pesanan->produk,
+            'q' => (int) $pesanan->q,
+            'size_breakdowns' => $pesanan->sizeBreakdowns->isEmpty() 
+                ? [['color' => '', 'size_label' => '', 'qty' => 1]] 
+                : $pesanan->sizeBreakdowns->map(fn($row) => [
+                    'color' => $row->color ?? '',
+                    'fabric_spec' => $row->fabric_spec ?? '',
+                    'size_label' => $row->size_label ?? '',
+                    'qty' => (int) $row->qty,
+                ])->values()
+        ]);
 
         return Inertia::render('admin/order-entry/Index', [
             'nextJobTicket' => null,
             'customers' => $customers,
-
-            'editingOrder' => [
-                'id' => $pesanan->id,
-                'no_job_ticket' => $pesanan->no_job_ticket,
-                'customer_id' => $pesanan->customer_id,
-                'requested_product_name' =>
-                    $pesanan->requested_product_name
-                    ?: $pesanan->produk,
-                'q' => (int) ($pesanan->quantity ?: $pesanan->q),
-                'deadline' => optional($pesanan->deadline)
-                    ->format('Y-m-d'),
-                'customer_notes' =>
-                    $pesanan->customer_notes
-                    ?: $pesanan->keterangan_tambahan,
-                'size_breakdowns' => $pesanan->sizeBreakdowns
-                    ->map(fn ($row) => [
-                        'color' => $row->color ?? '',
-                        'size_label' => $row->size_label ?? '',
-                        'qty' => (int) $row->qty,
-                    ])
-                    ->values(),
+            'companyProfiles' => $companyProfiles,
+            'defaultSizeBreakdowns' => $this->defaultSizeBreakdownOptions(),
+            'editingJobTicket' => [
+                'id' => $jobTicket->id,
+                'no_job_ticket' => $jobTicket->no_job_ticket,
+                'customer_id' => $jobTicket->customer_id,
+                'company_profile_id' => $jobTicket->company_profile_id,
+                'deadline' => $jobTicket->deadline,
+                'customer_notes' => $jobTicket->customer_notes,
+                'orders' => $mappedOrders,
             ],
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update 
      */
     public function update(Request $request, string $id)
     {
-        $pesanan = Pesanan::findOrFail($id);
+        $jobTicket = JobTicket::findOrFail($id);
 
-        $pesanan->load([
-            'workflowStatus',
-            'designs',
-            'materialSpecs',
-            'manufacturingSpecs',
-        ]);
 
-        if (! $pesanan->canModifyOrderEntry()) {
-            abort(
-                422,
-                'Job Ticket tidak bisa diedit karena proses desain sudah dimulai.',
-            );
-        }
-
-        $validated = $request->validate(
-            $this->orderEntryRules($pesanan),
-        );
-
+        $validated = $request->validate($this->orderEntryRules());
         $this->validateOrderEntryData($validated);
 
-        DB::transaction(function () use ($pesanan, $validated) {
+        DB::transaction(function () use ($jobTicket, $validated) {
             $customer = $this->resolveCustomer($validated);
 
-            $pesanan->update([
-                // no_job_ticket sengaja tidak diubah
+            $jobTicket->update([
                 'customer_id' => $customer->id,
-
-                'produk' => $validated['requested_product_name'],
-                'q' => $validated['q'],
-                'keterangan_tambahan' =>
-                    $validated['customer_notes'] ?? null,
-
-                'requested_product_name' =>
-                    $validated['requested_product_name'],
-                'deadline' => $validated['deadline'],
-                'customer_notes' =>
-                    $validated['customer_notes'] ?? null,
-
+                'company_profile_id' => $validated['company_profile_id'],
                 'customer_nama_snapshot' => $customer->nama,
-                'customer_perusahaan_snapshot' =>
-                    $customer->nama_perusahaan,
+                'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
+                'deadline' => $validated['deadline'],
+                'customer_notes' => $validated['customer_notes'] ?? null,
             ]);
 
-            $this->syncSizeBreakdowns(
-                $pesanan,
-                $validated['size_breakdowns'] ?? [],
-            );
+            // Sync Orders (Delete yang tidak ada, Update yang ada, Create yang baru)
+            $existingOrderIds = $jobTicket->pesanans()->pluck('id')->toArray();
+            $payloadOrderIds = collect($validated['orders'])->pluck('id')->filter()->toArray();
 
-            $pesanan->workflowHistory()->create([
-                'pesanan_id' => $pesanan->id,
-                'step' => 'order_entry',
-                'action' => 'updated',
-                'user_id' => Auth::id(),
-                'notes' => 'Data Order Entry diperbarui.',
-            ]);
+            $pesananToDelete = array_diff($existingOrderIds, $payloadOrderIds);
+            Pesanan::whereIn('id', $pesananToDelete)->delete(); // Pastikan ada trigger cascadeOnDelete
+
+            foreach ($validated['orders'] as $orderData) {
+                if (isset($orderData['id']) && in_array($orderData['id'], $existingOrderIds)) {
+                    $pesanan = Pesanan::find($orderData['id']);
+                    $pesanan->update([
+                        'produk' => $orderData['requested_product_name'],
+                        'requested_product_name' => $orderData['requested_product_name'],
+                        'q' => $orderData['q'],
+                        'deadline' => $validated['deadline'],
+                    ]);
+                } else {
+                    $pesanan = $jobTicket->pesanans()->create([
+                        'produk' => $orderData['requested_product_name'],
+                        'requested_product_name' => $orderData['requested_product_name'],
+                        'q' => $orderData['q'],
+                        'deadline' => $validated['deadline'],
+                    ]);
+                    
+                    // Inisialisasi default progress untuk pesanan baru
+                    $pesanan->workflowStatus()->create(['order_entry' => true]);
+                    $pesanan->productionProgress()->create([]);
+                    $pesanan->jobTicket->workflowHistory()->create([
+                        'step' => 'order_entry', 'action' => 'created', 'user_id' => Auth::id(), 'notes' => 'Pesanan ditambahkan susulan.'
+                    ]);
+                }
+
+                // Sync Size Breakdown
+                $pesanan->sizeBreakdowns()->delete();
+                if (!empty($orderData['size_breakdowns'])) {
+                    foreach ($orderData['size_breakdowns'] as $row) {
+                        if(!empty($row['color']) || !empty($row['size_label'])) {
+                            $pesanan->sizeBreakdowns()->create([
+                                'color' => $row['color'] ?? null,
+                                'size_label' => $row['size_label'] ?? null,
+                                'fabric_spec' => $row['fabric_spec'] ?? null,
+                                'qty' => (int) ($row['qty'] ?? 0),
+                            ]);
+                        }
+                    }
+                }
+            }
         });
 
-        return redirect()
-            ->route('job-tickets.show', $pesanan->id)
-            ->with('success', 'Job Ticket berhasil diperbarui.');
+        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Job Ticket berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Pesanan $pesanan)
+    public function destroy(JobTicket $jobTicket)
     {
-        $pesanan->load([
-            'workflowStatus',
-            'designs',
-            'materialSpecs',
-            'manufacturingSpecs',
-        ]);
 
-        if (! $pesanan->canModifyOrderEntry()) {
-            abort(
-                422,
-                'Job Ticket tidak bisa dihapus karena proses desain sudah dimulai.',
-            );
-        }
+        $jobTicket->delete();
 
-        DB::transaction(function () use ($pesanan) {
-            // Jika relasi database sudah cascadeOnDelete,
-            // penghapusan manual ini tidak diperlukan.
-            $pesanan->sizeBreakdowns()->delete();
-            $pesanan->workflowHistory()->delete();
-            $pesanan->workflowStatus()->delete();
-            $pesanan->productionProgress()->delete();
-
-            $pesanan->delete();
-        });
-
-        return redirect()
-            ->route('job-tickets.index')
-            ->with('success', 'Job Ticket berhasil dihapus.');
+        return redirect()->route('job-tickets.index')->with('success', 'Job Ticket berhasil dihapus.');
     }
 }

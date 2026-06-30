@@ -29,7 +29,7 @@ export default function DeadlineBadge({
   return (
     <span
       className={cn(
-        'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+        'inline-flex rounded-full px-3 py-1 text-[7px] sm:text-xs font-semibold',
         variant,
       )}
     >

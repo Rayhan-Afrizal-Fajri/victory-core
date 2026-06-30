@@ -38,7 +38,7 @@ class ManufacturingWorkSeeder extends Seeder
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
             'default_min_estimate' => 3,
-            'default_max_estimate' => 5,
+            'default_max_estimate' => 500,
             'is_active' => true,
             'process_behavior' => 'costing_only',
         ]);
@@ -78,7 +78,7 @@ class ManufacturingWorkSeeder extends Seeder
             'default_unit' => 'pcs',
             'default_vendor_id' => random_int(1, 5), // Assuming you have 5 suppliers seeded
             'default_min_estimate' => 2,
-            'default_max_estimate' => 4,
+            'default_max_estimate' => 400,
             'is_active' => true,
             'process_behavior' => 'costing_only',
         ]);

@@ -17,7 +17,7 @@ class CustomerController extends Controller
     public function index()
     {
         $customers = Customer::query()
-            ->with('pesanan')
+            ->with('jobTicket.pesanans')
             ->latest()
             ->get()
             ->map(fn ($customer) => [
@@ -27,14 +27,24 @@ class CustomerController extends Controller
                 'email' => $customer->user->email,
                 'contact' => $customer->no_hp,
                 'address' => $customer->alamat,
-                'total_orders' => $customer->pesanan->count(),
-                'order_history' => $customer->pesanan->map(fn ($order) => [
+                'total_orders' => $customer->jobTicket->count(),
+                'order_history' => $customer->jobTicket->map(fn ($order) => [
                     'id' => $order->id,
                     'job_ticket' => $order->no_job_ticket,
-                    'item_name' => $order->produk,
-                    'quantity' => $order->q,
-                    'total_cost' => $order->harga_jual_per_pcs * $order->q,
-                    'status' => $order->status_divisi,
+                    'item_names' => $order->pesanans
+                        ->map(fn ($pesanan) =>
+                            $pesanan->requested_product_name
+                            ?: $pesanan->produk
+                            ?: '-'
+                        )
+                        ->filter()
+                        ->unique()
+                        ->implode(', '),
+                    'quantity' => (int) $order->pesanans->sum('q'),
+                    'total_cost' => (float) $order->invoices
+                        ->whereNotIn('status_tagihan', ['cancelled'])
+                        ->sum('total_tagihan'),
+                    'status' => $order->status,
                 ])->values(),
             ]);
 

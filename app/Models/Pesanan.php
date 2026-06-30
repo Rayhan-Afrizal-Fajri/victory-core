@@ -8,36 +8,34 @@ class Pesanan extends Model
 {
     protected $table = 'pesanan';
     protected $fillable = [
-        'customer_id',
+        'job_ticket_id',
+        // 'customer_id',
         'product_id',
-        'customer_nama_snapshot',
-        'customer_perusahaan_snapshot',
-        'created_by',
+        // 'customer_nama_snapshot',
+        // 'customer_perusahaan_snapshot',
+        // 'created_by',
         'date',
-        'no_job_ticket',
+        // 'no_job_ticket',
         'produk',
-        'requested_produk_name',
+        'requested_product_name',
         'q',
         'qs',
         'sample_qty',
-        'deadline',
+        // 'deadline',
         'harga_jual_per_pcs',
         'estimasi_hpp_per_pcs',
-        'keterangan_tambahan',        
+        'keterangan_tambahan',    
+        'article_synced_at',
+        'article_synced_by',    
     ];
 
     protected $casts = [
         'deadline' => 'date',
     ];
 
-    public function customer()
+    public function jobTicket()
     {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(JobTicket::class);
     }
 
     public function invoices()
@@ -85,11 +83,6 @@ class Pesanan extends Model
         return $this->hasOne(Sample::class, 'pesanan_id')->latestOfMany();
     }
 
-    public function workflowHistory()
-    {
-        return $this->hasMany(WorkflowHistory::class, 'pesanan_id');
-    }
-
     public function attachment()
     {
         return $this->hasMany(Attachment::class);
@@ -120,9 +113,9 @@ class Pesanan extends Model
         return $this->hasMany(PesananManufacturingSpecs::class);
     }
 
-    public function quotations()
+    public function quotationItems()
     {
-        return $this->hasMany(Quotation::class);
+        return $this->hasMany(QuotationItem::class);
     }
 
     public function latestQuotation()
@@ -130,9 +123,9 @@ class Pesanan extends Model
         return $this->hasOne(Quotation::class, 'pesanan_id')->latestOfMany();
     }
 
-    public function productionRuns()
+    public function productionRunProcesses()
     {
-        return $this->hasMany(ProductionRun::class);
+        return $this->hasMany(ProductionRunProcess::class);
     }    
 
     public function sampleRun()
@@ -169,5 +162,10 @@ class Pesanan extends Model
             $this->manufacturingSpecs->isNotEmpty();
 
         return ! $designStarted;
+    }
+
+    public function defectHistories()
+    {
+        return $this->hasMany(ProductionDefectHistory::class);
     }
 }

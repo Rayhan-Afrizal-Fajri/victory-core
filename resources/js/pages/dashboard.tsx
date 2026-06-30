@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { dashboard } from '@/routes';
 import orderEntry from '@/routes/order-entry';
+import { useCan } from '@/hooks/use-can';
 
 type SummaryCardData = {
   key: string;
@@ -86,6 +87,7 @@ const getSummaryIcon = (type: SummaryCardData['type']) => {
 
 export default function Dashboard({ dashboard }: DashboardProps) {
   const { user } = usePage().props as any;
+  const can = useCan();
 
   const summaryCards = dashboard?.summaryCards || [];
   const statusItems = dashboard?.statusItems || [];
@@ -140,39 +142,41 @@ export default function Dashboard({ dashboard }: DashboardProps) {
           <div>
             <h1 className="text-3xl font-semibold text-slate-900">Halo, {user.name} 👋</h1>
             <p className="text-sm text-slate-500">
-              Ringkasan operasional dan progres produksi hari ini.
+              {can('dashboard.admin') ? 'Ringkasan operasional dan progres produksi.' : 'Ringkasan pesanan Anda.'}
             </p>
           </div>
         </div>
 
-        <Link href={orderEntry.index()} prefetch>
-          <Button variant="default" className="hidden sm:inline-flex cursor-pointer">
-            Buat Pesanan Baru
-            <ArrowUpRight className="size-4" />
-          </Button>
-        </Link>
+        {can('order_entry.create') && (
+          <Link href={orderEntry.index()} prefetch>
+            <Button variant="default" className="hidden sm:inline-flex cursor-pointer">
+              Buat Pesanan Baru
+              <ArrowUpRight className="size-4" />
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         {summaryCards.map((card) => {
-        const iconData = getSummaryIcon(card.type);
+          const iconData = getSummaryIcon(card.type);
 
-        return (
-          <SummaryCard
-            key={card.key}
-            title={card.title}
-            value={card.value}
-            icon={iconData.icon}
-            iconClassName={iconData.iconClassName}
-          />
-        );
-      })}
+          return (
+            <SummaryCard
+              key={card.key}
+              title={card.title}
+              value={card.value}
+              icon={iconData.icon}
+              iconClassName={iconData.iconClassName}
+            />
+          );
+        })}
       </div>
 
       <div className="flex gap-4 flex-col xl:flex-row">
         <StatusDistribution items={statusItems} />
         <DataTable
-          title="Deadline Terdekat"
+          title={can('dashboard.admin') ? "Deadline Terdekat" : "Pesanan Anda"}
           description="5 pesanan paling urgent"
           columns={columns}
           data={tableData}

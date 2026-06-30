@@ -4,12 +4,7 @@ import React, { useContext, useState } from 'react';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { RouteDefinition } from '@/wayfinder';
-
-interface NavItemProps {
-    label: string;
-    href: RouteDefinition<"get">;
-    icon?: React.ComponentType<{ className?: string }>;
-}
+import { NavItemProps } from '@/types';
 
 interface SidebarDropdownProps {
     /** Section title */

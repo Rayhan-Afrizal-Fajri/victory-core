@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import { CheckCircle2, PackageCheck, Play, Truck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,11 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import FormattedNumberInput from '../ui/formatted-number-input';
+import { Pesanan } from '@/pages/admin/job-tickets/types';
+import WorkflowGate from '@/pages/admin/job-tickets/components/WorkflowGate';
 
 type ProductionRunBoardProps = {
     job: any;
     run: any | null;
     runType: 'sample' | 'production';
+    activeOrder: Pesanan;
 };
 
 const statusClass: Record<string, string> = {
@@ -43,9 +46,10 @@ function formatDateTime(value?: string | null) {
     }).format(new Date(value));
 }
 
-const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
+const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoardProps) => {
+
     const ensureRunForm = useForm({
-        quantity: Number((job as any).sample_qty || 3),
+        quantity: Number((activeOrder as any).sample_qty || 3),
     });
 
     const packingForm = useForm({
@@ -60,15 +64,15 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     });
 
     const reviewForm = useForm({
-        customer_review_note: '',
+        customer_review_note: run.customer_review_note,
     });
 
     const ensureSampleRun = (e: React.FormEvent) => {
         e.preventDefault();
 
         const ensureRunUrl = runType === 'sample'
-            ? `/pesanan/${job.id}/production-runs/sample/ensure`
-            : `/pesanan/${job.id}/production-runs/production/ensure`;
+            ? `/pesanan/${job}/production-runs/sample/ensure`
+            : `/pesanan/${job}/production-runs/production/ensure`;
 
         ensureRunForm.post(ensureRunUrl, {
             preserveScroll: true,
@@ -108,10 +112,27 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
                         ? 'Delivery sample berhasil disimpan.'
                         : 'Delivery production berhasil disimpan.'
                 );
-                deliveryForm.reset();
             },
         });
     };
+
+    useEffect(() => {
+        if (!run) return;
+
+        deliveryForm.setData({
+            courier_name: run.courier_name ?? '',
+            tracking_number: run.tracking_number ?? '',
+            tracking_url: run.tracking_url ?? '',
+            delivery_note: run.delivery_note ?? '',
+        });
+
+    }, [
+        run?.id,
+        run?.courier_name,
+        run?.tracking_number,
+        run?.tracking_url,
+        run?.delivery_note,
+    ]);
 
     const markDelivered = () => {
         if (!run) return;
@@ -133,13 +154,15 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
     const approveSample = () => {
         if (!run) return;
 
-        router.patch(
+        reviewForm.patch(
             `/production-runs/${run.id}/approve-sample`,
-            {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Sample disetujui.'),
-            },
+                onSuccess: () => {
+                    toast.success('Sample disetujui.');
+                    reviewForm.reset();
+                },
+            }
         );
     };
 
@@ -179,20 +202,6 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
                         title={title}
                         description={`Buat ${runType === 'sample' ? 'sample' : 'production'} run dari daftar manufaktur yang sudah ditentukan di Design Tab.`}
                     />
-
-                    <div className="max-w-xs">
-                        <Field label="Sample Qty" error={ensureRunForm.errors.quantity}>
-                            <FormattedNumberInput
-                                value={ensureRunForm.data.quantity}
-                                onValueChange={(value) => ensureRunForm.setData('quantity', value)}
-                                placeholder='cth: 5'
-                            />
-                        </Field>
-                    </div>
-
-                    <Button type="submit" disabled={ensureRunForm.processing}>
-                        {createLabel}
-                    </Button>
                 </form>
             </SectionCard>
         );
@@ -203,198 +212,217 @@ const ProductionRunBoard = ({ job, run, runType }: ProductionRunBoardProps) => {
         return word.charAt(0).toUpperCase() + word.slice(1);
     }
     
-    const workflow = job.workflow_status;
+    const workflow = activeOrder.workflow_status;
     
     const isFinalPaymentPaid =
-        workflow?.final_payment_paid === true ||
-        workflow?.final_payment_paid === 1 ||
-        workflow?.final_payment_paid === '1';
+        workflow?.final_payment_paid === true;
 
-    const processes = run.processes || [];
+    const processes =
+        run.processes.filter(
+            process => process.pesanan_id === activeOrder.id
+        ) ?? [];
+
+    // Semua process dalam ProductionRun
+    const allProcesses =
+        run.processes ?? [];
+
     const allQcPassed =
-        processes.length > 0 &&
-        processes.every((process: any) => process.status === 'completed' && process.qc_status === 'passed');
+        allProcesses.length > 0 &&
+        allProcesses.every((process: any) => process.status === 'completed' && process.qc_status === 'passed');
 
     const canPacking = allQcPassed && !run.packing_completed;
     const canDelivery =
         run.packing_completed &&
-        !['in_delivery', 'delivered', 'approved'].includes(run.status) &&
-        (
-            runType === 'sample' ||
-            isFinalPaymentPaid
-        );
+        !['in_delivery', 'delivered', 'approved'].includes(run.status);
     const canMarkDelivered = run.status === 'in_delivery';
+    const isDeliverySubmitted = run.status === 'in_delivery';
+    const isDelivered = ['delivered', 'approved'].includes(run.status);
     const canReview = run.status === 'delivered';
 
     return (
         <div className="space-y-6">
-            <SectionCard title={`${title} Overview`}>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-lg font-bold text-slate-900">
-                            {title}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Qty: {run.quantity} pcs
-                        </p>
-                    </div>
-
-                    <Badge className={statusClass[run.status] || statusClass.draft}>
-                        {run.status}
-                    </Badge>
-                </div>
-            </SectionCard>
-
-            <SectionCard title="Production Process + QC">
-                <div className="space-y-4">
-                    {processes.map((process: any) => (
-                        <ProductionProcessCard key={process.id} process={process} runQuantity={Number(run.quantity || 0)} />
-                    ))}
-                </div>
-            </SectionCard>
-
-            <SectionCard title={`Packing ${capitalizeWord(runType)}`}>
-                {run.packing_completed ? (
-                    <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                        Packing sudah selesai.
-                    </div>
-                ) : canPacking ? (
-                    <form onSubmit={completePacking} className="space-y-4">
-                        <Field label="Packing Notes" error={packingForm.errors.packing_notes}>
-                            <Textarea
-                                rows={3}
-                                value={packingForm.data.packing_notes}
-                                onChange={(e) =>
-                                    packingForm.setData('packing_notes', e.target.value)
-                                }
-                                placeholder={`Catatan packing ${runType}...`}
-                            />
-                        </Field>
-
-                        <Button type="submit" disabled={packingForm.processing}>
-                            <CheckCircle2 className="size-4" />
-                            Complete Packing
-                        </Button>
-                    </form>
-                ) : (
-                    <p className="text-sm text-slate-500">
-                        Packing bisa dilakukan setelah semua process QC passed.
-                    </p>
-                )}
-            </SectionCard>
-
-            <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
-                {canDelivery && (
-                    <form onSubmit={submitDelivery} className="space-y-4">
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Courier" error={deliveryForm.errors.courier_name}>
-                                <Input
-                                    value={deliveryForm.data.courier_name}
-                                    onChange={(e) =>
-                                        deliveryForm.setData('courier_name', e.target.value)
-                                    }
-                                />
-                            </Field>
-
-                            <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
-                                <Input
-                                    value={deliveryForm.data.tracking_number}
-                                    onChange={(e) =>
-                                        deliveryForm.setData('tracking_number', e.target.value)
-                                    }
-                                />
-                            </Field>
+            {!workflow?.sample_materials_ready ? (
+                <WorkflowGate reason="Material untuk sample belum cukup diterima. Sample production terkunci." />
+            ): (
+                <>
+                    <SectionCard title={`${title} Overview`}>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p className="text-lg font-bold text-slate-900">
+                                {title}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Qty: {processes[0].quantity} pcs
+                            </p>
                         </div>
 
-                        <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
-                            <Input
-                                value={deliveryForm.data.tracking_url}
-                                onChange={(e) =>
-                                    deliveryForm.setData('tracking_url', e.target.value)
-                                }
-                            />
-                        </Field>
-
-                        <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
-                            <Textarea
-                                rows={3}
-                                value={deliveryForm.data.delivery_note}
-                                onChange={(e) =>
-                                    deliveryForm.setData('delivery_note', e.target.value)
-                                }
-                            />
-                        </Field>
-
-                        <Button type="submit" disabled={deliveryForm.processing}>
-                            <Truck className="size-4" />
-                            Submit Delivery
-                        </Button>
-                    </form>
-                )}
-
-                {canMarkDelivered && (
-                    <Button type="button" onClick={markDelivered}>
-                        Mark Delivered
-                    </Button>
-                )}
-
-                {['delivered', 'approved'].includes(run.status) && (
-                    <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                        {capitalizeWord(runType)} sudah delivered.
+                        <Badge className={statusClass[run.status] || statusClass.draft}>
+                            {run.status}
+                        </Badge>
                     </div>
-                )}
+                </SectionCard>
 
-                {!canDelivery && !canMarkDelivered && !['delivered', 'approved'].includes(run.status) && (
-                    <p className="text-sm text-slate-500">
-                        Delivery bisa dilakukan setelah packing selesai{runType === 'production' ? ' dan pembayaran final dilakukan' : ''}.
-                    </p>
-                )}
-            </SectionCard>
+                <SectionCard title={`Production Process ${activeOrder.product_name || activeOrder.requested_product_name}`}>
+                    <div className="space-y-4">
+                        {processes.map((process: any) => (
+                            <ProductionProcessCard key={process.id} process={process} runQuantity={Number(process.quantity || 0)} />
+                        ))}
+                    </div>
+                </SectionCard>
 
-            {runType === 'sample' && (
-                <SectionCard title="Sample Approval">
-                    {canReview ? (
-                        <div className="space-y-4">
-                            <Field label="Catatan Customer" error={reviewForm.errors.customer_review_note}>
+                <SectionCard title={`Packing ${capitalizeWord(runType)}`}>
+                    {run.packing_completed ? (
+                        <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
+                            Packing sudah selesai.
+                        </div>
+                    ) : canPacking ? (
+                        <form onSubmit={completePacking} className="space-y-4">
+                            <Field label="Packing Notes" error={packingForm.errors.packing_notes}>
                                 <Textarea
                                     rows={3}
-                                    value={reviewForm.data.customer_review_note}
+                                    value={packingForm.data.packing_notes}
                                     onChange={(e) =>
-                                        reviewForm.setData('customer_review_note', e.target.value)
+                                        packingForm.setData('packing_notes', e.target.value)
                                     }
-                                    placeholder="Catatan revisi/penolakan jika ada..."
+                                    placeholder={`Catatan packing ${runType}...`}
                                 />
                             </Field>
 
-                            <div className="flex flex-wrap gap-2">
-                                <Button type="button" onClick={approveSample}>
-                                    Approve Sample
-                                </Button>
-
-                                <Button type="button" variant="outline" onClick={requestRevision}>
-                                    Request Revision
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="border-red-200 text-red-700 hover:bg-red-50"
-                                    onClick={rejectSample}
-                                >
-                                    Reject Sample
-                                </Button>
-                            </div>
-                        </div>
-                    ) : run.status === 'approved' ? (
-                        <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                            Sample sudah approved.
-                        </div>
+                            <Button type="submit" disabled={packingForm.processing}>
+                                <CheckCircle2 className="size-4" />
+                                Complete Packing
+                            </Button>
+                        </form>
                     ) : (
                         <p className="text-sm text-slate-500">
-                            Approval bisa dilakukan setelah sample delivered.
+                            Packing bisa dilakukan setelah semua process QC passed.
                         </p>
                     )}
                 </SectionCard>
+
+                <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
+                    {canDelivery !== 0 && (
+                        <form onSubmit={submitDelivery} className="space-y-4">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Field label="Courier" error={deliveryForm.errors.courier_name}>
+                                    <Input
+                                        readOnly={isDeliverySubmitted || isDelivered}
+                                        value={deliveryForm.data.courier_name}
+                                        onChange={(e) =>
+                                            deliveryForm.setData('courier_name', e.target.value)
+                                        }
+                                    />
+                                </Field>
+
+                                <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
+                                    <Input
+                                        readOnly={isDeliverySubmitted || isDelivered}
+                                        value={deliveryForm.data.tracking_number}
+                                        onChange={(e) =>
+                                            deliveryForm.setData('tracking_number', e.target.value)
+                                        }
+                                    />
+                                </Field>
+                            </div>
+
+                            <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
+                                <Input
+                                    readOnly={isDeliverySubmitted || isDelivered}
+                                    value={deliveryForm.data.tracking_url}
+                                    onChange={(e) =>
+                                        deliveryForm.setData('tracking_url', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
+                                <Textarea
+                                    readOnly={isDeliverySubmitted || isDelivered}
+                                    rows={3}
+                                    value={deliveryForm.data.delivery_note}
+                                    onChange={(e) =>
+                                        deliveryForm.setData('delivery_note', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            {canDelivery && (
+                                <Button type="submit" disabled={deliveryForm.processing}>
+                                    <Truck className="size-4" />
+                                    Submit Delivery
+                                </Button>
+                            )}
+                        </form>
+                    )}
+
+                    {canMarkDelivered && (
+                        <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing}>
+                            Mark Delivered
+                        </Button>
+                    )}
+
+                    {['delivered', 'approved'].includes(run.status) && (
+                        <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
+                            {capitalizeWord(runType)} sudah delivered.
+                        </div>
+                    )}
+
+                    {!canDelivery && !canMarkDelivered && !['delivered', 'approved'].includes(run.status) && (
+                        <p className="text-sm text-slate-500">
+                            Delivery bisa dilakukan setelah packing selesai{runType === 'production' ? ' dan pembayaran final dilakukan' : ''}.
+                        </p>
+                    )}
+                </SectionCard>
+
+                {runType === 'sample' && (
+                    <SectionCard title="Sample Approval">
+                            <div className="space-y-4">
+                                <Field label="Catatan Customer" error={reviewForm.errors.customer_review_note}>
+                                    <Textarea
+                                        rows={3}
+                                        value={reviewForm.data.customer_review_note}
+                                        onChange={(e) =>
+                                            reviewForm.setData('customer_review_note', e.target.value)
+                                        }
+                                        readOnly={!canReview}
+                                        placeholder="Catatan revisi/penolakan jika ada..."
+                                    />
+                                </Field>
+
+                                {canReview ? (
+
+                                <div className="flex flex-wrap gap-2">
+                                    <Button type="button" onClick={approveSample}>
+                                        Approve Sample
+                                    </Button>
+
+                                    <Button type="button" variant="outline" onClick={requestRevision}>
+                                        Request Revision
+                                    </Button>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="border-red-200 text-red-700 hover:bg-red-50"
+                                        onClick={rejectSample}
+                                    >
+                                        Reject Sample
+                                    </Button>
+                                </div>
+
+                                ) : run.status === 'approved' ? (
+                                    <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
+                                        Sample sudah approved.
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">
+                                        Approval bisa dilakukan setelah sample delivered.
+                                    </p>
+                                )}
+                            </div>
+                    </SectionCard>
+                )}
+            </>
             )}
         </div>
     );
@@ -548,14 +576,14 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
 
                 <div className="flex gap-2">
                     {process.status === 'pending' && (
-                        <Button type="button" size="sm" onClick={startProcess}>
+                        <Button type="button" size="sm" onClick={startProcess} disabled={qcForm.processing}>
                             <Play className="size-4" />
                             Start
                         </Button>
                     )}
 
                     {process.status === 'in_progress' && (
-                        <Button type="button" size="sm" onClick={completeProcess}>
+                        <Button type="button" size="sm" onClick={completeProcess} disabled={qcForm.processing}>
                             Complete
                         </Button>
                     )}

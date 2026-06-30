@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
 import FormattedNumberInput from "../ui/formatted-number-input";
+import { Pesanan } from "@/pages/admin/job-tickets/types";
 
 function QuotationSection({
     job,
@@ -18,13 +19,28 @@ function QuotationSection({
 }) {
     const can = useCan();
 
+    const orders = (job?.orders ?? []) as Array<Pesanan & { harga_jual_per_pcs?: number | null }>;
+
     const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         .toISOString()
         .slice(0, 10);
 
+    //inisiasi state sample qty
+    const initialSampleQtys: Record<number, number> = {};
+    orders.forEach((order: Pesanan) => {
+        initialSampleQtys[order.id] = order.sample_qty || 1;
+    });
+
+    const sampleInvoiceAmount = orders.reduce<number>((total, order) => {
+        const unitPrice = Number(order.price_per_piece ?? 0);
+        const sampleQty = Number(order.sample_qty ?? 1);
+
+        return total + unitPrice * sampleQty;
+    }, 0);
+
     const quotationForm = useForm({
         valid_until: defaultValidUntil,
-        sample_qty: job.sample_qty || 1,
+        sample_qtys: initialSampleQtys,
         payment_terms:
             'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
         delivery_terms:
@@ -33,22 +49,25 @@ function QuotationSection({
             'Harga sudah termasuk bahan, proses produksi, dan packing. Harga belum termasuk delivery dan pajak.',
         tax: 0,
         delivery_cost: 0,
-        fabric: '',
-        print_method: '',
     });
 
     const approveForm = useForm({
         approved_by_name: job.customer?.name || job.customer?.company || '',
         signature: null as File | null,
-        sample_invoice_amount: 0,
+        sample_invoice_amount: sampleInvoiceAmount,
     });
-    // const latestQuotation = quotations[0] || null;
-    const canGenerate = Number(job.price_per_piece || 0) > 0 && can('quotation.generate');
+    
+    // Cek apakah setiap pesanan di dalam job ticket sudah memiliki harga jual final
+    const hasSellingPrice = job.orders && job.orders.length > 0 && job.orders.every((order: any) =>
+        Number(order.price_per_piece || order.harga_jual_per_pcs) > 0
+    );
+
+    const canGenerate = hasSellingPrice && can('quotation.generate');
 
     const submitGenerateQuotation = (e: React.FormEvent) => {
         e.preventDefault();
-
-        quotationForm.post(`/pesanan/${job.id}/quotations/generate`, {
+        // Route disesuaikan ke level Job Ticket
+        quotationForm.post(`/job-tickets/${job.id}/quotations/generate`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Surat penawaran berhasil dibuat.'),
         });
@@ -65,18 +84,11 @@ function QuotationSection({
         });
     };
 
-    const hasSellingPrice =
-        Number((job as any).harga_jual_per_pcs || (job as any).price_per_piece || 0) > 0;
-
     const handleDeleteCustomer = (quotation: any) => {
-        //triger warning
         toast.warning(`Apakah Anda yakin ingin menghapus surat penawaran ini?`, {
-        //   description: 'Data yang dihapus tidak dapat dikembalikan.',
-          //main action
           action: {
             label: 'Hapus',
             onClick: () => {
-              //excecute
               router.delete(`/quotations/${quotation.id}`, {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -86,13 +98,13 @@ function QuotationSection({
             },
           },
         });
-      };
+    };
 
     return (
         <SectionCard title="Surat Penawaran / Quotation">
             {!canGenerate && can('quotation.generate') && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Simpan harga jual final terlebih dahulu sebelum membuat surat penawaran.
+                    Semua pesanan dalam Job Ticket ini harus ditentukan harga jual finalnya terlebih dahulu sebelum membuat surat penawaran.
                 </div>
             )}
 
@@ -103,7 +115,7 @@ function QuotationSection({
                             Generate Surat Penawaran
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                            Surat penawaran akan memakai harga jual final owner.
+                            Surat penawaran akan merangkum seluruh pesanan dengan memakai harga jual final owner.
                         </p>
                     </div>
 
@@ -118,44 +130,38 @@ function QuotationSection({
                             />
                         </Field>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Delivery Cost" error={quotationForm.errors.delivery_cost}>
-                                <FormattedNumberInput
-                                    value={quotationForm.data.delivery_cost}
-                                    onValueChange={(value) => quotationForm.setData('delivery_cost', value)}
-                                    placeholder='cth: 35.000'
-                                />
-                            </Field>
-                            <Field label="Jumlah Sample" error={quotationForm.errors.sample_qty}>
-                                <FormattedNumberInput
-                                    value={quotationForm.data.sample_qty}
-                                    onValueChange={(value) => quotationForm.setData('sample_qty', value)}
-                                    placeholder='cth: 5'
-                                />
-                            </Field>
+                        <Field label="Delivery Cost" error={quotationForm.errors.delivery_cost}>
+                            <FormattedNumberInput
+                                value={quotationForm.data.delivery_cost}
+                                onValueChange={(value) => quotationForm.setData('delivery_cost', value)}
+                                placeholder='cth: 35.000'
+                            />
+                        </Field>
+                        {/* Render Grid untuk Multi-Orders */}
+                        <div className="grid gap-4 md:grid-cols-3 col-span-2 items-end">
+
+                            {/* 2. Map orders di sini */}
+                            {orders.map((order: Pesanan) => (
+                                <Field 
+                                    key={order.id} 
+                                    label={`Sample Qty - ${order.requested_product_name || order.product_name}`} 
+                                    // Error statenya akan berbentuk string dot notation, misal: sample_qtys.1
+                                    error={quotationForm.errors[`sample_qtys.${order.id}` as keyof typeof quotationForm.errors]}
+                                >
+                                    <FormattedNumberInput
+                                        value={quotationForm.data.sample_qtys[order.id] || 0}
+                                        onValueChange={(value) => {
+                                            // 3. Update spesifik properti di dalam object sample_qtys
+                                            quotationForm.setData('sample_qtys', {
+                                                ...quotationForm.data.sample_qtys,
+                                                [order.id]: Number(value)
+                                            });
+                                        }}
+                                        placeholder='cth: 1'
+                                    />
+                                </Field>
+                            ))}
                         </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <Field label="Fabric" error={quotationForm.errors.fabric}>
-                            <Input
-                                value={quotationForm.data.fabric}
-                                onChange={(e) =>
-                                    quotationForm.setData('fabric', e.target.value)
-                                }
-                                placeholder="Contoh: Combed Premium 20s"
-                            />
-                        </Field>
-
-                        <Field label="Print Method" error={quotationForm.errors.print_method}>
-                            <Input
-                                value={quotationForm.data.print_method}
-                                onChange={(e) =>
-                                    quotationForm.setData('print_method', e.target.value)
-                                }
-                                placeholder="Contoh: DTF / Plastisol / Bordir"
-                            />
-                        </Field>
                     </div>
 
                     <Field label="Payment Terms" error={quotationForm.errors.payment_terms}>
@@ -225,9 +231,7 @@ function QuotationSection({
                                             type="button"
                                             variant="destructive"
                                             disabled={quotation.status === 'approved'}
-                                            onClick={() =>
-                                                handleDeleteCustomer(quotation)
-                                            }
+                                            onClick={() => handleDeleteCustomer(quotation)}
                                         >
                                             Hapus
                                         </Button>
@@ -270,14 +274,14 @@ function QuotationSection({
                                     )}
 
                                     {can('quotation.generate') && (
-                                        <Field label="Nominal Invoice Sample" error={approveForm.errors.sample_invoice_amount}>
+                                        <Field label="Nominal Invoice Sample Total" error={approveForm.errors.sample_invoice_amount}>
                                             <FormattedNumberInput
                                                 value={approveForm.data.sample_invoice_amount}
                                                 onValueChange={(value) => approveForm.setData('sample_invoice_amount', value)}
                                                 placeholder='cth: 35.000'
                                             />
                                             <p className="text-xs text-slate-500">
-                                                Kosongkan/0 untuk default 3 pcs x harga jual.
+                                                Kosongkan/0 jika sample gratis.
                                             </p>
                                         </Field>
                                     )}

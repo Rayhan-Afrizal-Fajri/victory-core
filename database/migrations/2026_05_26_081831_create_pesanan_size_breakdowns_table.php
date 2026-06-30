@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pesanan_id')->constrained('pesanan')->cascadeOnDelete();
             $table->string('color')->nullable();
-            $table->string('size_label');
+            $table->string('size_label')->nullable();
+            $table->string('fabric_spec')->nullable();
             $table->integer('qty')->default(0);
             $table->integer('sort_order')->default(0);
             $table->timestamps();

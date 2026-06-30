@@ -30,7 +30,7 @@ class SupplierController extends Controller
                 'order_history' => $sup->purchasing->map(function ($purchase) {
                     return [
                         'id' => $purchase->id,
-                        'job_ticket' => $purchase->pesanan?->no_job_ticket,
+                        'job_ticket' => $purchase->pesanan?->jobTicket?->no_job_ticket,
                         'item_name' => $purchase->item_bahan,
                         'quantity'=> $purchase->qty_bahan,
                         'total_cost' => $purchase->total_harga,

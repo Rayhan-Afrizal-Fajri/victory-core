@@ -15,7 +15,11 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('quotation_id')
-                ->constrained()
+                ->constrained('quotations')
+                ->cascadeOnDelete();
+
+            $table->foreignId('pesanan_id')
+                ->constrained('pesanan')
                 ->cascadeOnDelete();
 
             $table->string('item_name');

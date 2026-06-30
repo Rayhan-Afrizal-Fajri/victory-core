@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import { useCan } from '@/hooks/use-can';
 
 type KanbanColumn = {
     id: string;
@@ -85,6 +86,8 @@ function getProgressColor(progress: number) {
 }
 
 function KanbanJobCard({ card }: { card: KanbanCard }) {
+    const can = useCan();
+
     const activeRun =
         card.stage === 'sample_production'
             ? card.sampleProgress
@@ -173,12 +176,14 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                     {getDeadlineText(card.daysLeft)}
                 </div>
 
-                <Link href={card.showUrl}>
-                    <Button size="sm" variant="outline">
-                        <Eye className="size-4" />
-                        Detail
-                    </Button>
-                </Link>
+                {can('dashboard.admin') && (
+                    <Link href={card.showUrl}>
+                        <Button size="sm" variant="outline">
+                            <Eye className="size-4" />
+                            Detail
+                        </Button>
+                    </Link>
+                )}
             </div>
         </div>
     );

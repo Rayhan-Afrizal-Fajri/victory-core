@@ -18,6 +18,10 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            $table->foreignId('pesanan_id')
+                ->constrained('pesanan')
+                ->cascadeOnDelete();
+
             $table->foreignId('pesanan_manufacturing_spec_id')
                 ->nullable()
                 ->constrained('pesanan_manufacturing_specs')
@@ -32,6 +36,7 @@ return new class extends Migration
                 'completed',
             ])->default('pending');
 
+            $table->integer('quantity')->default(0);
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
 

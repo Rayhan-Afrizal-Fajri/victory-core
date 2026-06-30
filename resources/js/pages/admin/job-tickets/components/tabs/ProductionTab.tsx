@@ -1,44 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-import type { JobTicket } from '../../types';
+import type { JobTicket, Pesanan } from '../../types';
 import WorkflowGate from '../WorkflowGate';
 
 import ProductionRunBoard from '@/components/production-runs/production-run-board';
 
 const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
-    const workflow = job.workflow_status;
-
-    if (!workflow?.sample_approved) {
-        return (
-            <WorkflowGate reason="Sample belum disetujui. Production terkunci." />
-        );
-    }
-
-    if (!workflow?.production_invoice_created) {
-        return (
-            <WorkflowGate reason="Invoice produksi belum dibuat." />
-        );
-    }
-
-    if (!workflow?.production_dp_paid) {
-        return (
-            <WorkflowGate reason="DP produksi minimal 50% belum diverifikasi." />
-        );
-    }
-
-    if (!workflow?.production_materials_ready || !workflow?.materials_received) {
-        return (
-            <WorkflowGate reason="Material produksi belum cukup diterima." />
-        );
-    }
+    const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
+    const activeOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
+    const workflow = activeOrder.workflow_status;
 
     return (
         <div className="space-y-6">
-            <ProductionRunBoard
-                job={job}
-                run={(job as any).production_run || null}
-                runType="production"
-            />
+            {job.orders && job.orders.length > 1 && (
+                <div className="mb-6 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pilih Produk Pesanan:</p>
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {job.orders.map((order, index) => (
+                            <button
+                                key={order.id}
+                                onClick={() => setActiveOrderIndex(index)}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap ${
+                                    activeOrderIndex === index
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                }`}
+                            >
+                                <span className={`mr-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeOrderIndex === index ? 'bg-blue-500/50' : 'bg-slate-200'}`}>
+                                    {index + 1}
+                                </span>
+                                {order.requested_product_name || order.product_name || `Produk #${index + 1}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+            {!workflow?.sample_approved ? (
+                <WorkflowGate reason="Sample belum disetujui. Production terkunci." />
+            ): !workflow?.production_materials_ready || !workflow?.materials_received ? (
+                <WorkflowGate reason="Material produksi belum cukup diterima." />
+            ): (
+                <ProductionRunBoard
+                    job={job}
+                    activeOrder={activeOrder}
+                    run={(job as any).production_run || null}
+                    runType="production"
+                />
+            )}
         </div>
     );
 };

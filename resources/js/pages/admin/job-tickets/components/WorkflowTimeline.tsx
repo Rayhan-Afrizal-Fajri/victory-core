@@ -1,11 +1,7 @@
-import { CheckCircle2, Clock, Lock, Circle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import React from 'react';
-import { toast } from 'sonner';
-import type { JobTicket } from '../types';
-import SectionCard from './SectionCard';
+import type { JobTicket, Pesanan, WorkflowStatus } from '../types';
 import { Card } from '@/components/ui/card';
-
-const ICON_SIZE = 18;
 
 const workflowGroups = [
   {
@@ -16,55 +12,47 @@ const workflowGroups = [
   {
     key: 'design',
     label: 'Design Specs',
-    steps: ['design_uploaded', 'design_approved', 'article_synced', 'design_specs_completed', 'quotation_created', 'quotation_approved'],
+    steps: ['design_uploaded', 'design_approved', 'article_synced'],
+  },
+  {
+    key: 'costing',
+    label: 'Costing',
+    steps: ['design_specs_completed'],
+  },
+  {
+    key: 'quotation',
+    label: 'Quotation',
+    steps: ['quotation_created', 'quotation_approved'],
   },
   {
     key: 'invoice_sample',
     label: 'Invoice Sample',
-    steps: [
-      'sample_paid'
-    ],
+    steps: ['sample_paid'],
   },
   {
     key: 'sample_purchasing',
     label: 'Sample Purchasings',
-    steps: [
-      'sample_materials_ready',
-    ],
+    steps: ['sample_materials_ready'],
   },
   {
     key: 'sample',
     label: 'Sample',
-    steps: [
-      'sample_created',
-      'sample_delivered',
-      'sample_approved',
-    ],
+    steps: ['sample_created', 'sample_delivered', 'sample_approved'],
   },
   {
     key: 'production_payment',
     label: 'Production Payment',
-    steps: [
-      'production_invoice_created',
-      'production_dp_paid',
-    ],
+    steps: ['production_invoice_created', 'production_dp_paid'],
   },
   {
     key: 'production_purchasing',
     label: 'Production Purchasings',
-    steps: [
-      'production_materials_ready',
-    ],
+    steps: ['production_materials_ready'],
   },
   {
     key: 'production',
     label: 'Production',
-    steps: [
-      'production_started',
-      'production_completed',
-      'qc_completed',
-      'packing_completed',
-    ],
+    steps: ['production_started', 'production_completed', 'qc_completed', 'packing_completed'],
   },
   {
     key: 'final_billing',
@@ -85,12 +73,13 @@ const workflowGroups = [
 
 function getGroupProgress(
   group: typeof workflowGroups[number],
-  flags: JobTicket['workflow_status']
+  flags?: WorkflowStatus | null
 ) {
   const total = group.steps.length;
 
   const completed = group.steps.filter((step) => {
-    return flags?.[step as keyof typeof flags];
+    // Casting step sebagai keyof WorkflowStatus
+    return flags?.[step as keyof WorkflowStatus];
   }).length;
 
   return {
@@ -106,8 +95,13 @@ function getGroupStatus(percentage: number) {
   return 'pending';
 }
 
-export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
-  const flags = job.workflow_status;
+export const WorkflowTimeline: React.FC<{ 
+  jobTicket: JobTicket;
+  activePesanan: Pesanan;
+}> = ({ jobTicket, activePesanan }) => {
+  
+  // Mengambil parameter flags dari pesanan yang sedang aktif
+  const flags = activePesanan.workflow_status;
 
   return (
     <Card className="rounded-4xl py-0 overflow-hidden">
@@ -118,22 +112,20 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
             let status = getGroupStatus(progress.percentage);
             let isLast = index === workflowGroups.length - 1;
 
-            // 2. Kunci progress jika proses sebelumnya belum 'completed'
-            if (index > 0) {
-              const prevGroup = workflowGroups[index - 1];
-              const prevProgress = getGroupProgress(prevGroup, flags);
-              const prevStatus = getGroupStatus(prevProgress.percentage);
+            // if (index > 0) {
+            //   const prevGroup = workflowGroups[index - 1];
+            //   const prevProgress = getGroupProgress(prevGroup, flags);
+            //   const prevStatus = getGroupStatus(prevProgress.percentage);
 
-              if (prevStatus !== 'completed') {
-                // Jika proses sebelumnya belum kelar, paksa progress grup ini jadi 0%
-                progress = {
-                  total: group.steps.length,
-                  completed: 0,
-                  percentage: 0,
-                };
-                status = 'pending'; // Perbaikan: dari 'penting' menjadi 'pending'
-              }
-            }
+            //   if (prevStatus !== 'completed') {
+            //     progress = {
+            //       total: group.steps.length,
+            //       completed: 0,
+            //       percentage: 0,
+            //     };
+            //     status = 'pending'; 
+            //   }
+            // }
 
             return (
               <div
@@ -144,9 +136,7 @@ export const WorkflowTimeline: React.FC<{ job: JobTicket }> = ({ job }) => {
                   <div className="absolute top-5 left-1/2 w-full h-1 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-green-500 transition-all duration-500"
-                      style={{
-                        width: `${progress.percentage}%`,
-                      }}
+                      style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
                 )}

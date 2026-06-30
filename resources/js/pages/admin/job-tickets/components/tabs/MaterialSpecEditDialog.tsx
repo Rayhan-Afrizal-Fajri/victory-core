@@ -10,15 +10,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
+    Select as Select1,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 
+import Select from 'react-select';
+
 import Field from '@/components/sample/field';
-import type { Supplier } from '../../types';
+import type { SupplierOption } from '../../types';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 function MaterialSpecEditDialog({
@@ -34,7 +36,7 @@ function MaterialSpecEditDialog({
     onOpenChange: (open: boolean) => void;
     spec: any | null;
     form: any;
-    suppliers: Supplier[];
+    suppliers: SupplierOption[];
     onSubmit: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
 }) {
@@ -60,7 +62,7 @@ function MaterialSpecEditDialog({
                 <form onSubmit={onSubmit} className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="Tipe" error={form.errors.type}>
-                            <Select
+                            <Select1
                                 value={form.data.type || 'bahan'}
                                 onValueChange={(value) =>
                                     form.setData('type', value)
@@ -78,7 +80,7 @@ function MaterialSpecEditDialog({
                                         Aksesoris
                                     </SelectItem>
                                 </SelectContent>
-                            </Select>
+                            </Select1>
                         </Field>
 
                         <Field
@@ -146,7 +148,7 @@ function MaterialSpecEditDialog({
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="Supplier" error={form.errors.supplier_id}>
-                            <Select
+                            {/* <Select
                                 value={
                                     form.data.supplier_id
                                         ? String(form.data.supplier_id)
@@ -175,11 +177,26 @@ function MaterialSpecEditDialog({
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
-                            </Select>
+                            </Select> */}
+                            <Select
+                                className='text-sm rounded-full'
+                                classNamePrefix='select'
+                                options={suppliers}
+                                value={
+                                    suppliers?.find(
+                                        x => x.value === form.data.supplier_id
+                                    )
+                                }
+                                onChange={(option) => {
+                                    form.setData('supplier_id', Number(option?.value ?? ""))
+                                }}
+                                placeholder="Pilih supplier..."
+                                isSearchable={true}
+                            />
                         </Field>
 
                         <Field label="Pilihan Harga" error={form.errors.price_type}>
-                            <Select
+                            <Select1
                                 value={form.data.price_type || 'ecer'}
                                 onValueChange={(value) =>
                                     form.setData('price_type', value)
@@ -193,7 +210,7 @@ function MaterialSpecEditDialog({
                                     <SelectItem value="ecer">Ecer</SelectItem>
                                     <SelectItem value="roll">Roll</SelectItem>
                                 </SelectContent>
-                            </Select>
+                            </Select1>
                         </Field>
                     </div>
 

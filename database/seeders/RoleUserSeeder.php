@@ -14,6 +14,22 @@ class RoleUserSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permissions = [
+            'dashboard.admin',
+            'kanban_board.view',
+
+            'order_entry.create',
+            'order_entry.update',
+
+            'invoice_payments.view',
+
+            'purchasing.view',
+            'job_tickets.view',
+
+            'reports.view',
+
+            'master_data',
+
+            //job-ticket process
             'design.upload',
             'design.approve',
             'design.sync_article',
@@ -110,13 +126,8 @@ class RoleUserSeeder extends Seeder
         ]);
 
         Role::findByName('Customer')->syncPermissions([
-            'payment.create',
-            'quotation.approve',
-            'sample.approve',
-            'sample.revision',
-            'sample.reject',
-            'payment.update',
-            'payment.delete',
+            'order_entry.create',
+            'job_tickets.view'
         ]);
 
         $users = [
@@ -154,11 +165,6 @@ class RoleUserSeeder extends Seeder
                 'name' => 'Produksi User',
                 'email' => 'produksi@victorylabs.id',
                 'role' => 'Produksi',
-            ],
-            [
-                'name' => 'Customer User',
-                'email' => 'customer@victorylabs.id',
-                'role' => 'Customer',
             ],
         ];
 

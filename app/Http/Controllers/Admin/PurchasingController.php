@@ -7,17 +7,20 @@ use App\Models\MaterialReceiving;
 use App\Models\Pesanan;
 use App\Models\Purchasing;
 use App\Models\Supplier;
+use App\Models\JobTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Services\ProductionRunService;
+use App\Services\InvoiceService;
 
 class PurchasingController extends Controller
 {
 
     public function __construct(
         protected ProductionRunService $productionRunService,
+        protected InvoiceService $invoiceService,
     ) {}
     /**
      * Display a listing of the resource.
@@ -26,7 +29,8 @@ class PurchasingController extends Controller
     {
         $purchasings = Purchasing::query()
             ->with([
-                'pesanan.customer',
+                'pesanan.jobTicket.customer',
+                'pesanan.jobTicket.companyProfile',
                 'pesanan.workflowStatus',
                 'supplier',
                 'pesananMaterialSpec',
@@ -37,20 +41,25 @@ class PurchasingController extends Controller
             ->map(fn ($purchasing) => $this->mapPurchasing($purchasing))
             ->values();
 
-        $jobTickets = Pesanan::query()
-            ->with(['customer', 'workflowStatus'])
-            ->whereHas('workflowStatus', function ($query) {
+        $jobTickets = JobTicket::query()
+            ->with([
+                'customer',
+                'pesanans.workflowStatus',
+            ])
+            ->whereHas('pesanans.workflowStatus', function ($query) {
                 $query->where('sample_paid', true);
             })
             ->latest()
             ->get()
-            ->map(fn ($pesanan) => [
-                'id' => $pesanan->id,
-                'no_job_ticket' => $pesanan->no_job_ticket,
-                'customer' => $pesanan->customer?->nama_perusahaan
-                    ?? $pesanan->customer?->nama
-                    ?? $pesanan->customer_perusahaan_snapshot
-                    ?? '-',
+            ->map(fn ($jobTicket) => [
+                'id' => $jobTicket->id,
+                'no_job_ticket' => $jobTicket->no_job_ticket,
+
+                'customer' => [
+                    'id' => $jobTicket->customer?->id,
+                    'nama' => $jobTicket->customer?->nama,
+                    'nama_perusahaan' => $jobTicket->customer?->nama_perusahaan,
+                ],
             ])
             ->values();
 
@@ -82,62 +91,126 @@ class PurchasingController extends Controller
         );
 
         $purchaseQty = (float) ($p->purchase_qty ?: $p->qty_bahan);
-        $remainingQty = max($purchaseQty - $receivedQty, 0);
+
+        $remainingQty = max(
+            $purchaseQty - $receivedQty,
+            0
+        );
+
+        $jobTicket = $p->pesanan?->jobTicket;
 
         return [
+
             'id' => $p->id,
+
+            'job_ticket_id' => $jobTicket?->id,
+
             'pesanan_id' => $p->pesanan_id,
+
             'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
 
-            'source' => $p->pesanan_material_spec_id ? 'bom' : 'manual',
+            'source' => $p->pesanan_material_spec_id
+                ? 'bom'
+                : 'manual',
 
-            'no_job_ticket' => $p->pesanan?->no_job_ticket,
-            'customer' => $p->pesanan?->customer?->nama_perusahaan
-                ?? $p->pesanan?->customer?->nama
-                ?? $p->pesanan?->customer_perusahaan_snapshot
+            'job_ticket' => $jobTicket ? [
+
+                'id' => $jobTicket->id,
+
+                'no_job_ticket' => $jobTicket->no_job_ticket,
+
+                'customer' => [
+                    'id' => $jobTicket->customer?->id,
+                    'nama' => $jobTicket->customer?->nama,
+                    'nama_perusahaan' => $jobTicket->customer?->nama_perusahaan,
+                ],
+
+                'company_profile' => [
+                    'id' => $jobTicket->companyProfile?->id,
+                    'company_name' => $jobTicket->companyProfile?->company_name,
+                ],
+
+            ] : null,
+
+            // legacy
+            'no_job_ticket' => $jobTicket?->no_job_ticket,
+
+            'customer' =>
+                $jobTicket?->customer?->nama_perusahaan
+                ?? $jobTicket?->customer?->nama
                 ?? '-',
 
             'supplier_id' => $p->supplier_id,
+
             'supplier' => $p->supplier ? [
+
                 'id' => $p->supplier->id,
+
                 'nama' => $p->supplier->nama,
+
                 'nama_perusahaan' => $p->supplier->nama_perusahaan,
+
                 'kategori' => $p->supplier->kategori,
+
                 'kontak' => $p->supplier->kontak,
+
                 'alamat' => $p->supplier->alamat,
+
             ] : null,
 
             'item_bahan' => $p->item_bahan,
+
             'item' => $p->item_bahan,
 
             'qty_bahan' => (float) $p->qty_bahan,
+
             'required_qty' => (float) $p->required_qty,
+
             'purchase_qty' => $purchaseQty,
+
             'stock_qty' => (float) $p->stock_qty,
+
             'leftover_qty' => (float) $p->leftover_qty,
 
             'satuan' => $p->satuan,
+
             'unit' => $p->satuan,
 
             'harga_satuan' => (float) $p->harga_satuan,
+
             'total_harga' => (float) $p->total_harga,
 
             'tgl_pembelian' => $p->tgl_pembelian,
+
             'is_received' => (bool) $p->is_received,
+
             'received_qty' => $receivedQty,
+
             'remaining_qty' => $remainingQty,
+
             'status' => $p->status,
+
             'purchase_scope' => $p->purchase_scope,
+
             'notes' => $p->notes,
+
+            'workflow_status' => $p->pesanan?->workflowStatus,
 
             'material_receivings' => $p->materialReceivings
                 ->map(fn ($receiving) => [
+
                     'id' => $receiving->id,
+
                     'received_qty' => (float) $receiving->received_qty,
+
                     'qty_received' => (float) $receiving->received_qty,
+
                     'received_at' => $receiving->received_at,
+
                     'notes' => $receiving->notes,
+
                     'checked_by' => $receiving->checkedBy?->name,
+
                 ])
                 ->values(),
         ];
@@ -153,7 +226,7 @@ class PurchasingController extends Controller
             'workflowStatus',
             'materialSpecs.supplier',
             'purchasing',
-            'quotations',
+            'jobTicket.quotations',
         ])->findOrFail($pesananId);
 
         if (! $pesanan->workflowStatus?->sample_paid) {
@@ -164,10 +237,12 @@ class PurchasingController extends Controller
             abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
         }
 
-        $quotation = $pesanan->quotations->first();
+        $quotation = $pesanan->jobTicket->quotations->first();
+
+        // dd($pesanan,$quotation);
 
         $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-        $sampleQty = (int) ($quotation->sample_qty ?: $validated['sample_qty'] ?: $pesanan->sample_qty ?: 1);
+        $sampleQty = (int) ($pesanan->sample_qty ?: 1);
         $totalPlannedQty = $productionQty + $sampleQty;
 
         $pesanan->update([
@@ -195,8 +270,6 @@ class PurchasingController extends Controller
                     : (float) $spec->harga_ecer;
 
                 $totalHarga = $purchaseQty * $hargaSatuan;
-
-                // dd('nama: '.$spec->material_name_snapshot,' required: '.$requiredQty.', purchase: '.$purchaseQty.', stock: '.$stockQty.', leftover: '.$leftoverQty.', harga: '.$hargaSatuan.', total: '.$totalHarga);
 
                 $pesanan->purchasing()->create([
                     'pesanan_material_spec_id' => $spec->id,
@@ -228,11 +301,15 @@ class PurchasingController extends Controller
                 ]
             );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'purchasing',
                 'action' => 'generated_from_bom',
                 'user_id' => Auth::id(),
                 'notes' => 'Purchasing digenerate dari BOM untuk kebutuhan sample dan production.',
+            ]);
+
+            $pesanan->jobTicket()->update([
+                'status' => 'Purchasing'
             ]);
         });
 
@@ -275,7 +352,7 @@ class PurchasingController extends Controller
             'tgl_pembelian' => $validated['tgl_pembelian'] ?? null,
         ]);
 
-        $purchasing->pesanan->workflowHistory()->create([
+        $purchasing->pesanan->jobTicket->workflowHistory()->create([
             'step' => 'purchasing',
             'action' => 'po_item_updated',
             'user_id' => Auth::id(),
@@ -352,7 +429,7 @@ class PurchasingController extends Controller
             //     ]
             // );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'purchasing',
                 'action' => 'created',
                 'user_id' => Auth::id(),
@@ -421,7 +498,7 @@ class PurchasingController extends Controller
 
             $this->syncPurchasingStatus($purchasing);
 
-            $purchasing->pesanan->workflowHistory()->create([
+            $purchasing->pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'purchasing',
                 'action' => 'updated',
                 'user_id' => Auth::id(),
@@ -454,7 +531,7 @@ class PurchasingController extends Controller
 
             $this->syncPesananPurchasingWorkflow($pesanan);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'purchasing',
                 'action' => 'deleted',
                 'user_id' => Auth::id(),
@@ -479,7 +556,7 @@ class PurchasingController extends Controller
 
 
 
-        $purchasing->pesanan->workflowHistory()->create([
+        $purchasing->pesanan->jobTicket->workflowHistory()->create([
             'step' => 'purchasing',
             'action' => 'ordered',
             'user_id' => Auth::id(),
@@ -524,12 +601,22 @@ class PurchasingController extends Controller
             $this->syncPurchasingStatus($purchasing);
             $this->syncPesananPurchasingWorkflow($purchasing->pesanan);
 
-            $purchasing->pesanan->workflowHistory()->create([
+            $purchasing->pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'material_receiving',
                 'action' => 'received',
                 'user_id' => Auth::id(),
                 'notes' => 'Material diterima.',
             ]);
+
+            $this->invoiceService
+                ->ensureProductionInvoice(
+                    $purchasing->pesanan->jobTicket
+                );
+
+            $this->productionRunService
+                ->ensureProductionRun(
+                    $purchasing->pesanan->jobTicket
+                );
         });
 
         return back()->with('success', 'Material receiving berhasil disimpan.');
@@ -548,7 +635,7 @@ class PurchasingController extends Controller
             $this->syncPurchasingStatus($purchasing);
             $this->syncPesananPurchasingWorkflow($pesanan);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'material_receiving',
                 'action' => 'receiving_deleted',
                 'user_id' => Auth::id(),
@@ -719,7 +806,7 @@ class PurchasingController extends Controller
             'workflowStatus',
             'purchasing',
             'manufacturingSpecs',
-            'productionRuns.processes',  
+            'jobTicket.productionRuns.processes',  
             'materialSpecs'           
         ]);
 
@@ -741,7 +828,7 @@ class PurchasingController extends Controller
             $sampleMaterialsReady = true;
         }
 
-        if ($pesanan->productionRuns()->where('type', 'sample')->exists()) {
+        if ($pesanan->jobTicket->productionRuns()->where('type', 'sample')->exists()) {
             $sampleMaterialsReady = true;
         }
 
@@ -750,7 +837,7 @@ class PurchasingController extends Controller
             $productionMaterialsReady = true;
         }
 
-        if ($pesanan->productionRuns()
+        if ($pesanan->jobTicket->productionRuns()
             ->where('type', 'production')
             ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
             ->exists()
@@ -775,7 +862,11 @@ class PurchasingController extends Controller
         );
 
         if ($sampleMaterialsReady) {
-            $this->productionRunService->ensureSampleRun($pesanan);
+            $this->productionRunService->ensureSampleRun($pesanan->jobTicket);
+        }
+
+        if ($productionMaterialsReady) {
+            $this->productionRunService->ensureProductionRun($pesanan->jobTicket);
         }
     }
 
@@ -783,10 +874,10 @@ class PurchasingController extends Controller
     {
         $pesanan->loadMissing([
             'manufacturingSpecs',
-            'productionRuns',
+            'jobTicket.productionRuns',
         ]);
 
-        $existsingRun = $pesanan->productionRuns()
+        $existsingRun = $pesanan->jobTicket->productionRuns()
             ->where('type', 'sample')
             ->whereNotIn('status', ['rejected'])
             ->latest()
@@ -796,29 +887,31 @@ class PurchasingController extends Controller
             return;
         }
 
-        $sampleQty = (int) ($pesanan->sample_qty ?: 1);
-
-        $run = $pesanan->productionRuns()->create([
-            'type' => 'sample',
-            'quantity' => $sampleQty,
-            'status' => 'draft',
-        ]);
-
-        foreach ($pesanan->manufacturingSpecs as $index => $spec) {
-            $run->processes()->create([
-                'pesanan_manufacturing_spec_id' => $spec->id,
-                'work_name' => $spec->work_name_snapshot,
-                'sequence' => $index + 1,
-                'status' => 'pending',
-                'qc_status' => 'pending',
+        
+        DB::transaction(function() use ($pesanan, $existingRun) {
+            $run = $pesanan->jobTicket->productionRuns()->create([
+                'type' => 'sample',
+                'status' => 'draft',
             ]);
-        }
+                
+            $sampleQty = (int) ($pesanan->sample_qty ?: 1);
+            foreach ($pesanan->manufacturingSpecs as $index => $spec) {
+                $run->processes()->create([
+                    'pesanan_manufacturing_spec_id' => $spec->id,
+                    'work_name' => $spec->work_name_snapshot,
+                    'quantity' => $sampleQty,
+                    'sequence' => $index + 1,
+                    'status' => 'pending',
+                    'qc_status' => 'pending',
+                ]);
+            }
 
-        $pesanan->workflowHistory()->create([
-            'step' => 'production',
-            'action' => 'sample_run_created',
-            'user_id' => Auth::id(),
-            'notes' => "Sample production run otomatis dibuat dengan qty {$sampleQty}.",
-        ]);
+            $pesanan->jobTicket->workflowHistory()->create([
+                'step' => 'production',
+                'action' => 'sample_run_created',
+                'user_id' => Auth::id(),
+                'notes' => "Sample production run otomatis dibuat dengan qty {$sampleQty}.",
+            ]);
+        });
     }
 }

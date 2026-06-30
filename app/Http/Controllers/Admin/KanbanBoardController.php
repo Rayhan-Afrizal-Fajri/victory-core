@@ -3,55 +3,98 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
 use App\Models\Pesanan;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class KanbanBoardController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $cards = Pesanan::query()
+        $user = Auth::user();
+        $isAdmin = $user->can('dashboard.admin');
+
+        /**
+         * Kanban tetap per Pesanan/Artikel,
+         * karena workflowStatus, design, sample, production run itu level artikel.
+         */
+        $cardsQuery = Pesanan::query()
             ->with([
-                'customer',
+                'jobTicket.customer',
                 'workflowStatus',
-                'sampleRun.processes',
-                'productionRun.processes',
+                'productionRunProcesses.productionRun',
             ])
-            ->latest()
+            ->latest('id');
+
+        if (! $isAdmin) {
+            $cardsQuery->whereHas('jobTicket', function ($query) use ($user) {
+                $query->where('customer_id', $user->customer?->id);
+            });
+        }
+
+        $cards = $cardsQuery
             ->get()
             ->map(function ($pesanan) {
                 $workflow = $pesanan->workflowStatus;
+                $jobTicket = $pesanan->jobTicket;
+
+                $deadline = $pesanan->deadline ?: $jobTicket?->deadline;
 
                 $stage = $this->resolveStage($workflow);
                 $progress = $this->calculateProgress($workflow);
                 $blocker = $this->resolveBlocker($pesanan);
 
                 return [
+                    /**
+                     * id card = id pesanan/artikel
+                     */
                     'id' => $pesanan->id,
-                    'jobNo' => $pesanan->no_job_ticket ?? $pesanan->order_number ?? '-',
-                    'product' => $pesanan->requested_product_name ?: $pesanan->produk ?: '-',
-                    'customer' => $pesanan->customer?->nama_perusahaan
-                        ?? $pesanan->customer?->nama
-                        ?? $pesanan->customer_perusahaan_snapshot
+                    'pesananId' => $pesanan->id,
+                    'jobTicketId' => $jobTicket?->id,
+
+                    'jobNo' => $jobTicket?->no_job_ticket ?? '-',
+
+                    /**
+                     * product = nama artikel di dalam job ticket.
+                     */
+                    'product' => $pesanan->produk
+                        ?: $pesanan->requested_product_name
+                        ?: '-',
+
+                    'customer' => $jobTicket?->customer?->nama_perusahaan
+                        ?? $jobTicket?->customer?->nama
+                        ?? $jobTicket?->customer_perusahaan_snapshot
+                        ?? $jobTicket?->customer_nama_snapshot
                         ?? '-',
-                    'qty' => (int) ($pesanan->quantity ?: $pesanan->q ?: 0),
-                    'deadline' => $pesanan->deadline,
-                    'daysLeft' => $this->getDaysLeft($pesanan->deadline),
+
+                    'qty' => (int) ($pesanan->q ?? 0),
+                    'sampleQty' => (int) ($pesanan->sample_qty ?: $pesanan->qs ?: 0),
+
+                    'deadline' => $deadline,
+                    'daysLeft' => $this->getDaysLeft($deadline),
+
                     'stage' => $stage,
                     'stageLabel' => $this->getStageLabel($stage),
                     'progress' => $progress,
                     'blocker' => $blocker,
-                    'sampleProgress' => $this->mapRunProgress($pesanan->sampleRun),
-                    'productionProgress' => $this->mapRunProgress($pesanan->productionRun),
-                    'showUrl' => route('job-tickets.show', $pesanan->id),
+
+                    // 'sampleProgress' => $this->mapRunProgress($pesanan->productionRunProcesses->productionRun),
+                    // 'productionProgress' => $this->mapRunProgress($pesanan->productionRunProcesses->productionRun),
+
+                    /**
+                     * Untuk sekarang card tetap buka detail Job Ticket.
+                     * Nanti di frontend bisa auto-highlight artikel ini berdasarkan pesananId.
+                     */
+                    'showUrl' => $jobTicket
+                        ? route('job-tickets.show', $jobTicket->id)
+                        : '#',
                 ];
             })
             ->values();
-        
+
+        // dd($cards);
+
         return Inertia::render('admin/kanban/Index', [
             'cards' => $cards,
             'columns' => $this->columns(),
@@ -136,17 +179,27 @@ class KanbanBoardController extends Controller
             return 'order_entry';
         }
 
-        if ($workflow->completed) return 'done';
-        
+        if ($workflow->completed) {
+            return 'done';
+        }
+
         if ($workflow->delivered || $workflow->packing_completed) {
             return 'packing_delivery';
         }
 
-        if ($workflow->production_started || $workflow->production_completed || $workflow->qc_completed) {
+        if (
+            $workflow->production_started ||
+            $workflow->production_completed ||
+            $workflow->qc_completed
+        ) {
             return 'production';
         }
 
-        if ($workflow->production_invoice_created || $workflow->production_dp_paid || $workflow->final_payment_paid) {
+        if (
+            $workflow->production_invoice_created ||
+            $workflow->production_dp_paid ||
+            $workflow->final_payment_paid
+        ) {
             return 'production_payment';
         }
 
@@ -158,19 +211,29 @@ class KanbanBoardController extends Controller
             return 'sample_production';
         }
 
-        if ($workflow->materials_purchased || $workflow->materials_received || $workflow->sample_paid) {
+        if (
+            $workflow->materials_purchased ||
+            $workflow->materials_received ||
+            $workflow->sample_materials_ready ||
+            $workflow->production_materials_ready
+        ) {
             return 'purchasing';
         }
 
-        if ($workflow->quotation_approved) {
+        if ($workflow->sample_paid) {
             return 'sample_payment';
         }
 
-        if ($workflow->design_approved) {
+        if ($workflow->quotation_approved || $workflow->quotation_created) {
             return 'quotation';
         }
 
-        if ($workflow->design_uploaded || $workflow->design_created) {
+        if (
+            $workflow->design_uploaded ||
+            $workflow->design_approved ||
+            $workflow->article_synced ||
+            $workflow->design_specs_completed
+        ) {
             return 'design';
         }
 
@@ -201,19 +264,26 @@ class KanbanBoardController extends Controller
             return 0;
         }
 
+        /**
+         * Jangan masukkan pesanan_id ke steps,
+         * karena itu bukan progress workflow.
+         */
         $steps = [
-            'pesanan_id',
+            'article_synced',
             'design_uploaded',
             'design_approved',
+            'design_specs_completed',
+            'quotation_created',
             'quotation_approved',
             'sample_paid',
             'materials_purchased',
-            'materials_received',
+            'sample_materials_ready',
             'sample_created',
             'sample_delivered',
             'sample_approved',
             'production_invoice_created',
             'production_dp_paid',
+            'production_materials_ready',
             'production_started',
             'production_completed',
             'qc_completed',
@@ -223,9 +293,9 @@ class KanbanBoardController extends Controller
             'completed',
         ];
 
-        $done = collect($steps)->filter(function ($step) use ($workflow) {
-            return (bool) ($workflow->{$step} ?? false);
-        })->count();
+        $done = collect($steps)
+            ->filter(fn ($step) => (bool) ($workflow->{$step} ?? false))
+            ->count();
 
         return (int) round(($done / count($steps)) * 100);
     }
@@ -235,7 +305,15 @@ class KanbanBoardController extends Controller
         $w = $pesanan->workflowStatus;
 
         if (! $w) {
-            return 'Menunggu order diproses';
+            return 'Menunggu order entry diproses';
+        }
+
+        if (! $w->article_synced) {
+            return 'Menunggu sync artikel';
+        }
+
+        if (! $w->design_uploaded) {
+            return 'Menunggu upload design';
         }
 
         if (! $w->design_approved) {
@@ -250,23 +328,64 @@ class KanbanBoardController extends Controller
             return 'Menunggu payment sample';
         }
 
-        if (! ($w->materials_received ?? false)) {
-            return 'Menunggu material purchasing/receiving';
+        if (! ($w->sample_materials_ready ?? false)) {
+            return 'Menunggu material sample siap';
+        }
+
+        if (! ($w->sample_created ?? false)) {
+            return 'Menunggu sample production';
         }
 
         if (! ($w->sample_approved ?? false)) {
             return 'Menunggu sample approval';
         }
 
-        if (($w->production_invoice_created ?? false) && ! ($w->production_dp_paid ?? false)) {
-            return 'Menunggu DP production';
+        if (! ($w->production_invoice_created ?? false)) {
+            return 'Menunggu invoice produksi';
         }
 
-        if (($w->packing_completed ?? false) && ! ($w->final_payment_paid ?? false)) {
-            return 'Menunggu pelunasan';
+        /**
+         * Catatan:
+         * Nanti jika sudah ada payment_term / allow_production_without_dp
+         * di job_tickets, blocker DP ini jangan dibuat mutlak.
+         */
+        if (
+            ($w->production_invoice_created ?? false) &&
+            ! ($w->production_dp_paid ?? false)
+        ) {
+            return 'Menunggu DP production / approval tempo';
         }
 
-        if (($w->final_payment_paid ?? false) && ! ($w->delivered ?? false)) {
+        if (! ($w->production_materials_ready ?? false)) {
+            return 'Menunggu material produksi siap';
+        }
+
+        if (! ($w->production_started ?? false)) {
+            return 'Menunggu produksi dimulai';
+        }
+
+        if (! ($w->qc_completed ?? false)) {
+            return 'Menunggu QC completed';
+        }
+
+        if (! ($w->packing_completed ?? false)) {
+            return 'Menunggu packing';
+        }
+
+        /**
+         * Sama seperti DP, ini nanti perlu disesuaikan dengan AR / tempo.
+         */
+        if (
+            ($w->packing_completed ?? false) &&
+            ! ($w->final_payment_paid ?? false)
+        ) {
+            return 'Menunggu pelunasan / approval AR';
+        }
+
+        if (
+            ($w->final_payment_paid ?? false) &&
+            ! ($w->delivered ?? false)
+        ) {
             return 'Menunggu delivery';
         }
 
@@ -282,10 +401,12 @@ class KanbanBoardController extends Controller
         $processes = $run->processes ?? collect();
         $total = $processes->count();
 
-        $completed = $processes->filter(function ($process) {
-            return $process->status === 'completed'
-                && $process->qc_status === 'passed';
-        })->count();
+        $completed = $processes
+            ->filter(function ($process) {
+                return $process->status === 'completed'
+                    && $process->qc_status === 'passed';
+            })
+            ->count();
 
         return [
             'type' => $run->type,
@@ -293,7 +414,9 @@ class KanbanBoardController extends Controller
             'quantity' => (int) $run->quantity,
             'completed' => $completed,
             'total' => $total,
-            'percent' => $total > 0 ? round(($completed / $total) * 100) : 0,
+            'percent' => $total > 0
+                ? (int) round(($completed / $total) * 100)
+                : 0,
         ];
     }
 
@@ -305,7 +428,7 @@ class KanbanBoardController extends Controller
 
         return now()->startOfDay()->diffInDays(
             Carbon::parse($deadline)->startOfDay(),
-            false
+            false,
         );
     }
 }

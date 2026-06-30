@@ -230,7 +230,12 @@ export default function Index({ products }: Props) {
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200">
-          <DataTable columns={columns} data={filteredProducts} />
+          <DataTable 
+            columns={columns}
+            data={filteredProducts}
+            searchKeys={['name', 'category']} 
+            searchPlaceholder="Cari nama produk atau kategori..."
+          />
         </div>
       </div>
     </>

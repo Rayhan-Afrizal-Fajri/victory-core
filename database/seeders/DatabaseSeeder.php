@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
             MaterialSeeder::class,
             ManufacturingWorkSeeder::class,
             ProductSeeder::class,
+            CompanyProfileSeeder::class,
+            DefaultSizeBreakdownSeeder::class,
+            PesananSeeder::class,
         ]);
     }
 }

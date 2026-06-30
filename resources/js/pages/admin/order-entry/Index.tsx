@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type {FormEvent} from 'react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,829 +9,533 @@ import { store, update } from '@/routes/order-entry';
 import { Textarea } from '@/components/ui/textarea';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import { toast } from 'sonner';
-
-function formatIDR(value: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function calculateDaysLeft(deadline: string) {
-  if (!deadline) {
-    return null;
-  }
-
-  const due = new Date(deadline);
-
-  if (Number.isNaN(due.getTime())) {
-    return null;
-  }
-
-  const now = new Date();
-  const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-  return diff;
-}
+import { useCan } from '@/hooks/use-can';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Field from '@/components/sample/field';
 
 type Customer = {
   id: number;
   name: string;
-}
+};
 
-type EditingOrder = {
+type CompanyProfile = {
+  id: number;
+  name: string;
+  type: string;
+};
+
+type OrderData = {
+  id?: number | null;
+  requested_product_name: string;
+  q: number;
+  size_breakdowns: Array<{ color: string; size_label: string; fabric_spec: string; qty: number }>;
+};
+
+type EditingJobTicket = {
   id: number;
   no_job_ticket: string;
   customer_id: number | null;
-  requested_product_name: string;
-  q: number;
+  company_profile_id: number | null;
   deadline: string;
   customer_notes: string;
-  size_breakdowns: Array<{
-    color: string;
-    size_label: string;
-    qty: number;
-  }>;
+  orders: OrderData[];
 };
 
 type Props = {
   nextJobTicket: string | null;
   customers: Customer[];
-  editingOrder?: EditingOrder | null;
+  companyProfiles: CompanyProfile[];
+  editingJobTicket?: EditingJobTicket | null;
+  customer: Customer | null;
+  defaultSizeBreakdowns?: {
+    color: string[];
+    fabric: string[];
+    size: string[];
+  };
 };
 
-export default function Index({
-  nextJobTicket,
-  customers,
-  editingOrder = null,
-}: Props) {
+const emptySizeRow = { color: '', size_label: '', fabric_spec: '', qty: 1 };
+const emptyOrderRow: OrderData = {
+  id: null,
+  requested_product_name: '',
+  q: 0,
+  size_breakdowns: [{ ...emptySizeRow }],
+};
 
-  const emptySizeRow = {
-    color: '',
-    size_label: '',
-    qty: 1,
-  };
+export default function Index({ nextJobTicket, customers, companyProfiles, editingJobTicket = null, customer = null, defaultSizeBreakdowns = { color: [], fabric: [], size: [] } }: Props) {
+  const can = useCan();
+  const isEditing = Boolean(editingJobTicket);
 
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
   const [customerSearch, setCustomerSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const isEditing = Boolean(editingOrder);
+  const [customInputs, setCustomInputs] = useState<Record<string, { color: boolean; fabric_spec: boolean; size_label: boolean }>>({});
 
   const form = useForm({
-    no_job_ticket:
-      editingOrder?.no_job_ticket
-      ?? nextJobTicket
-      ?? 'VL-2026-001',
-
-    customer_id: editingOrder?.customer_id
-      ? String(editingOrder.customer_id)
-      : '',
-
+    no_job_ticket: editingJobTicket?.no_job_ticket ?? nextJobTicket ?? 'VL-2026-001',
+    customer_id: editingJobTicket?.customer_id ? String(editingJobTicket.customer_id) : customer?.id || '',
+    company_profile_id: editingJobTicket?.company_profile_id ? String(editingJobTicket.company_profile_id) : '',
+    
     new_customer_name: '',
     new_customer_company: '',
     new_customer_email: '',
     new_customer_phone: '',
     new_customer_address: '',
+    
+    deadline: editingJobTicket?.deadline ?? '',
+    customer_notes: editingJobTicket?.customer_notes ?? '',
 
-    produk: '',
-    requested_product_name:
-      editingOrder?.requested_product_name ?? '',
-
-    q: Number(editingOrder?.q ?? 0),
-    qs: 3,
-    deadline: editingOrder?.deadline ?? '',
-    harga_jual_per_pcs: 0,
-    estimasi_hpp_per_pcs: 0,
-    keterangan_tambahan: '',
-    customer_notes: editingOrder?.customer_notes ?? '',
-
-    size_breakdowns:
-      editingOrder?.size_breakdowns?.length
-        ? editingOrder.size_breakdowns
-        : [{ ...emptySizeRow }],
+    orders: editingJobTicket?.orders?.length ? editingJobTicket.orders : [{ ...emptyOrderRow }],
   });
 
+  // Handle Customer Selection Dropdown
   useEffect(() => {
-    if (!editingOrder?.customer_id) return;
-
-    const customer = customers.find(
-      (item) => item.id === editingOrder.customer_id,
-    );
-
-    if (customer) {
-      setCustomerSearch(customer.name);
-    }
-  }, [editingOrder?.customer_id, customers]);
+    if (!editingJobTicket?.customer_id) return;
+    const existing = customers.find((c) => c.id === editingJobTicket.customer_id);
+    if (existing) setCustomerSearch(existing.name);
+  }, [editingJobTicket, customers]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const filteredCustomers = useMemo(() => {
     const keyword = customerSearch.toLowerCase().trim();
-
-    if (!keyword) {
-      return customers.slice(0, 20);
-    }
-
-    return customers
-      .filter((customer) => customer.name.toLowerCase().includes(keyword))
-      .slice(0, 20);
+    if (!keyword) return customers.slice(0, 20);
+    return customers.filter((c) => c.name.toLowerCase().includes(keyword)).slice(0, 20);
   }, [customers, customerSearch]);
 
+  const productNamesInUse = useMemo(() => {
+    return form.data.orders
+      .map((order) => order.requested_product_name?.trim().toLowerCase())
+      .filter(Boolean);
+  }, [form.data.orders]);
+
   const selectedCustomer = useMemo(() => {
-    return customers.find((customer) => {
-      return String(customer.id) === String(form.data.customer_id);
-    });
+    return customers.find((c) => String(c.id) === String(form.data.customer_id));
   }, [customers, form.data.customer_id]);
 
-  //handle size breakdown
-  const totalSizeQty = useMemo(() => {
-    return form.data.size_breakdowns.reduce((total, row) => {
-      return total + Number(row.qty || 0);
-    }, 0);
-  }, [form.data.size_breakdowns]);
-
-  const sizeQtyIsValid = totalSizeQty === Number(form.data.q || 0);
-
-  const handleAddSize = () => {
-    form.setData('size_breakdowns', [
-      ...form.data.size_breakdowns,
-      { ...emptySizeRow },
-    ]);
-  };
-  
-  const isSizeBreakdownEmpty = useMemo(() => {
-    return (
-      form.data.size_breakdowns.length === 1 &&
-      !form.data.size_breakdowns[0].color &&
-      !form.data.size_breakdowns[0].size_label
-    );
-  }, [form.data.size_breakdowns]);
-
-  const handleRemoveSize = (index: number) => {
-    const nextRows = form.data.size_breakdowns.filter((_, i) => i !== index);
-
-    form.setData(
-      'size_breakdowns',
-      nextRows.length > 0 ? nextRows : [{ ...emptySizeRow }]
-    );
+  // Handle Order Array Logic
+  const handleAddOrder = () => {
+    form.setData('orders', [...form.data.orders, { ...emptyOrderRow }]);
   };
 
-  const handleSizeChange = (
-    index: number,
-    field: 'color' | 'size_label' | 'qty',
-    value: string | number
-  ) => {
-    const nextRows = [...form.data.size_breakdowns];
+  const handleRemoveOrder = (indexToRemove: number) => {
+    const newOrders = form.data.orders.filter((_, idx) => idx !== indexToRemove);
+    form.setData('orders', newOrders.length ? newOrders : [{ ...emptyOrderRow }]);
+  };
 
-    nextRows[index] = {
-      ...nextRows[index],
+  const updateOrder = (orderIndex: number, field: keyof OrderData, value: any) => {
+    const nextOrders = [...form.data.orders];
+    nextOrders[orderIndex] = { ...nextOrders[orderIndex], [field]: value };
+    form.setData('orders', nextOrders);
+  };
+
+  const toggleCustomInput = (orderIndex: number, sizeIndex: number, field: 'color' | 'fabric_spec' | 'size_label') => {
+    const key = `${orderIndex}-${sizeIndex}`;
+    setCustomInputs((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: !prev[key]?.[field],
+      },
+    }));
+  };
+
+  const handleAddSize = (orderIndex: number) => {
+    const nextOrders = [...form.data.orders];
+    nextOrders[orderIndex].size_breakdowns.push({ ...emptySizeRow });
+    form.setData('orders', nextOrders);
+  };
+
+  const handleRemoveSize = (orderIndex: number, sizeIndex: number) => {
+    const nextOrders = [...form.data.orders];
+    const filteredSizes = nextOrders[orderIndex].size_breakdowns.filter((_, i) => i !== sizeIndex);
+    nextOrders[orderIndex].size_breakdowns = filteredSizes.length ? filteredSizes : [{ ...emptySizeRow }];
+    form.setData('orders', nextOrders);
+  };
+
+  const updateSize = (orderIndex: number, sizeIndex: number, field: string, value: string | number) => {
+    const nextOrders = [...form.data.orders];
+    nextOrders[orderIndex].size_breakdowns[sizeIndex] = {
+      ...nextOrders[orderIndex].size_breakdowns[sizeIndex],
       [field]: field === 'qty' ? Number(value) : value,
     };
-
-    form.setData('size_breakdowns', nextRows);
+    form.setData('orders', nextOrders);
   };
 
-  //end of handle size breakdown
-
-  const [edited, setEdited] = useState(false);
-
-  const samplePrice = useMemo(
-      () => form.data.harga_jual_per_pcs * form.data.qs,
-      [form.data.harga_jual_per_pcs, form.data.qs]
-  );
-  const gopPerUnit = useMemo(
-      () => Math.max(form.data.harga_jual_per_pcs - form.data.estimasi_hpp_per_pcs, 0),
-      [form.data.harga_jual_per_pcs, form.data.estimasi_hpp_per_pcs]
-  );
-  const gopTotal = useMemo(
-      () => gopPerUnit * form.data.q,
-      [gopPerUnit, form.data.q]
-  );
-  const daysLeft = useMemo(
-      () => calculateDaysLeft(form.data.deadline),
-      [form.data.deadline]
-  );
-  const margin = useMemo(() => {
-    if (!form.data.harga_jual_per_pcs || form.data.harga_jual_per_pcs <= 0) {
-      return 0;
-    }
-
-    return Math.max(((form.data.harga_jual_per_pcs - form.data.estimasi_hpp_per_pcs) / form.data.harga_jual_per_pcs) * 100, 0);
-  }, [form.data.harga_jual_per_pcs, form.data.estimasi_hpp_per_pcs]);
-
-  const handleReset = () => {
-    if (isEditing && editingOrder) {
-      form.setData({
-        ...form.data,
-        no_job_ticket: editingOrder.no_job_ticket,
-        customer_id: editingOrder.customer_id
-          ? String(editingOrder.customer_id)
-          : '',
-        requested_product_name:
-          editingOrder.requested_product_name,
-        q: editingOrder.q,
-        deadline: editingOrder.deadline,
-        customer_notes: editingOrder.customer_notes ?? '',
-        size_breakdowns:
-          editingOrder.size_breakdowns.length > 0
-            ? editingOrder.size_breakdowns
-            : [{ ...emptySizeRow }],
-      });
-
-      setCustomerMode('existing');
-      return;
-    }
-
-    // reset create seperti sebelumnya
-  };
-
+  // Submit Handler
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // HANYA blokir jika size breakdown diisi, TETAPI qty-nya tidak match
-    if (!isSizeBreakdownEmpty && !sizeQtyIsValid) {
-      // (Opsional) Kamu bisa menambahkan toast.error('Total size tidak sesuai') di sini
+    const duplicateProductNames = form.data.orders.filter((order, index, orders) => {
+      const current = order.requested_product_name?.trim().toLowerCase();
+      return current && orders.findIndex((item) => (item.requested_product_name?.trim().toLowerCase() || '') === current) !== index;
+    });
+
+    if (duplicateProductNames.length) {
+      toast.error('Nama produk pada setiap pesanan harus unik.');
       return;
     }
 
-    // Gunakan transform untuk membersihkan data sebelum dikirim
+    // Check sizes validation locally before send
+    const invalidSizes = form.data.orders.some((order) => {
+      const isSizeEmpty = order.size_breakdowns.length === 1 && !order.size_breakdowns[0].color && !order.size_breakdowns[0].size_label;
+      const totalSizeQty = order.size_breakdowns.reduce((acc, curr) => acc + (curr.qty || 0), 0);
+      return !isSizeEmpty && totalSizeQty !== Number(order.q);
+    });
+
+    if (invalidSizes) {
+      toast.error('Gagal menyimpan. Terdapat detail size yang totalnya tidak sesuai dengan Quantity produk.');
+      return;
+    }
+
     form.transform((data) => ({
       ...data,
-
-      customer_id:
-        customerMode === 'existing'
-          ? data.customer_id
-          : null,
-
-      new_customer_name:
-        customerMode === 'new'
-          ? data.new_customer_name
-          : null,
-
-      new_customer_company:
-        customerMode === 'new'
-          ? data.new_customer_company
-          : null,
-
-      new_customer_email:
-        customerMode === 'new'
-          ? data.new_customer_email
-          : null,
-
-      new_customer_phone:
-        customerMode === 'new'
-          ? data.new_customer_phone
-          : null,
-
-      new_customer_address:
-        customerMode === 'new'
-          ? data.new_customer_address
-          : null,
-
-      size_breakdowns:
-        isSizeBreakdownEmpty
-          ? null
-          : data.size_breakdowns,
+      customer_id: customerMode === 'existing' ? data.customer_id : null,
+      new_customer_name: customerMode === 'new' ? data.new_customer_name : null,
     }));
 
-    if (isEditing && editingOrder) {
-      form.patch(update(editingOrder.id).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-          toast.success('Job Ticket berhasil diperbarui.');
-        },
-        onError: (errors) => {
-          console.error('Update order entry errors:', errors);
-
-          const firstError = Object.values(errors)[0];
-
-          toast.error(
-            typeof firstError === 'string'
-              ? firstError
-              : 'Gagal menyimpan perubahan. Cek kembali form.'
-          );
-        },
+    if (isEditing && editingJobTicket) {
+      form.patch(update(editingJobTicket.id).url, {
+        onSuccess: () => toast.success('Job Ticket berhasil diperbarui.'),
+        onError: (err) => toast.error(Object.values(err)[0] as string || 'Gagal menyimpan perubahan.'),
       });
-
       return;
     }
 
     form.post(store().url, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Job Ticket berhasil dibuat.');
-      },
-      onError: (errors) => {
-        console.error('Store order entry errors:', errors);
-
-        const firstError = Object.values(errors)[0];
-
-        toast.error(
-          typeof firstError === 'string'
-            ? firstError
-            : 'Gagal menyimpan order. Cek kembali form.'
-        );
-      },
+      onSuccess: () => toast.success('Job Ticket berhasil dibuat.'),
+      onError: (err) => toast.error(Object.values(err)[0] as string || 'Gagal menyimpan order.'),
     });
   };
+
+  // Summary Metrics
+  const totalQtyAcrossOrders = form.data.orders.reduce((acc, curr) => acc + Number(curr.q || 0), 0);
 
   return (
     <>
       <Head title={isEditing ? 'Edit Job Ticket' : 'Order Entry'} />
 
       <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
-        <div className="space-y-6 rounded-sm border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6">
+          
+          {/* SECTION 1: DATA JOB TICKET */}
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Job Ticket</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="jobNo">No Job Ticket *</Label>
+                <Label>No Job Ticket *</Label>
+                <Input readOnly value={form.data.no_job_ticket} required />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Deadline Job Ticket *</Label>
                 <Input
-                  id="jobNo"
-                  readOnly
-                  placeholder="VL-2026-009"
-                  value={form.data.no_job_ticket}
-                  onChange={(event) => form.setData('no_job_ticket', event.target.value)}
+                  type="date"
+                  value={form.data.deadline}
+                  onChange={(e) => form.setData('deadline', e.target.value)}
+                  required
                 />
               </div>
+
+              {/* ... Bagian Dropdown Customer persis seperti sebelumnya ... */}
               <div className="space-y-2" ref={dropdownRef}>
                 <Label>Customer / Brand *</Label>
-
                 {customerMode === 'existing' ? (
                   <div className="relative">
                     <Input
-                      value={
-                        selectedCustomer && !isDropdownOpen
-                          ? selectedCustomer.name
-                          : customerSearch
-                      }
-                      onChange={(event) => {
-                        setCustomerSearch(event.target.value);
-                        setIsDropdownOpen(true);
-
-                        if (form.data.customer_id) {
-                          form.setData('customer_id', '');
-                        }
-                      }}
+                      readOnly={!can('dashboard.admin')}
+                      value={selectedCustomer && !isDropdownOpen ? selectedCustomer.name : customerSearch}
+                      onChange={(e) => { setCustomerSearch(e.target.value); setIsDropdownOpen(true); }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      placeholder="Cari customer, contoh: Budi / CV Maju..."
+                      placeholder="Cari customer..."
                       className="w-full"
                     />
-
                     {isDropdownOpen && (
                       <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">
-                        {filteredCustomers.length > 0 ? (
-                          filteredCustomers.map((customer) => (
-                            <button
-                              key={customer.id}
-                              type="button"
-                              onClick={() => {
-                                form.setData('customer_id', String(customer.id));
-                                setCustomerSearch(customer.name);
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`block w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-slate-100 ${
-                                String(form.data.customer_id) === String(customer.id)
-                                  ? 'bg-emerald-50 font-medium text-emerald-700'
-                                  : 'text-slate-700'
-                              }`}
-                            >
-                              {customer.name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-3 py-3 text-sm text-slate-500">
-                            Data tidak ditemukan.
-                          </div>
+                        {/* Iterasi Map Customer sama persis seperti kode lama */}
+                        {filteredCustomers.map((c) => (
+                          <button
+                            key={c.id} type="button"
+                            onClick={() => { form.setData('customer_id', String(c.id)); setCustomerSearch(c.name); setIsDropdownOpen(false); }}
+                            className="block w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-slate-100"
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                        {can('dashboard.admin') && (
+                          <button
+                            type="button"
+                            onClick={() => { setCustomerMode('new'); form.setData('customer_id', ''); form.setData('new_customer_name', customerSearch); setIsDropdownOpen(false); }}
+                            className="w-full px-3 py-2 text-left text-sm font-medium text-blue-600 bg-slate-50 mt-1"
+                          >
+                            + Buat Customer Baru
+                          </button>
                         )}
-
-                        <div className="my-1 border-t border-slate-100" />
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCustomerMode('new');
-                            form.setData('customer_id', '');
-                            form.setData('new_customer_name', customerSearch);
-                            form.setData('new_customer_company', customerSearch);
-                            setIsDropdownOpen(false);
-                          }}
-                          className="flex w-full items-center rounded-sm bg-slate-50 px-3 py-2 text-left text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
-                        >
-                          + Buat Customer
-                          {customerSearch ? ` "${customerSearch}"` : ' Baru'}
-                        </button>
                       </div>
-                    )}
-
-                    {form.errors.customer_id && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {form.errors.customer_id}
-                      </p>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-4 rounded-md border border-blue-200 bg-blue-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-blue-900">
-                        Data Customer Baru
-                      </h4>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCustomerMode('existing');
-                          form.setData('new_customer_name', '');
-                          form.setData('new_customer_company', '');
-                          form.setData('new_customer_email', '');
-                          form.setData('new_customer_phone', '');
-                          form.setData('new_customer_address', '');
-                        }}
-                        className="h-8 bg-white text-xs"
-                      >
-                        Batal & Cari Existing
-                      </Button>
+                  <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <Label className="text-blue-900 font-semibold">Data Customer Baru</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setCustomerMode('existing')}>Batal</Button>
                     </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label className="text-xs">Nama Customer *</Label>
-                        <Input
-                          value={form.data.new_customer_name}
-                          onChange={(event) =>
-                            form.setData('new_customer_name', event.target.value)
-                          }
-                          placeholder="Nama PIC"
-                          className="h-8 bg-white text-sm"
-                        />
-                        {form.errors.new_customer_name && (
-                          <p className="text-xs text-red-500">
-                            {form.errors.new_customer_name}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs">Perusahaan / Brand *</Label>
-                        <Input
-                          value={form.data.new_customer_company}
-                          onChange={(event) =>
-                            form.setData('new_customer_company', event.target.value)
-                          }
-                          placeholder="CV / PT / Brand"
-                          className="h-8 bg-white text-sm"
-                        />
-                        {form.errors.new_customer_company && (
-                          <p className="text-xs text-red-500">
-                            {form.errors.new_customer_company}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label className="text-xs">Email</Label>
-                        <Input
-                          type="email"
-                          value={form.data.new_customer_email}
-                          onChange={(event) =>
-                            form.setData('new_customer_email', event.target.value)
-                          }
-                          placeholder="Email"
-                          className="h-8 bg-white text-sm"
-                        />
-                        {form.errors.new_customer_email && (
-                          <p className="text-xs text-red-500">
-                            {form.errors.new_customer_email}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs">No HP</Label>
-                        <Input
-                          value={form.data.new_customer_phone}
-                          onChange={(event) =>
-                            form.setData('new_customer_phone', event.target.value)
-                          }
-                          placeholder="08xxxx"
-                          className="h-8 bg-white text-sm"
-                        />
-                        {form.errors.new_customer_phone && (
-                          <p className="text-xs text-red-500">
-                            {form.errors.new_customer_phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs">Alamat</Label>
-                      <Textarea
-                        value={form.data.new_customer_address}
-                        onChange={(event) =>
-                          form.setData('new_customer_address', event.target.value)
-                        }
-                        placeholder="Alamat lengkap"
-                        className="min-h-16 bg-white text-sm"
-                      />
-                      {form.errors.new_customer_address && (
-                        <p className="text-xs text-red-500">
-                          {form.errors.new_customer_address}
-                        </p>
-                      )}
-                    </div>
+                    <Input placeholder="Nama PIC" value={form.data.new_customer_name} onChange={e => form.setData('new_customer_name', e.target.value)} className="mb-2" />
+                    <Input placeholder="Perusahaan" value={form.data.new_customer_company} onChange={e => form.setData('new_customer_company', e.target.value)} className="mb-2" />
+                    <Input placeholder="Email" value={form.data.new_customer_email} onChange={e => form.setData('new_customer_email', e.target.value)} className="mb-2" />
+                    <Input placeholder="Kontak" value={form.data.new_customer_phone} onChange={e => form.setData('new_customer_phone', e.target.value)} className="mb-2" />
+                    <Textarea placeholder="Alamat" value={form.data.new_customer_address} onChange={e => form.setData('new_customer_address', e.target.value)} />
                   </div>
                 )}
               </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="product">Produk yang Diminta *</Label>
-            <Input
-              id="product"
-              placeholder="cth. T-Shirt Oversize D&L Corps"
-              value={form.data.requested_product_name}
-              onChange={(event) =>
-                form.setData('requested_product_name', event.target.value)
-              }
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="qty">Total Quantity *</Label>
-              <FormattedNumberInput
-                  value={form.data.q}
-                  onValueChange={(value) => form.setData('q', value)}
-                  placeholder='cth: 40'
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Deadline *</Label>
-              <Input
-                id="deadline"
-                type="date"
-                value={form.data.deadline}
-                onChange={(event) => form.setData('deadline', event.target.value)}
-              />
+              <Field label='Perusahaan *'>
+                <Select value={form.data.company_profile_id || ''} onValueChange={(value) => form.setData('company_profile_id', value)}>
+                  <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
+                    <SelectValue placeholder="Pilih perusahaan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companyProfiles.map((option) => (
+                      <SelectItem key={option.id} value={String(option.id)}>{option.name} - {option.type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
           </div>
 
-          <div className="space-y-3 rounded-sm border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <Label>Detail Ukuran / Size Breakdown *</Label>
-                <p className="mt-1 text-xs text-slate-500">
-                  Customer bisa mengisi size custom seperti S, M, L, XL, All Size, atau ukuran lain.
-                </p>
-              </div>
-
-              <Button type="button" variant="secondary" onClick={handleAddSize}>
-                Tambah Size
-              </Button>
+          {/* SECTION 2: LIST PESANAN */}
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-slate-800">2. Daftar Pesanan Produk</h3>
             </div>
 
-            <div className="space-y-2">
-              {form.data.size_breakdowns.map((row, index) => (
-                <div key={index} className="grid gap-2 grid-cols-[1fr_1fr_120px_44px]">
-                  <Input
-                    placeholder="Warna optional"
-                    value={row.color}
-                    onChange={(event) =>
-                      handleSizeChange(index, 'color', event.target.value)
-                    }
-                  />
+            <div className="space-y-6">
+              {form.data.orders.map((order, oIndex) => {
+                const totalSizeQty = order.size_breakdowns.reduce((acc, curr) => acc + Number(curr.qty || 0), 0);
+                const isSizeEmpty = order.size_breakdowns.length === 1 && !order.size_breakdowns[0].color && !order.size_breakdowns[0].size_label;
+                const sizeIsValid = totalSizeQty === Number(order.q || 0);
 
-                  <Input
-                    placeholder="Size, cth. S / M / XL / All Size"
-                    value={row.size_label}
-                    onChange={(event) =>
-                      handleSizeChange(index, 'size_label', event.target.value)
-                    }
-                  />
+                return (
+                  <div key={oIndex} className="relative rounded-lg border border-slate-200 p-5 pt-7 bg-slate-50/50">
+                    <span className="absolute top-2 left-3 text-xs font-bold text-slate-400">Pesanan #{oIndex + 1}</span>
+                    
+                    {form.data.orders.length > 1 && (
+                      <Button type="button" variant="ghost" size="sm" className="absolute top-2 right-2 text-red-500 h-6 px-2 hover:bg-red-100" onClick={() => handleRemoveOrder(oIndex)}>
+                        Hapus
+                      </Button>
+                    )}
 
-                  <FormattedNumberInput
-                      value={row.qty}
-                      onValueChange={(event) => handleSizeChange(index, 'qty', Number(event))}
-                      // placeholder='cth: 0,9'
-                  />
+                    <div className="grid gap-4 sm:grid-cols-[1.5fr_1fr] mt-2">
+                      <div className="space-y-2">
+                        <Label>Nama Produk / Artikel *</Label>
+                        <Input
+                          placeholder="cth. T-Shirt Oversize Hitam"
+                          value={order.requested_product_name}
+                          onChange={(e) => updateOrder(oIndex, 'requested_product_name', e.target.value)}
+                          required
+                        />
+                        {productNamesInUse.filter((name) => name === order.requested_product_name?.trim().toLowerCase()).length > 1 && (
+                          <p className="text-xs text-red-500">Nama produk harus unik antar pesanan.</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Quantity Produksi *</Label>
+                        <FormattedNumberInput
+                          value={order.q}
+                          onValueChange={(val) => updateOrder(oIndex, 'q', val)}
+                          placeholder="Jumlah"
+                        />
+                      </div>
+                    </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="text-red-600 hover:bg-red-50"
-                    onClick={() => handleRemoveSize(index)}
-                  >
-                    ×
-                  </Button>
-                </div>
-              ))}
+                    <div className="mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex justify-between mb-3">
+                        <Label className="text-xs font-semibold text-slate-600">Detail Ukuran / Size Breakdown</Label>
+                        <Button type="button" variant="secondary" size="sm" className="h-7 text-xs" onClick={() => handleAddSize(oIndex)}>+ Tambah Size</Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {order.size_breakdowns.map((size, sIndex) => {
+                          const inputKey = `${oIndex}-${sIndex}`;
+                          const isCustomColor =
+                            Boolean(customInputs[inputKey]?.color) ||
+                            (
+                              !!size.color &&
+                              !defaultSizeBreakdowns.color.includes(size.color)
+                            );
+
+                          const isCustomFabric =
+                            Boolean(customInputs[inputKey]?.fabric_spec) ||
+                            (
+                              !!size.fabric_spec &&
+                              !defaultSizeBreakdowns.fabric.includes(size.fabric_spec)
+                            );
+
+                          const isCustomSize =
+                            Boolean(customInputs[inputKey]?.size_label) ||
+                            (
+                              !!size.size_label &&
+                              !defaultSizeBreakdowns.size.includes(size.size_label)
+                            );
+
+                          return (
+                            <div key={sIndex} className="grid gap-2 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px_40px] items-start">
+                              <div className="space-y-1">
+                                {isCustomColor ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input placeholder="Warna" value={size.color} onChange={(e) => updateSize(oIndex, sIndex, 'color', e.target.value)} />
+                                    <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'color')}>List</Button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <Select value={size.color || ''} onValueChange={(value) => updateSize(oIndex, sIndex, 'color', value)}>
+                                      <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
+                                        <SelectValue placeholder="Pilih warna" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {defaultSizeBreakdowns.color.map((option) => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'color')}>+ Custom</Button>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                {isCustomFabric ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input placeholder="Fabric Spec (24s)" value={size.fabric_spec} onChange={(e) => updateSize(oIndex, sIndex, 'fabric_spec', e.target.value)} />
+                                    <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'fabric_spec')}>List</Button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <Select value={size.fabric_spec || ''} onValueChange={(value) => updateSize(oIndex, sIndex, 'fabric_spec', value)}>
+                                      <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
+                                        <SelectValue placeholder="Pilih fabric spec" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {defaultSizeBreakdowns.fabric.map((option) => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'fabric_spec')}>+ Custom</Button>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                {isCustomSize ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input placeholder="Size (S/M/L)" value={size.size_label} onChange={(e) => updateSize(oIndex, sIndex, 'size_label', e.target.value)} />
+                                    <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'size_label')}>List</Button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <Select value={size.size_label || ''} onValueChange={(value) => updateSize(oIndex, sIndex, 'size_label', value)}>
+                                      <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
+                                        <SelectValue placeholder="Pilih size" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {defaultSizeBreakdowns.size.map((option) => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(oIndex, sIndex, 'size_label')}>+ Custom</Button>
+                                  </div>
+                                )}
+                              </div>
+
+                              <FormattedNumberInput value={size.qty} onValueChange={(val) => updateSize(oIndex, sIndex, 'qty', Number(val))} />
+                              <Button type="button" variant="outline" size="icon" className="text-red-500" onClick={() => handleRemoveSize(oIndex, sIndex)}>×</Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className={`mt-3 rounded border p-2 text-xs ${isSizeEmpty || sizeIsValid ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                        Total Size Breakdown: <strong>{isSizeEmpty ? 0 : totalSizeQty}</strong> / <strong>{order.q || 0}</strong> {isSizeEmpty && <span className="italic">(Opsional)</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div
-              className={`rounded-md border p-3 text-sm ${
-                isSizeBreakdownEmpty || sizeQtyIsValid
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-amber-200 bg-amber-50 text-amber-700'
-              }`}
-            >
-              Total size breakdown: <strong>{isSizeBreakdownEmpty ? 0 : totalSizeQty}</strong> /{' '}
-              <strong>{form.data.q || 0}</strong>
-              {isSizeBreakdownEmpty && <span className="ml-2 italic opacity-80">(Opsional)</span>}
-            </div>
-
-            {form.errors.size_breakdowns && (
-              <p className="text-xs text-red-500">{form.errors.size_breakdowns}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Catatan</Label>
-            <Textarea
-              id="notes"
-              value={form.data.customer_notes}
-              onChange={(event) => form.setData('customer_notes', event.target.value)}
-              placeholder="cth. Warna hitam, sablon depan besar, bahan jangan terlalu tipis..."
-              className="min-h-36 w-full rounded-sm border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-              disabled={form.processing}
-            >
-              {isEditing ? 'Simpan Perubahan' : 'Simpan Order'}
+            <Button type="button" variant="outline" className="mt-4 w-full border-dashed border-2 text-blue-600 hover:bg-blue-50" onClick={handleAddOrder}>
+              + Tambah Pesanan Lainnya
             </Button>
+          </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={handleReset}
-            >
-              Reset Form
+          {/* SECTION 3: CATATAN CUSTOMER */}
+          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-base font-semibold text-slate-800">3. Catatan Customer (Global)</h3>
+            <Textarea
+              value={form.data.customer_notes}
+              onChange={(e) => form.setData('customer_notes', e.target.value)}
+              placeholder="Tuliskan catatan khusus terkait instruksi packaging, warna jahitan, jadwal ambil, dll."
+              className="min-h-32"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="submit" disabled={form.processing} className="w-full sm:w-auto">
+              {isEditing ? 'Simpan Perubahan Job Ticket' : 'Buat Job Ticket'}
             </Button>
           </div>
         </div>
 
+        {/* SIDEBAR SUMMARY */}
         <aside className="space-y-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-              Ringkasan Order
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 mb-5">
+              Ringkasan Job Ticket
             </p>
 
-            <div className="mt-5 space-y-4">
-              <SummaryItem label="Produk" value={form.data.requested_product_name || '—'} />
-              <SummaryItem label="Quantity" value={`${form.data.q || 0} pcs`} />
-              <SummaryItem label="Total Size" value={`${totalSizeQty} pcs`} />
-              <SummaryItem
-                label="Validasi Size"
-                value={isSizeBreakdownEmpty ? 'Opsional (Kosong)' : sizeQtyIsValid ? 'Sesuai' : 'Belum sesuai'}
-                success={isSizeBreakdownEmpty ? true : sizeQtyIsValid}
-              />
-              <SummaryItem
-                label="Sisa Hari"
-                value={daysLeft === null ? '—' : `${daysLeft} hari`}
-              />
-            </div>
-          </div>
+            <div className="space-y-3">
+              <div className="rounded-lg bg-slate-50 px-4 py-3 border border-slate-100">
+                <p className="text-xs text-slate-500 mb-1">Total Pesanan (Items)</p>
+                <p className="text-lg font-bold text-slate-900">{form.data.orders.length} <span className="text-sm font-normal text-slate-600">Model Produk</span></p>
+              </div>
 
-          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-              Catatan Flow
-            </p>
-            <div className="space-y-3 text-sm text-slate-600">
-              <p>Customer hanya mengisi kebutuhan order.</p>
-              <p>Designer akan memilih artikel master di Design Tab.</p>
-              <p>Harga dan costing akan dihitung setelah artikel disinkronkan.</p>
+              <div className="rounded-lg bg-emerald-50 px-4 py-3 border border-emerald-100">
+                <p className="text-xs text-emerald-600 mb-1">Total Quantity Keseluruhan</p>
+                <p className="text-lg font-bold text-emerald-900">{totalQtyAcrossOrders} <span className="text-sm font-normal">Pcs</span></p>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 mb-2">Daftar Produk:</p>
+                <ul className="space-y-2">
+                  {form.data.orders.map((o, idx) => (
+                    <li key={idx} className="text-sm text-slate-700 flex justify-between">
+                      <span className="truncate pr-4">• {o.requested_product_name || `Produk #${idx+1}`}</span>
+                      <span className="font-medium whitespace-nowrap">{o.q || 0} pcs</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </aside>
-
-        {/* <aside className="space-y-6">
-          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-start justify-between gap-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-                  Auto-calculations
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Diperbarui realtime dari input.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Harga Sample (3×)</p>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">{formatIDR(samplePrice)}</p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Sisa Hari</p>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {daysLeft === null ? '—' : `${daysLeft} hari`}
-                </p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">GOP / unit</p>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">{formatIDR(gopPerUnit)}</p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">GOP Total</p>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">{formatIDR(gopTotal)}</p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Margin</p>
-                </div>
-                <p
-                  className={`text-sm font-semibold ${margin >= 25 ? 'text-emerald-700' : margin >= 10 ? 'text-amber-700' : 'text-rose-600'}`}
-                >
-                  {margin.toFixed(0)}%
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-              Formula
-            </p>
-            <div className="space-y-3 text-sm text-slate-600">
-              <p>Sample = Harga Jual × 3</p>
-              <p>GOP = (Harga Jual − HPP) × Qty</p>
-              <p>Sisa Hari = Deadline − Hari Ini</p>
-            </div>
-          </div>
-        </aside> */}
       </form>
     </>
   );
 }
 
-function SummaryItem({
-  label,
-  value,
-  success,
-}: {
-  label: string;
-  value: React.ReactNode;
-  success?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-      <p className="text-sm font-medium text-slate-700">{label}</p>
-      <p
-        className={`text-sm font-semibold ${
-          success === true ? 'text-emerald-700' : 'text-slate-900'
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
 Index.layout = {
-  breadcrumbs: [
-    {
-      title: 'Order Entry',
-      href: dashboard(),
-    },
-  ],
+  breadcrumbs: [{ title: 'Order Entry', href: dashboard() }],
   title: 'Order Entry',
-  description: 'Form input pesanan masuk. Sistem akan otomatis menghitung harga sample, sisa hari, dan estimasi profit.',
-  information: 'CS ROLE · ORDER INTAKE',
 };

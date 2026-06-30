@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pesanan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
 class ProfitLossReportController extends Controller
@@ -20,11 +21,11 @@ class ProfitLossReportController extends Controller
 
         $rows = Pesanan::query()
             ->with([
-                'customer',
+                'jobTicket.customer',
+                'jobTicket.invoices.payments',
                 'workflowStatus',
                 'materialSpecs',
                 'manufacturingSpecs',
-                'invoices.payments',
             ])
             ->when($periodType === 'daily', function ($query) use ($date) {
                 $query->whereDate('created_at', $date);
@@ -76,19 +77,66 @@ class ProfitLossReportController extends Controller
         return $rows->filter(fn ($row) => $row['qty'] > 0 || $row['revenue'] > 0);
     }
 
+    private function calculateOrderRevenue(
+        Pesanan $order,
+        Collection $invoices,
+        string $scope
+    ): float {
+        $totalQty = $order->jobTicket
+            ->pesanans
+            ->sum(function ($item) use ($scope) {
+
+                return $scope === 'sample'
+                    ? ($item->sample_qty ?? 0)
+                    : ($item->q ?? $item->quantity ?? 0);
+
+            });
+
+        $currentQty = $scope === 'sample'
+            ? ($order->sample_qty ?? 0)
+            : ($order->q ?? $order->quantity ?? 0);
+
+        if ($totalQty <= 0) {
+            return 0;
+        }
+
+        $invoiceTotal = $invoices->sum(
+            fn($i)=>(float)$i->total_tagihan
+        );
+
+        return
+            ($currentQty / $totalQty)
+            * $invoiceTotal;
+    }
+
     private function mapReportRow(Pesanan $order, string $scope): array
     {
         $qty = $scope === 'sample'
             ? (int) ($order->sample_qty ?: 0)
             : (int) ($order->quantity ?: $order->q ?: 0);
 
-        $invoices = $order->invoices
-            ->filter(fn ($invoice) => $this->getInvoiceCategory($invoice) === $scope)
-            ->filter(fn ($invoice) => ! in_array($this->getInvoiceStatus($invoice), ['cancelled', 'Cancelled']));
+        $jobTicket = $order->jobTicket;
 
-        $revenue = (float) $invoices->sum(function ($invoice) {
-            return (float) ($invoice->total_tagihan ?: $invoice->amount ?: $invoice->total ?: 0);
-        });
+        $invoices = collect();
+
+        if ($jobTicket) {
+            $invoices = $jobTicket->invoices
+                ->filter(fn ($invoice) =>
+                    $this->getInvoiceCategory($invoice) === $scope
+                )
+                ->filter(fn ($invoice) =>
+                    ! in_array(
+                        $this->getInvoiceStatus($invoice),
+                        ['cancelled', 'Cancelled']
+                    )
+                );
+        }
+
+        $revenue = $this->calculateOrderRevenue(
+            $order,
+            $invoices,
+            $scope
+        );
 
         $paidRevenue = (float) $invoices->flatMap->payments
             ->where('status', 'verified')
@@ -106,11 +154,12 @@ class ProfitLossReportController extends Controller
         return [
             'id' => "{$order->id}-{$scope}",
             'orderId' => $order->id,
-            'jobNo' => $order->no_job_ticket,
+            'jobNo' => $order->jobTicket?->no_job_ticket,
             'product' => $order->requested_product_name ?: $order->produk ?: '-',
-            'customer' => $order->customer?->nama_perusahaan
-                ?? $order->customer?->nama
-                ?? $order->customer_perusahaan_snapshot
+            'customer' =>
+                $order->jobTicket?->customer?->nama_perusahaan
+                ?? $order->jobTicket?->customer?->nama
+                ?? $order->jobTicket?->customer_perusahaan_snapshot
                 ?? '-',
 
             'scope' => $scope,

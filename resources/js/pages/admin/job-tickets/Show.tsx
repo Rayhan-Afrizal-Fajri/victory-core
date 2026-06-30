@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import JobTicketHeader from './components/JobTicketHeader';
 import WorkflowTimeline from './components/WorkflowTimeline';
 import WorkflowTabs from './components/WorkflowTabs';
-import { JobTicket, ProductOption, Supplier } from './types';
+import { JobTicket, Pesanan, ProductOption, Supplier } from './types';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import jobTickets from '@/routes/job-tickets';
@@ -10,86 +10,95 @@ import StatusBadge from './components/StatusBadge';
 import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/job-tickets/utils';
 
 type Props = { 
-    pesanan?: JobTicket;
+    jobTicket: JobTicket; // Prop dirubah ke jobTicket dari controller
     suppliers: Supplier[];
     productOptions: ProductOption[] | null;
 };
 
-const dummyJobTicket: JobTicket = {
-  id: 1,
-  order_number: 'JT-2026-0001',
-  customer: { name: 'PT. Contoh' },
-  product_name: 'Kemeja Kerja',
-  deadline: '2026-06-01',
-  status: 'Produksi',
-  workflow_status: {
-    design_approved: true,
-    sample_approved: false,
-    production_dp_paid: false,
-    materials_distributed: false,
-    production_completed: false,
-    qc_completed: false,
-    packing_completed: false,
-    final_payment_paid: false,
-    delivered: false,
-  },
-  designs: [{ id: 1, file_path: 'design_v1.pdf', note: 'Initial', approved: true, created_at: '2026-05-10' }],
-  samples: [{ id: 1, qty: 2, status: 'pending' }],
-  invoices: [
-    { id: 1, title: 'Invoice Sampel', amount: 500000, status: 'Unpaid', issued_at: '2026-05-12' },
-    { id: 2, title: 'Invoice Produksi', amount: 2000000, status: 'Unpaid', issued_at: '2026-05-20' },
-  ],
-  payments: [],
-  purchasings: [
-    { id: 1, item: 'Kain Katun', supplier: null, ordered_qty: 100, received_qty: 20 },
-  ],
-  productionProgress: { percent: 20, phase: 'Cutting', checklist: ['Potong', 'Sew'] },
-  qc: { reject_count: 0 },
-  packing: {},
-  delivery: {},
-  activity_logs: [{ id: 1, actor: 'Andi', role: 'CS', action: 'Buat job', note: 'Order masuk', created_at: '2026-05-10' }],
-};
+export default function Show({ jobTicket, suppliers, productOptions }: Props) {
+    // State untuk Switcher / Tab pesanan mana yang sedang dilihat
+    const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
+    const activePesanan: Pesanan | undefined = jobTicket?.orders?.[activeOrderIndex];
 
-export default function Show({ pesanan, suppliers, productOptions }: Props) {
-  const jobTicket = pesanan ?? dummyJobTicket;
+    return (
+        <>
+            <Head title={`Job Ticket — ${jobTicket?.no_job_ticket ?? 'Detail'}`} />
 
-  return (
-    <>
-        <Head title={`Job Ticket — ${jobTicket.order_number}`} />
+            {/* SWITCHER PESANAN MULTIPLE */}
+            {/* {jobTicket?.orders && jobTicket.orders.length > 1 && (
+                <div className="mb-6 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pilih Produk Pesanan:</p>
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {jobTicket.orders.map((order, index) => (
+                            <button
+                                key={order.id}
+                                onClick={() => setActiveOrderIndex(index)}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap ${
+                                    activeOrderIndex === index
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                }`}
+                            >
+                                <span className={`mr-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeOrderIndex === index ? 'bg-blue-500/50' : 'bg-slate-200'}`}>
+                                    {index + 1}
+                                </span>
+                                {order.requested_product_name || order.product_name || `Produk #${index + 1}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )} */}
 
-        <WorkflowTimeline job={jobTicket} />
-        <WorkflowTabs job={jobTicket} suppliers={suppliers} productOptions={productOptions} />
-
-    </>
-  );
+            {activePesanan ? (
+                <>
+                    {/* Mengirimkan Root JobTicket dan ActivePesanan */}
+                    <WorkflowTimeline 
+                        jobTicket={jobTicket} 
+                        activePesanan={activePesanan} 
+                    />
+                    
+                    <WorkflowTabs 
+                        jobTicket={jobTicket} 
+                        activePesanan={activePesanan} 
+                        suppliers={suppliers} 
+                        productOptions={productOptions} 
+                    />
+                </>
+            ) : (
+                <div className="p-8 text-center bg-white rounded-lg border border-slate-200 text-slate-500">
+                    Tidak ada pesanan ditemukan dalam Job Ticket ini.
+                </div>
+            )}
+        </>
+    );
 }
 
-
-// Perbarui fungsi Show.layout di bagian paling bawah file Show.tsx Anda menjadi seperti ini:
-
 Show.layout = (page: React.ReactElement<Props>) => {
-    const pesanan = page.props?.pesanan;
+    const jobTicket = page.props?.jobTicket;
 
-    const noJobTicket =
-        pesanan?.order_number || 'Detail Tiket';
+    const noJobTicket = jobTicket?.no_job_ticket || 'Detail Tiket';
+    const status = jobTicket?.status || 'Order Entry';
 
-    const workflow = (pesanan as any)?.workflow_status || null;
+    // Kalkulasi rata-rata progress untuk seluruh order
+    let totalProgress = 0;
+    let globalCurrentLabel = 'Menunggu Proses';
 
-    const workflowProgress = getWorkflowProgress(workflow);
+    if (jobTicket?.orders && jobTicket.orders.length > 0) {
+        jobTicket.orders.forEach(order => {
+            const wp = getWorkflowProgress(order.workflow_status);
+            totalProgress += wp.percent;
+        });
+        totalProgress = Math.round(totalProgress / jobTicket.orders.length);
 
-    const progress = workflowProgress.percent;
-
-    const priority =
-        pesanan?.productionProgress?.prioritas ??
-        (pesanan as any)?.priority ??
-        'Normal';
-
-    const status = getJobStatusFromWorkflow(workflow);
+        // Ambil step dari pesanan pertama sbg representasi label
+        const firstOrderWp = getWorkflowProgress(jobTicket.orders[0].workflow_status);
+        globalCurrentLabel = firstOrderWp.currentLabel;
+    }
 
     return (
         <AppLayout
             title={noJobTicket}
-            description={`${pesanan?.customer?.company ?? 'Customer'} · ${pesanan?.product_name ?? 'Produk'}`}
+            description={`${jobTicket?.customer?.name ?? jobTicket?.customer?.company ?? 'Customer'} · ${jobTicket?.orders?.length ?? 0} Pesanan`}
             information="No. Job Ticket"
             breadcrumbs={[
                 {
@@ -98,59 +107,41 @@ Show.layout = (page: React.ReactElement<Props>) => {
                 },
                 {
                     title: noJobTicket,
-                    href: pesanan
-                        ? jobTickets.show(pesanan.id)
-                        : '#',
+                    href: jobTicket ? jobTickets.show(jobTicket.id) : '#',
                 },
             ]}
             actions={
                 <div className="flex items-center gap-4">
                     <div className="text-right">
-                        <div className="text-sm text-gray-500">Deadline</div>
-                        <div className="font-medium">
-                            {pesanan?.deadline ?? '—'}
+                        <div className="text-sm text-gray-500">Deadline Global</div>
+                        <div className="font-medium text-slate-800">
+                            {jobTicket?.deadline ?? '—'}
                         </div>
                     </div>
 
-                    <div className="text-right">
-                        <div className="text-sm text-gray-500">
-                            Progress
-                        </div>
-
-                        <div className="w-40 overflow-hidden rounded-full bg-gray-100 h-3">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-sm text-gray-500">Avg. Progress</div>
+                        <div className="w-40 overflow-hidden rounded-full bg-slate-100 h-3">
                             <div
                                 className={`h-3 transition-all duration-500 ${
-                                    progress >= 100
+                                    totalProgress >= 100
                                         ? 'bg-green-600'
-                                        : progress >= 70
+                                        : totalProgress >= 70
                                           ? 'bg-green-500'
-                                          : progress >= 40
+                                          : totalProgress >= 40
                                             ? 'bg-amber-500'
                                             : 'bg-blue-500'
                                 }`}
-                                style={{ width: `${progress}%` }}
+                                style={{ width: `${totalProgress}%` }}
                             />
                         </div>
-
-                        <div className="mt-1 text-xs text-gray-600">
-                            {progress}% · {workflowProgress.currentLabel}
+                        <div className="mt-1 text-xs text-gray-600 font-medium">
+                            {totalProgress}% · {globalCurrentLabel}
                         </div>
                     </div>
 
                     <div>
-                        <div className="text-sm text-gray-500">Prioritas</div>
-                        <StatusBadge
-                            label={priority ?? 'Normal'}
-                            variant={
-                                priority === 'High' || priority === 'Urgent'
-                                    ? 'warning'
-                                    : 'default'
-                            }
-                        />
-                    </div>
-
-                    <div>
-                        <div className="text-sm text-gray-500">Status</div>
+                        <div className="text-sm text-gray-500 mb-1">Status Tiket</div>
                         <StatusBadge
                             label={status}
                             variant={status === 'Done' ? 'success' : 'info'}

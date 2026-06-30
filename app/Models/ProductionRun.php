@@ -7,9 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class ProductionRun extends Model
 {
     protected $fillable = [
-        'pesanan_id',
+        'job_ticket_id',
         'type',
-        'quantity',
         'status',
         'started_at',
         'completed_at',
@@ -18,14 +17,15 @@ class ProductionRun extends Model
         'packing_notes',
         'courier_name',
         'tracking_url',
+        'tracking_number',
         'delivery_note',
         'customer_review_note',
         'approved_at',
     ];
 
-    public function pesanan()
+    public function jobTicket()
     {
-        return $this->belongsTo(Pesanan::class);
+        return $this->belongsTo(JobTicket::class);
     }
 
     public function processes()

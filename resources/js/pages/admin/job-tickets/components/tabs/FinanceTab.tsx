@@ -27,11 +27,15 @@ import {
 } from '@/components/invoice/invoice-utils';
 import { useCan } from '@/hooks/use-can';
 
-const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
+const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
     const can = useCan();
 
-    const workflow = job.workflow_status;
-    const invoices = job.invoices || [];
+    // PERBAIKAN: Mengambil workflow status representatif (dari order pertama)
+    // Karena saat ini Invoice adalah level Job Ticket, asumsinya semua order punya status yang sejalan terkait finance.
+    const representativeOrder = jobTicket.orders && jobTicket.orders.length > 0 ? jobTicket.orders[0] : null;
+    const workflow = representativeOrder?.workflow_status;
+
+    const invoices = jobTicket.invoices || [];
 
     const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -42,142 +46,137 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const [paymentDialogMode, setPaymentDialogMode] = useState<'create' | 'edit'>('create');
     const [rejectPaymentId, setRejectPaymentId] = useState<number | null>(null);
 
-    const selectedPayments = selectedInvoice ? getInvoicePayments(selectedInvoice) : [];
-    const selectedRemainingPayment = selectedInvoice ? getRemainingPayment(selectedInvoice) : 0;
-
-    const summary = useMemo(() => {
-        const activeInvoices = invoices.filter((invoice) => !isInvoiceCancelled(invoice));
-
-        const totalInvoice = activeInvoices.reduce((total, invoice) => {
-            return total + getInvoiceTotal(invoice);
-        }, 0);
-
-        const totalPaid = activeInvoices.reduce((total, invoice) => {
-            return total + getVerifiedPaid(invoice);
-        }, 0);
-
-        return {
-            totalInvoice,
-            totalPaid,
-            remaining: Math.max(totalInvoice - totalPaid, 0),
-            progress: totalInvoice > 0 ? Math.min((totalPaid / totalInvoice) * 100, 100) : 0,
-        };
-    }, [invoices]);
-
-    const groupedInvoices = useMemo(() => {
-        return {
-            sample: invoices.filter((invoice) => getInvoiceCategory(invoice) === 'sample'),
-            production: invoices.filter((invoice) => getInvoiceCategory(invoice) === 'production'),
-            final_billing: invoices.filter((invoice) => getInvoiceCategory(invoice) === 'final_billing'),
-            other: invoices.filter((invoice) => getInvoiceCategory(invoice) === 'other'),
-        };
-    }, [invoices]);
-
     const paymentForm = useForm({
         tgl_bayar: new Date().toISOString().slice(0, 10),
-        jumlah_bayar: selectedRemainingPayment,
-        metode_pembayaran: '',
+        jumlah_bayar: 0,
+        metode_pembayaran: 'transfer',
         bukti_transfer: null as File | null,
         catatan_finance: '',
     });
 
     const editInvoiceForm = useForm({
-        total_tagihan: Number(selectedInvoice?.total_tagihan || selectedInvoice?.amount || 0),
-        tgl_jatuh_tempo: selectedInvoice?.tgl_jatuh_tempo || '',
+        total_tagihan: 0,
+        tgl_jatuh_tempo: '',
     });
 
     const rejectPaymentForm = useForm({
         rejection_note: '',
     });
 
-    useEffect(() => {
-        if (selectedInvoice?.id) {
-            paymentForm.setData({
-                tgl_bayar: new Date().toISOString().slice(0, 10),
-                jumlah_bayar: selectedRemainingPayment,
-                metode_pembayaran: '',
-                bukti_transfer: null,
-                catatan_finance: '',
-            });
+    const totalInvoice = useMemo(() => {
+        return invoices.reduce((sum, inv) => {
+            if (isInvoiceCancelled(inv)) return sum;
+            return sum + getInvoiceTotal(inv);
+        }, 0);
+    }, [invoices]);
 
-            editInvoiceForm.setData({
-                total_tagihan: getInvoiceTotal(selectedInvoice),
-                tgl_jatuh_tempo: selectedInvoice.tgl_jatuh_tempo || '',
-            });
-        }
-    }, [selectedInvoice?.id, selectedRemainingPayment]);
+    const totalPaid = useMemo(() => {
+        return invoices.reduce((sum, inv) => sum + getVerifiedPaid(inv), 0);
+    }, [invoices]);
 
-    useEffect(() => {
-        if (editingPayment) {
-            paymentForm.setData({
-                tgl_bayar: editingPayment.tgl_bayar || new Date().toISOString().slice(0, 10),
-                jumlah_bayar: Number(editingPayment.jumlah_bayar || 0),
-                metode_pembayaran: editingPayment.metode_pembayaran || '',
-                bukti_transfer: null,
-                catatan_finance: editingPayment.catatan_finance || '',
-            });
-        }
-    }, [editingPayment?.id]);
+    const totalUnpaid = Math.max(totalInvoice - totalPaid, 0);
 
-    const openDetail = (invoice: any) => {
+    const handleOpenDetail = (invoice: any) => {
         setSelectedInvoice(invoice);
         setDetailOpen(true);
     };
 
-    const openPayment = (invoice: any) => {
+    const handleOpenPayment = (invoice: any) => {
         setSelectedInvoice(invoice);
         setEditingPayment(null);
         setPaymentDialogMode('create');
+
+        paymentForm.setData({
+            tgl_bayar: new Date().toISOString().slice(0, 10),
+            jumlah_bayar: getRemainingPayment(invoice),
+            metode_pembayaran: 'transfer',
+            bukti_transfer: null,
+            catatan_finance: '',
+        });
+
         setPaymentOpen(true);
     };
 
-    const openEditPayment = (payment: Payment) => {
+    const handleOpenEditPayment = (payment: any) => {
         setEditingPayment(payment);
         setPaymentDialogMode('edit');
+
+        paymentForm.setData({
+            tgl_bayar: payment.tgl_bayar
+                ? new Date(payment.tgl_bayar).toISOString().slice(0, 10)
+                : new Date().toISOString().slice(0, 10),
+            jumlah_bayar: Number(payment.jumlah_bayar) || 0,
+            metode_pembayaran: payment.metode_pembayaran || 'transfer',
+            bukti_transfer: null,
+            catatan_finance: payment.catatan_finance || '',
+        });
+
         setPaymentOpen(true);
     };
 
-    const openEditInvoice = (invoice: any) => {
+    const handleOpenEditInvoice = (invoice: any) => {
         setSelectedInvoice(invoice);
+
+        editInvoiceForm.setData({
+            total_tagihan: Number(invoice.total_tagihan) || 0,
+            tgl_jatuh_tempo: invoice.tgl_jatuh_tempo
+                ? new Date(invoice.tgl_jatuh_tempo).toISOString().slice(0, 10)
+                : '',
+        });
+
         setEditInvoiceOpen(true);
     };
 
-    const canPayInvoice = (invoice: any) => {
-        return !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice);
+    const updateInvoice = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!selectedInvoice) return;
+
+        editInvoiceForm.patch(`/invoices/${selectedInvoice.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Invoice berhasil diupdate');
+                setEditInvoiceOpen(false);
+            },
+        });
     };
 
-    const canEditInvoice = (invoice: any) => {
-        return (
-            !isInvoicePaid(invoice) &&
-            !isInvoiceCancelled(invoice) &&
-            !hasVerifiedPayment(invoice)
-        );
-    };
-
-    const canCancelInvoice = (invoice: any) => {
-        return (
-            !isInvoicePaid(invoice) &&
-            !isInvoiceCancelled(invoice) &&
-            !hasVerifiedPayment(invoice)
+    const cancelInvoice = (invoice: any) => {
+        toast.warning(
+            `Apakah Anda yakin ingin membatalkan invoice ${invoice.no_invoice}?`,
+            {
+                action: {
+                    label: 'Batalkan Invoice',
+                    onClick: () => {
+                        router.post(
+                            `/invoices/${invoice.id}/cancel`,
+                            {},
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    toast.success('Invoice berhasil dibatalkan');
+                                    setDetailOpen(false);
+                                },
+                            }
+                        );
+                    },
+                },
+            }
         );
     };
 
     const submitPayment = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedInvoice) {
-            toast.error('Invoice belum dipilih.');
-            return;
-        }
+        if (!selectedInvoice) return;
 
         paymentForm.post(`/invoices/${selectedInvoice.id}/payments`, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success('Payment berhasil dikirim.');
-                paymentForm.reset();
+                toast.success('Pembayaran berhasil disubmit');
                 setPaymentOpen(false);
-                setEditingPayment(null);
+                paymentForm.reset();
             },
         });
     };
@@ -185,187 +184,159 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const updatePayment = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!editingPayment) {
-            toast.error('Payment belum dipilih.');
-            return;
-        }
+        if (!editingPayment) return;
 
         paymentForm.post(`/payments/${editingPayment.id}`, {
             preserveScroll: true,
             forceFormData: true,
-            method: 'patch',
+            data: {
+                ...paymentForm.data,
+                _method: 'PATCH',
+            } as any,
             onSuccess: () => {
-                toast.success('Payment berhasil diperbarui.');
-                paymentForm.reset();
+                toast.success('Pembayaran berhasil diupdate');
                 setPaymentOpen(false);
                 setEditingPayment(null);
+                paymentForm.reset();
             },
         });
     };
 
     const verifyPayment = (paymentId: number) => {
-        router.patch(
-            `/payments/${paymentId}/verify`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success('Payment berhasil diverifikasi.');
-                    setDetailOpen(false);
+        toast.warning('Verifikasi pembayaran ini?', {
+            action: {
+                label: 'Ya, Verifikasi',
+                onClick: () => {
+                    router.patch(
+                        `/payments/${paymentId}/verify`,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                toast.success('Pembayaran terverifikasi');
+                            },
+                        }
+                    );
                 },
-            }
-        );
+            },
+        });
     };
 
     const rejectPayment = (paymentId: number) => {
-        rejectPaymentForm.patch(`/payments/${paymentId}/reject`, {
+        rejectPaymentForm.post(`/payments/${paymentId}/reject`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success('Payment berhasil ditolak.');
-                rejectPaymentForm.reset();
+                toast.success('Pembayaran ditolak');
                 setRejectPaymentId(null);
+                rejectPaymentForm.reset();
             },
         });
     };
 
-    const deletePayment = (payment: Payment) => {
-        if (!confirm('Hapus payment ini?')) return;
-
-        router.delete(`/payments/${payment.id}`, {
-            preserveScroll: true,
-            onSuccess: () => toast.success('Payment berhasil dihapus.'),
-        });
-    };
-
-    const updateInvoice = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!selectedInvoice) {
-            toast.error('Invoice belum dipilih.');
-            return;
-        }
-
-        editInvoiceForm.patch(`/invoices/${selectedInvoice.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Invoice berhasil diperbarui.');
-                setEditInvoiceOpen(false);
+    const deletePayment = (payment: any) => {
+        toast.error('Hapus data pembayaran ini?', {
+            action: {
+                label: 'Hapus',
+                onClick: () => {
+                    router.delete(`/payments/${payment.id}`, {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            toast.success('Pembayaran berhasil dihapus');
+                        },
+                    });
+                },
             },
         });
     };
 
-    const cancelInvoice = (invoice: any) => {
-        if (!confirm('Batalkan invoice ini?')) return;
-
-        router.patch(
-            `/invoices/${invoice.id}/cancel`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => toast.success('Invoice berhasil dibatalkan.'),
-            }
-        );
-    };
-
-    const renderInvoiceGroup = (title: string, data: any[]) => {
-        return (
-            <SectionCard title={title}>
-                {data.length === 0 ? (
-                    <EmptyState
-                        icon={<ReceiptText className="size-5" />}
-                        title="Belum ada invoice"
-                        description={`${title} belum tersedia.`}
-                    />
-                ) : (
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {data.map((invoice) => (
-                            <InvoiceCard
-                                key={invoice.id}
-                                invoice={invoice}
-                                // remainingPayment={getRemainingPayment(invoice)}
-                                onDetail={openDetail}
-                                onPay={openPayment}
-                                onEdit={openEditInvoice}
-                                onCancel={cancelInvoice}
-                                canPay={canPayInvoice(invoice)}
-                                canEdit={canEditInvoice(invoice)}
-                                canCancel={canCancelInvoice(invoice)}
-                            />
-                        ))}
-                    </div>
-                )}
-            </SectionCard>
-        );
-    };
+    const selectedRemainingPayment = selectedInvoice
+        ? getRemainingPayment(selectedInvoice)
+        : 0;
 
     return (
         <div className="space-y-6">
-            <SectionCard title="Ringkasan Finance">
-                <div className="grid gap-4 md:grid-cols-3">
-                    <SummaryBox
-                        label="Total Invoice"
-                        value={formatRupiah(summary.totalInvoice)}
-                    />
+            <div className="grid gap-4 md:grid-cols-3">
+                <SummaryBox
+                    label="Total Invoice"
+                    value={formatRupiah(totalInvoice)}
+                />
+                <SummaryBox
+                    label="Total Terbayar"
+                    value={formatRupiah(totalPaid)}
+                />
+                <SummaryBox
+                    label="Sisa Tagihan"
+                    value={formatRupiah(totalUnpaid)}
+                    danger={totalUnpaid > 0}
+                />
+            </div>
 
-                    <SummaryBox
-                        label="Terverifikasi"
-                        value={formatRupiah(summary.totalPaid)}
-                    />
-
-                    <SummaryBox
-                        label="Outstanding"
-                        value={formatRupiah(summary.remaining)}
-                        danger={summary.remaining > 0}
-                    />
-                </div>
-
-                <div className="mt-5">
-                    <div className="flex justify-between text-xs">
-                        <span className="text-slate-500">Progress Payment</span>
-                        <span className="font-medium text-slate-700">
-                            {Math.round(summary.progress)}%
-                        </span>
-                    </div>
-
-                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                            className="h-full rounded-full bg-green-500"
-                            style={{
-                                width: `${summary.progress}%`,
-                            }}
+            <SectionCard title="Daftar Invoice (Sample & Produksi)">
+                <div className="space-y-4">
+                    {/* // PERBAIKAN PADA LOGIC CEK STATUS (opsional, karena tombol dipindah ke list table jika dibutuhkan,
+                        namun kode asli tidak memiliki tombol create invoice disini. Jadi kita pertahankan saja isi datanya)
+                    */}
+                    {!workflow?.quotation_approved && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                            Invoice Sample otomatis dibuat ketika Anda meng-approve Quotation di tab Costing.
+                        </div>
+                    )}
+                    
+                    {/* PERBAIKAN: Pastikan check length dari array invoices, bukan fallback jobTicket.invoices */}
+                    {invoices.length === 0 ? (
+                        <EmptyState
+                            icon={<ReceiptText className="size-8" />}
+                            title="Belum ada tagihan"
+                            description="Invoice belum dibuat untuk pesanan ini."
                         />
-                    </div>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {invoices.map((invoice: any) => (
+                                <InvoiceCard
+                                    key={invoice.id}
+                                    invoice={invoice}
+                                    onDetail={handleOpenDetail}
+                                    onPay={handleOpenPayment}
+                                    onEdit={handleOpenEditInvoice}
+                                    onCancel={cancelInvoice}
+                                    canPay={can('payment.create')}
+                                    canEdit={can('invoice.edit')}
+                                    canCancel={can('invoice.cancel')}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </SectionCard>
-
-            {renderInvoiceGroup('Invoice Sample', groupedInvoices.sample)}
-
-            {workflow?.sample_approved != false && (
-                <>
-                    {renderInvoiceGroup('Invoice Produksi', groupedInvoices.production)}
-                    {renderInvoiceGroup('Final Billing', groupedInvoices.final_billing)}
-                </>
-            )}
-
-            {groupedInvoices.other.length > 0 &&
-                renderInvoiceGroup('Invoice Lainnya', groupedInvoices.other)}
 
             <InvoiceDetailSheet
                 open={detailOpen}
                 onOpenChange={setDetailOpen}
                 invoice={selectedInvoice}
-                canPay={selectedInvoice ? canPayInvoice(selectedInvoice) : false}
-                canEdit={selectedInvoice ? canEditInvoice(selectedInvoice) : false}
-                canCancel={selectedInvoice ? canCancelInvoice(selectedInvoice) : false}
+                canPay={can('payment.create')}
+                canEdit={can('invoice.edit')}
+                canCancel={can('invoice.cancel')}
                 rejectPaymentId={rejectPaymentId}
                 rejectPaymentForm={rejectPaymentForm}
                 setRejectPaymentId={setRejectPaymentId}
-                onPay={openPayment}
-                onEdit={openEditInvoice}
-                onCancel={cancelInvoice}
-                onVerifyPayment={verifyPayment}
+                onPay={(invoice) => {
+                    setDetailOpen(false);
+                    setTimeout(() => handleOpenPayment(invoice), 300);
+                }}
+                onEdit={(invoice) => {
+                    setDetailOpen(false);
+                    setTimeout(() => handleOpenEditInvoice(invoice), 300);
+                }}
+                onCancel={(invoice) => {
+                    setDetailOpen(false);
+                    setTimeout(() => cancelInvoice(invoice), 300);
+                }}
+                onVerifyPayment={(paymentId) => {
+                    setDetailOpen(false);
+                    setTimeout(() => verifyPayment(paymentId), 300);
+                }}
                 onRejectPayment={rejectPayment}
-                onEditPayment={openEditPayment}
+                onEditPayment={handleOpenEditPayment}
                 onDeletePayment={deletePayment}
             />
 
@@ -384,7 +355,7 @@ const FinanceTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                 remainingPayment={selectedRemainingPayment}
                 onSubmitPayment={paymentDialogMode === 'edit' ? updatePayment : submitPayment}
                 mode={paymentDialogMode}
-                job={job}
+                job={jobTicket}
             />
 
             <InvoiceEditDialog

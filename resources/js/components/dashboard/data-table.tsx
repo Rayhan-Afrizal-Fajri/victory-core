@@ -53,7 +53,7 @@ export default function DataTable<T extends Record<string, any>>({
   const pageData = filteredData.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
 
   return (
-    <Card className="rounded-md w-full">
+    <Card className="rounded-md w-full h-fit">
       <CardHeader className="items-start gap-2 px-4">
         <div>
           {title && <CardTitle className="text-lg font-semibold">{title}</CardTitle>}

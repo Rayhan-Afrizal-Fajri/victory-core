@@ -30,6 +30,7 @@ import InvoiceDetailSheet from '@/components/invoice/invoice-detail-sheet';
 import PaymentDialog from '@/components/sample/payment-dialog';
 import InvoiceEditDialog from '@/components/invoice/invoice-edit-dialog';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
+import { Invoice } from '../job-tickets/types';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -39,59 +40,14 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-type Payment = {
-    id: number;
-    jumlah_bayar: number;
-    amount?: number;
-    tgl_bayar?: string;
-    date?: string;
-    metode_pembayaran?: string;
-    method?: string;
-    status: 'pending' | 'verified' | 'rejected';
-    bukti_transfer_path?: string | null;
-    rejection_note?: string | null;
-};
-
-type Invoice = {
-    id: number;
-    pesanan_id: number;
-    no_invoice: string;
-    title?: string;
-    kategori_invoice: 'sample' | 'production';
-    status_tagihan: 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
-    total_tagihan: number;
-    amount?: number;
-    tgl_jatuh_tempo?: string;
-    issued_at?: string;
-    no_job_ticket?: string;
-    customer?: {
-        nama?: string;
-        nama_perusahaan?: string;
-    };
-    payments: Payment[];
-};
-
-type EligibleJobTicket = {
-    id: number;
-    no_job_ticket: string;
-    produk: string;
-    customer: string;
-    available_invoice_categories: {
-        value: 'sample' | 'production';
-        label: string;
-        default_amount: number;
-    }[];
-};
 
 type PageProps = {
     invoices: Invoice[];
-    eligibleJobTickets: EligibleJobTicket[];
 };
 
 
 export default function Index({
     invoices = [],
-    eligibleJobTickets = [],
 }: PageProps) {
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -174,42 +130,42 @@ export default function Index({
       return !isInvoiceCancelled(invoice) && !hasVerifiedPayment(invoice);
   }
 
-  const selectedJob = eligibleJobTickets.find((ticket) => {
-      return ticket.id === Number(createInvoiceForm.data.pesanan_id);
-  });
+//   const selectedJob = eligibleJobTickets.find((ticket) => {
+//       return ticket.id === Number(createInvoiceForm.data.pesanan_id);
+//   });
 
-  const availableCategories = selectedJob?.available_invoice_categories || [];
+//   const availableCategories = selectedJob?.available_invoice_categories || [];
 
-  useEffect(() => {
-      if (!selectedJob) {
-          createInvoiceForm.setData('total_tagihan', 0);
-          return;
-      }
+//   useEffect(() => {
+//       if (!selectedJob) {
+//           createInvoiceForm.setData('total_tagihan', 0);
+//           return;
+//       }
 
-      const selectedCategory = availableCategories.find((category) => {
-          return category.value === createInvoiceForm.data.kategori_invoice;
-      });
+//       const selectedCategory = availableCategories.find((category) => {
+//           return category.value === createInvoiceForm.data.kategori_invoice;
+//       });
 
-      createInvoiceForm.setData(
-          'total_tagihan',
-          Number(selectedCategory?.default_amount || 0)
-      );
-  }, [
-      createInvoiceForm.data.pesanan_id,
-      createInvoiceForm.data.kategori_invoice,
-  ]);
+//       createInvoiceForm.setData(
+//           'total_tagihan',
+//           Number(selectedCategory?.default_amount || 0)
+//       );
+//   }, [
+//       createInvoiceForm.data.pesanan_id,
+//       createInvoiceForm.data.kategori_invoice,
+//   ]);
 
-  const submitCreateInvoice = (e: React.FormEvent) => {
-    e.preventDefault();
+//   const submitCreateInvoice = (e: React.FormEvent) => {
+//     e.preventDefault();
 
-    createInvoiceForm.post('/invoices', {
-        preserveScroll: true,
-        onSuccess: () => {
-            setCreateOpen(false);
-            createInvoiceForm.reset();
-        },
-    });
-  };
+//     createInvoiceForm.post('/invoices', {
+//         preserveScroll: true,
+//         onSuccess: () => {
+//             setCreateOpen(false);
+//             createInvoiceForm.reset();
+//         },
+//     });
+//   };
 
   const openDetail = (invoice: Invoice) => {
       setSelectedInvoice(invoice);
@@ -398,10 +354,10 @@ export default function Index({
           cell: (row) => (
               <div>
                   <p className="font-medium text-slate-900">
-                      {row.no_job_ticket || '-'}
+                      {row.jobTicket?.no_job_ticket || '-'}
                   </p>
                   <p className="text-xs text-slate-500">
-                      {row.customer?.nama_perusahaan || row.customer?.nama || '-'}
+                      {row.jobTicket?.customer?.company || row.jobTicket?.customer?.name || '-'}
                   </p>
               </div>
           ),
@@ -474,7 +430,7 @@ export default function Index({
                   </p>
               </div>
 
-              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              {/* <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                   <DialogTrigger asChild>
                       <Button variant="default" className="inline-flex items-center gap-2">
                           <Plus className="size-4" />
@@ -670,7 +626,7 @@ export default function Index({
                           </DialogFooter>
                       </form>
                   </DialogContent>
-              </Dialog>
+              </Dialog> */}
           </div>
 
           <Card>
@@ -694,7 +650,7 @@ export default function Index({
                               <SelectContent>
                                   <SelectItem value="all">All</SelectItem>
                                   <SelectItem value="sample">Sample</SelectItem>
-                                  <SelectItem value="production">Production</SelectItem>
+                                  <SelectItem value="produksi">Production</SelectItem>
                               </SelectContent>
                           </Select>
                       </div>
@@ -728,7 +684,7 @@ export default function Index({
                   <DataTable
                       columns={columns}
                       data={filteredInvoices}
-                      searchKeys={['no_invoice', 'no_job_ticket']}
+                      searchKeys={['no_invoice', 'no_invoice']}
                       searchPlaceholder="Cari invoice / job ticket"
                   />
               </CardContent>

@@ -31,7 +31,7 @@ type CustomerRow = {
   order_history: {
     id: number;
     job_ticket: string;
-    item_name: string;
+    item_names: string;
     quantity: number;
     total_cost: number;
     status: 'Ordered' | 'Delivered';
@@ -268,7 +268,7 @@ export default function Index({ customers }: Props) {
                       {selectedCustomer.order_history.map((order) => (
                         <tr key={order.id} className="border-t border-slate-200">
                           <td className="px-4 py-3 text-slate-900">{order.job_ticket}</td>
-                          <td className="px-4 py-3 text-slate-700">{order.item_name}</td>
+                          <td className="px-4 py-3 text-slate-700">{order.item_names}</td>
                           <td className="px-4 py-3 text-slate-700">{order.quantity}</td>
                           <td className="px-4 py-3 text-slate-700">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.total_cost)}

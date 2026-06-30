@@ -7,16 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class WorkflowHistory extends Model
 {
     protected $fillable = [
-        'pesanan_id',
+        'job_ticket_id',
         'step',
         'action',
         'user_id',
         'notes',
     ];
 
-    public function pesanan()
+    public function jobTicket()
     {
-        return $this->belongsTo(Pesanan::class, 'pesanan_id');
+        return $this->belongsTo(JobTicket::class);
     }
 
     public function user()

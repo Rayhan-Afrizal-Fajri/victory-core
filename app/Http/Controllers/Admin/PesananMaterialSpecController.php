@@ -55,7 +55,7 @@ class PesananMaterialSpecController extends Controller
                 'cost_per_pcs' => $calculated['cost_per_pcs'],
             ]);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'material_spec_created',
                 'user_id' => Auth::id(),
@@ -110,7 +110,7 @@ class PesananMaterialSpecController extends Controller
                 'cost_per_pcs' => $calculated['cost_per_pcs'],
             ]);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'material_spec_updated',
                 'user_id' => Auth::id(),
@@ -135,7 +135,7 @@ class PesananMaterialSpecController extends Controller
 
             $spec->delete();
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'material_spec_deleted',
                 'user_id' => Auth::id(),

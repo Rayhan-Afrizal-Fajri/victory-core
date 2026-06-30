@@ -28,7 +28,7 @@ const DesignSpecsReferenceCard = ({ job }: { job: any }) => {
                 <div className="space-y-4">
                     <SpecGroup title="Bahan" items={bahan} />
                     <SpecGroup title="Aksesoris" items={aksesoris} />
-                    <ManufacturingGroup items={manufacturingSpecs} />
+                    {/* <ManufacturingGroup items={manufacturingSpecs} /> */}
                 </div>
             )}
         </SectionCard>

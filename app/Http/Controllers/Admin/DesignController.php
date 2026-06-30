@@ -55,11 +55,15 @@ class DesignController extends Controller
                 ]
             );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'upload',
                 'user_id' => Auth::user()->id,
-                'notes' => 'Designer mengunggah desain untuk direview customer.',
+                'notes' => "Designer mengunggah desain {$pesanan->produk} untuk direview customer.",
+            ]);
+
+            $pesanan->jobTicket()->update([
+                'status' => 'Design'
             ]);
         });
 
@@ -101,11 +105,11 @@ class DesignController extends Controller
 
             $pesanan->refresh();
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'approve',
                 'user_id' => Auth::user()->id,
-                'notes' => 'Desain disetujui customer/admin.',
+                'notes' => "Desain {$pesanan->produk} disetujui customer/admin.",
             ]);
         });
 
@@ -150,11 +154,11 @@ class DesignController extends Controller
                 ]
             );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => $wasApproved ? 'revision_after_approval' : 'revision',
                 'user_id' => Auth::user()->id,
-                'notes' => $request->revision_note,
+                'notes' => "Revisi desain {$pesanan->produk}: {$request->revision_note}",
             ]);
         });
 
@@ -177,6 +181,8 @@ class DesignController extends Controller
             'productMaterials.material.defaultSupplier',
             'productManufacturingWorks.manufacturingWork.defaultVendor',
         ])->findOrFail($validated['product_id']);
+
+        
 
         DB::transaction(function () use ($pesanan, $product) {
             $pesanan->update([
@@ -253,11 +259,11 @@ class DesignController extends Controller
                 ]
             );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'sync_article',
                 'user_id' => Auth::id(),
-                'notes' => "Designer memilih artikel master: {$product->name}",
+                'notes' => "Designer memilih artikel master: {$product->name} untuk pesanan {$pesanan->produk}",
             ]);
         });
 
@@ -326,11 +332,11 @@ class DesignController extends Controller
             'cost_per_pcs' => $costPerPcs,
         ]);
 
-        $pesanan->workflowHistory()->create([
+        $pesanan->jobTicket->workflowHistory()->create([
             'step' => 'design',
             'action' => 'material_spec_updated',
             'user_id' => Auth::id(),
-            'notes' => "Spesifikasi {$spec->type} diperbarui: {$spec->material_name_snapshot}",
+            'notes' => "Spesifikasi {$spec->type} produk {$pesanan->produk} diperbarui: {$spec->material_name_snapshot}",
         ]);
 
         return back()->with('success', 'Spesifikasi material berhasil diperbarui.');
@@ -370,11 +376,11 @@ class DesignController extends Controller
             'cost_per_pcs' => $costPerPcs,
         ]);
 
-        $pesanan->workflowHistory()->create([
+        $pesanan->jobTicket->workflowHistory()->create([
             'step' => 'design',
             'action' => 'manufacturing_spec_updated',
             'user_id' => Auth::id(),
-            'notes' => "Spesifikasi manufaktur diperbarui: {$spec->work_name_snapshot}",
+            'notes' => "Spesifikasi manufaktur {$pesanan->produk} diperbarui: {$spec->work_name_snapshot}",
         ]);
 
         return back()->with('success', 'Spesifikasi manufaktur berhasil diperbarui.');
@@ -406,12 +412,17 @@ class DesignController extends Controller
                 ]
             );
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'design',
                 'action' => 'owner_selling_price_updated',
                 'user_id' => Auth::id(),
-                'notes' => 'Owner menentukan harga jual final per pcs.',
+                'notes' => "Owner menentukan harga jual final {$pesanan->produk} per pcs.",
             ]);
+
+            $pesanan->jobTicket()->update([
+                'status' => 'Design'
+            ]);
+            
         });
 
         return back()->with('success', 'Harga jual final berhasil disimpan.');

@@ -14,6 +14,10 @@ use App\Services\ProductionRunService;
 
 class PaymentController extends Controller
 {
+    public function __construct(
+        protected ProductionRunService $productionRunService,
+        protected InvoiceService $invoiceService,
+    ) {}
     /**
      * Display a listing of the resource.
      */
@@ -36,9 +40,9 @@ class PaymentController extends Controller
     public function store(Request $request, string $invoiceId)
     {
         $invoice = Invoice::findOrFail($invoiceId);
-        $workflowStatus = $invoice->pesanan->workflowStatus;
+        // $workflowStatus = $invoice->pesanan->workflowStatus;
 
-        $minimumPayment = $invoice->kategori_invoice == 'sample' ? 1 : ($workflowStatus->production_dp_paid ? 1 : $invoice->total_tagihan * 0.5);
+        $minimumPayment = 1;
         $maximumPayment = $invoice->total_tagihan - $this->getVerifiedTotal($invoice);
 
         $request->validate([
@@ -132,7 +136,7 @@ class PaymentController extends Controller
                 'status_tagihan' => $invoicePaid ? 'paid' : 'partially_paid',
             ]);
 
-            $pesanan->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'sample_payment',
                 'action' => $invoicePaid ? 'sample_payment_paid' : 'sample_payment_verified',
                 'user_id' => Auth::user()->id,
@@ -151,7 +155,7 @@ class PaymentController extends Controller
             //     'materials_received' => false,
             // ]);
 
-            // $pesanan->workflowHistory()->create([
+            // $pesanan->jobTicket->workflowHistory()->create([
             //     'step' => 'sample',
             //     'action' => 'payment_verified',
             //     'user_id' => Auth::user()->id,
@@ -160,115 +164,190 @@ class PaymentController extends Controller
         });
     }
 
-    private function handleProductionInvoicePaymentStatus($invoice): void
+    private function handleProductionInvoicePaymentStatus(
+        Invoice $invoice
+    ): void
     {
-        $pesanan = $invoice->pesanan;
+        $jobTicket = $invoice->jobTicket;
 
-        if (! $pesanan) {
+        if (! $jobTicket) {
             return;
         }
 
-        $pesanan->loadMissing([
-            'workflowStatus',
-            'manufacturingSpecs',
+        $jobTicket->loadMissing([
+            'pesanans.workflowStatus',
             'productionRuns',
         ]);
 
-        $workflow = $pesanan->workflowStatus;
+        $totalInvoice = (float) $invoice->total_tagihan;
 
-        $wasProductionDpPaid = (bool) ($workflow?->production_dp_paid ?? false);
-        $wasFinalPaymentPaid = (bool) ($workflow?->final_payment_paid ?? false);
-
-        $totalInvoice = (float) ($invoice->total_tagihan ?: $invoice->amount ?: 0);
-
-        $totalVerified = (float) $invoice->payments()
+        $verifiedAmount = (float) $invoice
+            ->payments()
             ->where('status', 'verified')
             ->sum('jumlah_bayar');
 
-        $dpMinimum = $totalInvoice * 0.5;
+        $dpLimit = $totalInvoice * 0.5;
 
-        $productionDpPaid = $totalInvoice > 0 && $totalVerified >= $dpMinimum;
-        $finalPaymentPaid = $totalInvoice > 0 && $totalVerified >= $totalInvoice;
+        $productionDpPaid =
+            $totalInvoice > 0 &&
+            $verifiedAmount >= $dpLimit;
 
-        $pesanan->workflowStatus()->updateOrCreate(
-            ['pesanan_id' => $pesanan->id],
-            [
-                'production_dp_paid' => $productionDpPaid,
-                'final_payment_paid' => $finalPaymentPaid,
-            ]
-        );
+        $finalPaymentPaid =
+            $totalInvoice > 0 &&
+            $verifiedAmount >= $totalInvoice;
 
-        if ($productionDpPaid && ! $wasProductionDpPaid) {
-            $pesanan->workflowHistory()->create([
-                'step' => 'production_payment',
-                'action' => 'dp_verified',
+        $dpJustVerified = false;
+        $fullyPaidJustNow = false;
+
+        foreach ($jobTicket->pesanans as $pesanan) {
+
+            $workflow = $pesanan->workflowStatus;
+
+            $wasDpPaid =
+                (bool) optional($workflow)->production_dp_paid;
+
+            $wasFullyPaid =
+                (bool) optional($workflow)->final_payment_paid;
+
+            $workflow = $pesanan->workflowStatus()->updateOrCreate(
+                [
+                    'pesanan_id' => $pesanan->id,
+                ],
+                [
+                    'production_dp_paid' => $productionDpPaid,
+                    'final_payment_paid' => $finalPaymentPaid,
+                ]
+            );
+
+            if ($productionDpPaid && ! $wasDpPaid) {
+                $dpJustVerified = true;
+            }
+
+            if ($finalPaymentPaid && ! $wasFullyPaid) {
+                $fullyPaidJustNow = true;
+            }
+
+            if (
+                !$workflow->completed &&
+                $workflow->delivered &&
+                $workflow->final_payment_paid
+            ) {
+
+                $workflow->update([
+                    'completed' => true,
+                ]);
+            }
+        }
+
+        if ($dpJustVerified) {
+
+            $jobTicket->workflowHistory()->create([
+                'step' => 'finance',
+                'action' => 'production_dp_verified',
                 'user_id' => Auth::id(),
-                'notes' => 'DP produksi minimal 50% sudah terpenuhi.',
+                'notes' => 'DP produksi minimal 50% telah terpenuhi.',
             ]);
         }
 
-        if ($productionDpPaid) {
-            app(ProductionRunService::class)->ensureProductionRun($pesanan->fresh([
-                'workflowStatus',
-                'manufacturingSpecs',
-                'productionRuns',
-            ]));
-        }
+        if ($fullyPaidJustNow) {
 
-        if ($finalPaymentPaid && ! $wasFinalPaymentPaid) {
-            $pesanan->workflowHistory()->create([
-                'step' => 'production_payment',
-                'action' => 'fully_paid',
+            $jobTicket->workflowHistory()->create([
+                'step' => 'finance',
+                'action' => 'production_paid',
                 'user_id' => Auth::id(),
-                'notes' => 'Invoice produksi sudah lunas.',
+                'notes' => 'Invoice produksi telah lunas.',
+            ]);
+
+            $jobTicket->update([
+                'status' => 'Done',
             ]);
         }
     }
 
-    public function verifyPayment(string $paymentId, InvoiceService $invoiceService)
+    private function handleSampleInvoicePaymentStatus(
+        Invoice $invoice
+    ): void
     {
-        $payment = Payment::with ([
-            'invoice.payments',
-            'invoice.sample.pesanan.workflowStatus',
-            'invoice.pesanan.workflowStatus'
+        $jobTicket = $invoice->jobTicket;
+
+        if (! $jobTicket) {
+            return;
+        }
+
+        foreach ($jobTicket->pesanans as $pesanan) {
+
+            $workflow = $pesanan->workflowStatus;
+
+            $alreadyPaid =
+                (bool) optional($workflow)->sample_paid;
+
+            $pesanan->workflowStatus()->updateOrCreate(
+                [
+                    'pesanan_id'=>$pesanan->id,
+                ],
+                [
+                    'sample_paid'=>true,
+                ]
+            );
+
+            if (! $alreadyPaid) {
+
+                $jobTicket->workflowHistory()->create([
+                    'step'=>'finance',
+                    'action'=>'sample_paid',
+                    'user_id'=>Auth::id(),
+                    'notes'=>'Invoice sample telah dibayar.',
+                ]);
+
+            }
+
+        }
+    }
+
+    public function verifyPayment(string $paymentId)
+    {
+        $payment = Payment::with([
+            'invoice.jobTicket.pesanans.workflowStatus',
         ])->findOrFail($paymentId);
 
-        DB::transaction(function () use ($payment, $invoiceService) {
+        if ($payment->status === 'verified') {
+            abort(422, 'Payment sudah diverifikasi sebelumnya.');
+        }
+
+        DB::transaction(function () use ($payment) {
+
             $payment->update([
                 'status' => 'verified',
-                'verified_by' => Auth::user()->id,
+                'verified_by' => Auth::id(),
                 'verified_at' => now(),
                 'rejection_note' => null,
             ]);
 
-            $invoice = $invoiceService->recalculateStatus($payment->invoice);
-            $invoice->load([
-                'payments',
-                'sample.pesanan.workflowStatus',
-                'pesanan.workflowStatus',
-            ]);
+            $invoice = $payment->invoice;
 
-            $category = $this->getInvoiceCategory($invoice);
-            $verifiedTotal = $this->getVerifiedTotal($invoice);
-            $invoicePaid = $this->isInvoicePaid($invoice);
+            // Selalu hitung ulang status invoice
+            $invoice = $this->invoiceService
+                ->recalculateStatus($invoice);
 
+            switch ($invoice->kategori_invoice) {
 
-            if ($category === 'sample') {
-                $this->handleSamplePaymentVerified($invoice, $invoicePaid);
-                return;
+                case 'sample':
+                    $this->handleSampleInvoicePaymentStatus($invoice);
+                    break;
+
+                case 'produksi':
+                case 'production':
+                case 'dp_produksi':
+                    $this->handleProductionInvoicePaymentStatus($invoice);
+                    break;
             }
-
-            if ($category === 'production') {
-                $this->handleProductionInvoicePaymentStatus(
-                    invoice: $invoice,
-                );
-                return;
-            }
-
 
         });
 
-        return back()->with('success', 'Pembayaran berhasil diverifikasi.');
+        return back()->with(
+            'success',
+            'Pembayaran berhasil diverifikasi.'
+        );
     }
 
     public function rejectPayment(Request $request, string $paymentId)

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DefaultSizeBreakdownController;
 use App\Http\Controllers\Admin\DesignController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\JobTicketController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Admin\PurchasingController;
 use App\Http\Controllers\Admin\SampleController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\ManufacturingWorkController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProductController;
@@ -55,6 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('materials', MaterialController::class);
     Route::patch('/materials/{material}/toggle-active', [MaterialController::class, 'toggleActive'])
         ->name('materials.toggle-active');
+
+    // Company Profile Master
+    Route::resource('company-profiles', CompanyProfileController::class);
+
+    // Default Size Breakdown Master
+    Route::resource('size-breakdowns', DefaultSizeBreakdownController::class);
 
     // Manufacturing Work Master
     Route::resource('manufacturing-works', ManufacturingWorkController::class);
@@ -124,7 +132,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Quotations
      */
 
-    Route::post('/pesanan/{pesanan}/quotations/generate', [QuotationController::class, 'generate'])
+    Route::post('/job-tickets/{job_ticket}/quotations/generate', [QuotationController::class, 'generate'])
         ->name('quotations.generate');
 
     Route::patch('/quotations/{quotation}', [QuotationController::class, 'update'])
@@ -254,11 +262,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Production Run
      */
 
-    Route::post('/pesanan/{pesanan}/production-runs/sample/ensure', [ProductionRunController::class, 'ensureSampleRun'])
-        ->name('production-runs.sample.ensure');
+    Route::post('/job-tickets/{job_ticket}/production/sample-run', [ProductionRunController::class, 'ensureSampleRun'])
+        ->name('job-tickets.sample-run');
 
-    Route::post('/pesanan/{pesanan}/production-runs/production/ensure', [ProductionRunController::class, 'ensureProductionRun'])
-        ->name('production-runs.production.ensure');
+    Route::post('/job-tickets/{job_ticket}/production/mass-run', [ProductionRunController::class, 'ensureProductionRun'])
+        ->name('job-tickets.mass-run');
+
+    // Update status proses (in_progress, completed)
+    Route::patch('/production-processes/{process}', [ProductionRunController::class, 'updateProcess'])
+        ->name('production-processes.update');
 
     Route::patch('/production-run-processes/{process}/start', [ProductionRunController::class, 'startProcess'])
         ->name('production-run-processes.start');
@@ -268,6 +280,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('/production-run-processes/{process}/qc', [ProductionRunController::class, 'submitQc'])
         ->name('production-run-processes.qc');
+
+    // Penyelesaian Akhir & Pengiriman
+    Route::post('/production-runs/{run}/pack', [ProductionRunController::class, 'packRun'])
+        ->name('production-runs.pack');
+        
+    Route::post('/production-runs/{run}/deliver', [ProductionRunController::class, 'deliverRun'])
+        ->name('production-runs.deliver');
 
     Route::patch('/production-runs/{run}/packing', [ProductionRunController::class, 'completePacking'])
         ->name('production-runs.packing');
