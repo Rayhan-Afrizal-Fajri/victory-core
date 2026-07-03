@@ -41,7 +41,7 @@ export const WorkflowTabs: React.FC<{
     purchasing: !ws.sample_paid,
     sample: !ws.sample_materials_ready,
     productionInvoice: !ws.sample_approved,
-    production: !(ws.sample_approved && ws.production_materials_ready),
+    production: !(ws.production_materials_ready),
     qc: !ws.production_completed,
     packing: !ws.qc_completed,
     delivery: !(ws.packing_completed && ws.final_payment_paid),

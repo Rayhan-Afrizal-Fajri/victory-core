@@ -17,13 +17,22 @@ use App\Services\InvoiceService;
 
 class PurchasingController extends Controller
 {
-
+    /**
+     * Controller Purchasing
+     *
+     * Mengelola alur Purchasing (PO) bahan: pembuatan PO dari BOM,
+     * update PO, penerimaan material (receiving), dan sinkronisasi
+     * status workflow terkait `Pesanan` dan `JobTicket`.
+     */
     public function __construct(
         protected ProductionRunService $productionRunService,
         protected InvoiceService $invoiceService,
     ) {}
     /**
-     * Display a listing of the resource.
+     * Menampilkan halaman index purchasing
+     *
+     * Mengambil daftar `Purchasing`, `JobTicket`, dan `Supplier` yang
+     * diperlukan untuk tampilan admin/purchasing/Index.
      */
     public function index()
     {
@@ -85,6 +94,8 @@ class PurchasingController extends Controller
 
     private function mapPurchasing(Purchasing $p): array
     {
+        // Map model `Purchasing` menjadi array yang dibutuhkan oleh frontend
+        // (menggabungkan informasi job ticket, supplier, dan receiving).
         $receivedQty = (float) (
             $p->received_qty
             ?: $p->materialReceivings->sum('received_qty')
@@ -97,6 +108,8 @@ class PurchasingController extends Controller
             0
         );
 
+        // Ambil job ticket terkait jika ada, dipakai untuk menampilkan
+        // customer dan company pada tampilan PO.
         $jobTicket = $p->pesanan?->jobTicket;
 
         return [
@@ -216,12 +229,19 @@ class PurchasingController extends Controller
         ];
     }
 
+    /**
+     * Generate purchasing dari BOM
+     *
+     * Menerima request `sample_qty` lalu membuat baris PO untuk setiap
+     * material spec pada pesanan jika invoice sample sudah dibayar.
+     */
     public function generateFromBom(Request $request, string $pesananId)
     {
         $validated = $request->validate([
             'sample_qty' => ['required', 'integer', 'min:0'],
         ]);
 
+        // Ambil pesanan beserta relasi penting untuk perhitungan PO.
         $pesanan = Pesanan::with([
             'workflowStatus',
             'materialSpecs.supplier',
@@ -229,10 +249,12 @@ class PurchasingController extends Controller
             'jobTicket.quotations',
         ])->findOrFail($pesananId);
 
+        // Pastikan invoice sample sudah dibayar/verifikasi sebelum generate PO.
         if (! $pesanan->workflowStatus?->sample_paid) {
             abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum lunas.');
         }
 
+        // Cegah duplikasi jika purchasing sudah pernah dibuat untuk pesanan.
         if ($pesanan->purchasing()->exists()) {
             abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
         }
@@ -245,6 +267,7 @@ class PurchasingController extends Controller
         $sampleQty = (int) ($pesanan->sample_qty ?: 1);
         $totalPlannedQty = $productionQty + $sampleQty;
 
+        // Simpan nilai sample_qty pada pesanan.
         $pesanan->update([
             'sample_qty' => $sampleQty,
         ]);
@@ -253,6 +276,7 @@ class PurchasingController extends Controller
             abort(422, 'Total quantity belum valid.');
         }
 
+        // Buat PO untuk setiap material spec dalam satu transaksi.
         DB::transaction(function () use ($pesanan, $totalPlannedQty) {
             foreach ($pesanan->materialSpecs as $spec) {
                 $usage = (float) $spec->usage;
@@ -271,6 +295,7 @@ class PurchasingController extends Controller
 
                 $totalHarga = $purchaseQty * $hargaSatuan;
 
+                // Simpan baris purchasing berdasarkan spec.
                 $pesanan->purchasing()->create([
                     'pesanan_material_spec_id' => $spec->id,
                     'supplier_id' => $spec->supplier_id,
@@ -293,6 +318,7 @@ class PurchasingController extends Controller
                 ]);
             }
 
+            // Tandai workflow bahwa materials sudah dibuat/diorder.
             $pesanan->workflowStatus()->updateOrCreate(
                 ['pesanan_id' => $pesanan->id],
                 [
@@ -308,6 +334,7 @@ class PurchasingController extends Controller
                 'notes' => 'Purchasing digenerate dari BOM untuk kebutuhan sample dan production.',
             ]);
 
+            // Update status job ticket agar UI mencerminkan tahap Purchasing.
             $pesanan->jobTicket()->update([
                 'status' => 'Purchasing'
             ]);
@@ -318,6 +345,7 @@ class PurchasingController extends Controller
 
     public function updatePoItem(Request $request, string $purchasingId)
     {
+        // Update satu item PO (dipakai di UI edit PO item)
         $validated = $request->validate([
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'stock_qty' => ['required', 'numeric', 'min:0'],
@@ -327,8 +355,10 @@ class PurchasingController extends Controller
             'tgl_pembelian' => ['nullable', 'date'],
         ]);
 
+        // Ambil purchasing untuk divalidasi.
         $purchasing = Purchasing::with('pesanan.workflowStatus')->findOrFail($purchasingId);
 
+        // PO yang sudah final tidak boleh diedit.
         if (in_array($purchasing->status, ['received', 'cancelled'])) {
             abort(422, 'PO item yang sudah received/cancelled tidak bisa diedit.');
         }
@@ -340,6 +370,7 @@ class PurchasingController extends Controller
         $leftoverQty = max(($stockQty + $purchaseQty) - $requiredQty, 0);
         $totalHarga = $purchaseQty * (float) $validated['harga_satuan'];
 
+        // Simpan perubahan dan hitung ulang field turunan.
         $purchasing->update([
             'supplier_id' => $validated['supplier_id'] ?? null,
             'stock_qty' => $stockQty,
@@ -367,7 +398,7 @@ class PurchasingController extends Controller
      */
     public function create()
     {
-        //
+        // Form pembuatan PO manual (tidak memiliki implementasi backend khusus).
     }
 
     /**
@@ -386,12 +417,14 @@ class PurchasingController extends Controller
             'notes' => ['nullable', 'string']
         ]);
 
+        // Validasi bahwa pesanan boleh menambahkan PO (invoice sample terverifikasi).
         $pesanan = Pesanan::with('workflowStatus')->findOrFail($pesananId);
 
         if (! $pesanan->workflowStatus?->sample_paid) {
             abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum diverifikasi.');
         }
 
+        // Simpan purchasing manual dalam transaksi.
         DB::transaction(function () use ($request, $pesanan) {
             $qty = (float) $request->qty_bahan;
             $price = (float) $request->harga_satuan;
@@ -418,6 +451,7 @@ class PurchasingController extends Controller
                 'notes' => $request->notes,
             ]);
 
+            // Sinkronisasi workflow pesanan setelah penambahan PO.
             $this->syncPesananPurchasingWorkflow($pesanan);
 
             // $pesanan->workflowStatus()->updateOrCreate(
@@ -470,8 +504,10 @@ class PurchasingController extends Controller
             'tgl_pembelian' => ['nullable', 'date'],
         ]);
 
+        // Ambil purchasing beserta history receiving untuk memvalidasi update.
         $purchasing = Purchasing::with(['materialReceivings', 'pesanan'])->findOrFail($purchasingId);
 
+        // PO final tidak boleh diedit.
         if (in_array($purchasing->status, ['received', 'cancelled'])) {
             abort(422, 'Purchasing yang sudah received/cancelled tidak bisa diedit.');
         }
@@ -482,6 +518,7 @@ class PurchasingController extends Controller
             abort(422, 'Qty bahan tidak boleh lebih kecil dari qty yang sudah diterima.');
         }
 
+        // Lakukan update dalam transaksi dan sinkronkan status.
         DB::transaction(function () use ($request, $purchasing) {
             $qty = (float) $request->qty_bahan;
             $price = (float) $request->harga_satuan;
@@ -496,6 +533,7 @@ class PurchasingController extends Controller
                 'tgl_pembelian' => $request->tgl_pembelian,
             ]);
 
+            // Perbarui status berdasarkan receiving yang ada.
             $this->syncPurchasingStatus($purchasing);
 
             $purchasing->pesanan->jobTicket->workflowHistory()->create([
@@ -514,6 +552,7 @@ class PurchasingController extends Controller
      */
     public function destroy(string $purchasingId)
     {
+        // Hapus purchasing jika belum memiliki receiving dan belum received.
         $purchasing = Purchasing::with(['materialReceivings', 'pesanan.workflowStatus'])->findOrFail($purchasingId);
 
         if ($purchasing->materialReceivings()->exists()) {
@@ -544,6 +583,7 @@ class PurchasingController extends Controller
 
     public function markOrdered(string $purchasingId)
     {
+        // Tandai item PO sebagai ordered (dari draft).
         $purchasing = Purchasing::with('pesanan')->findOrFail($purchasingId);
 
         if ($purchasing->status !== 'draft') {
@@ -574,6 +614,7 @@ class PurchasingController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        // Simpan receiving untuk PO tertentu, dengan validasi batas qty.
         $purchasing = Purchasing::with([
             'materialReceivings',
             'pesanan.workflowStatus',
@@ -590,6 +631,7 @@ class PurchasingController extends Controller
             abort(422, 'Qty diterima melebihi sisa qty bahan.');
         }
 
+        // Transaksi: buat receiving, sinkronkan status dan buat invoice/run bila perlu.
         DB::transaction(function () use ($request, $purchasing) {
             $purchasing->materialReceivings()->create([
                 'received_qty' => $request->received_qty,
@@ -624,6 +666,7 @@ class PurchasingController extends Controller
 
     public function destroyReceiving(string $receivingId)
     {
+        // Hapus riwayat receiving dan sinkronkan status terkait.
         $receiving = MaterialReceiving::with('purchasing.pesanan.workflowStatus')->findOrFail($receivingId);
 
         DB::transaction(function () use ($receiving) {
@@ -653,6 +696,7 @@ class PurchasingController extends Controller
         $receivedQty = (float) $purchasing->materialReceivings()->sum('received_qty');
         $qty = (float) $purchasing->qty_bahan;
 
+        // Tentukan status purchasing berdasarkan jumlah yang diterima.
         if ($receivedQty <= 0) {
             $status = $purchasing->status === 'draft' ? 'draft' : 'ordered';
             $isReceived = false;
@@ -675,6 +719,8 @@ class PurchasingController extends Controller
 
     private function getPurchasingSampleRequiredQty(Purchasing $purchasing, Pesanan $pesanan): float
     {
+        // Hitung jumlah qty yang dibutuhkan untuk keperluan sample
+        // berdasarkan scope purchasing (sample/production/both/additional).
         $scope = $purchasing->purchase_scope ?: 'sample_and_production';
         $totalRequiredQty = (float) ($purchasing->required_qty ?: $purchasing->qty_bahan ?: 0);
 
@@ -699,6 +745,8 @@ class PurchasingController extends Controller
 
     private function getPurchasingProductionRequiredQty(Purchasing $purchasing, Pesanan $pesanan): float
     {
+        // Hitung jumlah qty yang dibutuhkan untuk keperluan produksi
+        // berdasarkan scope purchasing (sample/production/both/additional).
         $scope = $purchasing->purchase_scope ?: 'sample_and_production';
         $totalRequiredQty = (float) ($purchasing->required_qty ?: $purchasing->qty_bahan ?: 0);
 
@@ -723,21 +771,27 @@ class PurchasingController extends Controller
     
     private function getPurchasingReceivedQty(Purchasing $purchasing): float
     {
+        // Jumlah qty yang sudah diterima untuk sebuah purchasing.
         return (float) $purchasing->materialReceivings()->sum('received_qty');
     }
 
     private function roundQty(float $value, int $precision = 4): float
     {
+        // Pembulatan qty untuk mengurangi isu presisi floating point.
         return round($value, $precision);
     }
 
     private function isQtyEnough(float $received, float $required): bool
     {
+        // Cek apakah received sudah cukup untuk memenuhi required,
+        // dengan toleransi kecil untuk perbandingan float.
         return $this->roundQty($received) + 0.0001 >= $this->roundQty($required);
     }
 
     private function isSampleMaterialsReady(Pesanan $pesanan): bool
     {
+        // Cek apakah semua material yang diperlukan untuk sample sudah siap
+        // (dengan mempertimbangkan purchase_scope tiap purchasing).
         $purchasings = $pesanan->purchasing()
             ->with('materialReceivings')
             ->where('status', '!=', 'cancelled')
@@ -775,6 +829,7 @@ class PurchasingController extends Controller
 
     private function isProductionMaterialsReady(Pesanan $pesanan): bool
     {
+        // Cek apakah semua material yang diperlukan untuk produksi sudah siap.
         $purchasings = $pesanan->purchasing()
             ->with('materialReceivings')
             ->where('status', '!=', 'cancelled')
@@ -802,6 +857,9 @@ class PurchasingController extends Controller
 
     private function syncPesananPurchasingWorkflow(Pesanan $pesanan): void
     {
+        // Sinkronisasi status workflow `Pesanan` berdasarkan purchasing dan
+        // receiving yang terkait. Memperbarui flags seperti
+        // materials_purchased, materials_received, dan readiness.
         $pesanan->loadMissing([
             'workflowStatus',
             'purchasing',
@@ -812,14 +870,17 @@ class PurchasingController extends Controller
 
         $purchasings = $pesanan->purchasing()->with('materialReceivings')->get();
 
+        // Apakah ada purchasing yang terkait dengan pesanan ini?
         $hasPurchasing = $purchasings->count() > 0;
 
+        // Apakah semua purchasing sudah diterima sepenuhnya?
         $allReceived = $hasPurchasing && $purchasings->every(function ($item) {
             return $item->is_received || $item->status === 'received';
         });
 
         $currentWorkflow = $pesanan->workflowStatus;
 
+        // Periksa kesiapan material untuk sample dan produksi.
         $sampleMaterialsReady = $this->isSampleMaterialsReady($pesanan);
         $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
 
@@ -845,10 +906,12 @@ class PurchasingController extends Controller
             $productionMaterialsReady = true;
         }
 
+        // Apakah semua material sudah didistribusikan ke proses produksi?
         $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
             return $item->is_distributed || $item->status === 'distributed';
         });
 
+        // Simpan hasil sinkronisasi ke table workflow_status.
         $pesanan->workflowStatus()->updateOrCreate(
             ['pesanan_id' => $pesanan->id],
             [
@@ -861,6 +924,7 @@ class PurchasingController extends Controller
             ]
         );
 
+        // Jika ready, pastikan production run dibuat.
         if ($sampleMaterialsReady) {
             $this->productionRunService->ensureSampleRun($pesanan->jobTicket);
         }
@@ -872,6 +936,7 @@ class PurchasingController extends Controller
 
     private function ensureSampleProductionRun(Pesanan $pesanan)
     {
+        // Pastikan ada sample production run jika belum ada.
         $pesanan->loadMissing([
             'manufacturingSpecs',
             'jobTicket.productionRuns',
@@ -887,7 +952,7 @@ class PurchasingController extends Controller
             return;
         }
 
-        
+        // Buat sample run baru berdasarkan manufacturing specs.
         DB::transaction(function() use ($pesanan, $existingRun) {
             $run = $pesanan->jobTicket->productionRuns()->create([
                 'type' => 'sample',

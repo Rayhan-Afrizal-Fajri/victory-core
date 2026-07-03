@@ -64,7 +64,7 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
     });
 
     const reviewForm = useForm({
-        customer_review_note: run.customer_review_note,
+        customer_review_note: run.customer_review_note ?? '',
     });
 
     const ensureSampleRun = (e: React.FormEvent) => {

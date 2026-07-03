@@ -93,31 +93,30 @@ class ProductionRunService
             return $existingRun;
         }
 
+        // Pastikan sample sudah disetujui pada semua pesanan
         $sampleApproved =
             $jobTicket->pesanans
                 ->every(fn($p)=>
                     optional($p->workflowStatus)->sample_approved
                 );
 
-        $allReceived =
-        $jobTicket->pesanans->every(function ($pesanan) {
+        // Cari pesanan yang *seluruh* purchasing item-nya sudah diterima.
+        // Hanya jika ada minimal satu pesanan seperti ini, kita boleh
+        // membuat production run. Jika tidak ada, batalkan pembuatan.
+        $pesanansFullyReceived = $jobTicket->pesanans->filter(function ($pesanan) {
+            return $pesanan->purchasing->isNotEmpty()
+                && $pesanan->purchasing->every(fn($p) => (bool) $p->is_received);
+        })->values();
 
-            return
-                $pesanan->purchasing->isNotEmpty()
-                &&
-                $pesanan->purchasing->every(
-                    fn($p) => $p->is_received
-                );
-        });
-
-        if (! $sampleApproved || ! $allReceived) {
+        if (! $sampleApproved || $pesanansFullyReceived->isEmpty()) {
             return null;
         }
 
-        return $this->createProductionRun($jobTicket);
+        // Buat production run hanya untuk pesanan yang sudah lengkap diterima.
+        return $this->createProductionRun($jobTicket, $pesanansFullyReceived);
     }
 
-    private function createProductionRun(JobTicket $jobTicket) {
+    private function createProductionRun(JobTicket $jobTicket, $pesanansToProcess = null) {
         return DB::transaction(function () use ($jobTicket) {
             $jobTicket->loadMissing([
                 'pesanans.manufacturingSpecs',
@@ -141,7 +140,11 @@ class ProductionRunService
                 'status' => 'draft',
             ]);
 
-            foreach ($jobTicket->pesanans as $pesanan) {
+            // Jika dipanggil dengan daftar pesanan spesifik, gunakan itu,
+            // jika tidak, proses semua pesanan pada job ticket.
+            $pesanansToProcess = $pesanansToProcess ?? $jobTicket->pesanans;
+
+            foreach ($pesanansToProcess as $pesanan) {
                 $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
 
                 if ($productionQty <= 0) {
