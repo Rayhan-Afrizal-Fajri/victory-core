@@ -60,4 +60,9 @@ class ProductionRunProcess extends Model
     {
         return $this->hasMany(ProductionDefectHistory::class);
     }
+
+    public function deffectRuns()
+    {
+        return $this->hasMany(DeffectRun::class);
+    }
 }

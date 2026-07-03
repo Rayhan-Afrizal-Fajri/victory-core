@@ -48,6 +48,7 @@ return new class extends Migration
                 'pending',
                 'passed',
                 'failed',
+                'conditionally_passed'
             ])->default('pending');
 
             $table->text('qc_notes')->nullable();

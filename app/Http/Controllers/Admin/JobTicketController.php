@@ -255,6 +255,11 @@ class JobTicketController extends Controller
                 'note' => $h->notes,
                 'created_at' => optional($h->created_at)->format('Y-m-d H:i:s'),
             ])->toArray(),
+
+            'defect_histories' => $jobTicket->defectHistories->map(fn ($d) => [
+                'id' => $d->id,
+                
+            ]),
             
             // ORDERS (Pesanans)
             'orders' => $jobTicket->pesanans->map(function($pesanan) {

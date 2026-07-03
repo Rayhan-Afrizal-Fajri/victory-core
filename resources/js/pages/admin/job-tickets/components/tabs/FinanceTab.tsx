@@ -176,6 +176,7 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
             onSuccess: () => {
                 toast.success('Pembayaran berhasil disubmit');
                 setPaymentOpen(false);
+                setDetailOpen(false);
                 paymentForm.reset();
             },
         });
@@ -186,7 +187,7 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
 
         if (!editingPayment) return;
 
-        paymentForm.post(`/payments/${editingPayment.id}`, {
+        paymentForm.patch(`/payments/${editingPayment.id}`, {
             preserveScroll: true,
             forceFormData: true,
             data: {
@@ -196,6 +197,7 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
             onSuccess: () => {
                 toast.success('Pembayaran berhasil diupdate');
                 setPaymentOpen(false);
+                setDetailOpen(false);
                 setEditingPayment(null);
                 paymentForm.reset();
             },
@@ -223,10 +225,12 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
     };
 
     const rejectPayment = (paymentId: number) => {
-        rejectPaymentForm.post(`/payments/${paymentId}/reject`, {
+        rejectPaymentForm.patch(`/payments/${paymentId}/reject`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Pembayaran ditolak');
+                setPaymentOpen(false);
+                setDetailOpen(false);
                 setRejectPaymentId(null);
                 rejectPaymentForm.reset();
             },
@@ -242,6 +246,7 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                         preserveScroll: true,
                         onSuccess: () => {
                             toast.success('Pembayaran berhasil dihapus');
+                            setDetailOpen(false);
                         },
                     });
                 },

@@ -135,6 +135,7 @@ class ProductionRunController extends Controller
 
     public function submitQc(Request $request, string $processId)
     {
+
         $validated = $request->validate([
             'checked_qty' => ['required', 'integer', 'min:1'],
             'passed_qty' => ['required', 'integer', 'min:0'],
@@ -159,7 +160,7 @@ class ProductionRunController extends Controller
         }
 
         $process = ProductionRunProcess::with('productionRun.jobTicket')->findOrFail($processId);
-        $qcStatus = $validated['defect_qty'] > 0 ? 'conditionally_passed' : 'passed';
+        $qcStatus = $validated['defect_qty'] == $validated['checked_qty'] ? 'failed' : ($validated['defect_qty'] > 0 ? 'conditionally_passed' : 'passed');
 
         DB::transaction(function () use ($process, $validated, $qcStatus) {
             $process->update([
@@ -176,7 +177,7 @@ class ProductionRunController extends Controller
             // Jika ada defect, catat ke tabel Defect History
             if ($validated['defect_qty'] > 0) {
                 ProductionDefectHistory::create([
-                    'job_ticket_id' => $process->productionRuns->job_ticket_id,
+                    'job_ticket_id' => $process->productionRun->job_ticket_id,
                     'pesanan_id' => $process->pesanan_id,
                     'production_run_process_id' => $process->id,
                     'defect_qty' => $validated['defect_qty'],

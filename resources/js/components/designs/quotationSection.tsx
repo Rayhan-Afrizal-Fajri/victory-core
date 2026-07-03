@@ -13,9 +13,11 @@ import { Pesanan } from "@/pages/admin/job-tickets/types";
 function QuotationSection({
     job,
     quotations,
+    form
 }: {
     job: any;
     quotations: any[];
+    form: any;
 }) {
     const can = useCan();
 

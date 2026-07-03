@@ -6,188 +6,247 @@
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11px;
-            color: #1f2937;
+            font-size: 10px; /* Ukuran font disesuaikan agar compact dan rapi */
+            color: #111827;
             line-height: 1.4;
         }
-        .container-table {
+        table {
             width: 100%;
             border-collapse: collapse;
         }
-        .logo-section {
-            font-size: 18px;
-            font-weight: bold;
-            color: #111827;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        td, th {
+            vertical-align: top;
         }
-        .brand-sub {
-            font-size: 9px;
-            color: #6b7280;
-            font-style: italic;
+        .text-center { text-align: center !important; }
+        .text-right { text-align: right !important; }
+        .text-left { text-align: left !important; }
+        .font-bold { font-weight: bold !important; }
+
+        /* Header Section */
+        .doc-header {
+            margin-bottom: 20px;
         }
-        .doc-header-title {
+        .doc-title {
             font-size: 22px;
             font-weight: bold;
-            color: #111827;
-            text-align: right;
-            text-transform: uppercase;
+            color: #0b5394; /* Warna Biru Tema */
+            text-transform: capitalize;
+            margin-bottom: 8px;
         }
-        .items-table {
+        .meta-table {
+            width: auto;
+            /* HAPUS float: right; dan ganti dengan margin di bawah ini */
+            margin-left: auto; 
+            margin-right: 0;
+            font-size: 10px;
+        }
+
+        /* Border dihilangkan untuk Meta Table */
+        .meta-table td {
+            padding: 2px 8px;
+            border: none; 
+        }
+
+         /* Address Section */
+        .address-container {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
+            margin-top: 30px; /* Ini memberikan jarak dari tabel meta di atasnya */
+            margin-bottom: 15px;
+            clear: both; /* Ini KUNCI agar tabel tidak naik menabrak tabel di atasnya */
+        }
+        
+        .address-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #111827; /* Garis Bawah Title */
+        }
+        .address-content {
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        .company-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #0b5394;
+            margin-bottom: 3px;
+        }
+
+        /* Items Table (Tetap seperti sebelumnya) */
+        .items-table {
+            margin-top: 10px;
+            border: 1px solid #d1d5db;
         }
         .items-table th {
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 8px;
+            background-color: #0b5394;
+            color: #ffffff;
+            font-size: 10px;
             font-weight: bold;
-            text-align: left;
-            color: #374151;
+            padding: 6px 8px;
+            border: 1px solid #0b5394;
         }
         .items-table td {
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-            vertical-align: top;
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+            font-size: 10px;
         }
-        .text-right {
-            text-align: right !important;
-        }
-        .text-center {
-            text-align: center !important;
-        }
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .summary-table td {
-            padding: 5px 8px;
-        }
-        .terms-section {
-            margin-top: 30px;
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 12px;
-            border-radius: 4px;
-        }
-        .bank-box {
-            margin-top: 12px;
-            border-left: 3px solid #111827;
-            padding-left: 10px;
-        }
-        .signature-container {
-            width: 100%;
-            margin-top: 40px;
-        }
-        .signature-cell {
-            width: 50%;
-            vertical-align: top;
-        }
-        .signature-space {
-            height: 70px;
+        .items-table .item-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
         }
         .breakdown-tag {
             display: inline-block;
-            background: #f3f4f6;
-            color: #4b5563;
-            padding: 2px 5px;
-            border-radius: 3px;
+            color: #374151;
             font-size: 9px;
             margin-right: 4px;
-            margin-top: 3px;
+            margin-top: 2px;
+        }
+
+        /* Section Pesan & Summary bersebelahan */
+        .bottom-container {
+            width: 100%;
+            margin-top: 15px;
+        }
+        .pesan-list {
+            padding-left: 12px;
+            margin-top: 4px;
+            margin-bottom: 0;
+            line-height: 1.5;
+            color: #111827;
+            font-weight: bold;
+        }
+        .pesan-list li {
+            margin-bottom: 2px;
+        }
+
+        /* Summary Table */
+        .summary-table {
+            width: 100%;
+            font-size: 10px;
+        }
+        .summary-table td {
+            padding: 4px 8px;
+        }
+        .summary-label {
+            font-weight: bold;
+            color: #111827;
+        }
+        .grand-total-row td {
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        /* Signature */
+        .signature-container {
+            width: 100%;
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .signature-cell {
+            text-align: center;
+            width: 200px;
+            float: right;
+        }
+        .signature-space {
+            height: 60px;
         }
     </style>
 </head>
 <body>
-
-    <table class="container-table">
+    <!-- Header: Logo & Meta Info -->
+    <table class="doc-header">
         <tr>
-            <td style="width: 50%; vertical-align: top;">
-                <div class="logo-section">VICTORYLABS</div>
-                <div class="brand-sub">Pursuit of Perfection</div>
+            <td style="width: 30%; vertical-align: top;">
+                <img src="{{ public_path('images/logo.png') }}" alt="Victory Labs" style="max-height: 45px;">
             </td>
             <td style="width: 50%; vertical-align: top;" class="text-right">
-                <div class="doc-header-title">Penawaran</div>
-                <table style="float: right; margin-top: 5px; font-size: 11px;">
+                <div class="doc-title">Penawaran</div>
+                <table class="meta-table">
                     <tr>
-                        <td style="padding: 2px 5px; color: #6b7280; text-align: right;">Nomor:</td>
-                        <td style="padding: 2px 5px; font-weight: bold;">{{ $quotation->quotation_number }}</td>
+                        <td class="text-right" style="color: #111827;">Nomor</td>
+                        <td class="font-bold text-left">{{ $quotation->quotation_number }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 2px 5px; color: #6b7280; text-align: right;">Tanggal:</td>
-                        <td style="padding: 2px 5px;">{{ \Carbon\Carbon::parse($quotation->created_at)->format('d/m/Y') }}</td>
+                        <td class="text-right" style="color: #111827;">Tanggal</td>
+                        <td class="text-left">{{ \Carbon\Carbon::parse($quotation->created_at)->format('d/m/Y') }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 2px 5px; color: #6b7280; text-align: right;">Berlaku S/D:</td>
-                        <td style="padding: 2px 5px;">{{ $quotation->valid_until ? \Carbon\Carbon::parse($quotation->valid_until)->format('d/m/Y') : '-' }}</td>
+                        <td class="text-right" style="color: #111827;">Tgl. Jatuh Tempo</td>
+                        <td class="text-left">{{ $quotation->valid_until ? \Carbon\Carbon::parse($quotation->valid_until)->format('d/m/Y') : '-' }}</td>
                     </tr>
                 </table>
             </td>
         </tr>
     </table>
 
-    <table class="container-table" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+    <!-- Address Boxes (Dibuat full border-less, hanya garis bawah di title) -->
+    <table class="address-container">
         <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-                <div style="font-weight: bold; font-size: 10px; color: #4b5563; text-transform: uppercase; margin-bottom: 5px;">Perusahaan:</div>
-                <div style="font-size: 12px; font-weight: bold; color: #111827; margin-bottom: 3px;">
-                    {{ $jobTicket->companyProfile->company_name ?? 'PT. Victorylab Global Industries' }}
-                </div>
-                <div style="color: #4b5563; font-size: 10px; line-height: 1.4;">
-                    {!! nl2br(e($jobTicket->companyProfile->address ?? '')) !!}<br>
-                    <strong>Telp:</strong> {{ $jobTicket->companyProfile->phone ?? '081212228900' }}<br>
-                    <strong>Email:</strong> {{ $jobTicket->companyProfile->email ?? 'marketing@victorylabs.id' }}
+            <!-- Informasi Perusahaan -->
+            <td style="width: 50%; padding-right: 15px;">
+                <div class="address-title">Informasi Perusahaan</div>
+                <div class="address-content">
+                    <div class="company-name">
+                        {{ $jobTicket->companyProfile->company_name ?? 'PT. Victorylab Global Industries' }}
+                    </div>
+                    Headquarters : {!! nl2br(e($jobTicket->companyProfile->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
+                    Telp: {{ $jobTicket->companyProfile->phone ?? '081212228900' }}<br>
+                    Email: {{ $jobTicket->companyProfile->email ?? 'marketing@victorylabs.id' }}
                 </div>
             </td>
-            
-            <td style="width: 50%; vertical-align: top; border-left: 1px solid #e5e7eb; padding-left: 15px;">
-                <div style="font-weight: bold; font-size: 10px; color: #4b5563; text-transform: uppercase; margin-bottom: 5px;">Penawaran Kepada:</div>
-                <div style="font-size: 12px; font-weight: bold; color: #111827; margin-bottom: 3px;">
-                    {{ $jobTicket->customer->nama_perusahaan ?? "perusahaan" }}
-                </div>
-                <div style="color: #4b5563; font-size: 10px; line-height: 1.4;">
+
+            <!-- Penawaran Kepada -->
+            <td style="width: 50%; padding-left: 15px;">
+                <div class="address-title">Penawaran Kepada</div>
+                <div class="address-content">
+                    <div class="company-name">
+                        {{ $jobTicket->customer_perusahaan_snapshot ?? $jobTicket->customer->nama_perusahaan ?? $jobTicket->customer->nama }}
+                    </div>
                     {{ $jobTicket->customer->alamat ?? '' }}<br>
-                    <strong>Telp:</strong> {{ $jobTicket->customer->no_hp ?? '-' }}<br>
-                    <strong>Up:</strong> {{ $jobTicket->customer->nama ?? "Nama" }}
+                    Telp: {{ $jobTicket->customer->kontak ?? $jobTicket->customer->no_hp ?? '-' }}<br>
+                    Up: {{ $jobTicket->customer_nama_snapshot ?? $jobTicket->customer->nama }}
                 </div>
             </td>
         </tr>
     </table>
 
+    <!-- Items Table (Produk & Deskripsi) -->
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 25%;">Produk</th>
-                <th style="width: 40%;">Deskripsi & Spesifikasi</th>
+                <th style="width: 25%;" class="text-center">Produk</th>
+                <th style="width: 35%;" class="text-center">Deskripsi</th>
                 <th style="width: 10%;" class="text-center">Kuantitas</th>
                 <th style="width: 10%;" class="text-center">Satuan</th>
-                <th style="width: 15%;" class="text-right">Harga</th>
-                <th style="width: 15%;" class="text-right">Total</th>
+                <th style="width: 20%;" class="text-center">Harga</th>
             </tr>
         </thead>
         <tbody>
             @foreach($quotation->items as $index => $item)
                 @php
-                    // Ambil object pesanan yang sesuai dari list JobTicket untuk mengekstrak size breakdown
                     $pesanan = $jobTicket->pesanans->get($index);
                 @endphp
                 <tr>
                     <td>
-                        <strong style="color: #111827;">{{ $item->item_name }}</strong>
+                        <div class="item-name">{{ $item->item_name }}</div>
                     </td>
                     <td>
-                        <div style="color: #4b5563; font-size: 10px; margin-bottom: 4px;">
-                            @if($item->fabric) <span>Bahan: {{ $item->fabric }}</span> @endif
-                            @if($item->print_method) | <span>Metode: {{ $item->print_method }}</span> @endif
-                        </div>
+                        @if($item->fabric || $item->print_method)
+                            <div style="color: #4b5563;">
+                                @if($item->fabric) <span>Bahan: {{ $item->fabric }}</span><br> @endif
+                                @if($item->print_method) <span>Metode: {{ $item->print_method }}</span> @endif
+                            </div>
+                        @endif
                         
                         @if($pesanan && $pesanan->sizeBreakdowns && $pesanan->sizeBreakdowns->count() > 0)
-                            <div style="margin-top: 6px; font-size: 9px; border-top: 1px dashed #e5e7eb; padding-top: 4px;">
+                            <div style="margin-top: 4px;">
                                 @foreach($pesanan->sizeBreakdowns as $breakdown)
                                     <span class="breakdown-tag">
-                                        {{ $breakdown->color ? $breakdown->color . ' - ' : '' }}<strong>{{ $breakdown->size_label }}</strong>: {{ $breakdown->qty }}pcs ({{ $breakdown->fabric_spec }})
+                                        {{ $breakdown->color ? $breakdown->color . ' - ' : '' }}{{ $breakdown->size_label }}:{{ $breakdown->qty }}pcs
                                     </span>
                                 @endforeach
                             </div>
@@ -195,75 +254,83 @@
                     </td>
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                     <td class="text-center">Pcs</td>
-                    <td class="text-right">Rp{{ number_format($item->price_per_pcs, 0, ',', '.') }}</td>
-                    <td class="text-right">Rp{{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($item->price_per_pcs, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
+            
+            @if($quotation->delivery_cost > 0)
+            <tr>
+                <td><div class="item-name">Ongkos Kirim</div></td>
+                <td></td>
+                <td class="text-center">1</td>
+                <td class="text-center">Kirim</td>
+                <td class="text-right">{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
+            </tr>
+            @endif
         </tbody>
     </table>
 
-    <table class="container-table" style="margin-top: 15px;">
+    <!-- Bottom Container (Pesan Kiri, Total Kanan) -->
+    <table class="bottom-container">
         <tr>
-            <td style="width: 50%;"></td>
-            <td style="width: 50%;">
+            <!-- PESAN -->
+            <td style="width: 60%; padding-right: 15px;">
+                <div class="address-title">Pesan</div>
+                <ul class="pesan-list">
+                    <li>Harga telah termasuk bahan, packing, namun belum termasuk pajak.</li>
+                    <li>Harga penawaran hanya berlaku 30 hari kalender sejak diterbitkan.</li>
+                    <li>{{ $quotation->delivery_terms ?? '25 June 2026 Acc sample' }}.</li>
+                    <li>Setelah sample approve kami mohon untuk mengirimkan down payment sebesar 50% dari nilai order, sisanya sesaat sebelum pengiriman.</li>
+                    <li>Untuk pembayaran mohon untuk ditransfer ke 
+                        {{ $jobTicket->companyProfile->bank_type ?? 'BCA' }} 
+                        KCP Lingkar Selatan Bandung, no acc 
+                        {{ $jobTicket->companyProfile->account_number ?? '453.12.06660' }}, 
+                        Atas nama {{ $jobTicket->companyProfile->account_name ?? 'VICTOR HARLIM.MBA' }}.
+                    </li>
+                </ul>
+            </td>
+
+            <!-- SUBTOTAL & TOTAL -->
+            <td style="width: 40%; vertical-align: top;">
                 <table class="summary-table">
                     <tr>
-                        <td style="color: #4b5563;">Subtotal</td>
-                        <td class="text-right">Rp{{ number_format($quotation->subtotal, 0, ',', '.') }}</td>
+                        <td class="summary-label text-right">Subtotal</td>
+                        <td class="text-right font-bold">Rp {{ number_format($quotation->subtotal, 0, ',', '.') }}</td>
                     </tr>
-                    
                     <tr>
-                        <td style="color: #4b5563;">
-                            Pajak PPN 
+                        <td class="summary-label text-right">
+                            Pajak PPN
                             @if($jobTicket->companyProfile && $jobTicket->companyProfile->company_type === 'pkp')
                                 ({{ $jobTicket->companyProfile->tax_percentage }}%)
-                            @else
-                                (0%)
                             @endif
                         </td>
-                        <td class="text-right">Rp{{ number_format($quotation->tax ?? 0, 0, ',', '.') }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($quotation->tax, 0, ',', '.') }}</td>
                     </tr>
-
-                    @if($quotation->delivery_cost > 0)
-                        <tr>
-                            <td style="color: #4b5563;">Biaya Pengiriman</td>
-                            <td class="text-right">Rp{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
-                        </tr>
-                    @endif
-                    <tr style="font-weight: bold; font-size: 12px; border-top: 1px solid #d1d5db;">
-                        <td style="padding-top: 6px; color: #111827;">Grand Total</td>
-                        <td class="text-right" style="padding-top: 6px;">Rp{{ number_format($quotation->grand_total, 0, ',', '.') }}</td>
+                    <tr>
+                        <td class="summary-label text-right">Biaya Pengiriman</td>
+                        <td class="text-right font-bold">Rp{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="grand-total-row">
+                        <td class="text-right" style="padding-top: 10px;">Total</td>
+                        <td class="text-right" style="padding-top: 10px;">Rp {{ number_format($quotation->grand_total, 0, ',', '.') }}</td>
                     </tr>
                 </table>
             </td>
         </tr>
     </table>
 
-    <div class="terms-section">
-        <strong style="color: #111827;">Syarat & Ketentuan:</strong>
-        <div style="margin-top: 4px; color: #4b5563; font-size: 10px; line-height: 1.5;">
-            @if($quotation->notes) <div>• {{ $quotation->notes }}</div> @endif
-            @if($quotation->payment_terms) <div>• <strong>Pembayaran:</strong> {{ $quotation->payment_terms }}</div> @endif
-            @if($quotation->delivery_terms) <div>• <strong>Pengiriman:</strong> {{ $quotation->delivery_terms }}</div> @endif
-        </div>
-
-        @if($jobTicket->companyProfile)
-            <div class="bank-box">
-                <span style="font-weight: bold; color: #111827;">Metode Pembayaran Transfer Rekening Resmi:</span><br>
-                <span style="font-size: 11px; font-weight: bold; color: #111827;">
-                    {{ $jobTicket->companyProfile->bank_type }} — {{ $jobTicket->companyProfile->account_number }}
-                </span><br>
-                <span style="color: #4b5563;">A/N: {{ $jobTicket->companyProfile->account_name }}</span>
-            </div>
-        @endif
-    </div>
-
+    <!-- Signature (Tanya Direktur Saja) -->
     <table class="signature-container">
         <tr>
+            <td style="width: 65%;"></td> <!-- Spacer Kiri -->
             <td class="signature-cell">
-                <p style="color: #4b5563;">Hormat Kami,</p>
-                <div class="signature-space"></div>
-                <p><strong>{{ $jobTicket->companyProfile->company_name ?? 'Victory Labs' }}</strong></p>
+                <p style="color: #111827;">Dengan Hormat,</p>
+                <div class="signature-space">
+                    <!-- Jika ingin menambah image TTD Direktur otomatis: -->
+                    <!-- <img src="{{ public_path('images/ttd.png') }}" style="max-height: 50px;"> -->
+                </div>
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">Victor Harlim, SC. MBA</p>
+                <p style="margin-top: 0; color: #111827;">Direktur</p>
             </td>
         </tr>
     </table>

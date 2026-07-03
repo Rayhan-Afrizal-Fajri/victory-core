@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
-import { CheckCircle2, PackageCheck, Play, Truck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, PackageCheck, Play, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
@@ -222,6 +222,8 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
             process => process.pesanan_id === activeOrder.id
         ) ?? [];
 
+    const orderDefects = job.defect_histories?.filter((d: any) => d.pesanan_id === activeOrder.id) || [];
+
     // Semua process dalam ProductionRun
     const allProcesses =
         run.processes ?? [];
@@ -267,6 +269,7 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
                         {processes.map((process: any) => (
                             <ProductionProcessCard key={process.id} process={process} runQuantity={Number(process.quantity || 0)} />
                         ))}
+                        <DefectHistoryTable defects={orderDefects} processes={processes} />
                     </div>
                 </SectionCard>
 
@@ -435,6 +438,7 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
         defect_qty: Number(process.defect_qty || 0),
         qc_notes: process.qc_notes || '',
         corrective_action: process.corrective_action || '',
+        defect_reason: process.defect_reason || '',
     });
 
     const clampQty = (value: number, min = 0, max = runQuantity) => {
@@ -519,6 +523,9 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
     const passedQty = Number(qcForm.data.passed_qty || 0);
     const defectQty = Number(qcForm.data.defect_qty || 0);
 
+    const hasDefect = process.defect_qty > 0;
+    const isQcDone = ['passed', 'conditionally_passed'].includes(process.qc_status);
+
     const qcInvalid =
         checkedQty <= 0 ||
         checkedQty > runQuantity ||
@@ -587,6 +594,15 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                             Complete
                         </Button>
                     )}
+
+                    {isQcDone && (
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hasDefect ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                            {hasDefect 
+                                ? `Lolos Bersyarat (${process.passed_qty}/${process.checked_qty})`
+                                : `QC Lolos (${process.passed_qty}/${process.checked_qty})`
+                            }
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -630,6 +646,16 @@ const ProductionProcessCard = ({ process, runQuantity }: { process: any; runQuan
                             />
                         </Field>
                     </div>
+
+                    {qcForm.data.defect_qty > 0 && (
+                        <Field label="Defect Reason" error={qcForm.errors.defect_reason}>
+                            <Textarea
+                                rows={2}
+                                value={qcForm.data.defect_reason}
+                                onChange={(e) => qcForm.setData('defect_reason', e.target.value)}
+                            />
+                        </Field>
+                    )}
 
                     <Field label="QC Notes" error={qcForm.errors.qc_notes}>
                         <Textarea
@@ -690,6 +716,51 @@ function ProcessTimeBox({
                 {value}
             </p>
             {note && <p className="mt-1 text-[11px] text-slate-500">{note}</p>}
+        </div>
+    );
+}
+
+// Komponen Tabel Riwayat Defect
+function DefectHistoryTable({ defects, processes }: { defects: any[], processes: any[] }) {
+    if (defects.length === 0) return null;
+
+    return (
+        <div className="mt-8 overflow-hidden rounded-xl border border-red-200 bg-red-50/30">
+            <div className="flex items-center border-b border-red-200 bg-red-50 px-4 py-3">
+                <AlertTriangle className="mr-2 size-4 text-red-600" />
+                <h4 className="font-semibold text-red-800">Tabel Riwayat Defect QC</h4>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="border-b border-red-100 bg-white text-slate-500">
+                        <tr>
+                            <th className="px-4 py-3 font-medium">Tanggal</th>
+                            <th className="px-4 py-3 font-medium">Tahap Proses</th>
+                            <th className="px-4 py-3 font-medium text-center">Qty Defect</th>
+                            <th className="px-4 py-3 font-medium">Penyebab Defect</th>
+                            <th className="px-4 py-3 font-medium">Tindakan Perbaikan</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-100 bg-white/50">
+                        {defects.map((defect) => {
+                            // Mencari nama proses berdasarkan ID
+                            const processName = processes.find(p => p.id === defect.production_run_process_id)?.work_name || 'Proses tidak diketahui';
+                            
+                            return (
+                                <tr key={defect.id} className="hover:bg-white transition-colors">
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs">
+                                        {new Date(defect.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-slate-800">{processName}</td>
+                                    <td className="px-4 py-3 text-center text-red-600 font-bold">{defect.defect_qty} pcs</td>
+                                    <td className="px-4 py-3">{defect.defect_reason}</td>
+                                    <td className="px-4 py-3">{defect.corrective_action}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

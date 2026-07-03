@@ -143,6 +143,7 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
             />
 
             <QuotationSection
+                form={ownerPriceForm}
                 job={jobTicket as JobTicket}
                 quotations={(jobTicket as any).quotations || []}
             />

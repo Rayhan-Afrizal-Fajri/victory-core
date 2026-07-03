@@ -7,290 +7,247 @@
 
     <style>
         body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
-            color: #1f2937;
-            line-height: 1.45;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        .header {
-            width: 100%;
-            margin-bottom: 18px;
-        }
-
-        .header-table {
-            width: 100%;
-            border: none;
-        }
-
-        .header-table td {
-            border: none;
-            vertical-align: top;
-            padding: 0;
-        }
-
-        .company-name {
-            font-size: 22px;
-            font-weight: bold;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10px; /* Ukuran font disesuaikan agar compact dan rapi */
             color: #111827;
-            margin-bottom: 2px;
+            line-height: 1.4;
         }
-
-        .company-type {
-            font-size: 11px;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-
-        .company-info {
-            font-size: 10px;
-            color: #374151;
-            line-height: 1.6;
-        }
-
-        .document-title {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: right;
-            letter-spacing: 1px;
-            color: #111827;
-            margin-bottom: 12px;
-        }
-
-        .info-table {
-            width: 100%;
-            border: none;
-        }
-
-        .info-table td {
-            border: none;
-            padding: 2px 0;
-            font-size: 10px;
-        }
-
-        .info-table td:first-child {
-            width: 95px;
-            color: #6b7280;
-        }
-
-        .section-title {
-            margin-top: 18px;
-            margin-bottom: 6px;
-            font-weight: bold;
-            font-size: 12px;
-            color: #111827;
-            border-bottom: 1px solid #d1d5db;
-            padding-bottom: 4px;
-        }
-
-        .customer-table {
-            width: 100%;
-            border: none;
-            margin-bottom: 18px;
-        }
-
-        .customer-table td {
-            border: none;
-            padding: 2px 0;
-            font-size: 10px;
-        }
-
-        .customer-table td:first-child {
-            width: 95px;
-            color: #6b7280;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
         }
+        td, th {
+            vertical-align: top;
+        }
+        .text-center { text-align: center !important; }
+        .text-right { text-align: right !important; }
+        .text-left { text-align: left !important; }
+        .font-bold { font-weight: bold !important; }
 
-        th,
-        td {
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0b5394; /* Warna Biru Tema */
+            text-transform: capitalize;
+            margin-bottom: 8px;
+            align-items: center;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Header Section */
+        .doc-header {
+            margin-bottom: 20px;
+        }
+        .doc-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0b5394; /* Warna Biru Tema */
+            text-transform: capitalize;
+            margin-bottom: 8px;
+        }
+        .meta-table {
+            width: auto;
+            /* HAPUS float: right; dan ganti dengan margin di bawah ini */
+            margin-left: auto; 
+            margin-right: 0;
+            font-size: 10px;
+        }
+
+        /* Border dihilangkan untuk Meta Table */
+        .meta-table td {
+            padding: 2px 8px;
+            border: none; 
+        }
+
+         /* Address Section */
+        .address-container {
+            width: 100%;
+            margin-top: 30px; /* Ini memberikan jarak dari tabel meta di atasnya */
+            margin-bottom: 15px;
+            clear: both; /* Ini KUNCI agar tabel tidak naik menabrak tabel di atasnya */
+        }
+        
+        .address-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #111827; /* Garis Bawah Title */
+        }
+        .address-content {
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        .company-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #0b5394;
+            margin-bottom: 3px;
+        }
+
+        /* Items Table (Tetap seperti sebelumnya) */
+        .items-table {
+            margin-top: 10px;
             border: 1px solid #d1d5db;
-            padding: 7px;
         }
-
-        th {
-            background: #f3f4f6;
-            font-size: 10px;
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .summary {
-            width: 42%;
-            margin-left: auto;
-            margin-top: 18px;
-        }
-
-        .summary td:first-child {
-            background: #f9fafb;
-            font-weight: bold;
-        }
-
-        .payment-box {
-            margin-top: 24px;
-        }
-
-        .footer {
-            margin-top: 40px;
-            font-size: 10px;
-            color: #6b7280;
-            text-align: center;
-        }
-
-        .badge {
-            display: inline-block;
-            border: 1px solid #9ca3af;
-            padding: 3px 8px;
+        .items-table th {
+            background-color: #0b5394;
+            color: #ffffff;
             font-size: 10px;
             font-weight: bold;
-            border-radius: 3px;
+            padding: 6px 8px;
+            border: 1px solid #0b5394;
         }
-
+        .items-table td {
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+            font-size: 10px;
+        }
+        .items-table .item-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+        }
         .breakdown-tag {
             display: inline-block;
-            background: #f3f4f6;
-            color: #4b5563;
-            padding: 2px 5px;
-            border-radius: 3px;
+            color: #374151;
             font-size: 9px;
             margin-right: 4px;
-            margin-top: 3px;
+            margin-top: 2px;
+        }
+
+        /* Section Pesan & Summary bersebelahan */
+        .bottom-container {
+            width: 100%;
+            margin-top: 15px;
+        }
+        .pesan-list {
+            padding-left: 12px;
+            margin-top: 4px;
+            margin-bottom: 0;
+            line-height: 1.5;
+            color: #111827;
+            font-weight: bold;
+        }
+        .pesan-list li {
+            margin-bottom: 2px;
+        }
+
+        /* Summary Table */
+        .summary-table {
+            width: 100%;
+            font-size: 10px;
+        }
+        .summary-table td {
+            padding: 4px 8px;
+        }
+        .summary-label {
+            font-weight: bold;
+            color: #111827;
+        }
+        .grand-total-row td {
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        /* Signature */
+        .signature-container {
+            width: 100%;
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .signature-cell {
+            text-align: center;
+            width: 200px;
+            float: right;
+        }
+        .signature-space {
+            height: 60px;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="header">
-
-        <table class="header-table">
-
-            <tr>
-
-                <td width="60%">
-
-                    <div class="company-name">
-                        {{ $company->company_name ?? 'Victory Labs' }}
-                    </div>
-
-                    <div class="company-info">
-
-                        {{ $company->address ?? '-' }}
-
-                        <br>
-
-                        Bank :
-                        {{ $company->bank_type ?? '-' }}
-
-                        <br>
-
-                        No. Rek :
-                        {{ $company->account_number ?? '-' }}
-
-                    </div>
-
-                </td>
-
-                <td width="40%" align="right">
-
-                    <div class="document-title">
-                        INVOICE
-                    </div>
-
-                    <table class="info-table">
-
-                        <tr>
-                            <td>No Invoice</td>
-                            <td>: {{ $invoice->no_invoice }}</td>
-                        </tr>
-
-                        <tr>
-                            <td>Kategori</td>
-                            <td>: {{ ucfirst($invoice->kategori_invoice) }}</td>
-                        </tr>
-
-                        <tr>
-                            <td>Tanggal</td>
-                            <td>: {{ optional($invoice->created_at)->format('d M Y') }}</td>
-                        </tr>
-
-                        <tr>
-                            <td>Jatuh Tempo</td>
-                            <td>: {{ $invoice->tgl_jatuh_tempo }}</td>
-                        </tr>
-
-                        <tr>
-                            <td>Status</td>
-                            <td>
-                                :
-                                <span class="badge">
-                                    {{ strtoupper($invoice->status_tagihan) }}
-                                </span>
-                            </td>
-                        </tr>
-
-                    </table>
-
-                </td>
-
-            </tr>
-
-        </table>
-
-    </div>
-
-    <div class="section-title">
-        Customer Information
-    </div>
-
-    <table class="customer-table">
-
+    <table class="doc-header">
         <tr>
-            <td>Nama</td>
-            <td>: {{ $customer->nama ?? '-' }}</td>
+            <td style="width: 30%; vertical-align: top;">
+                <img src="{{ public_path('images/logo.png') }}" alt="Victory Labs" style="max-height: 45px;">
+            </td>
+            <td style="width: 50%; vertical-align: top;" class="text-right">
+                <div class="doc-title">INVOICE</div>
+                <table class="meta-table">
+                    <tr>
+                        <td class="text-right" style="color: #111827;">No Invoice</td>
+                        <td class="font-bold text-left">{{ $invoice->no_invoice }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-right" style="color: #111827;">Kategori</td>
+                        <td class="font-bold text-left">{{ ucfirst($invoice->kategori_invoice) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-right" style="color: #111827;">Tanggal</td>
+                        <td class="text-left">{{ \Carbon\Carbon::parse($invoice->created_at)->format('d/m/Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-right" style="color: #111827;">Tgl. Jatuh Tempo</td>
+                        <td class="text-left">{{ $invoice->tgl_jatuh_tempo ? \Carbon\Carbon::parse($invoice->tgl_jatuh_tempo)->format('d/m/Y') : '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-right" style="color: #111827;">Status</td>
+                        <td class="text-left">
+                            <span class="badge">
+                                {{ strtoupper($invoice->status_tagihan) }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
         </tr>
-
-        <tr>
-            <td>Perusahaan</td>
-            <td>: {{ $customer->nama_perusahaan ?? '-' }}</td>
-        </tr>
-
-        <tr>
-            <td>Email</td>
-            <td>: {{ optional($customer->user)->email ?? '-' }}</td>
-        </tr>
-
-        <tr>
-            <td>No. HP</td>
-            <td>: {{ $customer->no_hp ?? '-' }}</td>
-        </tr>
-
-        <tr>
-            <td>Alamat</td>
-            <td>: {{ $customer->alamat ?? '-' }}</td>
-        </tr>
-
     </table>
 
-    <div class="section-title">
-    Detail Produk
+    <div class="title">
+        {{ $invoice->kategori_invoice === 'sample' ? 'SAMPLE' : '' }} <br>
+        {{ $invoice->kategori_invoice === 'sample' ? 'PROFORMA ' : '' }}
+        INVOICE
     </div>
 
-    <table>
+    <table class="address-container">
+        <tr>
+            <!-- Informasi Perusahaan -->
+            <td style="width: 50%; padding-right: 15px;">
+                <div class="address-title">Informasi Perusahaan</div>
+                <div class="address-content">
+                    <div class="company-name">
+                        {{ $invoice->jobTicket->companyProfile->company_name ?? 'PT. Victorylab Global Industries' }}
+                    </div>
+                    Headquarters : {!! nl2br(e($invoice->jobTicket->companyProfile->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
+                    Telp: {{ $invoice->jobTicket->companyProfile->phone ?? '081212228900' }}<br>
+                    Email: {{ $invoice->jobTicket->companyProfile->email ?? 'marketing@victorylabs.id' }} <br>
+                    Rek: {{ $invoice->jobTicket->companyProfile->bank_type ?? 'Rekening' }} <br>
+                    No Rek: {{ $invoice->jobTicket->companyProfile->account_number ?? 'Rekening' }}
+                </div>
+            </td>
+
+            <!-- Penawaran Kepada -->
+            <td style="width: 50%; padding-left: 15px;">
+                <div class="address-title">Informasi Customer</div>
+                <div class="address-content">
+                    <div class="company-name">
+                        {{ $invoice->jobTicket->customer_perusahaan_snapshot ?? $invoice->jobTicket->customer->nama_perusahaan ?? $invoice->jobTicket->customer->nama }}
+                    </div>
+                    {{ $invoice->jobTicket->customer->alamat ?? '' }}<br>
+                    Telp: {{ $invoice->jobTicket->customer->kontak ?? $invoice->jobTicket->customer->no_hp ?? '-' }}<br>
+                    Up: {{ $invoice->jobTicket->customer_nama_snapshot ?? $invoice->jobTicket->customer->nama }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
 
         <thead>
 
@@ -392,23 +349,33 @@
         $remaining = max(($invoice->total_tagihan ?? $invoice->amount ?? 0) - $totalPaid, 0);
     @endphp
 
-    <table class="summary">
+    <table class="bottom-container">
         <tr>
-            <td>Total Tagihan</td>
-            <td class="text-right">
-                Rp{{ number_format($invoice->total_tagihan ?? $invoice->amount ?? 0, 0, ',', '.') }}
+            <!-- PESAN -->
+            <td style="width: 60%; padding-right: 15px;">
+                <ul class="pesan-list">
+                </ul>
             </td>
-        </tr>
-        <tr>
-            <td>Terbayar</td>
-            <td class="text-right">
-                Rp{{ number_format($totalPaid, 0, ',', '.') }}
-            </td>
-        </tr>
-        <tr>
-            <td><strong>Sisa</strong></td>
-            <td class="text-right">
-                <strong>Rp{{ number_format($remaining, 0, ',', '.') }}</strong>
+           <!-- SUBTOTAL & TOTAL -->
+            <td style="width: 40%; vertical-align: top;">
+                <table class="summary-table">
+                    <tr>
+                        <td class="summary-label text-right">Subtotal</td>
+                        <td class="text-right font-bold">Rp {{ number_format($grandSubtotal, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="summary-label text-right">Total Amount</td>
+                        <td class="text-right font-bold">Rp{{ number_format($invoice->total_tagihan ?? $invoice->amount ?? 0, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="summary-label text-right">
+                        <td class="summary-label text-right">Paid</td>
+                        <td class="text-right font-bold">Rp {{ number_format($totalPaid, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr class="grand-total-row">
+                        <td class="text-right" style="padding-top: 10px;">Remaining</td>
+                        <td class="text-right" style="padding-top: 10px;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
