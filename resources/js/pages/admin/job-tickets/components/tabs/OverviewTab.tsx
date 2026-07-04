@@ -9,6 +9,7 @@ import {
   CheckCircle2, 
   ChevronRight, 
   CircleDollarSign, 
+  Handshake, 
   Hash, 
   Package, 
   Ruler, 
@@ -148,6 +149,13 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
                             <span className="text-sm text-slate-700 flex items-center gap-2">
                                 <CalendarClock className="w-4 h-4 text-slate-400" />
                                 {jobTicket.deadline ?? 'Tidak ada deadline'}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium">Nama Sales</span>
+                            <span className="text-sm text-slate-700 flex items-center gap-2">
+                                <Handshake className="w-4 h-4 text-slate-400" />
+                                {jobTicket.sales_name ?? 'Tidak ada sales'}
                             </span>
                         </div>
                     </div>

@@ -75,6 +75,7 @@ class JobTicketController extends Controller
                 'deadline' => $ticket->deadline,
                 'status_divisi' => $ticket->status ?? 'Order Entry',
                 'acc_sample' => $pesanans->count() > 0 ? $allSampleAcc : false,
+                'sales_name' => $ticket->sales_name ?? '-',
                 'progress' => $avgProgress,
                 'current_step' => $ticket->status ?? 'Menunggu Proses',
                 'can_edit' => $canModify,
@@ -212,6 +213,8 @@ class JobTicketController extends Controller
                 'tax_percentage' => $jobTicket->companyProfile?->tax_percentage,
                 'address' => $jobTicket->companyProfile?->address,
             ],
+
+            'sales_name' => $jobTicket->sales_name,
             'deadline' => $jobTicket->deadline,
             'customer_notes' => $jobTicket->customer_notes,
             'status' => $jobTicket->status,
@@ -370,11 +373,13 @@ class JobTicketController extends Controller
             })->toArray(),
         ];
 
-        $productOption = Product::all()->map(fn ($p) => [
+        $productOption = Product::where('is_active', true)->where('is_pattern_available', true)->get()->map(fn ($p) => [
             'id' => $p->id,
             'name' => $p->name,
             'category' => $p->category,
         ]);
+
+        $productOptionFromPesanan = [];
 
         $suppliers = Supplier::all();
 

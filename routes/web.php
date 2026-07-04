@@ -50,8 +50,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
      */
     // Product/Article Master
     Route::resource('products', ProductController::class);
-    Route::patch('/products/{product}/toggle-active', [ProductController::class, 'toggleActive'])
-        ->name('products.toggle-active');
+    // Update status (Aktif / Nonaktif)
+    Route::patch('/products/{product}/toggle-status', [ProductController::class, 'updateStatus'])
+        ->name('products.update-status');
+    // Update pola (Tersedia / Tidak Tersedia)
+    Route::patch('/products/{product}/toggle-pattern', [ProductController::class, 'updatePattern'])
+        ->name('products.update-pattern');
 
     // Material Master
     Route::resource('materials', MaterialController::class);

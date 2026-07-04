@@ -36,6 +36,7 @@ type EditingJobTicket = {
   no_job_ticket: string;
   customer_id: number | null;
   company_profile_id: number | null;
+  sales_name: string | null;
   deadline: string;
   customer_notes: string;
   orders: OrderData[];
@@ -76,6 +77,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
     no_job_ticket: editingJobTicket?.no_job_ticket ?? nextJobTicket ?? 'VL-2026-001',
     customer_id: editingJobTicket?.customer_id ? String(editingJobTicket.customer_id) : customer?.id || '',
     company_profile_id: editingJobTicket?.company_profile_id ? String(editingJobTicket.company_profile_id) : '',
+    sales_name: editingJobTicket?.sales_name ?? '',
     
     new_customer_name: '',
     new_customer_company: '',
@@ -310,6 +312,15 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
                   </SelectContent>
                 </Select>
               </Field>
+
+              <div className="space-y-2">
+                <Label>Nama Sales *</Label>
+                <Input
+                  type="text"
+                  value={form.data.sales_name}
+                  onChange={(e) => form.setData('sales_name', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

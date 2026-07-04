@@ -21,6 +21,7 @@ type JobTicketData = {
   deadline: string;
   status_divisi: string;
   acc_sample: boolean;
+  sales_name: string;
   progress: number;
   current_step?: string;
   can_edit: boolean;
@@ -112,20 +113,30 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
       cell: (row) => statusBadge(row.current_step ?? 'Order Entry'),
     },
     {
-      header: 'ACC Sample',
-      accessor: 'acc_sample',
+      header: 'Nama Sales',
+      accessor: 'qty',
+      className: 'w-[100px]',
       cell: (row) => (
-        <span
-          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-            row.acc_sample
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-amber-100 text-amber-700'
-          }`}
-        >
-          {row.acc_sample ? 'All ACC' : 'Pending'}
+        <span className="font-medium">
+          {row.sales_name}
         </span>
       ),
     },
+    // {
+    //   header: 'ACC Sample',
+    //   accessor: 'acc_sample',
+    //   cell: (row) => (
+    //     <span
+    //       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+    //         row.acc_sample
+    //           ? 'bg-emerald-100 text-emerald-700'
+    //           : 'bg-amber-100 text-amber-700'
+    //       }`}
+    //     >
+    //       {row.acc_sample ? 'All ACC' : 'Pending'}
+    //     </span>
+    //   ),
+    // },
     {
       header: 'Avg Progress',
       accessor: 'progress',

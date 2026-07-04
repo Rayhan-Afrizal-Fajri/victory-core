@@ -12,6 +12,7 @@ class Product extends Model
         'category',
         'description',
         'is_active',
+        'is_pattern_available',
     ];
 
     public function productMaterials(): HasMany

@@ -235,7 +235,7 @@ function MaterialSpecEditDialog({
                             />
                         </Field>
 
-                        <Field label="Isi Roll" error={form.errors.roll_qty}>
+                        {/* <Field label="Isi Roll" error={form.errors.roll_qty}>
                             <FormattedNumberInput
                                 value={form.data.roll_qty}
                                 allowDecimal
@@ -244,7 +244,7 @@ function MaterialSpecEditDialog({
                                 }
                                 placeholder="cth: 25"
                             />
-                        </Field>
+                        </Field> */}
                     </div>
 
                     <div className="rounded-xl border bg-slate-50 p-4">

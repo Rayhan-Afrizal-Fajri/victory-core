@@ -441,6 +441,7 @@ export interface JobTicket {
   customer: Customer;
   company_profile: CompanyProfile;
   deadline?: string | null;
+  sales_name?: string | null;
   customer_notes?: string | null;
   status?: string;
   created_at?: string | null;

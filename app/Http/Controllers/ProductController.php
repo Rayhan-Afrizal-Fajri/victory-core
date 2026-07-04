@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\Material;
 use App\Models\ManufacturingWork;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
+
 
 class ProductController extends Controller
 {
@@ -31,6 +33,7 @@ class ProductController extends Controller
             'category' => $product->category,
             'description' => $product->description,
             'is_active' => $product->is_active,
+            'is_pattern_available' => $product->is_pattern_available,
             'materials_count' => $product->materials_count,
             'accessories_count' => $product->accessories_count,
             'manufacturing_count' => $product->manufacturing_count,
@@ -136,6 +139,28 @@ class ProductController extends Controller
     {
         $validated = $request->validated();
         
+        $product->update($validated);
+
+        return back();
+    }
+
+    public function updatePattern(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'is_pattern_available' => ['required', 'boolean'],
+        ]);
+
+        $product->update($validated);
+
+        return back();
+    }
+
+    public function updateStatus(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
         $product->update($validated);
 
         return back();

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { Product } from '@/types';
@@ -26,6 +27,7 @@ export default function Index({ products }: Props) {
     category: '',
     description: '',
     is_active: true,
+    is_pattern_available: false,
   });
 
   const filteredProducts = useMemo(() => products, [products]);
@@ -37,6 +39,7 @@ export default function Index({ products }: Props) {
       category: product.category || '',
       description: product.description || '',
       is_active: product.is_active,
+      is_pattern_available: product.is_pattern_available,
     });
     setIsDialogOpen(true);
   };
@@ -62,6 +65,26 @@ export default function Index({ products }: Props) {
         productForm.reset();
         toast.success('Produk berhasil dibuat');
       },
+    });
+  };
+
+  const handleToggleStatus = (product: Product, checked: boolean) => {
+    router.patch(`/products/${product.id}/toggle-status`, {
+      is_active: checked
+    }, {
+      preserveScroll: true,
+      onSuccess: () => toast.success(`Status ${product.name} berhasil diubah.`),
+      onError: () => toast.error('Gagal mengubah status.')
+    });
+  };
+
+  const handleTogglePattern = (product: Product, checked: boolean) => {
+    router.patch(`/products/${product.id}/toggle-pattern`, {
+      is_pattern_available: checked
+    }, {
+      preserveScroll: true,
+      onSuccess: () => toast.success(`Status pola ${product.name} berhasil diubah.`),
+      onError: () => toast.error('Gagal mengubah status pola.')
     });
   };
 
@@ -108,9 +131,33 @@ export default function Index({ products }: Props) {
       header: 'Status',
       accessor: 'is_active',
       cell: (row) => (
-        <Badge variant={row.is_active ? 'default' : 'secondary'}>
-          {row.is_active ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-2">
+            <Switch
+                checked={Boolean(row.is_active)}
+                onCheckedChange={(checked) => handleToggleStatus(row, checked)}
+                // Opsional: ganti warna switch khusus status
+                className="data-[state=checked]:bg-emerald-500" 
+            />
+            <span className={`text-sm font-medium ${row.is_active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                {row.is_active ? 'Active' : 'Inactive'}
+            </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Pola',
+      accessor: 'is_pattern_available',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+            <Switch
+                checked={Boolean(row.is_pattern_available)}
+                onCheckedChange={(checked) => handleTogglePattern(row, checked)}
+                className='data-[state=checked]:bg-emerald-500'
+            />
+            <span className={`text-sm font-medium ${row.is_pattern_available ? 'text-emerald-700' : 'text-slate-500'}`}>
+                {row.is_pattern_available ? 'Tersedia' : 'Tidak Tersedia'}
+            </span>
+        </div>
       ),
     },
     {
@@ -208,16 +255,32 @@ export default function Index({ products }: Props) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={productForm.data.is_active}
-                    onChange={(e) => productForm.setData('is_active', e.target.checked)}
+                  <Switch
+                      id="is_active"
+                      checked={productForm.data.is_active}
+                      onCheckedChange={(checked) => productForm.setData('is_active', checked)}
                   />
-                  <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="is_active"
+                    className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+                  >
                     Active
                   </label>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                      id="is_pattern_available"
+                      checked={productForm.data.is_pattern_available}
+                      onCheckedChange={(checked) => productForm.setData('is_pattern_available', checked)}
+                  />                  
+                  <label 
+                      htmlFor="is_pattern_available" 
+                      className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+                  >
+                      Pola Tersedia
+                  </label>
+              </div>
               </div>
 
               <DialogFooter>

@@ -181,7 +181,6 @@ class DesignController extends Controller
             'productMaterials.material.defaultSupplier',
             'productManufacturingWorks.manufacturingWork.defaultVendor',
         ])->findOrFail($validated['product_id']);
-
         
 
         DB::transaction(function () use ($pesanan, $product) {
@@ -303,12 +302,9 @@ class DesignController extends Controller
         $rollQty = (float) ($validated['roll_qty'] ?? 0);
 
         if ($validated['price_type'] === 'roll') {
-            if ($rollQty <= 0) {
-                abort(422, 'Roll qty wajib diisi jika memilih harga roll.');
-            }
 
-            $rollNeeded = ceil($totalUsage / $rollQty);
-            $totalCost = $rollNeeded * $hargaRoll;
+            // $rollNeeded = ceil($totalUsage / $rollQty);
+            $totalCost = $totalUsage * $hargaRoll;
         } else {
             $totalCost = $totalUsage * $hargaEcer;
         }

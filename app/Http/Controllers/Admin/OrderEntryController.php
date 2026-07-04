@@ -33,6 +33,7 @@ class OrderEntryController extends Controller
             'new_customer_address' => ['nullable', 'string'],
             'deadline' => ['required', 'date'],
             'customer_notes' => ['nullable', 'string'],
+            'sales_name' => ['nullable', 'string'],
 
             // Validasi Array Multiple Orders
             'orders' => ['required', 'array', 'min:1'],
@@ -188,6 +189,7 @@ class OrderEntryController extends Controller
                 'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
                 'deadline' => $validated['deadline'],
                 'customer_notes' => $validated['customer_notes'] ?? null,
+                'sales_name' => $validated['sales_name'] ?? null,
                 'status' => 'Order Entry',
                 'created_by' => Auth::id(),
             ]);
@@ -280,6 +282,7 @@ class OrderEntryController extends Controller
                 'company_profile_id' => $jobTicket->company_profile_id,
                 'deadline' => $jobTicket->deadline,
                 'customer_notes' => $jobTicket->customer_notes,
+                'sales_name' => $jobTicket->sales_name,
                 'orders' => $mappedOrders,
             ],
         ]);
@@ -306,6 +309,7 @@ class OrderEntryController extends Controller
                 'customer_perusahaan_snapshot' => $customer->nama_perusahaan,
                 'deadline' => $validated['deadline'],
                 'customer_notes' => $validated['customer_notes'] ?? null,
+                'sales_name' => $validated['sales_name'] ?? null,
             ]);
 
             // Sync Orders (Delete yang tidak ada, Update yang ada, Create yang baru)

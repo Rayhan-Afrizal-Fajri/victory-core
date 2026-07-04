@@ -4,6 +4,7 @@ export interface Product {
   category?: string;
   description?: string;
   is_active: boolean;
+  is_pattern_available: boolean;
   materials_count: number;
   accessories_count: number;
   manufacturing_count: number;

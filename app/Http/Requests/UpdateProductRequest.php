@@ -26,6 +26,7 @@ class UpdateProductRequest extends FormRequest
             'category' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
+            'is_pattern_available' => ['boolean'],
         ];
     }
 }

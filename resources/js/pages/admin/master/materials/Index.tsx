@@ -270,7 +270,7 @@ export default function Index({ materials, suppliers }: Props) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
+                  {/* <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Roll Qty</label>
                     <FormattedNumberInput
                         value={materialForm.data.roll_qty}
@@ -278,7 +278,7 @@ export default function Index({ materials, suppliers }: Props) {
                         placeholder='cth: 25'
                     />
                     <InputError message={materialForm.errors.roll_qty as string} />
-                  </div>
+                  </div> */}
 
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Roll Unit</label>

@@ -162,8 +162,8 @@ class PesananMaterialSpecController extends Controller
         $rollQty = (float) ($validated['roll_qty'] ?? 0);
 
         if ($validated['price_type'] === 'roll') {
-            $rollNeeded = ceil($totalUsage / $rollQty);
-            $totalCost = $rollNeeded * $hargaRoll;
+            // $rollNeeded = ceil($totalUsage / $rollQty);
+            $totalCost = $totalUsage * $hargaRoll;
         } else {
             $totalCost = $totalUsage * $hargaEcer;
         }
@@ -179,10 +179,6 @@ class PesananMaterialSpecController extends Controller
     {
         if (($validated['price_type'] ?? null) === 'roll') {
             $rollQty = (float) ($validated['roll_qty'] ?? 0);
-
-            if ($rollQty <= 0) {
-                abort(422, 'Roll qty wajib diisi jika memilih harga roll.');
-            }
         }
     }
 }
