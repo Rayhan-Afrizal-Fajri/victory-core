@@ -73,19 +73,7 @@ class InvoiceService
                     optional($p->workflowStatus)->sample_approved
                 );
 
-        $allReceived =
-            $jobTicket->pesanans
-                ->every(function($pesanan){
-
-                    return $pesanan
-                        ->purchasing
-                        ->every(fn($p)=>
-                            $p->is_received
-                        );
-
-                });
-
-        if (! $sampleApproved || ! $allReceived) {
+        if (! $sampleApproved) {
             return;
         }
 

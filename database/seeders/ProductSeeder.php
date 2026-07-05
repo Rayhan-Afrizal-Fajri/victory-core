@@ -282,12 +282,15 @@ class ProductSeeder extends Seeder
             // Determine Category based on Name
             $category = $this->determineCategory($productName);
 
+            $randomBool = (bool) mt_rand(0, 1);
+
             // Create Product
             $product = Product::create([
                 'name' => $productName,
                 'category' => $category,
                 'description' => $productName . ' berkualitas premium, cocok untuk kebutuhan Anda.',
                 'is_active' => true,
+                'is_pattern_available' => $randomBool
             ]);
 
             // Attach Default Materials and Works

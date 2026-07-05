@@ -657,7 +657,7 @@ class PurchasingController extends Controller
 
             $this->productionRunService
                 ->ensureProductionRun(
-                    $purchasing->pesanan->jobTicket
+                    $purchasing->pesanan
                 );
         });
 
@@ -864,7 +864,7 @@ class PurchasingController extends Controller
             'workflowStatus',
             'purchasing',
             'manufacturingSpecs',
-            'jobTicket.productionRuns.processes',  
+            'productionRuns.processes',  
             'materialSpecs'           
         ]);
 
@@ -889,7 +889,7 @@ class PurchasingController extends Controller
             $sampleMaterialsReady = true;
         }
 
-        if ($pesanan->jobTicket->productionRuns()->where('type', 'sample')->exists()) {
+        if ($pesanan->productionRuns()->where('type', 'sample')->exists()) {
             $sampleMaterialsReady = true;
         }
 
@@ -898,7 +898,7 @@ class PurchasingController extends Controller
             $productionMaterialsReady = true;
         }
 
-        if ($pesanan->jobTicket->productionRuns()
+        if ($pesanan->productionRuns()
             ->where('type', 'production')
             ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
             ->exists()
@@ -926,11 +926,11 @@ class PurchasingController extends Controller
 
         // Jika ready, pastikan production run dibuat.
         if ($sampleMaterialsReady) {
-            $this->productionRunService->ensureSampleRun($pesanan->jobTicket);
+            $this->productionRunService->ensureSampleRun($pesanan);
         }
 
         if ($productionMaterialsReady) {
-            $this->productionRunService->ensureProductionRun($pesanan->jobTicket);
+            $this->productionRunService->ensureProductionRun($pesanan);
         }
     }
 
@@ -939,10 +939,10 @@ class PurchasingController extends Controller
         // Pastikan ada sample production run jika belum ada.
         $pesanan->loadMissing([
             'manufacturingSpecs',
-            'jobTicket.productionRuns',
+            'productionRuns',
         ]);
 
-        $existsingRun = $pesanan->jobTicket->productionRuns()
+        $existsingRun = $pesanan->productionRuns()
             ->where('type', 'sample')
             ->whereNotIn('status', ['rejected'])
             ->latest()
@@ -954,7 +954,7 @@ class PurchasingController extends Controller
 
         // Buat sample run baru berdasarkan manufacturing specs.
         DB::transaction(function() use ($pesanan, $existingRun) {
-            $run = $pesanan->jobTicket->productionRuns()->create([
+            $run = $pesanan->productionRuns()->create([
                 'type' => 'sample',
                 'status' => 'draft',
             ]);

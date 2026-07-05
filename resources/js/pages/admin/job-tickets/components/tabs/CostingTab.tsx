@@ -101,12 +101,6 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
         });
     };
 
-    if (!canOpenCosting) {
-        return (
-            <WorkflowGate reason="Costing belum tersedia. Sync artikel dan lengkapi material/manufacturing specs terlebih dahulu." />
-        );
-    }
-
     return (
         <div className="space-y-6">
             {jobTicket.orders.length > 1 && (
@@ -135,13 +129,19 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                         ))}
                     </div>
                 </div>
-                )}
-            <CostingSummaryCard
-                activeOrder={activeOrder}
-                form={ownerPriceForm}
-                onSubmit={submitOwnerPrice}
-            />
+            )}
 
+            {canOpenCosting ? (
+                <>
+                    <CostingSummaryCard
+                        activeOrder={activeOrder}
+                        form={ownerPriceForm}
+                        onSubmit={submitOwnerPrice}
+                    />
+                </>
+            ): (
+                <WorkflowGate reason="Costing belum tersedia. Sync artikel dan lengkapi material/manufacturing specs terlebih dahulu." />
+            )}
             <QuotationSection
                 form={ownerPriceForm}
                 job={jobTicket as JobTicket}

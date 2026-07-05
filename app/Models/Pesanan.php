@@ -43,6 +43,11 @@ class Pesanan extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function productionRuns()
+    {
+        return $this->hasMany(ProductionRun::class);
+    }
+
     public function productionProgress()
     {
         return $this->hasOne(ProductionProgress::class);

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class ProductionRun extends Model
 {
     protected $fillable = [
-        'job_ticket_id',
+        // 'job_ticket_id',
+        'pesanan_id',
         'type',
         'status',
         'started_at',
@@ -23,9 +24,13 @@ class ProductionRun extends Model
         'approved_at',
     ];
 
-    public function jobTicket()
+    // public function jobTicket()
+    // {
+    //     return $this->belongsTo(JobTicket::class);
+    // }
+    public function pesanan()
     {
-        return $this->belongsTo(JobTicket::class);
+        return $this->belongsTo(Pesanan::class);
     }
 
     public function processes()

@@ -46,7 +46,9 @@ function formatDateTime(value?: string | null) {
     }).format(new Date(value));
 }
 
-const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoardProps) => {
+const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardProps) => {
+    
+    const run = runType === 'sample' ? activeOrder.sample_run : activeOrder.production_run;
 
     const ensureRunForm = useForm({
         quantity: Number((activeOrder as any).sample_qty || 3),
@@ -64,7 +66,7 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
     });
 
     const reviewForm = useForm({
-        customer_review_note: run.customer_review_note ?? '',
+        customer_review_note: run?.customer_review_note ?? '',
     });
 
     const ensureSampleRun = (e: React.FormEvent) => {
@@ -218,9 +220,7 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
         workflow?.final_payment_paid === true;
 
     const processes =
-        run.processes.filter(
-            process => process.pesanan_id === activeOrder.id
-        ) ?? [];
+        run.processes ?? [];
 
     const orderDefects = job.defect_histories?.filter((d: any) => d.pesanan_id === activeOrder.id) || [];
 
@@ -235,10 +235,10 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
     const canPacking = allQcPassed && !run.packing_completed;
     const canDelivery =
         run.packing_completed &&
-        !['in_delivery', 'delivered', 'approved'].includes(run.status);
+        !['in_delivery', 'delivered', 'approved'].includes(run.status ?? '');
     const canMarkDelivered = run.status === 'in_delivery';
     const isDeliverySubmitted = run.status === 'in_delivery';
-    const isDelivered = ['delivered', 'approved'].includes(run.status);
+    const isDelivered = ['delivered', 'approved'].includes(run.status ?? '');
     const canReview = run.status === 'delivered';
 
     return (
@@ -258,7 +258,7 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
                             </p>
                         </div>
 
-                        <Badge className={statusClass[run.status] || statusClass.draft}>
+                        <Badge className={statusClass[run.status ?? ''] || statusClass.draft}>
                             {run.status}
                         </Badge>
                     </div>
@@ -304,59 +304,57 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
                 </SectionCard>
 
                 <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
-                    {canDelivery !== 0 && (
-                        <form onSubmit={submitDelivery} className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Field label="Courier" error={deliveryForm.errors.courier_name}>
-                                    <Input
-                                        readOnly={isDeliverySubmitted || isDelivered}
-                                        value={deliveryForm.data.courier_name}
-                                        onChange={(e) =>
-                                            deliveryForm.setData('courier_name', e.target.value)
-                                        }
-                                    />
-                                </Field>
-
-                                <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
-                                    <Input
-                                        readOnly={isDeliverySubmitted || isDelivered}
-                                        value={deliveryForm.data.tracking_number}
-                                        onChange={(e) =>
-                                            deliveryForm.setData('tracking_number', e.target.value)
-                                        }
-                                    />
-                                </Field>
-                            </div>
-
-                            <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
+                    <form onSubmit={submitDelivery} className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Courier" error={deliveryForm.errors.courier_name}>
                                 <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    value={deliveryForm.data.tracking_url}
+                                    value={deliveryForm.data.courier_name}
                                     onChange={(e) =>
-                                        deliveryForm.setData('tracking_url', e.target.value)
+                                        deliveryForm.setData('courier_name', e.target.value)
                                     }
                                 />
                             </Field>
 
-                            <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
-                                <Textarea
+                            <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
+                                <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    rows={3}
-                                    value={deliveryForm.data.delivery_note}
+                                    value={deliveryForm.data.tracking_number}
                                     onChange={(e) =>
-                                        deliveryForm.setData('delivery_note', e.target.value)
+                                        deliveryForm.setData('tracking_number', e.target.value)
                                     }
                                 />
                             </Field>
+                        </div>
 
-                            {canDelivery && (
-                                <Button type="submit" disabled={deliveryForm.processing}>
-                                    <Truck className="size-4" />
-                                    Submit Delivery
-                                </Button>
-                            )}
-                        </form>
-                    )}
+                        <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
+                            <Input
+                                readOnly={isDeliverySubmitted || isDelivered}
+                                value={deliveryForm.data.tracking_url}
+                                onChange={(e) =>
+                                    deliveryForm.setData('tracking_url', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
+                            <Textarea
+                                readOnly={isDeliverySubmitted || isDelivered}
+                                rows={3}
+                                value={deliveryForm.data.delivery_note}
+                                onChange={(e) =>
+                                    deliveryForm.setData('delivery_note', e.target.value)
+                                }
+                            />
+                        </Field>
+
+                        {Number(canDelivery) !== 0 && (
+                            <Button type="submit" disabled={deliveryForm.processing}>
+                                <Truck className="size-4" />
+                                Submit Delivery
+                            </Button>
+                        )}
+                    </form>
 
                     {canMarkDelivered && (
                         <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing}>
@@ -364,13 +362,13 @@ const ProductionRunBoard = ({ job, run, runType, activeOrder }: ProductionRunBoa
                         </Button>
                     )}
 
-                    {['delivered', 'approved'].includes(run.status) && (
+                    {['delivered', 'approved'].includes(run.status ?? '') && (
                         <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
                             {capitalizeWord(runType)} sudah delivered.
                         </div>
                     )}
 
-                    {!canDelivery && !canMarkDelivered && !['delivered', 'approved'].includes(run.status) && (
+                    {!canDelivery && !canMarkDelivered && !['delivered', 'approved'].includes(run.status ?? '') && (
                         <p className="text-sm text-slate-500">
                             Delivery bisa dilakukan setelah packing selesai{runType === 'production' ? ' dan pembayaran final dilakukan' : ''}.
                         </p>

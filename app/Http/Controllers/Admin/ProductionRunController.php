@@ -68,8 +68,8 @@ class ProductionRunController extends Controller
             ]);
 
             if ($run->type === 'production') {
-                $process->pesanan->workflowStatus()->updateOrCreate(
-                    ['pesanan_id' => $process->pesanan->id],
+                $process->productionRun->pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $process->productionRun->pesanan->id],
                     [
                         'production_started' => true,
                     ]
@@ -77,8 +77,8 @@ class ProductionRunController extends Controller
             }
 
             if ($run->type === 'sample') {
-                $process->pesanan->workflowStatus()->updateOrCreate(
-                    ['pesanan_id' => $process->pesanan->id],
+                $process->productionRun->pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $process->productionRun->pesanan->id],
                     [
                         'sample_created' => true,
                     ]
@@ -122,13 +122,15 @@ class ProductionRunController extends Controller
             abort(422, 'Process belum berjalan.');
         }
 
-        $process->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-            'qc_status' => $process->qc_status ?: 'pending',
-        ]);
+        DB::transaction(function() use ($process) {
+            $process->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'qc_status' => $process->qc_status ?: 'pending',
+            ]);
 
-        $this->syncRunStatus($process);
+            $this->syncRunStatus($process);
+        });
 
         return back()->with('success', 'Process selesai. Lanjut QC.');
     }
@@ -159,7 +161,7 @@ class ProductionRunController extends Controller
             abort(422, 'Total passed + defect harus sama dengan checked qty.');
         }
 
-        $process = ProductionRunProcess::with('productionRun.jobTicket')->findOrFail($processId);
+        $process = ProductionRunProcess::with('productionRun.pesanan.jobTicket')->findOrFail($processId);
         $qcStatus = $validated['defect_qty'] == $validated['checked_qty'] ? 'failed' : ($validated['defect_qty'] > 0 ? 'conditionally_passed' : 'passed');
 
         DB::transaction(function () use ($process, $validated, $qcStatus) {
@@ -255,7 +257,7 @@ class ProductionRunController extends Controller
         ]);
 
 
-        $run = ProductionRun::with('jobTicket.pesanans.workflowStatus')->findOrFail($runId);
+        $run = ProductionRun::with('pesanan.workflowStatus')->findOrFail($runId);
 
         DB::transaction(function () use ($run, $validated) {
             $run->update([
@@ -264,28 +266,28 @@ class ProductionRunController extends Controller
                 'customer_review_note' => $validated['customer_review_note'] ?? null,
             ]);
 
-            foreach ($run->jobTicket->pesanans as $pesanan) {
-                $pesanan->workflowStatus()->updateOrCreate(
-                    ['pesanan_id' => $pesanan->id],
-                    ['sample_approved' => true]
-                );
+            $pesanan = $run->pesanan;
 
-                $pesanan->jobTicket->workflowHistory()->create([
-                    'step' => 'sample',
-                    'action' => 'sample_approved',
-                    'user_id' => Auth::id(),
-                    'notes' => "Customer menyetujui sample global dengan catatan {$validated['customer_review_note']}.",
-                ]);
-            }
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                ['sample_approved' => true]
+            );
+
+            $pesanan->jobTicket->workflowHistory()->create([
+                'step' => 'sample',
+                'action' => 'sample_approved',
+                'user_id' => Auth::id(),
+                'notes' => "Customer menyetujui sample global dengan catatan {$validated['customer_review_note']}.",
+            ]);
             
             $this->invoiceService
                 ->ensureProductionInvoice(
-                    $run->jobTicket
+                    $run->pesanan->jobTicket
                 );
 
             $this->productionRunService
                 ->ensureProductionRun(
-                    $run->jobTicket
+                    $run->pesanan
                 );
         });
 
@@ -295,6 +297,7 @@ class ProductionRunController extends Controller
     private function recalculateRunStatus(ProductionRun $run)
     {
         $run->loadMissing('processes');
+        $pesanan = $run->pesanan;
 
         if ($run->processes->isEmpty()) {
             return;
@@ -309,16 +312,14 @@ class ProductionRunController extends Controller
                 'completed_at' => $run->completed_at ?? now(),
             ]);
             // Opsional: Update global workflow
-            foreach ($run->jobTicket->pesanans as $pesanan) {
-                if ($run->type === 'production') {
-                    $pesanan->workflowStatus()->updateOrCreate(
-                        ['pesanan_id' => $pesanan->id],
-                        [
-                            'production_completed' => true,
-                            'qc_completed' => true,
-                        ]
-                    );
-                }
+            if ($run->type === 'production') {
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        'production_completed' => true,
+                        'qc_completed' => true,
+                    ]
+                );
             }
             return;
         }
@@ -340,7 +341,7 @@ class ProductionRunController extends Controller
             'packing_notes' => ['nullable', 'string'],
         ]);
 
-        $run = ProductionRun::with('processes', 'processes.pesanan.workflowStatus')->findOrFail($runId);
+        $run = ProductionRun::with('processes', 'pesanan.workflowStatus', 'pesanan.jobTicket.workflowHistory')->findOrFail($runId);
 
         if (! $this->allProcessesQcPassed($run)) {
             abort(422, 'Semua process harus QC passed sebelum packing.');
@@ -352,15 +353,15 @@ class ProductionRunController extends Controller
                 'packing_notes' => $validated['packing_notes'] ?? null,
             ]);
 
+            $pesanan = $run->pesanan;
+
             if ($run->type === 'production') {
-                foreach($run->processes as $process) {
-                    $process->pesanan->workflowStatus()->updateOrCreate(
-                        ['pesanan_id' => $process->pesanan->id],
-                        [
-                            'packing_completed' => true,
-                        ]
-                    );
-                }
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        'packing_completed' => true,
+                    ]
+                );
             }
         });
 
@@ -377,8 +378,8 @@ class ProductionRunController extends Controller
         ]);
 
         $run = ProductionRun::with([
-            'jobTicket.pesanans.workflowStatus',
-            'jobTicket.workflowHistory',
+            'pesanan.workflowStatus',
+            'pesanan.jobTicket.workflowHistory',
         ])->findOrFail($runId);
 
         if (! $run->packing_completed) {
@@ -395,30 +396,29 @@ class ProductionRunController extends Controller
                 'delivery_note' => $validated['delivery_note'] ?? null,
             ]);
 
-            foreach ($run->jobTicket->pesanans as $pesanan) {
+            $pesanan = $run->pesanan;
 
-                if ($run->type === 'sample') {
+            if ($run->type === 'sample') {
 
-                    $pesanan->workflowStatus()->updateOrCreate(
-                        ['pesanan_id' => $pesanan->id],
-                        [
-                            'sample_in_delivery' => true,
-                        ]
-                    );
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        'sample_in_delivery' => true,
+                    ]
+                );
 
-                } else {
+            } else {
 
-                    $pesanan->workflowStatus()->updateOrCreate(
-                        ['pesanan_id' => $pesanan->id],
-                        [
-                            'in_delivery' => true,
-                        ]
-                    );
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        'in_delivery' => true,
+                    ]
+                );
 
-                }
             }
 
-            $run->jobTicket->workflowHistory()->create([
+            $run->pesanan->jobTicket->workflowHistory()->create([
                 'step' => $run->type,
                 'action' => 'delivery_started',
                 'user_id' => Auth::id(),
@@ -440,8 +440,8 @@ class ProductionRunController extends Controller
     public function markDelivered(string $runId)
     {
         $run = ProductionRun::with([
-            'jobTicket.workflowHistory',
-            'jobTicket.pesanans.workflowStatus',
+            'pesanan.jobTicket.workflowHistory',
+            'pesanan.workflowStatus',
         ])->findOrFail($runId);
 
         if ($run->status !== 'in_delivery') {
@@ -455,40 +455,37 @@ class ProductionRunController extends Controller
                 'delivered_at' => now(),
             ]);
 
-            $jobTicket = $run->jobTicket;
+            $pesanan = $run->pesanan;
 
-            foreach ($jobTicket->pesanans as $pesanan) {
+            $workflowStatus = $pesanan->workflowStatus();
 
-                $workflowStatus = $pesanan->workflowStatus();
+            if ($run->type === 'sample') {
 
-                if ($run->type === 'sample') {
+                $workflowStatus->updateOrCreate(
+                    [
+                        'pesanan_id' => $pesanan->id,
+                    ],
+                    [
+                        'sample_delivered' => true,
+                    ]
+                );
 
-                    $workflowStatus->updateOrCreate(
-                        [
-                            'pesanan_id' => $pesanan->id,
-                        ],
-                        [
-                            'sample_delivered' => true,
-                        ]
-                    );
+            } else {
 
-                } else {
+                $isFinalPaid = (bool) optional($pesanan->workflowStatus)->final_payment_paid;
 
-                    $isFinalPaid = (bool) optional($pesanan->workflowStatus)->final_payment_paid;
-
-                    $workflowStatus->updateOrCreate(
-                        [
-                            'pesanan_id' => $pesanan->id,
-                        ],
-                        [
-                            'delivered' => true,
-                            'completed' => $isFinalPaid,
-                        ]
-                    );
-                }
+                $workflowStatus->updateOrCreate(
+                    [
+                        'pesanan_id' => $pesanan->id,
+                    ],
+                    [
+                        'delivered' => true,
+                        'completed' => $isFinalPaid,
+                    ]
+                );
             }
 
-            $jobTicket->workflowHistory()->create([
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => $run->type,
                 'action' => 'delivered',
                 'user_id' => Auth::id(),
@@ -613,10 +610,10 @@ class ProductionRunController extends Controller
 
     private function syncRunStatus(ProductionRunProcess $process): void
     {
-        $process->load('pesanan.workflowStatus');
+        $process->load('productionRun.pesanan.workflowStatus');
 
-        $pesanan = $process->pesanan;
         $run = $process->productionRun;
+        $pesanan = $run->pesanan;
 
         if ($this->allProcessesQcPassed($run)) {
             DB::transaction(function () use ($run, $pesanan) {

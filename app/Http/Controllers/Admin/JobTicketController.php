@@ -132,22 +132,24 @@ class JobTicketController extends Controller
      */
     public function show(string $id)
     {        
-        // Eager load disesuaikan: Invoices dan Quotations kini milik JobTicket
+        // 1. Sesuaikan Eager Load
         $jobTicket = JobTicket::with([
-            'customer',
-            'invoices.payments', // Pindah ke JobTicket
-            'quotations.items',  // Pindah ke JobTicket
-            'productionRuns.processes.qcCheckedBy',
-            'productionRuns.processes.pesanan',
+            'customer.user', // Tambahkan .user agar relasi email customer terbaca
+            'companyProfile',
+            'invoices.payments', 
+            'quotations.items',
+            'defectHistories', // Pastikan defectHistories di-load agar tidak N+1 query
+            'workflowHistory.user',
             
             // Relasi yang tetap di Pesanan
             'pesanans.designs' => fn($q) => $q->latest(),
             'pesanans.orderSpecification',
             'pesanans.samples' => fn($q) => $q->with(['invoice.payments', 'media', 'delivery'])->latest(),
             'pesanans.purchasing' => fn($q) => $q->with('supplier', 'materialReceiving.checkedBy')->latest(),
-            // 'pesanans.productionRuns.processes.qcCheckedBy', // Tambahkan eager load user QC
-            'pesanans.productionProgress',
-            'workflowHistory' => fn($q) => $q->with('user')->latest(),
+            
+            // PERUBAHAN UTAMA: productionRuns sekarang langsung menempel di pesanans
+            'pesanans.productionRuns.processes.qcCheckedBy',
+            
             'pesanans.attachment',
             'pesanans.workflowStatus',
             'pesanans.sizeBreakdowns',
@@ -156,10 +158,12 @@ class JobTicketController extends Controller
             'pesanans.product',
         ])->findOrFail($id);
 
+        // 2. Fungsi Mapper untuk Production Run
         $mapRun = function ($run) {
             if (! $run) return null;
             return [
                 'id' => $run->id,
+                'pesanan_id' => $run->pesanan_id, // Identitas bahwa run ini milik pesanan tertentu
                 'type' => $run->type,
                 'quantity' => $run->quantity,
                 'status' => $run->status,
@@ -174,7 +178,6 @@ class JobTicketController extends Controller
                 'approved_at' => $run->approved_at,
                 'processes' => $run->processes->sortBy('sequence')->values()->map(fn ($process) => [
                     'id' => $process->id,
-                    'pesanan_id' => $process->pesanan_id,
                     'work_name' => $process->work_name,
                     'sequence' => $process->sequence,
                     'status' => $process->status,
@@ -192,17 +195,14 @@ class JobTicketController extends Controller
             ];
         };
 
-        $sampleRun = $jobTicket->productionRuns?->where('type', 'sample')->sortByDesc('id')->first();
-        $productionRun = $jobTicket->productionRuns?->where('type', 'production')->sortByDesc('id')->first();
-
-        // Memetakan struktur Data Job Ticket
+        // 3. Memetakan struktur Data Job Ticket
         $mapped = [
             'id' => $jobTicket->id,
             'no_job_ticket' => $jobTicket->no_job_ticket,
             'customer' => [
                 'name' => $jobTicket->customer?->nama ?? $jobTicket->customer_nama_snapshot,
                 'company' => $jobTicket->customer?->nama_perusahaan ?? $jobTicket->customer_perusahaan_snapshot,
-                'email' => $jobTicket->customer?->user->email,
+                'email' => $jobTicket->customer?->user?->email,
                 'phone' => $jobTicket->customer?->no_hp,
             ],
             'company_profile' => [
@@ -220,7 +220,7 @@ class JobTicketController extends Controller
             'status' => $jobTicket->status,
             'created_at' => $jobTicket->created_at,
 
-            // INVOICES - Kini levelnya global di Job Ticket
+            // INVOICES - Level Global di Job Ticket
             'invoices' => $jobTicket->invoices->map(fn ($inv) => [
                 'id' => $inv->id,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
@@ -230,7 +230,7 @@ class JobTicketController extends Controller
                 'payments' => $inv->payments->toArray(),
             ])->toArray(),
 
-            // QUOTATIONS - Kini levelnya global di Job Ticket
+            // QUOTATIONS - Level Global di Job Ticket
             'quotations' => $jobTicket->quotations->sortByDesc('id')->values()->map(fn ($q) => [
                 'id' => $q->id,
                 'quotation_number' => $q->quotation_number,
@@ -240,16 +240,13 @@ class JobTicketController extends Controller
                 'sample_qty' => $q->sample_qty,
                 'items' => $q->items->map(fn ($item) => [
                     'id' => $item->id,
-                    'pesanan_id' => $item->pesanan_id, // Link untuk tahu ini produk yang mana
+                    'pesanan_id' => $item->pesanan_id,
                     'item_name' => $item->item_name,
                     'quantity' => $item->quantity,
                     'price_per_pcs' => (float) $item->price_per_pcs,
                     'subtotal' => (float) $item->subtotal,
                 ])->toArray(),
             ])->toArray(),
-
-            'sample_run' => $mapRun($sampleRun),
-            'production_run' => $mapRun($productionRun),
 
             'workflow_histories' => $jobTicket->workflowHistory->map(fn ($h) => [
                 'id' => $h->id,
@@ -259,13 +256,23 @@ class JobTicketController extends Controller
                 'created_at' => optional($h->created_at)->format('Y-m-d H:i:s'),
             ])->toArray(),
 
+            // MELENGKAPI DEFECT HISTORIES
             'defect_histories' => $jobTicket->defectHistories->map(fn ($d) => [
                 'id' => $d->id,
-                
-            ]),
+                'pesanan_id' => $d->pesanan_id,
+                'production_run_process_id' => $d->production_run_process_id,
+                'defect_qty' => $d->defect_qty,
+                'defect_reason' => $d->defect_reason,
+                'corrective_action' => $d->corrective_action,
+                'created_at' => optional($d->created_at)->format('Y-m-d H:i:s'),
+            ])->toArray(),
             
             // ORDERS (Pesanans)
-            'orders' => $jobTicket->pesanans->map(function($pesanan) {
+            'orders' => $jobTicket->pesanans->map(function($pesanan) use ($mapRun) {
+                
+                // PENCARIAN PRODUCTION RUN SEKARANG BERADA DI DALAM LOOP PESANAN
+                $sampleRun = $pesanan->productionRuns?->where('type', 'sample')->sortByDesc('id')->first();
+                $productionRun = $pesanan->productionRuns?->where('type', 'production')->sortByDesc('id')->first();
 
                 return [
                     'id' => $pesanan->id,
@@ -276,6 +283,10 @@ class JobTicketController extends Controller
                     'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
                     'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
                     'status' => $pesanan->status_divisi,
+                    
+                    // PEMETAAN RUN KHUSUS UNTUK PESANAN INI
+                    'sample_run' => $mapRun($sampleRun),
+                    'production_run' => $mapRun($productionRun),
                     
                     'product' => $pesanan->product ? [
                         'id' => $pesanan->product->id,
@@ -292,7 +303,6 @@ class JobTicketController extends Controller
                     ])->toArray(),
 
                     'workflow_status' => $pesanan->workflowStatus?->toArray() ?? [],
-
                     'productionProgress' => $pesanan->productionProgress?->toArray() ?? null,
 
                     'specs' => $pesanan->orderSpecification?->map(fn ($s) => [
@@ -378,8 +388,6 @@ class JobTicketController extends Controller
             'name' => $p->name,
             'category' => $p->category,
         ]);
-
-        $productOptionFromPesanan = [];
 
         $suppliers = Supplier::all();
 

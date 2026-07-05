@@ -8,7 +8,7 @@ class ProductionRunProcess extends Model
 {
     protected $fillable = [
         'production_run_id',
-        'pesanan_id',
+        // 'pesanan_id',
         'pesanan_manufacturing_spec_id',
 
         'work_name',
@@ -41,11 +41,6 @@ class ProductionRunProcess extends Model
         return $this->belongsTo(ProductionRun::class);
     }
 
-    public function pesanan()
-    {
-        return $this->belongsTo(Pesanan::class);
-    }
-
     public function pesananManufacturingSpec()
     {
         return $this->belongsTo(PesananManufacturingSpecs::class);
@@ -59,10 +54,5 @@ class ProductionRunProcess extends Model
     public function defectHistories()
     {
         return $this->hasMany(ProductionDefectHistory::class);
-    }
-
-    public function deffectRuns()
-    {
-        return $this->hasMany(DeffectRun::class);
     }
 }

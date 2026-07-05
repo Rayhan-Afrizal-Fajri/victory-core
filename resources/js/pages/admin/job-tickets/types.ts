@@ -329,7 +329,6 @@ export interface ManufacturingSpec {
 
 export interface ProductionRunProcess {
   id: number;
-  pesanan_id: number;
   work_name: string;
   sequence: number;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
@@ -412,7 +411,8 @@ export interface Pesanan {
   size_breakdowns?: SizeBreakdown[];
   workflow_status?: WorkflowStatus;
   
-  productionProgress?: ProductionProgress | null;
+  sample_run?: ProductionRun | null;
+  production_run?: ProductionRun | null;
 
   specs?: OrderSpecification[];
   designs?: DesignRevision[];
@@ -449,8 +449,6 @@ export interface JobTicket {
   // Array Global di Job Ticket
   invoices?: Invoice[];
   quotations?: Quotation[];
-  sample_run?: ProductionRun | null;
-  production_run?: ProductionRun | null;
   workflow_histories?: WorkflowHistory[] | null;
   
   // Anak dari Job Ticket (Pesanans)

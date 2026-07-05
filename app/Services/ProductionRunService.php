@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\JobTicket;
 use App\Models\Pesanan;
 use App\Models\ProductionRun;
 use Illuminate\Support\Facades\Auth;
@@ -11,18 +10,18 @@ use Illuminate\Support\Facades\DB;
 class ProductionRunService
 {
     /**
-     * Membuat atau memastikan Sample Run ada untuk keseluruhan Job Ticket
+     * Membuat atau memastikan Sample Run ada untuk SPESIFIK 1 Pesanan
      */
-    public function ensureSampleRun(JobTicket $jobTicket): ?ProductionRun
+    public function ensureSampleRun(Pesanan $pesanan, ?int $quantity = null): ?ProductionRun
     {
-        return DB::transaction(function () use ($jobTicket) {
-            $jobTicket->loadMissing([
-                'pesanans.manufacturingSpecs',
+        return DB::transaction(function () use ($pesanan, $quantity) {
+            $pesanan->loadMissing([
+                'manufacturingSpecs',
                 'productionRuns',
+                'jobTicket'
             ]);
 
-            // Cek apakah batch produksi sample sudah ada untuk job ticket ini
-            $existingRun = $jobTicket->productionRuns()
+            $existingRun = $pesanan->productionRuns()
                 ->where('type', 'sample')
                 ->whereNotIn('status', ['rejected'])
                 ->latest()
@@ -32,99 +31,56 @@ class ProductionRunService
                 return $existingRun;
             }
 
-            // Buat Induk Production Run (Global)
-            $run = $jobTicket->productionRuns()->create([
-                'type' => 'sample',
+            $sampleQty = $quantity ?: (int) ($pesanan->sample_qty ?: 1);
+
+            if ($sampleQty <= 0) {
+                return null;
+            }
+
+            // Buat Induk Production Run (Level Pesanan)
+            $run = $pesanan->productionRuns()->create([
+                'type' => 'sample', 
                 'status' => 'draft',
             ]);
 
-            // Loop ke semua pesanan untuk meng-generate proses produksinya
-            foreach ($jobTicket->pesanans as $pesanan) {
-                $sampleQty = (int) ($pesanan->sample_qty ?: 0);
+            $executableSpecs = $this->executableManufacturingSpecs($pesanan);
 
-                if ($sampleQty <= 0) {
-                    continue; // Skip jika pesanan ini tidak butuh sample
-                }
-
-                $executableSpecs = $this->executableManufacturingSpecs($pesanan);
-
-                foreach ($executableSpecs as $index => $spec) {
-                    $run->processes()->create([
-                        'pesanan_id' => $pesanan->id, // Tautkan ke pesanannya
-                        'quantity' => $sampleQty,
-                        'pesanan_manufacturing_spec_id' => $spec->id,
-                        'work_name' => $spec->work_name_snapshot,
-                        'sequence' => $index + 1,
-                        'status' => 'pending',
-                        'qc_status' => 'pending',
-                    ]);
-                }
-                
-                $pesanan->jobTicket->workflowHistory()->create([
-                    'step' => 'production',
-                    'action' => 'sample_run_auto_created',
-                    'user_id' => Auth::id(),
-                    'notes' => "Proses sample produksi untuk produk ini telah disiapkan dalam batch Job Ticket.",
+            foreach ($executableSpecs as $index => $spec) {
+                // pesanan_id sudah dihapus di sini karena sudah tidak ada di fillable Process
+                $run->processes()->create([
+                    'pesanan_manufacturing_spec_id' => $spec->id,
+                    'work_name' => $spec->work_name_snapshot,
+                    'quantity' => $sampleQty,
+                    'sequence' => $index + 1,
+                    'status' => 'pending',
+                    'qc_status' => 'pending',
                 ]);
             }
+
+            $pesanan->jobTicket->workflowHistory()->create([
+                'step' => 'production',
+                'action' => 'sample_run_created',
+                'user_id' => Auth::id(),
+                'notes' => "Sample production run otomatis dibuat dengan qty {$sampleQty} pcs.",
+            ]);
 
             return $run;
         });
     }
 
     /**
-     * Membuat atau memastikan Production Run utama (Mass Pro) ada untuk Job Ticket
+     * Membuat atau memastikan Mass Production Run ada untuk SPESIFIK 1 Pesanan
      */
-    public function ensureProductionRun(JobTicket $jobTicket): ?ProductionRun
+    public function ensureProductionRun(Pesanan $pesanan, ?int $quantity = null): ?ProductionRun
     {
-        $jobTicket->loadMissing([
-            'pesanans.workflowStatus',
-            'pesanans.purchasing',
-            'productionRuns',
-        ]);
-
-        $existingRun = $jobTicket->productionRuns()
-            ->where('type', 'production')
-            ->whereNotIn('status', ['rejected'])
-            ->latest()
-            ->first();
-
-        if ($existingRun) {
-            return $existingRun;
-        }
-
-        // Pastikan sample sudah disetujui pada semua pesanan
-        $sampleApproved =
-            $jobTicket->pesanans
-                ->every(fn($p)=>
-                    optional($p->workflowStatus)->sample_approved
-                );
-
-        // Cari pesanan yang *seluruh* purchasing item-nya sudah diterima.
-        // Hanya jika ada minimal satu pesanan seperti ini, kita boleh
-        // membuat production run. Jika tidak ada, batalkan pembuatan.
-        $pesanansFullyReceived = $jobTicket->pesanans->filter(function ($pesanan) {
-            return $pesanan->purchasing->isNotEmpty()
-                && $pesanan->purchasing->every(fn($p) => (bool) $p->is_received);
-        })->values();
-
-        if (! $sampleApproved || $pesanansFullyReceived->isEmpty()) {
-            return null;
-        }
-
-        // Buat production run hanya untuk pesanan yang sudah lengkap diterima.
-        return $this->createProductionRun($jobTicket, $pesanansFullyReceived);
-    }
-
-    private function createProductionRun(JobTicket $jobTicket, $pesanansToProcess = null) {
-        return DB::transaction(function () use ($jobTicket) {
-            $jobTicket->loadMissing([
-                'pesanans.manufacturingSpecs',
-                'pesanans.workflowStatus',
+        return DB::transaction(function () use ($pesanan, $quantity) {
+            $pesanan->loadMissing([
+                'manufacturingSpecs',
                 'productionRuns',
+                'jobTicket',
             ]);
 
-            $existingRun = $jobTicket->productionRuns()
+            $existingRun = $pesanan->productionRuns()
                 ->where('type', 'production')
                 ->whereNotIn('status', ['rejected'])
                 ->latest()
@@ -134,53 +90,38 @@ class ProductionRunService
                 return $existingRun;
             }
 
-            // Buat Induk Production Run (Global)
-            $run = $jobTicket->productionRuns()->create([
+            // Fallback ke quantity utama dari form pesanan jika null
+            $productionQty = $quantity ?: (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
+
+            if ($productionQty <= 0) {
+                return null; // Skip jika qty produksi 0
+            }
+
+            // Buat Induk Production Run (Level Pesanan)
+            $run = $pesanan->productionRuns()->create([
                 'type' => 'production',
                 'status' => 'draft',
             ]);
 
-            // Jika dipanggil dengan daftar pesanan spesifik, gunakan itu,
-            // jika tidak, proses semua pesanan pada job ticket.
-            $pesanansToProcess = $pesanansToProcess ?? $jobTicket->pesanans;
+            $executableSpecs = $this->executableManufacturingSpecs($pesanan);
 
-            foreach ($pesanansToProcess as $pesanan) {
-                $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-
-                if ($productionQty <= 0) {
-                    continue;
-                }
-
-                $executableSpecs = $this->executableManufacturingSpecs($pesanan);
-
-                foreach ($executableSpecs as $index => $spec) {
-                    $run->processes()->create([
-                        'pesanan_id' => $pesanan->id, // Tautkan ke pesanannya
-                        'quantity' => $productionQty,
-                        'pesanan_manufacturing_spec_id' => $spec->id,
-                        'work_name' => $spec->work_name_snapshot,
-                        'sequence' => $index + 1,
-                        'status' => 'pending',
-                        'qc_status' => 'pending',
-                    ]);
-                }
-
-                $pesanan->workflowStatus()->updateOrCreate(
-
-                    ['pesanan_id'=>$pesanan->id],
-
-                    [
-                        'production_started'=>true
-                    ]
-
-                );
-
+            foreach ($executableSpecs as $index => $spec) {
+                // pesanan_id juga dihapus di sini
+                $run->processes()->create([
+                    'pesanan_manufacturing_spec_id' => $spec->id,
+                    'work_name' => $spec->work_name_snapshot,
+                    'quantity' => $productionQty, 
+                    'sequence' => $index + 1,
+                    'status' => 'pending',
+                    'qc_status' => 'pending',
+                ]);
             }
-            $jobTicket->workflowHistory()->create([
+
+            $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'production',
                 'action' => 'production_run_auto_created',
                 'user_id' => Auth::id(),
-                'notes' => "Proses mass production untuk produk ini telah disiapkan dalam batch Job Ticket.",
+                'notes' => "Mass production run otomatis disiapkan dengan qty {$productionQty} pcs.",
             ]);
 
             return $run;
@@ -196,14 +137,15 @@ class ProductionRunService
             ->filter(function ($spec) {
                 $behavior = $spec->process_behavior ?: null;
 
+                // Jika spec tersebut didefinisikan khusus sebagai proses produksi
                 if ($behavior) {
                     return $behavior === 'production_process';
                 }
 
                 $workName = strtolower($spec->work_name_snapshot ?? '');
 
-                // Karena packing sekarang ada di level Global JobTicket,
-                // Kita kecualikan packing dari list per-pesanan.
+                // Karena fitur Packing dan QC sekarang di-handle di level global (ProductionRun induknya),
+                // maka kita kecualikan kata kunci tersebut dari form card per-proses
                 $costingOnlyKeywords = [
                     'qc',
                     'quality control',

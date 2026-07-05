@@ -18,9 +18,9 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('pesanan_id')
-                ->constrained('pesanan')
-                ->cascadeOnDelete();
+            // $table->foreignId('pesanan_id')
+            //     ->constrained('pesanan')
+            //     ->cascadeOnDelete();
 
             $table->foreignId('pesanan_manufacturing_spec_id')
                 ->nullable()

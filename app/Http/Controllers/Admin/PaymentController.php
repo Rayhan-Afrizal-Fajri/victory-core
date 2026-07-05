@@ -176,7 +176,7 @@ class PaymentController extends Controller
 
         $jobTicket->loadMissing([
             'pesanans.workflowStatus',
-            'productionRuns',
+            'pesanans.productionRuns',
         ]);
 
         $totalInvoice = (float) $invoice->total_tagihan;

@@ -14,8 +14,12 @@ return new class extends Migration
         Schema::create('production_runs', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('job_ticket_id')
-                ->constrained('job_tickets')
+            // $table->foreignId('job_ticket_id')
+            //     ->constrained('job_tickets')
+            //     ->cascadeOnDelete();
+
+            $table->foreignId('pesanan_id')
+                ->constrained('pesanan')
                 ->cascadeOnDelete();
 
             $table->enum('type', ['sample', 'production']);
