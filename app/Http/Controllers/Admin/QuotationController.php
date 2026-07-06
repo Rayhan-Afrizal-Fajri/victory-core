@@ -24,7 +24,8 @@ class QuotationController extends Controller
             'sample_qtys.*' => ['required', 'integer', 'min:1'],
             'payment_terms' => ['nullable', 'string'],
             'delivery_terms' => ['nullable', 'string'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['required', 'array', 'min:1'],
+            'notes.*' => ['nullable', 'string'],
             'delivery_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
 
@@ -87,9 +88,11 @@ class QuotationController extends Controller
                 'status' => 'draft',
                 'valid_until' => $validated['valid_until'] ?? now()->addDays(30)->toDateString(),
                 'sample_qty' => $totalSampleQtyGlobal,
-                'payment_terms' => $validated['payment_terms'] ?? '...',
-                'delivery_terms' => $validated['delivery_terms'] ?? '...',
-                'notes' => $validated['notes'] ?? '...',
+
+                'payment_terms' => null,
+                'delivery_terms' => null,
+                'notes' => null,
+
                 'price_per_pcs' => 0,
                 'quantity' => $totalQuantity,
                 'subtotal' => $subtotal,
@@ -98,6 +101,16 @@ class QuotationController extends Controller
                 'grand_total' => $grandTotal,
                 'created_by' => Auth::id(),
             ]);
+
+            $notesToInsert = [];
+            foreach($validated['notes'] as $noteContent) {
+                if (!empty(trim(strip_tags($noteContent)))) {
+                    $notesToInsert[] = ['notes' => $noteContent];
+                }
+            }
+            if (count($notesToInsert) > 0) {
+                $quotation->quotationNotes()->createMany($notesToInsert);
+            }
 
             foreach ($pesanans as $pesanan) {
                 $pesananSampleQty = (int) ($validated['sample_qtys'][$pesanan->id] ?? 1);
@@ -212,7 +225,7 @@ class QuotationController extends Controller
                 
                 $pesanan->jobTicket->workflowHistory()->create([
                     'step' => 'quotation',
-                    'action' => 'approved',
+                    // 'action' => 'approved',
                     'user_id' => Auth::id(),
                     'notes' => 'Surat penawaran disetujui customer.',
                 ]);
@@ -352,6 +365,7 @@ class QuotationController extends Controller
             'jobTicket.companyProfile',
             'jobTicket.pesanans.sizeBreakdowns',
             'items',
+            'quotationNotes',
         ])->findOrFail($quotationId);
         
         if (! $quotation->pdf_path || ! Storage::disk('public')->exists($quotation->pdf_path)) {

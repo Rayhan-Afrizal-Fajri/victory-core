@@ -9,6 +9,17 @@ import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
 import FormattedNumberInput from "../ui/formatted-number-input";
 import { Pesanan } from "@/pages/admin/job-tickets/types";
+import { Plus, Trash2 } from "lucide-react";
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+const quillModules = {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{list: 'ordered'}, {list: 'bullet'}],
+            ['clean']
+        ],
+    };
 
 function QuotationSection({
     job,
@@ -40,18 +51,44 @@ function QuotationSection({
         return total + unitPrice * sampleQty;
     }, 0);
 
+    const defaultNotes = [
+        'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
+        'Estimasi delivery 10–14 hari kerja dari DP dan ACC sample.',
+        'Harga sudah termasuk bahan, proses produksi, dan packaging. Harga belum termasuk delivery dan pajak.'
+    ];
+
     const quotationForm = useForm({
         valid_until: defaultValidUntil,
         sample_qtys: initialSampleQtys,
-        payment_terms:
-            'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
-        delivery_terms:
-            'Estimasi delivery 10–14 hari kerja dari DP dan ACC sample.',
-        notes:
-            'Harga sudah termasuk bahan, proses produksi, dan packing. Harga belum termasuk delivery dan pajak.',
+        notes: defaultNotes,
+
+        // payment_terms:
+        //     'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
+        // delivery_terms:
+        //     'Estimasi delivery 10–14 hari kerja dari DP dan ACC sample.',
+        // notes:
+        //     'Harga sudah termasuk bahan, proses produksi, dan packing. Harga belum termasuk delivery dan pajak.',
         tax: 0,
         delivery_cost: 0,
     });
+
+    const handleAddNote = () => {
+        quotationForm.setData('notes', [...quotationForm.data.notes, '']);
+    }
+
+    const handleRemoveNote = (indexToRemove: number) => {
+        const newNotes = quotationForm.data.notes.filter((_,idx) => idx !== indexToRemove);
+        quotationForm.setData('notes', newNotes.length ? newNotes : ['']);
+    };
+
+    const handleNoteChange = (content: string, index: number) => {
+        // Hanya update jika isinya memang berbeda
+        if (quotationForm.data.notes[index] !== content) {
+            const newNotes = [...quotationForm.data.notes];
+            newNotes[index] = content;
+            quotationForm.setData('notes', newNotes);
+        }
+    };
 
     const approveForm = useForm({
         approved_by_name: job.customer?.name || job.customer?.company || '',
@@ -166,35 +203,45 @@ function QuotationSection({
                         </div>
                     </div>
 
-                    <Field label="Payment Terms" error={quotationForm.errors.payment_terms}>
-                        <Textarea
-                            rows={3}
-                            value={quotationForm.data.payment_terms}
-                            onChange={(e) =>
-                                quotationForm.setData('payment_terms', e.target.value)
-                            }
-                        />
-                    </Field>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-slate-700">Syarat & Ketentuan (Notes)</label>
+                            <Button type="button" size="sm" variant="outline" onClick={handleAddNote}>
+                                <Plus className="mr-2 size-4" /> Tambah Note
+                            </Button>
+                        </div>
 
-                    <Field label="Delivery Terms" error={quotationForm.errors.delivery_terms}>
-                        <Textarea
-                            rows={2}
-                            value={quotationForm.data.delivery_terms}
-                            onChange={(e) =>
-                                quotationForm.setData('delivery_terms', e.target.value)
-                            }
-                        />
-                    </Field>
-
-                    <Field label="Notes" error={quotationForm.errors.notes}>
-                        <Textarea
-                            rows={3}
-                            value={quotationForm.data.notes}
-                            onChange={(e) =>
-                                quotationForm.setData('notes', e.target.value)
-                            }
-                        />
-                    </Field>
+                        {quotationForm.data.notes.map((note, index) => (
+                            <div key={index} className="flex gap-2 items-start">
+                                {/* Rich Text Editor */}
+                                <div className="flex-1 bg-white">
+                                    <ReactQuill 
+                                        theme="snow"
+                                        value={note}
+                                        onChange={(content, delta, source) => {
+                                            if (source === 'user') {
+                                                handleNoteChange(content, index);
+                                            }
+                                        }}
+                                        modules={quillModules}
+                                        className="bg-white rounded-md"
+                                    />
+                                </div>
+                                
+                                {/* Tombol Hapus */}
+                                <Button 
+                                    type="button" 
+                                    variant="destructive" 
+                                    size="icon"
+                                    className="mt-1"
+                                    onClick={() => handleRemoveNote(index)}
+                                >
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        {quotationForm.errors.notes && <p className="text-sm text-red-500">{quotationForm.errors.notes}</p>}
+                    </div>
 
                     <div className="flex justify-end border-t pt-4">
                         <Button type="submit" disabled={quotationForm.processing || !hasSellingPrice}>

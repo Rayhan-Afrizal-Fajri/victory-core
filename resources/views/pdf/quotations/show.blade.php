@@ -112,11 +112,11 @@
         }
         .pesan-list {
             padding-left: 12px;
-            margin-top: 4px;
+            /* margin-top: 4px; */
             margin-bottom: 0;
             line-height: 1.5;
             color: #111827;
-            font-weight: bold;
+            max-width: 100%;
         }
         .pesan-list li {
             margin-bottom: 2px;
@@ -277,15 +277,15 @@
             <td style="width: 60%; padding-right: 15px;">
                 <div class="address-title">Pesan</div>
                 <ul class="pesan-list">
-                    <li>Harga telah termasuk bahan, packing, namun belum termasuk pajak.</li>
-                    <li>Harga penawaran hanya berlaku 30 hari kalender sejak diterbitkan.</li>
-                    <li>{{ $quotation->delivery_terms ?? '25 June 2026 Acc sample' }}.</li>
-                    <li>Setelah sample approve kami mohon untuk mengirimkan down payment sebesar 50% dari nilai order, sisanya sesaat sebelum pengiriman.</li>
+                    @if ($quotation->quotationNotes)
+                        @foreach ($quotation->quotationNotes as $note)
+                            <li>{!! $note->notes !!}</li>                        
+                        @endforeach
+                    @endif
                     <li>Untuk pembayaran mohon untuk ditransfer ke 
-                        {{ $jobTicket->companyProfile->bank_type ?? 'BCA' }} 
-                        KCP Lingkar Selatan Bandung, no acc 
-                        {{ $jobTicket->companyProfile->account_number ?? '453.12.06660' }}, 
-                        Atas nama {{ $jobTicket->companyProfile->account_name ?? 'VICTOR HARLIM.MBA' }}.
+                        {{ $jobTicket->companyProfile->bank_type ?? 'BCA' }}, no acc 
+                        <b>{{ $jobTicket->companyProfile->account_number ?? '453.12.06660' }}</b>, 
+                        Atas nama <b>{{ strtoupper($jobTicket->companyProfile->account_name) ?? 'VICTOR HARLIM.MBA' }}</b>.
                     </li>
                 </ul>
             </td>

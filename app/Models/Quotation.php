@@ -47,4 +47,9 @@ class Quotation extends Model
     {
         return $this->hasMany(QuotationItem::class);
     }
+
+    public function quotationNotes()
+    {
+        return $this->hasMany(QuotationNote::class);
+    }
 }

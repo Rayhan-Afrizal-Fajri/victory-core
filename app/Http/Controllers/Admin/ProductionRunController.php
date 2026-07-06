@@ -22,6 +22,11 @@ class ProductionRunController extends Controller
         protected InvoiceService $invoiceService,
     ) {}
 
+    public function index()
+    {
+        $productionProcess = ProductionRunProcess::with('productionRun.pesanan.jobTicket')->get();
+    }
+
     public function ensureSampleRun(Request $request, string $jobTicketId)
     {
         $jobTicket = JobTicket::with(['pesanans.workflowStatus'])->findOrFail($jobTicketId);
