@@ -121,6 +121,13 @@
         .pesan-list li {
             margin-bottom: 2px;
         }
+        
+        /* Tambahkan kode ini di bagian bawah dalam tag <style> */
+        .pesan-list li p {
+            margin: 0 !important;
+            padding: 0 !important;
+            display: inline !important;
+        }
 
         /* Summary Table */
         .summary-table {
