@@ -225,7 +225,7 @@ class QuotationController extends Controller
                 
                 $pesanan->jobTicket->workflowHistory()->create([
                     'step' => 'quotation',
-                    // 'action' => 'approved',
+                    'action' => 'approved',
                     'user_id' => Auth::id(),
                     'notes' => 'Surat penawaran disetujui customer.',
                 ]);

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound } from 'lucide-react';
+import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -47,6 +47,11 @@ export function AppSidebar() {
             title: 'Kanban Board',
             href: kanbanBoard.index(),
             icon: SquareKanban,
+        },
+        {
+            title: 'Worker Board',
+            href: '/production-runs/board',
+            icon: Workflow,
         },
     ];
     

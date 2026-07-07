@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceService;
 use App\Services\ProductionRunService;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ProductionRunController extends Controller
 {
@@ -184,8 +185,8 @@ class ProductionRunController extends Controller
             // Jika ada defect, catat ke tabel Defect History
             if ($validated['defect_qty'] > 0) {
                 ProductionDefectHistory::create([
-                    'job_ticket_id' => $process->productionRun->job_ticket_id,
-                    'pesanan_id' => $process->pesanan_id,
+                    'job_ticket_id' => $process->productionRun->pesanan->job_ticket_id,
+                    'pesanan_id' => $process->productionRun->pesanan_id,
                     'production_run_process_id' => $process->id,
                     'defect_qty' => $validated['defect_qty'],
                     'defect_reason' => $validated['defect_reason'],
@@ -611,6 +612,67 @@ class ProductionRunController extends Controller
         ]);
 
         return back()->with('success', 'Sample ditolak.');
+    }
+
+    public function boardIndex()
+    {
+        // 1. WORKER TASKS (Internal Only, Status pending/in_progress)
+        $workerTasks = ProductionRunProcess::query()
+            ->with([
+                'productionRun.pesanan.jobTicket',
+                'pesananManufacturingSpec',
+            ])
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->whereHas('pesananManufacturingSpec', function ($q) {
+                $q->whereNull('vendor_id'); // Hanya internal
+            })
+            // --- LOGIKA FILTER BARU ---
+            ->whereHas('productionRun', function ($runQuery) {
+                $runQuery->where(function ($q) {
+                    // Tampilkan jika ini adalah proses pembuatan Sample
+                    $q->where('type', 'sample');
+                })->orWhere(function ($q) {
+                    // ATAU tampilkan jika ini Produksi Massal, TAPI syaratnya sample_approved = true
+                    $q->where('type', 'production')
+                      ->whereHas('pesanan.workflowStatus', function ($wf) {
+                          $wf->where('sample_approved', true);
+                      });
+                });
+            })
+            ->get()
+            ->sortBy(function ($process) {
+                $deadline = $process->productionRun->pesanan->jobTicket->deadline ?? '9999-12-31';
+                $sequence = str_pad($process->sequence, 3, '0', STR_PAD_LEFT);
+                return $deadline . '-' . $sequence;
+            })
+            ->values();
+
+        // 2. QC TASKS (Semua proses yang butuh QC)
+        $qcTasks = ProductionRunProcess::query()
+            ->with([
+                'productionRun.pesanan.jobTicket',
+                'pesananManufacturingSpec.vendor',
+            ])
+            ->where('status', 'completed')
+            ->where('qc_status', 'pending')
+            // --- LOGIKA FILTER BARU ---
+            ->whereHas('productionRun', function ($runQuery) {
+                $runQuery->where(function ($q) {
+                    $q->where('type', 'sample');
+                })->orWhere(function ($q) {
+                    $q->where('type', 'production')
+                      ->whereHas('pesanan.workflowStatus', function ($wf) {
+                          $wf->where('sample_approved', true);
+                      });
+                });
+            })
+            ->orderByDesc('completed_at')
+            ->get();
+
+        return Inertia::render('admin/production-runs/Board', [
+            'workerTasks' => $workerTasks,
+            'qcTasks' => $qcTasks,
+        ]);
     }
 
     private function syncRunStatus(ProductionRunProcess $process): void

@@ -23,7 +23,7 @@ class KanbanBoardController extends Controller
             ->with([
                 'jobTicket.customer',
                 'workflowStatus',
-                'productionRunProcesses.productionRun',
+                'productionRuns.processes',
             ])
             ->latest('id');
 

@@ -310,6 +310,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/production-runs/{run}/reject-sample', [ProductionRunController::class, 'rejectSample'])
         ->name('production-runs.reject-sample');
 
+    // Production Runs Board (Worker & QC)
+    Route::get('/production-runs/board', [ProductionRunController::class, 'boardIndex'])
+        ->name('production-runs.board');
+
     /**
      * End of detail job tickets
      */

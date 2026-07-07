@@ -1,0 +1,1 @@
+import{n as e,t}from"./jsx-runtime-BCV00E_w.js";var n=e(),r=t(),i=e=>{let t=(0,n.c)(3),{children:i,className:a}=e,o=`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${a===void 0?`border-slate-200 bg-slate-100 text-slate-700`:a}`,s;return t[0]!==i||t[1]!==o?(s=(0,r.jsx)(`span`,{className:o,children:i}),t[0]=i,t[1]=o,t[2]=s):s=t[2],s};export{i as t};
