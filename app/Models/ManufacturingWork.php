@@ -10,7 +10,7 @@ class ManufacturingWork extends Model
 {
     protected $fillable = [
         'name',
-        'role_id',
+        // 'role_id',
         'default_unit',
         'process_behavior',
         'default_vendor_id',
