@@ -15,7 +15,6 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
 
     const canOpenCosting =
         activeOrder &&
-        activeOrder.product &&
         (
             activeOrder.material_specs?.length ||
             activeOrder.manufacturing_specs?.length
@@ -140,7 +139,7 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                     />
                 </>
             ): (
-                <WorkflowGate reason="Costing belum tersedia. Sync artikel dan lengkapi material/manufacturing specs terlebih dahulu." />
+                <WorkflowGate reason="Costing belum tersedia. Sync artikel atau lengkapi material/manufacturing specs terlebih dahulu." />
             )}
             <QuotationSection
                 form={ownerPriceForm}
