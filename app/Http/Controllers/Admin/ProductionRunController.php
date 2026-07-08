@@ -619,7 +619,7 @@ class ProductionRunController extends Controller
         // 1. WORKER TASKS (Internal Only, Status pending/in_progress)
         $workerTasks = ProductionRunProcess::query()
             ->with([
-                'productionRun.pesanan.jobTicket',
+                'productionRun.pesanan.jobTicket.customer',
                 'pesananManufacturingSpec',
             ])
             ->whereIn('status', ['pending', 'in_progress'])
@@ -650,7 +650,7 @@ class ProductionRunController extends Controller
         // 2. QC TASKS (Semua proses yang butuh QC)
         $qcTasks = ProductionRunProcess::query()
             ->with([
-                'productionRun.pesanan.jobTicket',
+                'productionRun.pesanan.jobTicket.customer',
                 'pesananManufacturingSpec.vendor',
             ])
             ->where('status', 'completed')

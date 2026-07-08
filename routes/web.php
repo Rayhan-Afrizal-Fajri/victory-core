@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PurchasingController;
 use App\Http\Controllers\Admin\SampleController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\ManufacturingWorkController;
 use App\Http\Controllers\MaterialController;
@@ -42,6 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('kanban-board', KanbanBoardController::class);
 
     Route::resource('users', UserController::class);
+    Route::put('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password.update');
+    Route::resource('roles', RoleController::class)->only(['store', 'update', 'destroy']);
     Route::resource('customers', CustomerController::class);
     Route::resource('suppliers', SupplierController::class);
 

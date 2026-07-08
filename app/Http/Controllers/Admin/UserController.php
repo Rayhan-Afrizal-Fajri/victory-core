@@ -8,6 +8,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -24,19 +25,39 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'roles' => $user->roles->map(fn ($role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ])->all(),
                 'role' => $user->roles?->first()->name,
                 'is_active' => $user->is_active,
             ]);
 
         $roles = Role::query()
+            ->with('permissions:id,name')
+            ->withCount('users')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'description' => $role->description,
+                'permissions' => $role->permissions->map(fn ($permission) => [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                ])->all(),
+                'users_count' => $role->users_count,
+            ]);
+
+        $permissions = Permission::query()
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
 
-
         return Inertia::render('admin/users/Index', [
             'users' => $users,
             'roles' => $roles,
+            'permissions' => $permissions,
         ]);
     }
 
@@ -95,6 +116,11 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $user = User::findOrFail($id);
+
+        if ($user->hasRole('owner')) {
+            return back()->with('error', 'User owner tidak dapat diubah.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -119,11 +145,37 @@ class UserController extends Controller
     }
 
     /**
+     * Update user password.
+     */
+    public function updatePassword(Request $request, string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->hasRole('owner')) {
+            return back()->with('error', 'Password user owner tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', 'min:8'],
+        ]);
+
+        $user->update([
+            'password' => bcrypt($validated['password']),
+        ]);
+
+        return back()->with('success', 'Password berhasil diperbarui');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
+
+        if ($user->hasRole('owner')) {
+            return back()->with('error', 'User owner tidak dapat dihapus.');
+        }
 
         $user->delete();
 

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('manufacturing_works', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('role_id')->constrained('roles')->restrictOnDelete();
             $table->string('name'); // cutting, jahit, qc, sablon
             $table->string('default_unit')->nullable();
 

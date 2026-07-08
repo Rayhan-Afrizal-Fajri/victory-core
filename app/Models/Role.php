@@ -16,4 +16,9 @@ class Role extends SpatieRole
         'guard_name',
         'description',
     ];
+
+    public function manufacturingWorks()
+    {
+        return $this->hasMany(ManufacturingWork::class);
+    }
 }

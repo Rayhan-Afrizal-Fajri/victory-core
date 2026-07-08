@@ -16,6 +16,7 @@ class RoleUserSeeder extends Seeder
         $permissions = [
             'dashboard.admin',
             'kanban_board.view',
+            'worker_board.view',
 
             'order_entry.create',
             'order_entry.update',

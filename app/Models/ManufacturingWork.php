@@ -10,6 +10,7 @@ class ManufacturingWork extends Model
 {
     protected $fillable = [
         'name',
+        'role_id',
         'default_unit',
         'process_behavior',
         'default_vendor_id',
@@ -17,6 +18,11 @@ class ManufacturingWork extends Model
         'default_max_estimate',
         'is_active',
     ];
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
 
     public function defaultVendor(): BelongsTo
     {
