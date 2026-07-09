@@ -21,7 +21,7 @@ export default function RoleFormModal({
 
     const [form, setForm] = useState(() => ({
         name: role?.name ?? "",
-        description: role?.description ?? "",
+        // description: role?.description ?? "",
         permission_ids: role?.permissions?.map(p => p.id) ?? []
     }))
 
@@ -30,7 +30,7 @@ export default function RoleFormModal({
         if (!role) {
             setForm({
                 name: "",
-                description: "",
+                // description: "",
                 permission_ids: []
             })
             return
@@ -38,7 +38,7 @@ export default function RoleFormModal({
 
         setForm({
             name: role.name,
-            description: role.description ?? "",
+            // description: role.description ?? "",
             permission_ids: role.permissions?.map(p => p.id) ?? []
         })
 
@@ -71,7 +71,7 @@ export default function RoleFormModal({
         e.preventDefault()
 
         if (role) {
-            router.put(`/master/roles/${role.id}`, form, {
+            router.put(`/roles/${role.id}`, form, {
                 onSuccess: () => {
                     toast.success(`${form.name} berhasil diperbarui`);
                     onClose();
@@ -81,7 +81,7 @@ export default function RoleFormModal({
                 },
             })
         } else {
-            router.post(`/master/roles`, form, {
+            router.post(`/roles`, form, {
                 onSuccess: () => {
                     toast.success(`${form.name} berhasil ditambahkan`);
                     onClose();
@@ -156,23 +156,6 @@ export default function RoleFormModal({
                         />
                     </div>
 
-                    {/* Description */}
-
-                    <div>
-                        <label className="text-sm font-medium">
-                            Deskripsi
-                        </label>
-
-                        <textarea
-                            className="mt-1 w-full rounded-lg border border-sidebar-border px-3 py-2 text-sm"
-                            placeholder="Deskripsi role..."
-                            value={form.description}
-                            onChange={(e) =>
-                                setForm({ ...form, description: e.target.value })
-                            }
-                        />
-                    </div>
-
                     {/* Permissions */}
 
                     <div>
@@ -238,7 +221,7 @@ export default function RoleFormModal({
                             Batal
                         </Button>
 
-                        <Button type="submit" disabled>
+                        <Button type="submit">
                             Simpan
                         </Button>
 

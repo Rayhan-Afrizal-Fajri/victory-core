@@ -91,7 +91,7 @@ const InvoicePaymentList = ({
 
                         {['pending', 'rejected'].includes(payment.status || 'pending') && (
                             <div className="flex shrink-0 flex-wrap gap-2">
-                                {can('payment.update') && (
+                                {can('invoices.edit') && (
                                     <Button
                                         type="button"
                                         size="sm"
@@ -103,7 +103,7 @@ const InvoicePaymentList = ({
                                     </Button>
                                 )}
 
-                                {can('payment.delete') && (
+                                {can('invoices.delete') && (
                                     <Button
                                         type="button"
                                         size="sm"
@@ -116,7 +116,7 @@ const InvoicePaymentList = ({
                                     </Button>
                                 )}
 
-                                {can('payment.verify') && payment.status === 'pending' && (
+                                {can('invoices.verify') && payment.status === 'pending' && (
                                     <>
                                         <Button
                                             type="button"

@@ -17,6 +17,11 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('material_id')->constrained()->restrictOnDelete();
 
+            $table->foreignId('default_supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
+
+            $table->decimal('harga_ecer', 15, 2)->default(0);
+            $table->decimal('harga_roll', 15, 2)->default(0);
+
             $table->enum('type', ['bahan', 'aksesoris']);
             $table->decimal('default_usage', 15, 4)->default(0);
             $table->string('default_unit')->nullable();

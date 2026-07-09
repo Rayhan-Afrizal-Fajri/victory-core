@@ -32,6 +32,7 @@ export interface Material {
   name: string;
   category: 'bahan' | 'aksesoris';
   unit?: string;
+  default_color?: string;
   supplier_id?: number;
   supplier_name?: string;
   harga_ecer: number;
@@ -39,6 +40,7 @@ export interface Material {
   roll_qty?: number;
   roll_unit?: string;
   is_active: boolean;
+  description?: string;
 }
 
 export interface ManufacturingWork {

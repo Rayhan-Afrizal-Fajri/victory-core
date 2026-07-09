@@ -14,7 +14,6 @@ class RoleController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
-            'description' => ['nullable', 'string', 'max:255'],
             'permission_ids' => ['array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
@@ -28,14 +27,11 @@ class RoleController extends Controller
         $role = Role::create([
             'name' => $validated['name'],
             'guard_name' => 'web',
-            'description' => $validated['description'] ?? null,
         ]);
 
         $role->syncPermissions($validated['permission_ids'] ?? []);
 
-        return response()->json([
-            'message' => 'Role berhasil dibuat',
-        ]);
+        return back()->with('success', 'Role berhasil dibuat');
     }
 
     public function update(Request $request, string $id)
@@ -50,21 +46,17 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('roles')->ignore($role->id)],
-            'description' => ['nullable', 'string', 'max:255'],
             'permission_ids' => ['array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
 
         $role->update([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
         ]);
 
         $role->syncPermissions($validated['permission_ids'] ?? []);
 
-        return response()->json([
-            'message' => 'Role berhasil diperbarui',
-        ]);
+        return back()->with('success', 'Role berhasil diperbarui');
     }
 
     public function destroy(string $id)
@@ -79,8 +71,6 @@ class RoleController extends Controller
 
         $role->delete();
 
-        return response()->json([
-            'message' => 'Role berhasil dihapus',
-        ]);
+        return back()->with('success', 'Role berhasil dihapus');
     }
 }

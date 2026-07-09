@@ -2,9 +2,11 @@ import React from 'react';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDecimal } from '@/helpers/format';
+import { useCan } from '@/hooks/use-can';
 
 // Renders a specification table for materials or accessories with an Edit action.
 function SpecSection({ title, items, onEdit, onDelete }: { title: string; items: any[]; onEdit: (spec: any) => void; onDelete?: (spec: any) => void }) {
+    const can = useCan();
     return (
         <SectionCard title={title}>
             {items && items.length === 0 ? (
@@ -65,6 +67,7 @@ function SpecSection({ title, items, onEdit, onDelete }: { title: string; items:
                                 size="sm" 
                                 variant="outline" 
                                 onClick={() => onEdit(item)}
+                                disabled={!can('boms.edit')}
                                 >
                                 Edit
                                 </Button>
@@ -75,6 +78,7 @@ function SpecSection({ title, items, onEdit, onDelete }: { title: string; items:
                                     variant="outline"
                                     className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => onDelete(item)}
+                                    disabled={!can('boms.delete')}
                                 >
                                     Hapus
                                 </Button>

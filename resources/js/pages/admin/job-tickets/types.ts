@@ -289,6 +289,11 @@ export interface SizeBreakdown {
   qty?: number;
 }
 
+export interface DefaultSizeBreakdown {
+  id: number;
+  label: string;
+}
+
 export interface ProductOption {
   id: number;
   name: string;

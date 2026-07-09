@@ -69,7 +69,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
 
   const columns: DataTableColumn<JobTicketData>[] = [
     {
-      header: 'Job Ticket',
+      header: 'Purchase Order',
       accessor: 'no_job_ticket',
       className: 'w-[180px]',
       cell: (row) => (

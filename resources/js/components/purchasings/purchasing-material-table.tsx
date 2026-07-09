@@ -31,6 +31,7 @@ import {
     formatMaterialQty,
 } from './purchasing-utils';
 import { formatCurrency, formatDecimal } from '@/helpers/format';
+import { useCan } from '@/hooks/use-can';
 
 const PurchasingMaterialTable = ({
     purchasings,
@@ -53,14 +54,18 @@ const PurchasingMaterialTable = ({
     onReceive: (purchasing: any) => void;
     onDeleteReceiving: (receiving: any) => void;
 }) => {
+
+    const can = useCan();
     return (
         <SectionCard title="Daftar Material">
-            <div className="mb-4 flex justify-end">
-                <Button type="button" onClick={onCreate}>
-                    <PlusCircle className="size-4" />
-                    Tambah Item Manual
-                </Button>
-            </div>
+            {can('purchasings.create') && (
+                <div className="mb-4 flex justify-end">
+                    <Button type="button" onClick={onCreate} disabled={!can('purchasings.create')}>
+                        <PlusCircle className="size-4" />
+                        Tambah Item Manual
+                    </Button>
+                </div>
+            )}
 
             {purchasings.length === 0 ? (
                 <EmptyState
@@ -133,7 +138,7 @@ const PurchasingMaterialTable = ({
                                     </div>
 
                                     <div className="flex flex-wrap gap-2">
-                                        {canEditPurchasing(item) && (
+                                        {canEditPurchasing(item) && can('purchasings.edit') && (
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -152,7 +157,7 @@ const PurchasingMaterialTable = ({
                                             </Button>
                                         )}
 
-                                        {canDeletePurchasing(item) && !isGeneratedFromBom && (
+                                        {canDeletePurchasing(item) && !isGeneratedFromBom && can('purchasings.delete') && (
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -165,7 +170,7 @@ const PurchasingMaterialTable = ({
                                             </Button>
                                         )}
 
-                                        {canMarkOrdered(item) && (
+                                        {canMarkOrdered(item) && can('purchasings.mark_ordered') && (
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -177,7 +182,7 @@ const PurchasingMaterialTable = ({
                                             </Button>
                                         )}
 
-                                        {canReceiveMaterial(item) && (
+                                        {canReceiveMaterial(item) &&can('purchasings.receive') && (
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -285,7 +290,7 @@ const PurchasingMaterialTable = ({
                                                         )}
                                                     </div>
 
-                                                    {item.status !== 'received' && (
+                                                    {item.status !== 'received' && can('purchasings.create') && (
                                                         <Button
                                                             type="button"
                                                             size="sm"

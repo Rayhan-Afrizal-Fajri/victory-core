@@ -326,6 +326,9 @@
         </tr>
     </table>
 
+    @php
+        $signature = storage_path('app/public/' . $owner->signature);
+    @endphp
     <!-- Signature (Tanya Direktur Saja) -->
     <table class="signature-container">
         <tr>
@@ -333,10 +336,9 @@
             <td class="signature-cell">
                 <p style="color: #111827;">Dengan Hormat,</p>
                 <div class="signature-space">
-                    <!-- Jika ingin menambah image TTD Direktur otomatis: -->
-                    <!-- <img src="{{ public_path('images/ttd.png') }}" style="max-height: 50px;"> -->
+                   <img src={{ $signature }} alt="" style="max-height: 50px;">
                 </div>
-                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">Victor Harlim, SC. MBA</p>
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner->name ?? 'Nama Direktur' }}</p>
                 <p style="margin-top: 0; color: #111827;">Direktur</p>
             </td>
         </tr>

@@ -291,11 +291,11 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
                       <Label className="text-blue-900 font-semibold">Data Customer Baru</Label>
                       <Button type="button" variant="outline" size="sm" onClick={() => setCustomerMode('existing')}>Batal</Button>
                     </div>
-                    <Input placeholder="Nama PIC" value={form.data.new_customer_name} onChange={e => form.setData('new_customer_name', e.target.value)} className="mb-2" />
-                    <Input placeholder="Perusahaan" value={form.data.new_customer_company} onChange={e => form.setData('new_customer_company', e.target.value)} className="mb-2" />
-                    <Input placeholder="Email" value={form.data.new_customer_email} onChange={e => form.setData('new_customer_email', e.target.value)} className="mb-2" />
-                    <Input placeholder="Kontak" value={form.data.new_customer_phone} onChange={e => form.setData('new_customer_phone', e.target.value)} className="mb-2" />
-                    <Textarea placeholder="Alamat" value={form.data.new_customer_address} onChange={e => form.setData('new_customer_address', e.target.value)} />
+                    <Input required placeholder="Nama PIC*" value={form.data.new_customer_name} onChange={e => form.setData('new_customer_name', e.target.value)} className="mb-2" />
+                    <Input required placeholder="Perusahaan*" value={form.data.new_customer_company} onChange={e => form.setData('new_customer_company', e.target.value)} className="mb-2" />
+                    <Input required placeholder="Email*" value={form.data.new_customer_email} onChange={e => form.setData('new_customer_email', e.target.value)} className="mb-2" />
+                    <Input required placeholder="Kontak*" value={form.data.new_customer_phone} onChange={e => form.setData('new_customer_phone', e.target.value)} className="mb-2" />
+                    <Textarea required placeholder="Alamat*" value={form.data.new_customer_address} onChange={e => form.setData('new_customer_address', e.target.value)} />
                   </div>
                 )}
               </div>

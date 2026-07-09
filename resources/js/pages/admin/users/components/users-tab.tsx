@@ -69,7 +69,7 @@ export default function UsersTab({ users, search, openEdit, onDelete }: Props) {
                     <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
                         Edit
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => onDelete(row)} disabled>
+                    <Button size="sm" variant="destructive" onClick={() => onDelete(row)}>
                         Hapus
                     </Button>
                 </div>

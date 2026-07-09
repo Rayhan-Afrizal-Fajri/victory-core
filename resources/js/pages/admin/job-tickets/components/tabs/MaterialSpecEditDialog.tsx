@@ -20,7 +20,7 @@ import {
 import Select from 'react-select';
 
 import Field from '@/components/sample/field';
-import type { SupplierOption } from '../../types';
+import type { DefaultSizeBreakdown, SupplierOption } from '../../types';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 function MaterialSpecEditDialog({
@@ -31,6 +31,8 @@ function MaterialSpecEditDialog({
     suppliers,
     onSubmit,
     mode = 'edit',
+    colors,
+    units,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -39,6 +41,8 @@ function MaterialSpecEditDialog({
     suppliers: SupplierOption[];
     onSubmit: (e: React.FormEvent) => void;
     mode?: 'create' | 'edit';
+    colors: DefaultSizeBreakdown[];
+    units: DefaultSizeBreakdown[];
 }) {
     const isCreate = mode === 'create';
 
@@ -115,13 +119,18 @@ function MaterialSpecEditDialog({
 
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Warna" error={form.errors.color}>
-                            <Input
-                                value={form.data.color || ''}
-                                onChange={(e) =>
-                                    form.setData('color', e.target.value)
-                                }
-                                placeholder="Contoh: Navy / Black"
-                            />
+                            <Select1 value={form.data.color} onValueChange={(val) => form.setData('color', val)}>
+                                <SelectTrigger className='w-full'>
+                                    <SelectValue placeholder="Pilih warna..."/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {colors.map((c) => (
+                                        <SelectItem key={c.id} value={c.label.toString()}>
+                                            {c.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select1>
                         </Field>
 
                         <Field label="Pemakaian / pcs" error={form.errors.usage}>
@@ -136,13 +145,18 @@ function MaterialSpecEditDialog({
                         </Field>
 
                         <Field label="Unit" error={form.errors.unit}>
-                            <Input
-                                value={form.data.unit || ''}
-                                onChange={(e) =>
-                                    form.setData('unit', e.target.value)
-                                }
-                                placeholder="meter / pcs / kg"
-                            />
+                            <Select1 value={form.data.unit} onValueChange={(val) => form.setData('unit', val)}>
+                                <SelectTrigger className='w-full'>
+                                    <SelectValue placeholder="Pilih warna..."/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {units.map((c) => (
+                                        <SelectItem key={c.id} value={c.label.toString()}>
+                                            {c.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select1>
                         </Field>
                     </div>
 

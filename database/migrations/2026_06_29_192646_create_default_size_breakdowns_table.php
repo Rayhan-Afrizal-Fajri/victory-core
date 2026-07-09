@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('default_size_breakdowns', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['color', 'fabric', 'size'])->default('color');
+            $table->enum('type', ['color', 'fabric', 'size', 'unit'])->default('color');
             $table->string('label');
             $table->timestamps();
         });

@@ -15,7 +15,7 @@ class StoreDefaultSizeBreakdownRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::in(['color', 'fabric', 'size'])],
+            'type' => ['required', Rule::in(['color', 'fabric', 'size', 'unit'])],
             'label' => ['required', 'string', 'max:255'],
         ];
     }

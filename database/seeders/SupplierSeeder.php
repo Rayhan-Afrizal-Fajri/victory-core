@@ -11,7 +11,7 @@ class SupplierSeeder extends Seeder
     {
         $suppliers = [
             [
-                'nama' => 'Agus Setiawan',
+                'nama' => 'Knitto',
                 'nama_perusahaan' => 'PT Kain Makmur',
                 'email' => 'agus@kainmakmur.com',
                 'kategori' => 'Bahan Baku',
@@ -19,7 +19,7 @@ class SupplierSeeder extends Seeder
                 'alamat' => 'Jl. Tekstil No. 1, Bandung',
             ],
             [
-                'nama' => 'Rina Wijaya',
+                'nama' => 'Fabriku',
                 'nama_perusahaan' => 'CV Aksesoris Jaya',
                 'email' => 'rina@aksesorisjaya.com',
                 'kategori' => 'Aksesoris',
@@ -27,7 +27,7 @@ class SupplierSeeder extends Seeder
                 'alamat' => 'Jl. Kancing No. 5, Jakarta',
             ],
             [
-                'nama' => 'Hendra Saputra',
+                'nama' => 'CKP',
                 'nama_perusahaan' => 'Hendra Makloon',
                 'email' => 'hendra@makloon.com',
                 'kategori' => 'CMT / Makloon',
@@ -35,7 +35,7 @@ class SupplierSeeder extends Seeder
                 'alamat' => 'Jl. Produksi No. 12, Cimahi',
             ],
             [
-                'nama' => 'Maya Putri',
+                'nama' => 'Intan',
                 'nama_perusahaan' => 'PT Benang Nusantara',
                 'email' => 'maya@benangnusantara.com',
                 'kategori' => 'Bahan Baku',
@@ -43,8 +43,8 @@ class SupplierSeeder extends Seeder
                 'alamat' => 'Jl. Industri No. 8, Tangerang',
             ],
             [
-                'nama' => 'Doni Prakoso',
-                'nama_perusahaan' => 'CV Labelindo',
+                'nama' => 'Mapan Plastik',
+                'nama_perusahaan' => 'CV PlatikMapan',
                 'email' => 'doni@labelindo.com',
                 'kategori' => 'Aksesoris',
                 'kontak' => '085555556666',

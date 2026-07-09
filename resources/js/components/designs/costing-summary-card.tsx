@@ -88,7 +88,7 @@ function CostingSummaryCard({
                         <button
                             key={marginValue}
                             type="button"
-                            disabled={!can('design.set_selling_price')}
+                            disabled={!can('costings.input_price')}
                             onClick={() =>
                                 form.setData(
                                     'harga_jual_per_pcs',
@@ -125,7 +125,7 @@ function CostingSummaryCard({
                         </label>
                         <FormattedNumberInput
                             value={form.data.harga_jual_per_pcs}
-                            disabled={!can('design.set_selling_price')}
+                            disabled={!can('costings.input_price')}
                             onValueChange={(value) => form.setData('harga_jual_per_pcs', value)}
                             placeholder='cth: 35.000'
                         />
@@ -162,7 +162,7 @@ function CostingSummaryCard({
                 <div className="flex justify-end border-t pt-4">
                     <Button 
                         type="submit" 
-                        disabled={form.processing || !can('design.set_selling_price') || activeOrder?.workflow_status?.quotation_created}
+                        disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
                     >
                         Simpan Harga Jual Final
                     </Button>

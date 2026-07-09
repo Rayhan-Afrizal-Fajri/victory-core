@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMaterialRequest;
 use App\Http\Requests\UpdateMaterialRequest;
 use App\Models\Material;
 use App\Models\Supplier;
+use App\Models\DefaultSizeBreakdown;
 use Inertia\Inertia;
 
 class MaterialController extends Controller
@@ -24,24 +25,30 @@ class MaterialController extends Controller
             ->select('id', 'nama')
             ->get();
 
+        $colors = DefaultSizeBreakdown::query()
+            ->select('id', 'label')
+            ->where('type', 'color')
+            ->get();
+
+        $units = DefaultSizeBreakdown::query()
+            ->select('id', 'label')
+            ->where('type', 'unit')
+            ->get();
+
         $materials = $materials->map(fn ($material) => [
             'id' => $material->id,
             'name' => $material->name,
             'category' => $material->category,
             'unit' => $material->unit,
-            // 'default_usage' => $material->productMaterials,
-            'supplier_id' => $material->default_supplier_id,
-            'supplier_name' => $material->defaultSupplier?->nama_perusahaan,
-            'harga_ecer' => (float) $material->harga_ecer,
-            'harga_roll' => (float) $material->harga_roll,
-            'roll_qty' => $material->roll_qty ? (float) $material->roll_qty : null,
-            'roll_unit' => $material->roll_unit,
+            'default_color' => $material->default_color,
             'is_active' => $material->is_active,
         ]);
 
         return Inertia::render('admin/master/materials/Index', [
             'materials' => $materials,
             'suppliers' => $suppliers,
+            'colors' => $colors,
+            'units' => $units,
         ]);
     }
 

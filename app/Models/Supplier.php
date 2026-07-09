@@ -24,4 +24,9 @@ class Supplier extends Model
     {
         return $this->hasMany(ManufacturingWork::class, 'default_vendor_id');
     }
+
+    public function productMaterials()
+    {
+        return $this->hasMany(ProductMaterial::class, 'default_supplier_id');
+    }
 }

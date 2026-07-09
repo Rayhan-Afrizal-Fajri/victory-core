@@ -14,8 +14,18 @@ import GenerateBomPoCard from '@/components/purchasings/generate-bom-po-card';
 import EditPoDialog from '@/components/purchasings/edit-po-dialog';
 
 const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
-    // const workflow = job.workflow_status;
-    // const verified = workflow?.sample_paid ?? false;
+    useEffect(() => {
+        const interval =  setInterval(() => {
+            router.reload({
+                only: ['job'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
     const activerOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
 
@@ -155,6 +165,17 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                     setOpenPurchasingForm(false);
                     setEditingPurchasing(null);
                     purchasingForm.reset();
+                    useEffect(() => {
+                        const interval =  setInterval(() => {
+                            router.reload({
+                                only: ['job'],
+                                preserveScroll: true,
+                                preserveState: true,
+                            });
+                        }, 3000);
+
+                        return () => clearInterval(interval);
+                    }, []);
                 },
             });
 
@@ -204,7 +225,20 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Material ditandai ordered.'),
+                onSuccess: () => {
+                    toast.success('Material ditandai ordered.');
+                    useEffect(() => {
+                        const interval =  setInterval(() => {
+                            router.reload({
+                                only: ['job'],
+                                preserveScroll: true,
+                                preserveState: true,
+                            });
+                        }, 3000);
+
+                        return () => clearInterval(interval);
+                    }, []);
+                },
             }
         );
     };

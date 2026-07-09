@@ -75,5 +75,18 @@ class DefaultSizeBreakdownSeeder extends Seeder
             'type' => 'size',
             'label' => 'All Size',
         ]);
+
+        DefaultSizeBreakdown::create([
+            'type' => 'unit',
+            'label' => 'meter',
+        ]);
+        DefaultSizeBreakdown::create([
+            'type' => 'unit',
+            'label' => 'pcs',
+        ]);
+        DefaultSizeBreakdown::create([
+            'type' => 'unit',
+            'label' => 'kg',
+        ]);
     }
 }

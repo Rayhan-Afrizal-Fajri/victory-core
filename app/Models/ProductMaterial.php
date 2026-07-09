@@ -10,12 +10,20 @@ class ProductMaterial extends Model
     protected $fillable = [
         'product_id',
         'material_id',
+        'default_supplier_id',
+        'harga_ecer',
+        'harga_roll',
         'type',
         'default_usage',
         'default_unit',
         'sort_order',
         'is_required',
     ];
+
+    public function defaultSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'default_supplier_id');
+    }
 
     public function product(): BelongsTo
     {

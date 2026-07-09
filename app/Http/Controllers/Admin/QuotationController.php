@@ -7,11 +7,11 @@ use App\Models\Invoice;
 use App\Models\JobTicket;
 use App\Models\Pesanan;
 use App\Models\Quotation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Storage;
 
 class QuotationController extends Controller
 {
@@ -142,7 +142,7 @@ class QuotationController extends Controller
             return $quotation;
         });
 
-        $this->generateQuotationPdf($quotation);
+        // $this->generateQuotationPdf($quotation);
 
         return back()->with('success', 'Surat penawaran berhasil dibuat.');
     }
@@ -244,7 +244,7 @@ class QuotationController extends Controller
         });
 
         $quotation->refresh();
-        $this->generateQuotationPdf($quotation);
+        // $this->generateQuotationPdf($quotation);
 
         return back()->with('success', 'Quotation disetujui dan invoice sample berhasil dibuat.');
     }
@@ -332,30 +332,26 @@ class QuotationController extends Controller
         return back()->with('success', 'Quotation ditolak.');
     }
 
-    private function generateQuotationPdf(Quotation $quotation): string
+    private function generateQuotationPdf(Quotation $quotation)
     {
-        // Eager load seluruh relasi hingga ke sizeBreakdowns pesanan
         $quotation->load([
             'jobTicket.customer',
             'jobTicket.companyProfile',
-            'jobTicket.pesanans.sizeBreakdowns', 
+            'jobTicket.pesanans.sizeBreakdowns',
             'items',
+            'quotationNotes',
         ]);
 
-        $pdf = Pdf::loadView('pdf.quotations.show', [
+        $owner = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Owner');
+        })->first();
+
+        return Pdf::loadView('pdf.quotations.show', [
             'quotation' => $quotation,
             'jobTicket' => $quotation->jobTicket,
             'customer' => $quotation->jobTicket->customer,
+            'owner' => $owner,
         ])->setPaper('a4', 'portrait');
-
-        $safeNumber = str_replace(['/', '\\'], '-', $quotation->quotation_number);
-        $path = "quotations/{$safeNumber}.pdf";
-
-        Storage::disk('public')->put($path, $pdf->output());
-
-        $quotation->update(['pdf_path' => $path]);
-
-        return $path;
     }
 
     public function print(string $quotationId)
@@ -367,14 +363,14 @@ class QuotationController extends Controller
             'items',
             'quotationNotes',
         ])->findOrFail($quotationId);
-        
-        if (! $quotation->pdf_path || ! Storage::disk('public')->exists($quotation->pdf_path)) {
-            $this->generateQuotationPdf($quotation);
-            $quotation->refresh();
-        }
 
-        return response()->file(
-            storage_path('app/public/' . $quotation->pdf_path)
+        $pdf = $this->generateQuotationPdf($quotation);
+
+        $search = array('/', '\\');
+        // Perform the replacement
+        $quo_number = str_replace($search, '-', $quotation->quotation_number);
+        return $pdf->stream(
+            "quotation-{$quo_number}.pdf"
         );
     }
 

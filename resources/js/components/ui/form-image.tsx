@@ -13,6 +13,7 @@ interface FormImageUploadProps {
     title?: string;
     subtitle?: string;
     required?: boolean;
+    disabled?: boolean;
     onRemove?: () => void;
 }
 
@@ -28,6 +29,7 @@ export default function FormImageUpload({
     subtitle,
     required,
     onRemove,
+    disabled
 }: FormImageUploadProps) {
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -134,6 +136,7 @@ export default function FormImageUpload({
                         accept={accept}
                         onChange={handleChange}
                         required={required}
+                        disabled={disabled}
                     />
 
                 </label>

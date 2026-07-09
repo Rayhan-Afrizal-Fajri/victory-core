@@ -1,4 +1,4 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -8,16 +8,48 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
+import FormSignature from '@/components/ui/form-signature';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+interface User {
+    id: number
+    name: string
+    email: string
+    signature?: string | null
+    signature_url?: string | null
+}
 
 export default function Profile({
     mustVerifyEmail,
     status,
+    info
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    info?: string;
 }) {
-    const { auth } = usePage().props;
+    const { auth } = usePage<{
+        auth: {
+            user: User
+        }
+    }>().props
+    const [signature, setSignature] = useState<string | null>(null)
+    const [preview, setPreview] = useState<string | null>(
+        auth.user.signature_url ?? null
+    )
 
+    const { data, setData, put, errors } = useForm({
+        name: auth.user.name,
+        email: auth.user.email,
+        signature: null, // Ini untuk menampung base64 baru
+    });
+
+    useEffect(() => {
+        if (info) {
+            toast.info(info);
+        }
+    }, [info])
     return (
         <>
             <Head title="Profile settings" />
@@ -78,6 +110,29 @@ export default function Profile({
                                     message={errors.email}
                                 />
                             </div>
+
+                            <div className="grid gap-2">
+                                    <FormSignature
+                                        label="Tanda tangan"
+                                        value={preview}
+                                        onChange={(value) => {
+                                            setData('signature', value);
+                                            setSignature(value)   // base64 untuk submit
+                                            setPreview(value)     // preview realtime
+                                        }}
+                                    />
+
+                                    <input
+                                        type="hidden"
+                                        name="signature"
+                                        value={signature ?? ""}
+                                    />
+
+                                    <InputError
+                                        className="mt-2"
+                                        message={errors.signature}
+                                    />
+                                </div>
 
                             {mustVerifyEmail &&
                                 auth.user.email_verified_at === null && (

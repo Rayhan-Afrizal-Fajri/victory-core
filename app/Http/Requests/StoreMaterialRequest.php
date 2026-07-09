@@ -26,11 +26,8 @@ class StoreMaterialRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', Rule::in(['bahan', 'aksesoris'])],
             'unit' => ['nullable', 'string', 'max:255'],
-            'default_supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
-            'harga_ecer' => ['numeric', 'min:0'],
-            'harga_roll' => ['numeric', 'min:0'],
-            'roll_qty' => ['nullable', 'numeric', 'min:0'],
-            'roll_unit' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'default_color' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
         ];
     }

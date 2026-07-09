@@ -297,7 +297,7 @@ export default function UserFormModal({
                             Batal
                         </Button>
 
-                        <Button type="submit" disabled>
+                        <Button type="submit">
                             Simpan
                         </Button>
 

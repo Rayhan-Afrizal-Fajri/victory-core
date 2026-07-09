@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import JobTicketHeader from './components/JobTicketHeader';
 import WorkflowTimeline from './components/WorkflowTimeline';
 import WorkflowTabs from './components/WorkflowTabs';
-import { JobTicket, Pesanan, ProductOption, Supplier } from './types';
+import { DefaultSizeBreakdown, JobTicket, Pesanan, ProductOption, Supplier } from './types';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import jobTickets from '@/routes/job-tickets';
@@ -13,9 +13,11 @@ type Props = {
     jobTicket: JobTicket; // Prop dirubah ke jobTicket dari controller
     suppliers: Supplier[];
     productOptions: ProductOption[] | null;
+    colors: DefaultSizeBreakdown[];
+    units: DefaultSizeBreakdown[];
 };
 
-export default function Show({ jobTicket, suppliers, productOptions }: Props) {
+export default function Show({ jobTicket, suppliers, productOptions, colors, units }: Props) {
     // State untuk Switcher / Tab pesanan mana yang sedang dilihat
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
     const activePesanan: Pesanan | undefined = jobTicket?.orders?.[activeOrderIndex];
@@ -60,7 +62,9 @@ export default function Show({ jobTicket, suppliers, productOptions }: Props) {
                     <WorkflowTabs 
                         jobTicket={jobTicket} 
                         activePesanan={activePesanan} 
-                        suppliers={suppliers} 
+                        suppliers={suppliers}
+                        colors={colors}
+                        units={units}
                         productOptions={productOptions} 
                     />
                 </>

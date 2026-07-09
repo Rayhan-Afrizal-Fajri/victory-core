@@ -101,6 +101,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pesanan/{id}/specifications', [OrderSpecificationController::class, 'updateSync'])->name('specifications.sync');
 
     Route::post('/pesanan/{id}/designs', [DesignController::class, 'store'])->name('designs.store');
+    Route::get('/pesanan/{pesanan}/designs/export-pdf', [DesignController::class, 'exportPdf'])->name('designs.export-pdf');
+    Route::get('/pesanan/{design}/design/export-pdf', [DesignController::class, 'exportDesignPdf'])->name('design.export-pdf');
 
     Route::patch(
         '/designs/{id}/approve-design',

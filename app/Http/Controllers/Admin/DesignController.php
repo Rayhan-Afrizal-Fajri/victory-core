@@ -7,10 +7,11 @@ use App\Models\Design;
 use App\Models\Pesanan;
 use App\Models\PesananManufacturingSpecs;
 use App\Models\PesananMaterialSpecs;
+use App\Models\Product;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\Product;
 
 class DesignController extends Controller
 {
@@ -68,6 +69,42 @@ class DesignController extends Controller
         });
 
         return back()->with('success', 'Desain berhasil diunggah.');
+    }
+
+    public function exportPdf(Pesanan $pesanan)
+    {
+        $designs = $pesanan->designs()
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.designs.export', [
+            'pesanan' => $pesanan,
+            'designs' => $designs,
+        ])
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true);
+
+        return $pdf->stream(sprintf('design-%s.pdf', $pesanan->id));
+    }
+
+    public function exportDesignPdf(Design $design)
+    {
+        $pesanan = $design->pesanan;
+        $designs = $pesanan->designs()
+            ->where('id', $design->id)
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.designs.export', [
+            'pesanan' => $pesanan,
+            'designs' => $designs,
+        ])
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true);
+
+        return $pdf->stream(sprintf('design-%s.pdf', $pesanan->id));
     }
 
     public function approveDesign(Request $request, string $id)
@@ -178,7 +215,7 @@ class DesignController extends Controller
         ])->findOrFail($pesananId);
 
         $product = Product::with([
-            'productMaterials.material.defaultSupplier',
+            'productMaterials.defaultSupplier',
             'productManufacturingWorks.manufacturingWork.defaultVendor',
         ])->findOrFail($validated['product_id']);
         
@@ -199,13 +236,13 @@ class DesignController extends Controller
                 
 
                 $totalUsage = $pesanan->q * $component->default_usage;
-                $totalCost = $totalUsage * ($material?->harga_ecer ?? 0);
+                $totalCost = $totalUsage * ($component?->harga_ecer ?? 0);
                 $costPerPcs = $pesanan->q > 0 ? round($totalCost / $pesanan->q, 2) : 0;
 
                 $pesanan->materialSpecs()->create([
                     'product_id' => $product->id,
                     'material_id' => $material?->id,
-                    'supplier_id' => $material?->default_supplier_id,
+                    'supplier_id' => $component?->default_supplier_id,
 
                     'type' => $component->type,
                     'material_name_snapshot' => $material?->name ?? '-',
@@ -216,8 +253,8 @@ class DesignController extends Controller
 
                     'usage_per_set' => 1,
 
-                    'harga_ecer' => $material?->harga_ecer ?? 0,
-                    'harga_roll' => $material?->harga_roll ?? 0,
+                    'harga_ecer' => $component?->harga_ecer ?? 0,
+                    'harga_roll' => $component?->harga_roll ?? 0,
                     'price_type' => 'ecer',
                     // 'roll_qty' => $material?->roll_qty,
 

@@ -1,8 +1,8 @@
 import { useForm, router } from '@inertiajs/react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle } from 'lucide-react';
-import type { JobTicket, Pesanan, ProductOption, Supplier } from '../../types';
+import { CheckCircle, Download, XCircle } from 'lucide-react';
+import type { DefaultSizeBreakdown, JobTicket, Pesanan, ProductOption, Supplier } from '../../types';
 import SectionCard from '../SectionCard';
 import FormImageUpload from '@/components/ui/form-image';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,9 @@ const DesignAndSpecsTab: React.FC<{
     jobTicket: JobTicket;
     products?: ProductOption[] | null;
     suppliers?: Supplier[];
-}> = ({ jobTicket, products = [], suppliers = [] }) => {
+    colors?: DefaultSizeBreakdown[];
+    units?: DefaultSizeBreakdown[];
+}> = ({ jobTicket, products = [], suppliers = [], colors = [], units = [] }) => {
     const can = useCan();
 
     // ==========================================
@@ -295,7 +297,7 @@ const DesignAndSpecsTab: React.FC<{
                     <div className='grid grid-cols-1 gap-8 md:grid-cols-2'>
                         
                         {/* Form Upload */}
-                        {!workflow.design_approved && (can('design.upload') || can('dashboard.admin')) ? (
+                        {!workflow.design_approved && can('designs.upload') ? (
                             <form onSubmit={submitDesign} className="space-y-4">
                                 <FormImageUpload
                                     label={needsRevisionUpload ? 'Upload Desain Revisi' : 'Upload Desain'}
@@ -305,6 +307,7 @@ const DesignAndSpecsTab: React.FC<{
                                     onChange={(file) => designForm.setData('file_desain', file)}
                                     hint="Upload file desain untuk direview owner."
                                     error={designForm.errors.file_desain}
+                                    disabled={!can('designs.upload')}
                                 />
 
                                 {needsRevisionUpload && (
@@ -349,7 +352,19 @@ const DesignAndSpecsTab: React.FC<{
 
                         {/* Riwayat Desain (List) */}
                         <div className="space-y-4 rounded-lg border bg-slate-50 p-4">
-                            <h4 className="text-sm font-semibold text-slate-700">Riwayat Desain</h4>
+                            <div className="flex items-center justify-between gap-2">
+                                <h4 className="text-sm font-semibold text-slate-700">Riwayat Desain</h4>
+                                {designs.length > 0 && (
+                                    <a
+                                        href={route('designs.export-pdf', activeOrder.id)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                    >
+                                        <Download className="size-3.5" /> Export PDF
+                                    </a>
+                                )}
+                            </div>
 
                             <div className="max-h-100 space-y-3 overflow-y-auto pr-2">
                                 {designs.length === 0 ? (
@@ -390,6 +405,14 @@ const DesignAndSpecsTab: React.FC<{
                                                     />
                                                 </button>
                                             )}
+                                            <a
+                                                href={route('design.export-pdf', d.id)}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                            >
+                                                <Download className="size-3.5" /> Export PDF
+                                            </a>
 
                                             {d.revision_note && (
                                                 <div className="mb-2 rounded border border-red-100 bg-red-50 p-2 text-xs text-red-700">
@@ -406,7 +429,7 @@ const DesignAndSpecsTab: React.FC<{
                                             )}
 
                                             {/* Action Buttons (Approve / Revisi) */}
-                                            {['waiting_approval', 'approved'].includes(d.status) && can('design.approve') && (
+                                            {['waiting_approval', 'approved'].includes(d.status) && can('designs.approve') && (
                                                 <div className="space-y-3 mt-3 border-t border-slate-200 pt-3">
                                                     <div className="flex gap-2">
                                                         {d.status === 'waiting_approval' && (
@@ -461,34 +484,36 @@ const DesignAndSpecsTab: React.FC<{
                     </div>
                 </SectionCard>
 
-                <SectionCard title="Master Produk (Sinkronisasi)">
-                    <form onSubmit={submitSyncArticle} className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-500 uppercase">Pilih Master Produk</label>
-                            <Select
-                                className="text-sm"
-                                classNamePrefix="select"
-                                options={productOptions}
-                                value={
-                                    productOptions?.find(
-                                        x => x.value === syncArticleForm.data.product_id)
-                                }
-                                onChange={(option) => {
-                                    syncArticleForm.setData(
-                                        "product_id",
-                                        option?.value ?? ""
-                                    )
-                                }}
-                                placeholder="Pilih produk..."
-                                isDisabled={workflow.quotation_created}
-                                isSearchable={true}
-                            />
-                        </div>
-                        <Button type="submit" size="sm" className="w-full" disabled={syncArticleForm.processing || workflow.quotation_created}>
-                            Simpan / Tautkan
-                        </Button>
-                    </form>
-                </SectionCard>
+                {can('boms.sync') && (
+                    <SectionCard title="Master Produk (Sinkronisasi)">
+                        <form onSubmit={submitSyncArticle} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-500 uppercase">Pilih Master Produk</label>
+                                <Select
+                                    className="text-sm"
+                                    classNamePrefix="select"
+                                    options={productOptions}
+                                    value={
+                                        productOptions?.find(
+                                            x => x.value === syncArticleForm.data.product_id)
+                                    }
+                                    onChange={(option) => {
+                                        syncArticleForm.setData(
+                                            "product_id",
+                                            option?.value ?? ""
+                                        )
+                                    }}
+                                    placeholder="Pilih produk..."
+                                    isDisabled={workflow.quotation_created}
+                                    isSearchable={true}
+                                />
+                            </div>
+                            <Button type="submit" size="sm" className="w-full" disabled={syncArticleForm.processing || workflow.quotation_created}>
+                                Simpan / Tautkan
+                            </Button>
+                        </form>
+                    </SectionCard>
+                )}
 
                 {/* BAGIAN SPESIFIKASI */}
                 <SectionCard title="Spesifikasi (BoM & Manufaktur)">
@@ -549,6 +574,8 @@ const DesignAndSpecsTab: React.FC<{
                 spec={editingMaterialSpec}
                 form={materialSpecForm}
                 suppliers={supplierOptions}
+                colors={colors}
+                units={units}
                 onSubmit={submitMaterialSpec}
                 mode={editingMaterialSpec ? 'edit' : 'create'}
             />

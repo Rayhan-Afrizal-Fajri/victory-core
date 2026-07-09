@@ -11,13 +11,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'email', 'password', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'signature'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory */
     use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
+
+    protected $appends = ['signature_url'];
 
     /**
      * Get the attributes that should be cast.
@@ -81,5 +84,13 @@ class User extends Authenticatable
     public function quotationCreatedBy()
     {
         return $this->hasMany(Quotation::class, 'created_by');
+    }
+
+    public function getSignatureUrlAttribute(): ?string
+    {
+        if (!$this->signature) return null;
+        
+        // Storage::url otomatis akan menambahkan prefix /storage/
+        return Storage::disk('public')->url($this->signature);
     }
 }

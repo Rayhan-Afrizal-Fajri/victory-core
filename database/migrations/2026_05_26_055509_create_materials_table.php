@@ -16,13 +16,13 @@ return new class extends Migration
             $table->string('name');
             $table->enum('category', ['bahan', 'aksesoris']);
             $table->string('unit')->nullable();
+            $table->string('default_color')->nullable();
 
-            $table->foreignId('default_supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
-
-            $table->decimal('harga_ecer', 15, 2)->default(0);
-            $table->decimal('harga_roll', 15, 2)->default(0);
-            $table->decimal('roll_qty', 15, 2)->nullable();
-            $table->string('roll_unit')->nullable();
+            // $table->decimal('harga_ecer', 15, 2)->default(0);
+            // $table->decimal('harga_roll', 15, 2)->default(0);
+            // $table->decimal('roll_qty', 15, 2)->nullable();
+            // $table->string('roll_unit')->nullable();
+            $table->text('description')->nullable();
 
             $table->boolean('is_active')->default(true);
             $table->timestamps();

@@ -15,12 +15,19 @@ import AppLayout from '@/layouts/app-layout';
 import type { Material, Supplier } from '@/types';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
+interface Breakdown {
+  id: number;
+  label: string;
+}
+
 type Props = {
   materials: Material[];
   suppliers: Supplier[];
+  colors: Breakdown[];
+  units: Breakdown[];
 };
 
-export default function Index({ materials, suppliers }: Props) {
+export default function Index({ materials, suppliers, colors, units }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
@@ -28,11 +35,9 @@ export default function Index({ materials, suppliers }: Props) {
     name: '',
     category: 'bahan' as 'bahan' | 'aksesoris',
     unit: '',
+    default_color: '',
     default_supplier_id: '',
-    harga_ecer: 0,
-    harga_roll: 0,
-    roll_qty: 0,
-    roll_unit: '',
+    description: '',
     is_active: true,
   });
 
@@ -44,12 +49,10 @@ export default function Index({ materials, suppliers }: Props) {
       name: material.name,
       category: material.category,
       unit: material.unit || '',
-      default_supplier_id: material.supplier_id?.toString() || '',
-      harga_ecer: material.harga_ecer,
-      harga_roll: material.harga_roll,
-      roll_qty: material.roll_qty || 0,
-      roll_unit: material.roll_unit || '',
+      default_color: material.default_color || '',
+
       is_active: material.is_active,
+      description: material.description,
     });
     setIsDialogOpen(true);
   };
@@ -114,21 +117,6 @@ export default function Index({ materials, suppliers }: Props) {
       header: 'Unit',
       accessor: 'unit',
       cell: (row) => <span className="text-slate-700">{row.unit || '-'}</span>,
-    },
-    {
-      header: 'Supplier',
-      accessor: 'supplier_name',
-      cell: (row) => <span className="text-slate-700">{row.supplier_name || '-'}</span>,
-    },
-    {
-      header: 'Harga Ecer',
-      accessor: 'harga_ecer',
-      cell: (row) => <span className="text-slate-700">Rp {row.harga_ecer.toLocaleString()}</span>,
-    },
-    {
-      header: 'Harga Roll',
-      accessor: 'harga_roll',
-      cell: (row) => <span className="text-slate-700">Rp {row.harga_roll.toLocaleString()}</span>,
     },
     {
       header: 'Status',
@@ -208,7 +196,7 @@ export default function Index({ materials, suppliers }: Props) {
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Kategori</label>
                     <Select value={materialForm.data.category} onValueChange={(val) => materialForm.setData('category', val as 'bahan' | 'aksesoris')}>
-                      <SelectTrigger>
+                      <SelectTrigger className='w-full'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -221,33 +209,58 @@ export default function Index({ materials, suppliers }: Props) {
 
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Unit</label>
-                    <Input
-                      value={materialForm.data.unit}
-                      onChange={(e) => materialForm.setData('unit', e.target.value)}
-                      placeholder="meter, pcs, kg, etc"
-                    />
+                    <Select value={materialForm.data.unit} onValueChange={(val) => materialForm.setData('unit', val)}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Pilih unit..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units.map((u) => (
+                          <SelectItem key={u.id} value={u.label.toString()}>
+                            {u.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <InputError message={materialForm.errors.unit as string} />
                   </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Default Supplier</label>
-                  <Select value={materialForm.data.default_supplier_id} onValueChange={(val) => materialForm.setData('default_supplier_id', val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih supplier..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.nama}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <InputError message={materialForm.errors.default_supplier_id as string} />
+                <div className="grid grid-cols-2 gap-4">
+                  {/* <div className="grid gap-2">
+                    <label className="text-sm font-medium text-slate-700">Default Supplier</label>
+                    <Select value={materialForm.data.default_supplier_id} onValueChange={(val) => materialForm.setData('default_supplier_id', val)}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Pilih supplier..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                            {supplier.nama}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <InputError message={materialForm.errors.default_supplier_id as string} />
+                  </div> */}
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-slate-700">Default Warna</label>
+                    <Select value={materialForm.data.default_color} onValueChange={(val) => materialForm.setData('default_color', val)}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Pilih warna..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {colors.map((color) => (
+                          <SelectItem key={color.id} value={color.label.toString()}>
+                            {color.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <InputError message={materialForm.errors.default_color as string} />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Harga Ecer</label>
                     <FormattedNumberInput
@@ -257,37 +270,18 @@ export default function Index({ materials, suppliers }: Props) {
                     />
                     <InputError message={materialForm.errors.harga_ecer as string} />
                   </div>
-
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Harga Roll</label>
                     <FormattedNumberInput
                         value={materialForm.data.harga_roll}
                         onValueChange={(value) => materialForm.setData('harga_roll', value)}
-                        placeholder='cth: 35.000'
+                        placeholder='cth: 25'
                     />
                     <InputError message={materialForm.errors.harga_roll as string} />
                   </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Roll Qty</label>
-                    <FormattedNumberInput
-                        value={materialForm.data.roll_qty}
-                        onValueChange={(value) => materialForm.setData('roll_qty', value)}
-                        placeholder='cth: 25'
-                    />
-                    <InputError message={materialForm.errors.roll_qty as string} />
-                  </div> */}
-
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Roll Unit</label>
-                    <Input
-                      value={materialForm.data.roll_unit}
-                      onChange={(e) => materialForm.setData('roll_unit', e.target.value)}
-                    />
-                    <InputError message={materialForm.errors.roll_unit as string} />
-                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">

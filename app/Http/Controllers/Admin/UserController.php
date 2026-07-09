@@ -51,7 +51,7 @@ class UserController extends Controller
 
         $permissions = Permission::query()
             ->select('id', 'name')
-            ->orderBy('name')
+            ->orderBy('id')
             ->get();
 
         return Inertia::render('admin/users/Index', [

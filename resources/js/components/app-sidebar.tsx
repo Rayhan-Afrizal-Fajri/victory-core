@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -38,26 +38,26 @@ export function AppSidebar() {
     const can = useCan();
 
     const generalWorkspace: NavItem[] = [
-        {
+        ...(can('dashboard.view') || can('dashboard.admin') ? [{
             title: 'Dashboard',
             href: dashboard(),
             icon: LayoutGrid,
-        },
-        {
+        }] : []),
+        ...(can('kanban.view') ? [{
             title: 'Kanban Board',
             href: kanbanBoard.index(),
             icon: SquareKanban,
-        },
-        {
+        }] : []),
+        ...(can('worker.view') ? [{
             title: 'Worker Board',
             href: '/production-runs/board',
             icon: Workflow,
-        },
+        },] : []),
     ];
     
     let salesWorkspace: NavItem[] = [];
 
-    if (can('order_entry.create')) {
+    if (can('order_entry.view')) {
         salesWorkspace.push({
             title: 'Order Entry',
             href: orderEntry.index(),
@@ -65,7 +65,7 @@ export function AppSidebar() {
         })
     }
     
-    if (can('payment.create')) {
+    if (can('invoices.view')) {
         salesWorkspace.push({
             title: 'Invoice & Payments',
             href: invoices.index(),
@@ -75,7 +75,7 @@ export function AppSidebar() {
     
     const operationWorkspace: NavItem[] = [];
 
-    if (can('purchasing.view')) {
+    if (can('purchasings.view')) {
         operationWorkspace.push({
             title: 'Purchasing',
             href: purchasings.index(),
@@ -84,53 +84,56 @@ export function AppSidebar() {
     }
     if (can('job_tickets.view')) {
         operationWorkspace.push({
-            title: 'Job Tickets',
+            title: 'Purchase Orders',
             href: jobTickets.index(),
             icon: ClipboardList,
         });
     }
     
     const reportWorkspace: NavItem[] = [
-        {
+        ...(can('report.view') ? [{
             title: 'P&L Report',
             href: profitLossReport.index(),
             icon: TrendingUp,
-        },
+        }] : []),
     ]
+
+    const page = usePage();
+    console.log(page.props.auth);
     
     const masterItems = [
-        {
+        ...(can('users.view') || can('roles.view') ? [{
             label: 'Users',
             href: users.index(),
-        },
-        {
+        },] : []),
+        ...(can('customers.view') ? [{
             label: 'Customers',
             href: customers.index(),
-        },
-        {
+        }] : []),
+        ...(can('suppliers.view') ? [{
             label: 'Suppliers',
             href: suppliers.index(),
-        },
-        {
+        }] : []),
+        ...(can('companies.view') ? [{
             label: 'Company Profiles',
             href: '/company-profiles',
-        },
-        {
+        }] : []),
+        ...(can('sizes.view') ? [{
             label: 'Size Breakdowns',
             href: sizeBreakdowns.index(),
-        },
-        {
+        }] : []),
+        ...(can('products.view') ? [{
             label: 'Products',
             href: products.index(),
-        },
-        {
+        }] : []),
+        ...(can('materials.view') ? [{
             label: 'Bahan',
             href: materials.index(),
-        },
-        {
+        }] : []),
+        ...(can('manufactures.view') ? [{
             label: 'Manufaktur',
             href: manufacturingWorks.index(),
-        },
+        }] : [])
     ];
 
     const masterLinks: { label: string; href: string | RouteDefinition<"get"> }[] = masterItems
@@ -159,11 +162,11 @@ export function AppSidebar() {
                 {operationWorkspace.length !== 0 && (
                     <NavMain items={operationWorkspace} title="Workspace & Logistik" />
                 )}
-                {can('reports.view') && (
+                {can('report.view') && (
                     <NavMain items={reportWorkspace} title="Laporan" />
                 )}
 
-                {can('master_data') && (
+                {masterLinks.length > 0 && (
                     <>
                     <div className="mt-4 px-3 text-xs font-semibold text-sidebar-foreground/50 opacity-100 group-data-[collapsible=icon]:hidden">
                         Pengaturan

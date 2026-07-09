@@ -1,51 +1,265 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { router, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
+import { ReceiptText } from 'lucide-react';
 
 import type { JobTicket, Pesanan } from '../../types';
+import SectionCard from '../SectionCard';
 import WorkflowGate from '../WorkflowGate';
 
-import ProductionRunBoard from '@/components/production-runs/production-run-board';
+import SampleProgressStepper from '@/components/sample/sample-progress-stepper';
+import SampleHistoryCard from '@/components/sample/sample-history-card';
+import SampleGalleryCard from '@/components/sample/sample-gallery-card';
+import SampleApprovalCard from '@/components/sample/sample-approval-card';
+
+import EmptyState from '@/components/sample/empty-state';
+import SampleCreateCard from '@/components/sample/sample-create-card';
+import SampleOverviewCard from '@/components/sample/sample-overview-card';
+import SampleInvoicePaymentCard from '@/components/sample/sample-invoice-payment-card';
+import SampleDeliveryCard from '@/components/sample/sample-delivery-card';
+
 
 const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
-    const activeOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
+    const activeOrder: Pesanan = job?.orders?.[activeOrderIndex];
 
-    const workflow = activeOrder.workflow_status;
+    const workflow = activeOrder?.workflow_status;
+    
+    // Asumsi: Pesanan memiliki relasi hasMany('samples')
+    const samples = activeOrder?.samples || [];
+    const sample = samples[0] || null;
+
+    const handleCreateSample = () => {
+        router.post(route('samples.store', { pesanan_id: activeOrder.id }), {}, {
+            onSuccess: () => toast.success("Sample berhasil diinisiasi"),
+        });
+    };
+    const designApproved = workflow?.design_approved ?? false;
+    
+    const invoice = sample?.invoice || null;
+    const payments = invoice?.payments || [];
+    const media = sample?.media || [];
+    const delivery = sample?.delivery || null;
+
+    const [revisionOpen, setRevisionOpen] = useState(false);
+    const [rejectOpen, setRejectOpen] = useState(false);
+    const [rejectPaymentId, setRejectPaymentId] = useState<number | null>(null);
+
+    const totalPaidVerified = useMemo(() => {
+        return payments
+            .filter((payment) => payment.status === 'verified')
+            .reduce((total, payment) => total + Number(payment.jumlah_bayar || 0), 0);
+    }, [payments]);
+
+    const remainingPayment = Math.max(Number(invoice?.total_tagihan || invoice?.amount || 0) - totalPaidVerified, 0);
+
+    const canCreateSample = designApproved && !workflow?.sample_approved;
+    const canDeliver = Boolean(sample && workflow?.sample_paid && sample.status === 'paid');
+    const canMarkDelivered = Boolean(sample && sample.status === 'in_delivery');
+    const canApprove = Boolean(sample && sample.status === 'delivered');
+
+    const sampleForm = useForm({
+        qty: 1,
+        sample_price: 0,
+        catatan: '',
+        is_chargeable: true,
+        photos: [] as File[],
+    });
+
+    const paymentForm = useForm({
+        tgl_bayar: new Date().toISOString().slice(0, 10),
+        jumlah_bayar: remainingPayment || Number(invoice?.total_tagihan || 0),
+        metode_pembayaran: '',
+        bukti_transfer: null as File | null,
+        catatan_finance: '',
+    });
+
+    const deliveryForm = useForm({
+        courier_name: '',
+        tracking_number: '',
+        tracking_url: '',
+        delivery_note: '',
+    });
+
+    const revisionForm = useForm({
+        customer_review_note: '',
+    });
+
+    const rejectForm = useForm({
+        customer_review_note: '',
+    });
+
+    const rejectPaymentForm = useForm({
+        rejection_note: '',
+    });
+
+    useEffect(() => {
+        if (invoice?.id) {
+            paymentForm.setData('jumlah_bayar', remainingPayment || Number(invoice.total_tagihan || 0));
+        }
+    }, [invoice?.id, remainingPayment]);
+
+    if (!designApproved) {
+        return <WorkflowGate reason="Desain belum disetujui. Sampel terkunci." />;
+    }
+
+    const submitSample = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        sampleForm.post(`/pesanan/${job.id}/samples`, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                toast.success('Sample berhasil dibuat dan invoice diproses.');
+                sampleForm.reset();
+            },
+        });
+    };
+
+    const submitDelivery = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!sample) {
+            toast.error('Sample belum tersedia.');
+            return;
+        }
+
+        deliveryForm.post(`/samples/${sample.id}/delivery`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Data pengiriman sample berhasil disimpan.');
+                deliveryForm.reset();
+            },
+        });
+    };
+
+    const markDelivered = () => {
+        if (!sample) {
+            toast.error('Sample belum tersedia.');
+            return;
+        }
+
+        router.patch(
+            `/samples/${sample.id}/mark-delivered`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Sample ditandai sudah diterima.'),
+            },
+        );
+    };
+
+    const approveSample = () => {
+        if (!sample) {
+            toast.error('Sample belum tersedia.');
+            return;
+        }
+
+        router.patch(
+            `/samples/${sample.id}/approve`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Sample disetujui.'),
+            },
+        );
+    };
+
+    const submitRevision = () => {
+        if (!sample) {
+            toast.error('Sample belum tersedia.');
+            return;
+        }
+
+        revisionForm.patch(`/samples/${sample.id}/revision`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Revisi sample berhasil diminta.');
+                revisionForm.reset();
+                setRevisionOpen(false);
+            },
+        });
+    };
+
+    const submitReject = () => {
+        if (!sample) {
+            toast.error('Sample belum tersedia.');
+            return;
+        }
+
+        rejectForm.patch(`/samples/${sample.id}/reject`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Sample ditolak.');
+                rejectForm.reset();
+                setRejectOpen(false);
+            },
+        });
+    };
 
     return (
         <div className="space-y-6">
-            {job.orders && job.orders.length > 1 && (
-                <div className="mb-6 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pilih Produk Pesanan:</p>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                        {job.orders.map((order, index) => (
-                            <button
-                                key={order.id}
-                                onClick={() => setActiveOrderIndex(index)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap ${
-                                    activeOrderIndex === index
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
-                                }`}
-                            >
-                                <span className={`mr-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeOrderIndex === index ? 'bg-blue-500/50' : 'bg-slate-200'}`}>
-                                    {index + 1}
-                                </span>
-                                {order.requested_product_name || order.product_name || `Produk #${index + 1}`}
-                            </button>
-                        ))}
-                    </div>
+            <SampleProgressStepper workflow={workflow} sample={sample} />
+
+            <div className="grid gap-6 xl:grid-cols-3">
+                <div className="space-y-6 xl:col-span-2">
+                    {!sample && canCreateSample && (
+                        <SampleCreateCard
+                            form={sampleForm}
+                            onSubmit={submitSample}
+                        />
+                    )}
+
+                    {sample && <SampleOverviewCard sample={sample} />}
+
+                    {sample && (
+                        <SampleGalleryCard
+                            media={media}
+                            sampleId={sample.id}
+                        />
+                    )}
+
+                    {sample && !invoice && sample.is_chargeable === false && (
+                        <SectionCard title="Invoice Sample">
+                            <EmptyState
+                                icon={<ReceiptText className="size-5" />}
+                                title="Sample tanpa invoice"
+                                description="Sample ini dibuat tanpa biaya tambahan, sehingga bisa langsung masuk ke proses delivery."
+                            />
+                        </SectionCard>
+                    )}
                 </div>
-            )}
-            {workflow?.sample_materials_ready ? (
-                <ProductionRunBoard
-                    job={job}
-                    activeOrder={activeOrder}
-                    run={(job as any).sample_run || null}
-                    runType="sample"
-                />
-            ): (
-                <WorkflowGate reason="Material untuk sample belum cukup diterima. Sample production terkunci." />
-            )}
+
+                <div className="space-y-6">
+                    <SampleDeliveryCard
+                        sample={sample}
+                        delivery={delivery}
+                        canDeliver={canDeliver}
+                        canMarkDelivered={canMarkDelivered}
+                        deliveryForm={deliveryForm}
+                        onSubmitDelivery={submitDelivery}
+                        onMarkDelivered={markDelivered}
+                    />
+
+                    <SampleApprovalCard
+                        sample={sample}
+                        canApprove={canApprove}
+                        revisionOpen={revisionOpen}
+                        rejectOpen={rejectOpen}
+                        revisionForm={revisionForm}
+                        rejectForm={rejectForm}
+                        setRevisionOpen={setRevisionOpen}
+                        setRejectOpen={setRejectOpen}
+                        onApprove={approveSample}
+                        onSubmitRevision={submitRevision}
+                        onSubmitReject={submitReject}
+                    />
+
+                    {samples.length > 1 && (
+                        <SampleHistoryCard samples={samples} />
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

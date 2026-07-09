@@ -2,9 +2,11 @@ import React from 'react';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/button';
 import { formatNumber } from '@/helpers/format';
+import { useCan } from '@/hooks/use-can';
 
 // Renders manufacturing specs table with cost estimates.
 function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdit: (items: any) => void; onDelete?: (items: any) => void }) {
+    const can = useCan();
     return (
         <SectionCard title="Manufaktur">
             {items.length === 0 ? (
@@ -36,7 +38,7 @@ function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdi
                                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{Number(item.max_estimate || 0).toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3 text-right font-semibold text-slate-900 whitespace-nowrap">{Number(item.cost_per_pcs || 0).toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3 text-right whitespace-nowrap gap-2 space-x-2">
-                                        <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)}>
+                                        <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)} disabled={!can('manufactures.edit')}>
                                             Edit
                                         </Button>
                                         {onDelete && (
@@ -46,6 +48,7 @@ function ManufacturingSection({ items, onEdit, onDelete }: { items: any[]; onEdi
                                                 variant="outline"
                                                 className="border-red-200 text-red-600 hover:bg-red-50"
                                                 onClick={() => onDelete(item)}
+                                                disabled={!can('manufactures.delete')}
                                             >
                                                 Hapus
                                             </Button>

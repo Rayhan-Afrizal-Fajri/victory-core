@@ -12,18 +12,10 @@ class Material extends Model
         'name',
         'category',
         'unit',
-        'default_supplier_id',
-        'harga_ecer',
-        'harga_roll',
-        'roll_qty',
-        'roll_unit',
+        'default_color',
+        'description',
         'is_active',
     ];
-
-    public function defaultSupplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class, 'default_supplier_id');
-    }
 
     public function productMaterials(): HasMany
     {

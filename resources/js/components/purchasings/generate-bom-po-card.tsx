@@ -2,6 +2,7 @@ import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import FormattedNumberInput from '../ui/formatted-number-input';
+import { useCan } from '@/hooks/use-can';
 
 function GenerateBomPoCard({
     job,
@@ -12,6 +13,7 @@ function GenerateBomPoCard({
     form: any;
     onSubmit: (e: React.FormEvent) => void;
 }) {
+    const can = useCan();
 
     const productionQty = Number(job.quantity || job.q || 0);
     const sampleQty = Number(job.sample_qty || 1);
@@ -51,7 +53,7 @@ function GenerateBomPoCard({
                 </div>
 
                 <div className="flex justify-end border-t pt-4">
-                    <Button type="submit" disabled={form.processing}>
+                    <Button type="submit" disabled={form.processing || !can('purchasings.generate')}>
                         Generate BOM / PO
                     </Button>
                 </div>

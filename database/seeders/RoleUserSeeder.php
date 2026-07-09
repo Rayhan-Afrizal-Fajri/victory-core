@@ -15,56 +15,109 @@ class RoleUserSeeder extends Seeder
 
         $permissions = [
             'dashboard.admin',
-            'kanban_board.view',
-            'worker_board.view',
+            'dashboard.view',
+            'kanban.view',
+            'worker.view',
 
-            'order_entry.create',
-            'order_entry.update',
-
-            'invoice_payments.view',
-
-            'purchasing.view',
+            'order_entry.view',
+            'invoices.view',
+            
+            'purchasings.view',
             'job_tickets.view',
+            'job_tickets.edit',
+            'job_tickets.delete',
+            'job_tickets.show',
 
-            'reports.view',
+            'designs.upload',
+            'designs.approve',
+            'designs.revision',
+            'boms.sync',
+            'boms.create',
+            'boms.edit',
+            'boms.delete',
+            'manufactures.create',
+            'manufactures.edit',
+            'manufactures.delete',
 
-            'master_data',
-
-            //job-ticket process
-            'design.upload',
-            'design.approve',
-            'design.sync_article',
-            'design.manage_specs',
-            'design.set_selling_price',
-
+            'costings.input_price',
             'quotation.generate',
-            'quotation.approve',
             'quotation.print',
+            'quotation.approve',
 
-            'invoice.view',
-            'invoice.print',
+            'invoices.show',
+            'invoices.print',
+            'invoices.pay',
+            'invoices.verify',
+            'invoices.edit',
+            'invoices.delete',
 
-            'payment.create',
-            'payment.update',
-            'payment.delete',
-            'payment.verify',
-            'payment.reject',
+            'purchasings.generate',
+            'purchasings.create',
+            'purchasings.edit',
+            'purchasings.mark_ordered',
+            'purchasings.receive',
+            'purchasings.delete',
 
-            'purchasing.generate_bom',
-            'purchasing.create',
-            'purchasing.update',
-            'purchasing.delete',
-            'purchasing.mark_ordered',
-            'purchasing.receive',
+            'samples.start',
+            'samples.complete',
+            'samples.packing',
+            'samples.delivery',
+            'samples.approve',
+            'samples.revision',
 
-            'production.process',
-            'production.qc',
-            'production.packing',
-            'production.delivery',
+            'productions.run',
+            'productions.packing',
+            'productions.delivery',
 
-            'sample.approve',
-            'sample.revision',
-            'sample.reject',
+            'activities.view',
+            'report.view',
+
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+
+            'roles.view',
+            'roles.create',
+            'roles.edit',
+            'roles.delete',
+
+            'customers.view',
+            'customers.create',
+            'customers.edit',
+            'customers.delete',
+            'customers.show',
+
+            'suppliers.view',
+            'suppliers.create',
+            'suppliers.edit',
+            'suppliers.delete',
+            'suppliers.show',
+
+            'companies.view',
+            'companies.create',
+            'companies.edit',
+            'companies.delete',
+
+            'sizes.view',
+            'sizes.create',
+            'sizes.edit',
+            'sizes.delete',
+
+            'products.view',
+            'products.create',
+            'products.edit',
+            'products.delete',
+            'products.switch_status',
+            'products.switch_pola',
+            'products.show',
+            'products.modify_materials',
+            'products.modify_accecories',
+
+            'materials.view',
+            'materials.create',
+            
+            'manufactures.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -73,11 +126,12 @@ class RoleUserSeeder extends Seeder
 
         $roles = [
             'Owner',
-            'Customer Service',
-            'Designer',
+            'Manager',
             'Finance',
-            'PPIC',
-            'Produksi',
+            'Designer',
+            'Admin',
+            'Purchasing',
+            'Kepala Produksi',
             'Customer',
         ];
 
@@ -87,48 +141,246 @@ class RoleUserSeeder extends Seeder
 
         Role::findByName('Owner')->syncPermissions($permissions);
 
-        Role::findByName('Designer')->syncPermissions([
-            'design.upload',
-            'design.sync_article',
-            'design.manage_specs',
+        Role::findByName('Manager')->syncPermissions([
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+            'worker.view',
+
+            'order_entry.view',
+            'invoices.view',
+            
+            'purchasings.view',
+            'job_tickets.view',
+            'job_tickets.show',
+
+            'designs.approve',
+            'designs.revision',
+
+            'costings.input_price',
+            'quotation.generate',
+            'quotation.print',
+            'quotation.approve',
+
+            'invoices.show',
+            'invoices.print',
+
+            'activities.view',
+            'report.view',
+
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+
+            'roles.view',
+
+            'customers.view',
+            'customers.create',
+            'customers.edit',
+            'customers.delete',
+            'customers.show',
+
+            'suppliers.view',
+            'suppliers.create',
+            'suppliers.edit',
+            'suppliers.delete',
+            'suppliers.show',
+
+            'companies.view',
+            'companies.create',
+            'companies.edit',
+            'companies.delete',
+
+            'sizes.view',
+            'sizes.create',
+            'sizes.edit',
+            'sizes.delete',
+
+            'products.view',
+            'products.create',
+            'products.edit',
+            'products.delete',
+            'products.switch_status',
+            'products.switch_pola',
+            'products.show',
+            'products.modify_materials',
+            'products.modify_accecories',
+
+            'materials.view',
+            'materials.create',
+            
+            'manufactures.view',
         ]);
 
         Role::findByName('Finance')->syncPermissions([
-            'invoice.view',
-            'invoice.print',
-            'payment.verify',
-            'payment.reject',
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+
+            'invoices.view',
+            
+            'job_tickets.view',
+            'job_tickets.show',
+
+            'invoices.show',
+            'invoices.print',
+            'invoices.pay',
+            'invoices.verify',
+            'invoices.edit',
+            'invoices.delete',
+
+            'activities.view',
+            'report.view',
         ]);
 
-        Role::findByName('Customer Service')->syncPermissions([
-            'invoice.view',
-            'payment.create',
-            'payment.update',
-            'payment.delete',
-            'sample.approve',
-            'sample.revision',
-            'sample.reject',
+        Role::findByName('Designer')->syncPermissions([
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+            
+            'job_tickets.view',
+            'job_tickets.show',
+
+            'designs.upload',
+            'boms.sync',
+            'boms.create',
+            'boms.edit',
+            'boms.delete',
+
+            'samples.start',
+            'samples.complete',
+            'samples.packing',
+            'samples.delivery',
+            'samples.approve',
+            'samples.revision',
+
+            'activities.view',
         ]);
 
-        Role::findByName('PPIC')->syncPermissions([
-            'purchasing.generate_bom',
-            'purchasing.create',
-            'purchasing.update',
-            'purchasing.delete',
-            'purchasing.mark_ordered',
-            'purchasing.receive',
+        Role::findByName('Admin')->syncPermissions([
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+
+            'order_entry.view',
+            'invoices.view',
+            
+            'purchasings.view',
+            'job_tickets.view',
+            'job_tickets.edit',
+            'job_tickets.delete',
+            'job_tickets.show',
+
+            'designs.approve',
+            'designs.revision',
+
+            'costings.input_price',
+            'quotation.generate',
+            'quotation.print',
+            'quotation.approve',
+
+            'invoices.show',
+            'invoices.print',
+            'invoices.pay',
+
+            'samples.start',
+            'samples.complete',
+            'samples.packing',
+            'samples.delivery',
+            'samples.approve',
+            'samples.revision',
+
+            'activities.view',
+            'report.view',
+
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+
+            'roles.view',
+            'roles.create',
+            'roles.edit',
+            'roles.delete',
+
+            'customers.view',
+            'customers.create',
+            'customers.edit',
+            'customers.delete',
+            'customers.show',
+
+            'suppliers.view',
+            'suppliers.create',
+            'suppliers.edit',
+            'suppliers.delete',
+            'suppliers.show',
+
+            'companies.view',
+            'companies.create',
+            'companies.edit',
+            'companies.delete',
+
+            'sizes.view',
+            'sizes.create',
+            'sizes.edit',
+            'sizes.delete',
+
+            'products.view',
+            'products.create',
+            'products.edit',
+            'products.delete',
+            'products.switch_status',
+            'products.switch_pola',
+            'products.show',
+            'products.modify_materials',
+            'products.modify_accecories',
+
+            'materials.view',
+            'materials.create',
+            
+            'manufactures.view',
         ]);
 
-        Role::findByName('Produksi')->syncPermissions([
-            'production.process',
-            'production.qc',
-            'production.packing',
-            'production.delivery',
+        Role::findByName('Purchasing')->syncPermissions([
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+            
+            'purchasings.view',
+            'job_tickets.view',
+            'job_tickets.show',
+
+            'purchasings.generate',
+            'purchasings.mark_ordered',
+
+            'activities.view',
         ]);
 
-        Role::findByName('Customer')->syncPermissions([
-            'order_entry.create',
-            'job_tickets.view'
+        Role::findByName('Kepala Produksi')->syncPermissions([
+            'dashboard.admin',
+            'dashboard.view',
+            'kanban.view',
+            
+            'purchasings.view',
+            'job_tickets.view',
+            'job_tickets.show',
+
+            'manufactures.create',
+            'manufactures.edit',
+            'manufactures.delete',
+
+            'purchasings.generate',
+            'purchasings.create',
+            'purchasings.edit',
+            'purchasings.mark_ordered',
+            'purchasings.receive',
+
+            'productions.run',
+            'productions.packing',
+            'productions.delivery',
+
+            'activities.view',
         ]);
 
         $users = [
@@ -138,34 +390,34 @@ class RoleUserSeeder extends Seeder
                 'role' => 'Owner',
             ],
             [
-                'name' => 'Admin Victory',
-                'email' => 'admin@victorylabs.id',
-                'role' => 'Owner',
+                'name' => 'Manager Victory',
+                'email' => 'manager@victorylabs.id',
+                'role' => 'Manager',
             ],
             [
-                'name' => 'CS User',
-                'email' => 'cs@victorylabs.id',
-                'role' => 'Customer Service',
-            ],
-            [
-                'name' => 'Designer User',
-                'email' => 'designer@victorylabs.id',
-                'role' => 'Designer',
-            ],
-            [
-                'name' => 'Finance User',
+                'name' => 'Finance Victory',
                 'email' => 'finance@victorylabs.id',
                 'role' => 'Finance',
             ],
             [
-                'name' => 'PPIC User',
-                'email' => 'ppic@victorylabs.id',
-                'role' => 'PPIC',
+                'name' => 'Designer Victory',
+                'email' => 'designer@victorylabs.id',
+                'role' => 'Designer',
             ],
             [
-                'name' => 'Produksi User',
-                'email' => 'produksi@victorylabs.id',
-                'role' => 'Produksi',
+                'name' => 'Admin Victory',
+                'email' => 'admin@victorylabs.id',
+                'role' => 'Admin',
+            ],
+            [
+                'name' => 'Purchasing Victory',
+                'email' => 'purchasing@victorylabs.id',
+                'role' => 'Purchasing',
+            ],
+            [
+                'name' => 'Kepala Produksi Victory',
+                'email' => 'kepala_produksi@victorylabs.id',
+                'role' => 'Kepala Produksi',
             ],
         ];
 

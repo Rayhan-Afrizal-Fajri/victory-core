@@ -17,7 +17,7 @@ import AppLayout from '@/layouts/app-layout';
 
 type DefaultSizeBreakdown = {
   id: number;
-  type: 'color' | 'fabric' | 'size';
+  type: 'color' | 'fabric' | 'size' | 'unit';
   label: string;
 };
 
@@ -30,7 +30,7 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
   const [editingItem, setEditingItem] = useState<DefaultSizeBreakdown | null>(null);
 
   const form = useForm({
-    type: 'size' as 'color' | 'fabric' | 'size',
+    type: 'size' as 'color' | 'fabric' | 'size' | 'unit',
     label: '',
   });
 
@@ -159,6 +159,7 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
                       <SelectItem value="color">Color</SelectItem>
                       <SelectItem value="fabric">Fabric</SelectItem>
                       <SelectItem value="size">Size</SelectItem>
+                      <SelectItem value="unit">Unit</SelectItem>
                     </SelectContent>
                   </Select>
                   <InputError message={form.errors.type as string} />
@@ -180,8 +181,8 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
           </Dialog>
         </div>
 
-        <div className=" grid grid-cols-3 gap-2">
-          {['color', 'fabric', 'size'].map((type) => {
+        <div className=" grid grid-cols-2 gap-2">
+          {['color', 'fabric', 'size', 'unit'].map((type) => {
             const data = filteredItems.filter((item) => item.type === type);
             return (
                 <DataTable columns={columns} data={data} searchKeys={['label']}/>

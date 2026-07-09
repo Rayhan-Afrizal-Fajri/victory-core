@@ -9,6 +9,7 @@ use App\Models\JobTicket;
 use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\CompanyProfile;
+use App\Models\DefaultSizeBreakdown;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -248,13 +249,17 @@ class JobTicketController extends Controller
                 ])->toArray(),
             ])->toArray(),
 
-            'workflow_histories' => $jobTicket->workflowHistory->map(fn ($h) => [
-                'id' => $h->id,
-                'actor' => $h->user?->name ?? 'System',
-                'action' => $h->action,
-                'note' => $h->notes,
-                'created_at' => optional($h->created_at)->format('Y-m-d H:i:s'),
-            ])->toArray(),
+            'workflow_histories' => $jobTicket->workflowHistory
+                ->sortByDesc('created_at')
+                ->map(fn ($h) => [
+                    'id' => $h->id,
+                    'actor' => $h->user?->name ?? 'System',
+                    'action' => $h->action,
+                    'note' => $h->notes,
+                    'created_at' => optional($h->created_at)->format('Y-m-d H:i:s'),
+                ])
+                ->values()
+                ->toArray(),
 
             // MELENGKAPI DEFECT HISTORIES
             'defect_histories' => $jobTicket->defectHistories->map(fn ($d) => [
@@ -391,11 +396,23 @@ class JobTicketController extends Controller
 
         $suppliers = Supplier::all();
 
+        $colors = DefaultSizeBreakdown::query()
+            ->select('id', 'label')
+            ->where('type', 'color')
+            ->get();
+
+        $units = DefaultSizeBreakdown::query()
+            ->select('id', 'label')
+            ->where('type', 'unit')
+            ->get();
+
         return Inertia::render('admin/job-tickets/Show', [
             'jobTicket' => $mapped,
             'suppliers' => $suppliers,
             'productOptions' => $productOption,
-            'companyProfile' => CompanyProfile::all()
+            'companyProfile' => CompanyProfile::all(),
+            'colors' => $colors,
+            'units' => $units,
         ]);
     }
 

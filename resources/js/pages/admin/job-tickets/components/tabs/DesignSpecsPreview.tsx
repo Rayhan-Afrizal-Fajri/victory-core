@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import SpecSection from './SpecSection';
 import ManufacturingSection from './ManufacturingSection';
 import type { Pesanan } from '../../types';
+import { useCan } from '@/hooks/use-can';
 
 function DesignSpecsPreview({
     materialSpecs,
@@ -30,10 +31,12 @@ function DesignSpecsPreview({
     const aksesoris = materialSpecs.filter((item) => item.type === 'aksesoris');
     const workflow = activeOrder?.workflow_status || {};
 
+    const can = useCan();
+
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap justify-end gap-2">
-                {onCreateMaterial && (
+                {onCreateMaterial && can('boms.create') && (
                     <Button
                         type="button"
                         size="sm"
@@ -44,7 +47,7 @@ function DesignSpecsPreview({
                     </Button>
                 )}
 
-                {onCreateManufacturing && (
+                {onCreateManufacturing && can('manufactures.create') && (
                     <Button
                         type="button"
                         size="sm"
