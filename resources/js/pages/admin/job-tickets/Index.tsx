@@ -54,7 +54,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
 
   const deleteJobTicket = (ticket: JobTicketData) => {
     const confirmed = window.confirm(
-      `Hapus Job Ticket ${ticket.no_job_ticket} beserta seluruh pesanan di dalamnya? Data yang dihapus tidak dapat dikembalikan.`
+      `Hapus Purchase Order ${ticket.no_job_ticket} beserta seluruh pesanan di dalamnya? Data yang dihapus tidak dapat dikembalikan.`
     );
 
     if (!confirmed) return;
@@ -62,7 +62,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
     router.delete(jobTickets.destroy(ticket.id).url, {
       preserveScroll: true,
       onSuccess: () => {
-        toast.success('Job Ticket berhasil dihapus.');
+        toast.success('Purchase Order berhasil dihapus.');
       },
     });
   };
@@ -153,7 +153,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
     {
       header: 'Deadline',
       accessor: 'deadline',
-      className:'w-[120px]',
+      className:'w-[125px]',
       cell: (row) => <DeadlineBadge deadline={row.deadline} />,
     },
     {
@@ -194,7 +194,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
 
   return (
     <>
-      <Head title="Job Tickets" />
+      <Head title="Purchase Orders" />
       <DataTable
         columns={columns}
         data={orders}
@@ -207,19 +207,19 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
 Index.layout = (page: ReactNode) => {
   return (
     <AppLayout
-      title="Job Tickets"
+      title="Purchase Order"
       description="Pilih tiket untuk membuka digital checklist dan detail multi-pesanan."
       information="Production · All Tickets"
       breadcrumbs={[
         {
-          title: 'Job Tickets',
+          title: 'Purchase Order',
           href: jobTickets.index(),
         },
       ]}
       actions={
         <Link href={orderEntry.index()} prefetch>
           <Button variant="default" className="hidden sm:inline-flex cursor-pointer">
-            Buat Job Ticket Baru
+            Buat Purchase Order Baru
             <ArrowUpRight className="size-4" />
           </Button>
         </Link>

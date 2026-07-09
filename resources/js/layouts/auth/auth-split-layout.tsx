@@ -19,11 +19,11 @@ export default function AuthSplitLayout({
                     <div className="flex flex-col gap-8">
                         <div className="flex flex-col gap-6">
                             <div className="flex gap-2 items-start">
-                                <div className="p-3 bg-blue-600 text-white rounded-md">
-                                    <Factory className='size-5'/>
+                                <div className="p-1 bg-blue-600 text-white rounded-md">
+                                    <AppLogoIcon className="size-8 fill-current text-white dark:text-black " />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <span className="font-black text-md text-white">Victory Labs</span>
+                                    <span className="font-black text-md text-primary">Victory Labs</span>
                                     <span className="text-gray-600 uppercase text-[10px] dark:text-blue-200">ERP Tekstil internal</span>
                                 </div>
                             </div>
