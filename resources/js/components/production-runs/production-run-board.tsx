@@ -294,7 +294,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                                 />
                             </Field>
 
-                            <Button type="submit" disabled={packingForm.processing || !can('productions.packing')}>
+                            <Button type="submit" disabled={packingForm.processing || !can('productions.packing') || !can('samples.packing')}>
                                 <CheckCircle2 className="size-4" />
                                 Complete Packing
                             </Button>
@@ -312,7 +312,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                             <Field label="Courier" error={deliveryForm.errors.courier_name}>
                                 <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    disabled={!can('productions.delivery')}
+                                    disabled={!can('productions.delivery') || !can('samples.delivery')}
                                     value={deliveryForm.data.courier_name}
                                     onChange={(e) =>
                                         deliveryForm.setData('courier_name', e.target.value)
@@ -323,7 +323,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                             <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
                                 <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    disabled={!can('productions.delivery')}
+                                    disabled={!can('productions.delivery') || !can('samples.delivery')}
                                     value={deliveryForm.data.tracking_number}
                                     onChange={(e) =>
                                         deliveryForm.setData('tracking_number', e.target.value)
@@ -335,7 +335,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
                             <Input
                                 readOnly={isDeliverySubmitted || isDelivered}
-                                disabled={!can('productions.delivery')}
+                                disabled={!can('productions.delivery') || !can('samples.delivery')}
                                 value={deliveryForm.data.tracking_url}
                                 onChange={(e) =>
                                     deliveryForm.setData('tracking_url', e.target.value)
@@ -346,7 +346,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
                             <Textarea
                                 readOnly={isDeliverySubmitted || isDelivered}
-                                disabled={!can('productions.delivery')}
+                                disabled={!can('productions.delivery') || !can('samples.delivery')}
                                 rows={3}
                                 value={deliveryForm.data.delivery_note}
                                 onChange={(e) =>
@@ -356,7 +356,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         </Field>
 
                         {Number(canDelivery) !== 0 && (
-                            <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')}>
+                            <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery') || !can('samples.delivery')}>
                                 <Truck className="size-4" />
                                 Submit Delivery
                             </Button>
@@ -364,7 +364,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                     </form>
 
                     {canMarkDelivered && (
-                        <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery')}>
+                        <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery') || !can('samples.delivery')}>
                             Mark Delivered
                         </Button>
                     )}

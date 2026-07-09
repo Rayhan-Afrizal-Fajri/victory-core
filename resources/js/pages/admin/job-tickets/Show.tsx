@@ -24,7 +24,7 @@ export default function Show({ jobTicket, suppliers, productOptions, colors, uni
 
     return (
         <>
-            <Head title={`Job Ticket — ${jobTicket?.no_job_ticket ?? 'Detail'}`} />
+            <Head title={`Purchase Order — ${jobTicket?.no_job_ticket ?? 'Detail'}`} />
 
             {/* SWITCHER PESANAN MULTIPLE */}
             {/* {jobTicket?.orders && jobTicket.orders.length > 1 && (
@@ -70,7 +70,7 @@ export default function Show({ jobTicket, suppliers, productOptions, colors, uni
                 </>
             ) : (
                 <div className="p-8 text-center bg-white rounded-lg border border-slate-200 text-slate-500">
-                    Tidak ada pesanan ditemukan dalam Job Ticket ini.
+                    Tidak ada pesanan ditemukan dalam Purchase Order ini.
                 </div>
             )}
         </>
@@ -103,10 +103,10 @@ Show.layout = (page: React.ReactElement<Props>) => {
         <AppLayout
             title={noJobTicket}
             description={`${jobTicket?.customer?.name ?? jobTicket?.customer?.company ?? 'Customer'} · ${jobTicket?.orders?.length ?? 0} Pesanan`}
-            information="No. Job Ticket"
+            information="No. Purchase Order"
             breadcrumbs={[
                 {
-                    title: 'Job Tickets',
+                    title: 'Purchase Orders',
                     href: jobTickets.index(),
                 },
                 {
