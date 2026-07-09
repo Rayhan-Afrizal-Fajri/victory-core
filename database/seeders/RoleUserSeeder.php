@@ -385,7 +385,7 @@ class RoleUserSeeder extends Seeder
 
         $users = [
             [
-                'name' => 'Owner Victory',
+                'name' => 'Victor Harlim, SC. MBA',
                 'email' => 'owner@victorylabs.id',
                 'role' => 'Owner',
             ],
