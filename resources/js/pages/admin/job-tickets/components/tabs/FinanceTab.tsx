@@ -304,8 +304,8 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                                     onPay={handleOpenPayment}
                                     onEdit={handleOpenEditInvoice}
                                     onCancel={cancelInvoice}
-                                    canPay={can('payment.create')}
-                                    canEdit={can('invoice.edit')}
+                                    canPay={can('invoices.create')}
+                                    canEdit={can('invoices.edit')}
                                     canCancel={can('invoice.cancel')}
                                 />
                             ))}
@@ -319,8 +319,8 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                 onOpenChange={setDetailOpen}
                 invoice={selectedInvoice}
                 canPay={can('payment.create')}
-                canEdit={can('invoice.edit')}
-                canCancel={can('invoice.cancel')}
+                canEdit={can('invoices.edit')}
+                canCancel={can('invoices.cancel')}
                 rejectPaymentId={rejectPaymentId}
                 rejectPaymentForm={rejectPaymentForm}
                 setRejectPaymentId={setRejectPaymentId}

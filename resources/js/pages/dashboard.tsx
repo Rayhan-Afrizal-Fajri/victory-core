@@ -95,7 +95,7 @@ export default function Dashboard({ dashboard }: DashboardProps) {
 
   const columns: DataTableColumn<DeadlineOrder>[] = [
     {
-      header: 'No. Job Ticket',
+      header: 'No. Purchase Order',
       accessor: 'ticket',
       className: 'w-[180px]',
     },

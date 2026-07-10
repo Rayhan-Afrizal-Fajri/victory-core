@@ -271,11 +271,13 @@
             @foreach ($pesanans as $index => $pesanan)
 
                 @php
-                    $qty = $invoice->kategori_invoice === 'sample'
+                    $kategoriInvoice = $invoice->kategori_invoice;
+                    $qty = $kategoriInvoice === 'sample'
                         ? ($pesanan->sample_qty ?? 0)
-                        : ($pesanan->q ?? $pesanan->quantity ?? 0);
-
-                    $price = $pesanan->harga_jual_per_pcs ?? 0;
+                        : ($pesanan->qty ?? $pesanan->quantity ?? 0);
+                    $price = $kategoriInvoice === 'sample'
+                        ? ($pesanan->harga_sample_per_pcs ?? 0)
+                        : ($pesanan->harga_jual_per_pcs ?? 0);
 
                     $subtotal = $qty * $price;
 

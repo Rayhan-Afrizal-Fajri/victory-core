@@ -1,191 +1,50 @@
 import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
-import formatRupiah from "../ui/format-rupiah";
-import { useState } from "react";
 import { Button } from "../ui/button";
-import { Edit, Trash2 } from "lucide-react";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import Field from "./field";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import FormattedNumberInput from "../ui/formatted-number-input";
-
-const statusLabel: Record<string, string> = {
-    draft: 'Draft',
-    waiting_payment: 'Menunggu Pembayaran',
-    paid: 'Sudah Dibayar',
-    in_delivery: 'Dalam Pengiriman',
-    delivered: 'Sudah Diterima',
-    approved: 'Disetujui',
-    revision_needed: 'Butuh Revisi',
-    rejected: 'Ditolak',
-};
+import { PlayCircle, CheckCircle2 } from "lucide-react";
+import formatRupiah from "../ui/format-rupiah";
 
 const SampleOverviewCard = ({
     sample,
-    canEdit = false,
-    canDelete = false,
-    editForm,
-    onUpdate,
-    onDelete
+    activeOrder,
+    onStart,
+    onComplete
 } : {
     sample: any;
-    canEdit?: boolean;
-    canDelete?: boolean;
-    editForm?: any;
-    onUpdate?: (e: React.FormEvent) => void;
-    onDelete?: () => void;
+    activeOrder: any;
+    onStart: () => void;
+    onComplete: () => void;
 }) => {
-    const [editOpen, setEditOpen] = useState(false);
-
     return (
-        <>
-            <SectionCard title={`Sample #${sample.revision_number ?? 0}`}>
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="grid flex-1 gap-4 md:grid-cols-3">
-                            <InfoItem label="Qty" value={`${sample.qty} pcs`} />
-                            <InfoItem label="Harga" value={formatRupiah(sample.sample_price)} />
-                            <InfoItem label="Status" value={statusLabel[sample.status] || sample.status} />
-                        </div>
+        <SectionCard title={`Detail Sample ${activeOrder?.requested_product_name || activeOrder?.product_name || 'Unknown'} #${sample.revision_number || 1}`}>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <InfoItem label="Status" value={<span className="capitalize">{sample.status.replace('_', ' ')}</span>} />
+                <InfoItem label="Quantity" value={`${sample.qty} Pcs`} />
+                <InfoItem label="Biaya" value={sample.is_chargeable ? formatRupiah(sample.sample_price) : 'Gratis'} />
+                <InfoItem label="Dibuat Pada" value={new Date(sample.created_sample_at).toLocaleDateString('id-ID')} />
+            </div>
 
-                        {(canEdit || canDelete) && (
-                            <div className="flex shrink-0 gap-2">
-                                {canEdit && (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setEditOpen(true)}
-                                    >
-                                        <Edit className="size-4" />
-                                        Edit
-                                    </Button>
-                                )}
+            {/* ACTION BUTTONS BERDASARKAN STATUS */}
+            <div className="mt-4 flex gap-3 border-t pt-4">
+                {sample.status === 'draft' && (
+                    <Button onClick={onStart} className="w-full bg-blue-600 hover:bg-blue-700">
+                        <PlayCircle className="mr-2 size-4" /> Mulai Produksi Sample
+                    </Button>
+                )}
 
-                                {canDelete && (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-red-200 text-red-700 hover:bg-red-50"
-                                        onClick={onDelete}
-                                    >
-                                        <Trash2 className="size-4" />
-                                        Delete
-                                    </Button>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {sample.catatan && (
-                        <div className="rounded-xl border bg-slate-50 p-4 text-sm text-slate-700">
-                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Catatan internal/sample
-                            </p>
-                            {sample.catatan}
-                        </div>
-                    )}
-
-                    {sample.customer_review_note && (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide">
-                                Catatan customer
-                            </p>
-                            {sample.customer_review_note}
-                        </div>
-                    )}
-                </div>
-            </SectionCard>
-
-            {editForm && onUpdate && (
-                <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                    <DialogContent className="sm:max-w-xl">
-                        <DialogHeader>
-                            <DialogTitle>Edit Sample</DialogTitle>
-                            <DialogDescription>
-                                Edit data sample selama belum masuk proses delivery atau approval.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <form onSubmit={onUpdate} className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Field label="Qty Sample" error={editForm.errors.qty}>
-                                    <FormattedNumberInput
-                                        value={editForm.data.qty}
-                                        onValueChange={(value) => editForm.setData('qty', value)}
-                                        placeholder='cth: 35.000'
-                                    />
-                                </Field>
-
-                                <Field label="Harga Sample" error={editForm.errors.sample_price}>
-                                    <FormattedNumberInput
-                                        value={editForm.data.sample_price}
-                                        onValueChange={(value) => editForm.setData('sample_price', value)}
-                                        placeholder='cth: 35.000'
-                                    />
-                                </Field>
-                            </div>
-
-                            <label className="flex items-start gap-3 rounded-xl border p-4 text-sm">
-                                <input
-                                    type="checkbox"
-                                    className="mt-1"
-                                    checked={editForm.data.is_chargeable}
-                                    onChange={(e) => editForm.setData('is_chargeable', e.target.checked)}
-                                />
-                                <span>
-                                    <span className="block font-medium text-slate-800">
-                                        Sample dikenakan biaya / invoice
-                                    </span>
-                                    <span className="text-xs text-slate-500">
-                                        Jika dimatikan, invoice sample akan dibatalkan dan sample dianggap paid.
-                                    </span>
-                                </span>
-                            </label>
-
-                            <Field label="Catatan Sample" error={editForm.errors.catatan}>
-                                <Textarea
-                                    rows={3}
-                                    value={editForm.data.catatan}
-                                    onChange={(e) => editForm.setData('catatan', e.target.value)}
-                                />
-                            </Field>
-
-                            <div className="flex justify-end gap-2 border-t pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setEditOpen(false)}
-                                >
-                                    Batal
-                                </Button>
-
-                                <Button type="submit" disabled={editForm.processing}>
-                                    Simpan Perubahan
-                                </Button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            )}
-        </>
+                {sample.status === 'in_production' && (
+                    <Button onClick={onComplete} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                        <CheckCircle2 className="mr-2 size-4" /> Selesaikan Produksi Sample
+                    </Button>
+                )}
+            </div>
+        </SectionCard>
     );
 };
 
 const InfoItem = ({ label, value }: { label: string; value: React.ReactNode }) => {
     return (
-        <div className="rounded-xl border bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {label}
-            </p>
+        <div className="rounded-xl border bg-slate-50 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
             <p className="mt-1 font-semibold text-slate-900">{value}</p>
         </div>
     );

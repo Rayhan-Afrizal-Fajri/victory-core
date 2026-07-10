@@ -216,7 +216,7 @@ function KanbanColumnView({
                 ) : (
                     <div className="flex h-28 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/60 text-center">
                         <p className="text-sm text-slate-500">
-                            Tidak ada job ticket
+                            Tidak ada purchase order
                         </p>
                     </div>
                 )}
@@ -248,7 +248,7 @@ export default function Index({
             <div className="space-y-6">
 
                 <div className="overflow-x-auto pb-2">
-                    <div className="grid min-w-960 grid-cols-11 gap-4">
+                    <div className="grid min-w-1200 grid-cols-13 gap-4">
                         {columns.map((column) => (
                             <KanbanColumnView
                                 key={column.id}
@@ -266,8 +266,8 @@ export default function Index({
 Index.layout = (page: React.ReactNode) => (
     <AppLayout
         title="Kanban Board"
-        description="Monitoring visual untuk briefing harian. Setiap card menunjukkan posisi job ticket berdasarkan workflow terbaru, tanpa aksi pindah status manual."
-        information="MONITORING JOB TICKET"
+        description="Monitoring visual untuk briefing harian. Setiap card menunjukkan posisi purchase order berdasarkan workflow terbaru, tanpa aksi pindah status manual."
+        information="MONITORING PURCHASE ORDER"
     >
         {page}
     </AppLayout>

@@ -54,6 +54,7 @@ const PurchasingMaterialTable = ({
     onReceive: (purchasing: any) => void;
     onDeleteReceiving: (receiving: any) => void;
 }) => {
+    const workflow = job.workflow_status;
 
     const can = useCan();
     return (
@@ -81,6 +82,7 @@ const PurchasingMaterialTable = ({
                         const progress = getReceivingProgress(item);
                         const receivings = getReceivings(item);
                         const isGeneratedFromBom = Boolean(item.pesanan_material_spec_id);
+                        const isFromSampleRevision = Boolean(item.pesanan_material_spec_id && workflow.sample_revision == true);
 
                         const sampleRequiredQty = getRequiredQty(item, job, 'sample');
                         const productionRequiredQty = getRequiredQty(item, job, 'production');
@@ -126,6 +128,17 @@ const PurchasingMaterialTable = ({
                                             >
                                                 {isGeneratedFromBom ? 'BOM' : 'Manual'}
                                             </Badge>
+                                            {isFromSampleRevision && (
+                                                <Badge
+                                                    className={
+                                                        isFromSampleRevision
+                                                            ? 'border-blue-200 bg-blue-100 text-blue-700'
+                                                            : 'border-slate-200 bg-slate-100 text-slate-700'
+                                                    }
+                                                >
+                                                    {isFromSampleRevision ? 'Revisi Sample' : ''}
+                                                </Badge>
+                                            )}
                                         </div>
 
                                         <p className="mt-1 text-xs text-slate-500">
@@ -227,25 +240,29 @@ const PurchasingMaterialTable = ({
                                     />
                                 </div>
                                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                    <RequirementProgressBox
-                                        title="Kebutuhan Sample"
-                                        scope={purchaseScope}
-                                        requiredQty={sampleRequiredQty}
-                                        receivedQty={sampleReceivedQty}
-                                        progress={sampleProgress}
-                                        unit={item.unit || item.satuan || ''}
-                                        disabled={sampleRequiredQty <= 0}
-                                    />
+                                    {(workflow.sample_materials_ready == 0 || workflow.production_materials_ready == 1) && (
+                                        <RequirementProgressBox
+                                            title="Kebutuhan Sample"
+                                            scope={purchaseScope}
+                                            requiredQty={sampleRequiredQty}
+                                            receivedQty={sampleReceivedQty}
+                                            progress={sampleProgress}
+                                            unit={item.unit || item.satuan || ''}
+                                            disabled={sampleRequiredQty <= 0}
+                                        />
+                                    )}
 
-                                    <RequirementProgressBox
-                                        title="Kebutuhan Production"
-                                        scope={purchaseScope}
-                                        requiredQty={productionRequiredQty}
-                                        receivedQty={productionReceivedQty}
-                                        progress={productionProgress}
-                                        unit={item.unit || item.satuan || ''}
-                                        disabled={productionRequiredQty <= 0}
-                                    />
+                                    {workflow.sample_materials_ready == 1 && (
+                                        <RequirementProgressBox
+                                            title="Kebutuhan Production"
+                                            scope={purchaseScope}
+                                            requiredQty={productionRequiredQty}
+                                            receivedQty={productionReceivedQty}
+                                            progress={productionProgress}
+                                            unit={item.unit || item.satuan || ''}
+                                            disabled={productionRequiredQty <= 0}
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="mt-4">

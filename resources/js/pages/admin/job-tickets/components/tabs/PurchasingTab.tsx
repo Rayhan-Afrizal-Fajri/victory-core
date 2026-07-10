@@ -28,6 +28,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
     const activerOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
+    const workflow = activerOrder?.workflow_status || {};
 
     const generateBomForm = useForm({
         sample_qty: activerOrder.sample_qty || 1,
@@ -305,28 +306,31 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
             <DesignSpecsReferenceCard job={activerOrder} />
 
-            {purchasings.length === 0 ? (
+            {purchasings.length === 0 || (workflow.sample_revision == true) && (
                 <GenerateBomPoCard
                     job={activerOrder}
                     form={generateBomForm}
                     onSubmit={generatePurchasingFromBom}
                 />
-            ) : (
-                <>
-                    <PurchasingSummaryCard purchasings={purchasings} job={activerOrder} />
+            )}
+            {purchasings.length > 0 && (
+                (
+                    <>
+                        <PurchasingSummaryCard purchasings={purchasings} job={activerOrder} />
 
-                    <PurchasingMaterialTable
-                        purchasings={purchasings}
-                        job={activerOrder}
-                        onCreate={openCreatePurchasing}
-                        onEditManual={openEditPurchasing}
-                        onEditPo={setEditingPo}
-                        onDelete={deletePurchasing}
-                        onMarkOrdered={markOrdered}
-                        onReceive={openReceiveMaterial}
-                        onDeleteReceiving={deleteReceiving}
-                    />
-                </>
+                        <PurchasingMaterialTable
+                            purchasings={purchasings}
+                            job={activerOrder}
+                            onCreate={openCreatePurchasing}
+                            onEditManual={openEditPurchasing}
+                            onEditPo={setEditingPo}
+                            onDelete={deletePurchasing}
+                            onMarkOrdered={markOrdered}
+                            onReceive={openReceiveMaterial}
+                            onDeleteReceiving={deleteReceiving}
+                        />
+                    </>
+                )
             )}
 
             <EditPoDialog

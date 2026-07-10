@@ -21,7 +21,9 @@ class QuotationController extends Controller
         $validated = $request->validate([
             'valid_until' => ['nullable', 'date'],
             'sample_qtys' => ['required', 'array'],
-            'sample_qtys.*' => ['required', 'integer', 'min:1'],
+            'sample_qtys.*' => ['required', 'integer', 'min:0'],
+            'sample_prices' => ['required', 'array'],
+            'sample_prices.*' => ['required', 'numeric', 'min:0'],
             'payment_terms' => ['nullable', 'string'],
             'delivery_terms' => ['nullable', 'string'],
             'notes' => ['required', 'array', 'min:1'],
@@ -32,7 +34,7 @@ class QuotationController extends Controller
         // Ambil Job Ticket beserta Company Profile pendukungnya
         $jobTicket = JobTicket::with([
             'customer',
-            'companyProfile', // Memastikan relasi ini terpanggil
+            'companyProfile', 
             'pesanans.workflowStatus',
             'pesanans.materialSpecs',
             'pesanans.manufacturingSpecs',
@@ -49,10 +51,17 @@ class QuotationController extends Controller
         $totalSampleQtyGlobal = 0;
 
         foreach ($pesanans as $pesanan) {
+            $pesananSampleQty = (int) ($validated['sample_qtys'][$pesanan->id] ?? 0);
+            $pesananSamplePrice = (float) ($validated['sample_prices'][$pesanan->id] ?? 0);
+
+            // VALIDASI RULE: Harga sample tidak boleh diisi jika quantity pesanan (sample) 0
+            if ($pesananSampleQty === 0 && $pesananSamplePrice > 0) {
+                $namaProduk = $pesanan->requested_product_name ?: $pesanan->produk ?: $pesanan->product_name;
+                abort(422, "Harga sample untuk produk [{$namaProduk}] harus Rp 0 karena Quantity Sample adalah 0.");
+            }
+
             $pricePerPcs = (float) ($pesanan->harga_jual_per_pcs ?? $pesanan->price_per_piece ?? 0);
             $qty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-
-            $pesananSampleQty = (int) ($validated['sample_qtys'][$pesanan->id] ?? 1);
 
             $subtotal += ($pricePerPcs * $qty);
             $totalQuantity += $qty;
@@ -65,7 +74,6 @@ class QuotationController extends Controller
 
         if ($companyProfile && $companyProfile->company_type === 'pkp') {
             $percentage = (float) ($companyProfile->tax_percentage ?? 0);
-            // Menghitung nominal pajak dari persentase dikali subtotal penawaran
             $taxAmount = ($percentage / 100) * $subtotal;
         }
 
@@ -96,7 +104,7 @@ class QuotationController extends Controller
                 'price_per_pcs' => 0,
                 'quantity' => $totalQuantity,
                 'subtotal' => $subtotal,
-                'tax' => $taxAmount, // Menyimpan snapshot hasil kalkulasi pajak
+                'tax' => $taxAmount, 
                 'delivery_cost' => $deliveryCost,
                 'grand_total' => $grandTotal,
                 'created_by' => Auth::id(),
@@ -113,9 +121,12 @@ class QuotationController extends Controller
             }
 
             foreach ($pesanans as $pesanan) {
-                $pesananSampleQty = (int) ($validated['sample_qtys'][$pesanan->id] ?? 1);
+                $pesananSampleQty = (int) ($validated['sample_qtys'][$pesanan->id] ?? 0);
+                $pesananSamplePrice = (float) ($validated['sample_prices'][$pesanan->id] ?? 0);
+                
                 $pesanan->update([
                     'sample_qty' => $pesananSampleQty,
+                    'harga_sample_per_pcs' => $pesananSamplePrice,
                 ]);
 
                 $pricePerPcs = (float) ($pesanan->harga_jual_per_pcs ?? $pesanan->price_per_piece ?? 0);
@@ -185,7 +196,6 @@ class QuotationController extends Controller
         $validated = $request->validate([
             'approved_by_name' => ['nullable', 'string', 'max:255'],
             'signature' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
-            'sample_invoice_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $quotation = Quotation::with([
@@ -214,12 +224,39 @@ class QuotationController extends Controller
             $jobTicket = $quotation->jobTicket;
             $pesanans = $jobTicket->pesanans;
             
+            // --- LOGIKA PERHITUNGAN INVOICE SAMPLE OTOMATIS ---
+            $totalSampleInvoiceAmount = 0;
+
+            // 1. Hitung total tagihan global untuk menentukan apakah invoice perlu dicetak
             foreach ($pesanans as $pesanan) {
+                $qty = (int) $pesanan->sample_qty;
+                if (!$pesanan->workflowStatus?->sample_revision) {
+                    $qty = 0; // Jika sudah approved sebelumnya, jangan hitung lagi
+                }
+                $price = (float) $pesanan->harga_sample_per_pcs;
+                $totalSampleInvoiceAmount += ($qty * $price);
+            }
+
+            // dd($totalSampleInvoiceAmount, 'Total Sample Invoice Amount', $pesanans); // Debugging line
+
+            $isGlobalInvoiceZero = ($totalSampleInvoiceAmount <= 0);
+
+            // 2. Update status per-pesanan secara spesifik
+            foreach ($pesanans as $pesanan) {
+                $qty = (int) $pesanan->sample_qty;
+                $price = (float) $pesanan->harga_sample_per_pcs;
+                $itemTotal = $qty * $price;
+
+                // Cek khusus untuk item ini: Apakah dia gratis atau qty-nya 0 (karena sudah approved sebelumnya)?
+                $isThisPesananFreeOrNotNeeded = ($itemTotal <= 0);
+
                 $pesanan->workflowStatus()->updateOrCreate(
                     ['pesanan_id' => $pesanan->id],
                     [
                         'quotation_created' => true,
                         'quotation_approved' => true,
+                        // ✅ FIX: Otomatis lunas (true) HANYA untuk pesanan yang tagihannya 0 di penawaran ini
+                        'sample_paid' => $isThisPesananFreeOrNotNeeded ? true : false, 
                     ]
                 );
                 
@@ -231,56 +268,83 @@ class QuotationController extends Controller
                 ]);
             }
             
-            // Buat Invoice Sample di level Job Ticket
-            $this->generateSampleInvoiceIfNotExists(
-                jobTicket: $jobTicket,
-                quotation: $quotation,
-                amount: (float) ($validated['sample_invoice_amount'] ?? 0)
-            );
+            // 3. Generate Invoice hanya jika nominal GLOBAL-nya lebih dari 0
+            if (!$isGlobalInvoiceZero) {
+                $this->generateSampleInvoiceIfNotExists(
+                    jobTicket: $jobTicket,
+                    quotation: $quotation,
+                    amount: $totalSampleInvoiceAmount
+                );
 
-            $jobTicket->update([
-                'status' => 'Sample Payment'
-            ]);
+                $jobTicket->update([
+                    'status' => 'Sample Payment'
+                ]);
+            } else {
+                // Jika semua pesanan tagihannya 0, langsung ubah status JT ke proses selanjutnya
+                $jobTicket->update([
+                    'status' => 'Purchasing Sample'
+                ]);
+            }
         });
 
         $quotation->refresh();
         // $this->generateQuotationPdf($quotation);
 
-        return back()->with('success', 'Quotation disetujui dan invoice sample berhasil dibuat.');
+        return back()->with('success', 'Quotation disetujui. Workflow pesanan diperbarui.');
     }
 
     private function generateSampleInvoiceIfNotExists(JobTicket $jobTicket, Quotation $quotation, float $amount): void
     {
-        // Cek apakah invoice sample untuk Job Ticket ini sudah ada
-        $exists = $jobTicket->invoices()
+        // 1. Cari invoice sample yang statusnya masih 'unpaid' atau 'partial_paid'
+        $unpaidInvoice = $jobTicket->invoices()
             ->where('kategori_invoice', 'sample')
-            ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled'])
-            ->exists();
+            ->whereIn('status_tagihan', ['unpaid', 'partial_paid']) // Cari yang masih bisa ditambah tagihannya
+            ->first();
 
-        if ($exists) {
+        // 2. Jika ada invoice unpaid, UPDATE total tagihannya
+        if ($unpaidInvoice) {
+            $newTotal = (float)$unpaidInvoice->total_tagihan + $amount;
+            
+            $unpaidInvoice->update([
+                'total_tagihan' => $newTotal,
+                // Jika total jadi 0, mungkin bisa dianggap paid (tapi jarang terjadi di sini)
+                'status_tagihan' => $newTotal > 0 ? 'unpaid' : 'paid',
+            ]);
+            
+            // Update workflow flag untuk pesanan yang baru saja direvisi
+            $this->updateWorkflowFlags($jobTicket, true);
             return;
         }
 
-        if ($amount <= 0) {
-            $amount = 0; // Pakai total quotation jika nominal tidak diset
-        }
-
-        // Buat invoice berelasi langsung dengan job_ticket
+        // 3. Jika tidak ada invoice unpaid (mungkin sudah lunas / belum pernah dibuat),
+        // kita buat invoice baru
         $jobTicket->invoices()->create([
             'no_invoice' => $this->generateInvoiceNumber('SAMPLE'),
             'kategori_invoice' => 'sample',
             'total_tagihan' => $amount,
-            'status_tagihan' => $amount == 0? 'paid' : 'unpaid',
+            'status_tagihan' => $amount == 0 ? 'paid' : 'unpaid',
             'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);
 
-        // Update status sample_invoice_created untuk semua pesanan dalam Job Ticket ini
+        // Update workflow flag
+        $this->updateWorkflowFlags($jobTicket, ($amount == 0));
+    }
+
+    /**
+     * Helper untuk update workflow agar tidak redundant
+     */
+    private function updateWorkflowFlags(JobTicket $jobTicket, bool $isPaid): void
+    {
         foreach ($jobTicket->pesanans as $pesanan) {
+            // Cek kembali: Apakah pesanan ini secara individu punya tagihan sample?
+            // Jika tidak, tetap set paid = true
+            $isThisPesananFree = ($pesanan->sample_qty * $pesanan->harga_sample_per_pcs) <= 0;
+
             $pesanan->workflowStatus()->updateOrCreate(
                 ['pesanan_id' => $pesanan->id],
                 [
                     'sample_invoice_created' => true,
-                    'sample_paid' => $amount == 0 ? true : true,
+                    'sample_paid' => $isThisPesananFree ? true : $isPaid, 
                 ]
             );
         }

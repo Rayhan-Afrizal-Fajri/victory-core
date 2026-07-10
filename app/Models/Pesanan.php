@@ -23,6 +23,7 @@ class Pesanan extends Model
         'sample_qty',
         // 'deadline',
         'harga_jual_per_pcs',
+        'harga_sample_per_pcs',
         'estimasi_hpp_per_pcs',
         'keterangan_tambahan',    
         'article_synced_at',

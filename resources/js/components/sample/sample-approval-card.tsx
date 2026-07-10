@@ -42,7 +42,7 @@ const SampleApprovalCard = ({
 
             {sample && !canApprove && sample.status !== 'approved' && sample.status !== 'revision_needed' && sample.status !== 'rejected' && (
                 <div className="rounded-xl border bg-slate-50 p-4 text-sm text-slate-600">
-                    Approval akan aktif setelah sample berstatus delivered.
+                    Approval akan aktif setelah sample telah diterima customer.
                 </div>
             )}
 

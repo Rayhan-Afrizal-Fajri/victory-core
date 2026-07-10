@@ -498,8 +498,8 @@ export default function Index({
 
             <div className="flex gap-4 w-full">
               <MiniBarChart
-                title="Top 5 GOP Job Ticket"
-                description="Job ticket dengan gross operating profit tertinggi."
+                title="Top 5 GOP Purchase Order"
+                description="Purchase Order dengan gross operating profit tertinggi."
                 data={charts.top_gop_orders || []}
                 valueKey="gop"
               />

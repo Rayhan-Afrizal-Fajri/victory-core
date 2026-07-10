@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialReceiving;
 use App\Models\Pesanan;
+use App\Models\Quotation;
 use App\Models\Purchasing;
 use App\Models\Supplier;
 use App\Models\JobTicket;
@@ -255,15 +256,15 @@ class PurchasingController extends Controller
         }
 
         // Cegah duplikasi jika purchasing sudah pernah dibuat untuk pesanan.
-        if ($pesanan->purchasing()->exists()) {
+        if ($pesanan->purchasing()->exists() && $pesanan->workflowStatus->sample_revision == false) {
             abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
         }
 
-        $quotation = $pesanan->jobTicket->quotations->first();
+        $quotation = Quotation::where('job_ticket_id', $pesanan->jobTicket->id)->latest()->first();
 
         // dd($pesanan,$quotation);
 
-        $productionQty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
+        $productionQty = $pesanan->workflowStatus->sample_revision == true ? 0 : (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
         $sampleQty = (int) ($pesanan->sample_qty ?: 1);
         $totalPlannedQty = $productionQty + $sampleQty;
 
@@ -313,7 +314,9 @@ class PurchasingController extends Controller
 
                     'is_received' => false,
                     'status' => 'draft',
-                    'purchase_scope' => 'sample_and_production',
+                    'purchase_scope' => $pesanan->workflowStatus->sample_revision == true
+                        ? 'sample'
+                        : 'sample_and_production',
                     'notes' => null,
                 ]);
             }
@@ -326,6 +329,12 @@ class PurchasingController extends Controller
                     'materials_received' => false,
                 ]
             );
+
+            if ($pesanan->workflowStatus->sample_revision == true) {
+                $pesanan->workflowStatus()->update([
+                    'sample_materials_ready' => false,
+                ]);
+            }
 
             $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'purchasing',
@@ -409,7 +418,7 @@ class PurchasingController extends Controller
         $request->validate([
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'item_bahan' => ['required', 'string'],
-            'qty_bahan' => ['required', 'numeric', 'min:0.01'],
+            'qty_bahan' => ['required', 'numeric', 'min:0.0001'],
             'satuan' => ['required', 'string'],
             'harga_satuan' => ['required', 'numeric', 'min:0'],
             'tgl_pembelian' => ['nullable', 'date'],
@@ -609,7 +618,7 @@ class PurchasingController extends Controller
     public function storeReceiving(Request $request, string $purchasingId)
     {
         $request->validate([
-            'received_qty' => ['required', 'numeric', 'min:0.01'],
+            'received_qty' => ['required', 'numeric', 'min:0.0001'],
             'received_at' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
@@ -627,9 +636,11 @@ class PurchasingController extends Controller
         $receivedQty = (float) $purchasing->materialReceivings()->sum('received_qty');
         $remainingQty = max(((float) $purchasing->qty_bahan) - $receivedQty, 0);
 
-        if ((float) $request->received_qty > $remainingQty) {
-            abort(422, 'Qty diterima melebihi sisa qty bahan.');
-        }
+        // dd($request->received_qty > $remainingQty, 3.12 > 3.12);
+
+        // if ((float) $request->received_qty > $remainingQty) {
+        //     abort(422, 'Qty diterima melebihi sisa qty bahan, received qty: ' . $request->received_qty . ' remainig qty: '  .$remainingQty);
+        // }
 
         // Transaksi: buat receiving, sinkronkan status dan buat invoice/run bila perlu.
         DB::transaction(function () use ($request, $purchasing) {
@@ -655,10 +666,10 @@ class PurchasingController extends Controller
                     $purchasing->pesanan->jobTicket
                 );
 
-            $this->productionRunService
-                ->ensureProductionRun(
-                    $purchasing->pesanan
-                );
+            // $this->productionRunService
+            //     ->ensureProductionRun(
+            //         $purchasing->pesanan
+            //     );
         });
 
         return back()->with('success', 'Material receiving berhasil disimpan.');
@@ -829,7 +840,6 @@ class PurchasingController extends Controller
 
     private function isProductionMaterialsReady(Pesanan $pesanan): bool
     {
-        // Cek apakah semua material yang diperlukan untuk produksi sudah siap.
         $purchasings = $pesanan->purchasing()
             ->with('materialReceivings')
             ->where('status', '!=', 'cancelled')
@@ -848,7 +858,18 @@ class PurchasingController extends Controller
         }
 
         return $relevantPurchasings->every(function ($purchasing) use ($pesanan) {
-            $required = $this->getPurchasingProductionRequiredQty($purchasing, $pesanan);
+            $scope = $purchasing->purchase_scope ?: 'sample_and_production';
+
+            // ✅ FIX LOGIKA:
+            // Jika PO adalah gabungan sample & production, pastikan total barang diterima 
+            // menutupi TOTAL DIBUTUHKAN. Jika tidak, barang yang baru datang (untuk sample) 
+            // akan dianggap memenuhi produksi massal juga.
+            if ($scope === 'sample_and_production') {
+                $required = (float) ($purchasing->required_qty ?: $purchasing->qty_bahan ?: 0);
+            } else {
+                $required = $this->getPurchasingProductionRequiredQty($purchasing, $pesanan);
+            }
+
             $received = $this->getPurchasingReceivedQty($purchasing);
 
             return $this->isQtyEnough($received, $required);
@@ -885,18 +906,24 @@ class PurchasingController extends Controller
         $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
 
         //down downgrade if sample is already started / ready before
-        if ($currentWorkflow?->sample_materials_ready) {
-            $sampleMaterialsReady = true;
-        }
+        // if ($currentWorkflow?->sample_materials_ready) {
+        //     $sampleMaterialsReady = true;
+        // }
 
         if ($pesanan->productionRuns()->where('type', 'sample')->exists()) {
             $sampleMaterialsReady = true;
         }
 
-        //dont downgrade if production is already started / ready before
-        if ($currentWorkflow?->production_materials_ready) {
+        if ($pesanan->productionRuns()->where('type', 'production')->exists()) {
             $productionMaterialsReady = true;
         }
+
+        //dont downgrade if production is already started / ready before
+        // if ($currentWorkflow?->production_materials_ready) {
+        //     $productionMaterialsReady = true;
+        // }
+
+        // dd($sampleMaterialsReady, $productionMaterialsReady);
 
         if ($pesanan->productionRuns()
             ->where('type', 'production')

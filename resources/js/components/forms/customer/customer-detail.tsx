@@ -24,7 +24,7 @@ export function CustomerDetail({
       <table className="w-full text-sm">
         <thead>
           <tr>
-            <th>Job Ticket</th>
+            <th>Purchase Order</th>
             <th>Item</th>
             <th>Status</th>
           </tr>

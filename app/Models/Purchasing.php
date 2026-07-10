@@ -65,16 +65,22 @@ class Purchasing extends Model
 
     public function getRemainingQtyAttribute()
     {
-        return max(((float) $this->qty_bahan) - ((float) $this->received_qty), 0);
+        // Bulatkan ke 4 angka desimal
+        $sisa = ((float) $this->qty_bahan) - ((float) $this->received_qty);
+        return max(round($sisa, 4), 0);
     }
 
     public function getReceivingStatusAttribute()
     {
-        if ($this->received_qty <= 0) {
+        // Bulatkan juga saat mengecek qty di sini agar akurat
+        $received = round((float) $this->received_qty, 4);
+        $required = round((float) $this->qty_bahan, 4);
+
+        if ($received <= 0) {
             return 'not_received';
         }
 
-        if ($this->received_qty < $this->qty_bahan) {
+        if ($received < $required) {
             return 'partial_received';
         }
 

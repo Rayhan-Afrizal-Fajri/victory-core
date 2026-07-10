@@ -1,19 +1,27 @@
+export function roundQty(value: number, precision = 4) {
+    const multiplier = Math.pow(10, precision);
+    return Math.round((Number(value || 0) + Number.EPSILON) * multiplier) / multiplier;
+}
+
 export function getReceivings(purchasing: any) {
     return purchasing.material_receivings || [];
 }
 
 export function getReceivedQty(purchasing: any) {
     if (purchasing.received_qty !== undefined && purchasing.received_qty !== null) {
-        return Number(purchasing.received_qty || 0);
+        return roundQty(purchasing.received_qty);
     }
 
-    return getReceivings(purchasing).reduce((total: number, item: any) => {
-        return total + Number(item.qty_received || item.received_qty || item.received_qty || 0);
+    // Penjumlahan rentan terhadap presisi desimal, jadi dibungkus roundQty
+    const total = getReceivings(purchasing).reduce((total: number, item: any) => {
+        return total + Number(item.qty_received || item.received_qty || 0);
     }, 0);
+
+    return roundQty(total);
 }
 
 export function getOrderedQty(purchasing: any) {
-    return Number(
+    return roundQty(
         purchasing.purchase_qty ??
         purchasing.ordered_qty ??
         purchasing.qty_bahan ??
@@ -22,11 +30,17 @@ export function getOrderedQty(purchasing: any) {
 }
 
 export function getRemainingQty(purchasing: any) {
+    let remaining = 0;
+
     if (purchasing.remaining_qty !== undefined && purchasing.remaining_qty !== null) {
-        return Number(purchasing.remaining_qty || 0);
+        remaining = Number(purchasing.remaining_qty || 0);
+    } else {
+        // Pengurangan juga rentan desimal
+        remaining = Math.max(getOrderedQty(purchasing) - getReceivedQty(purchasing), 0);
     }
 
-    return Math.max(getOrderedQty(purchasing) - getReceivedQty(purchasing), 0);
+    // Menggunakan helper bawaan yang sudah ada agar konsisten
+    return roundQty(remaining); 
 }
 
 export function getReceivingProgress(purchasing: any) {
@@ -34,10 +48,14 @@ export function getReceivingProgress(purchasing: any) {
 
     if (!qty || qty <= 0) return 0;
 
-    return Math.min(Math.max((getReceivedQty(purchasing) / qty) * 100, 0), 100);
+    const progress = (getReceivedQty(purchasing) / qty) * 100;
+    
+    // Persentase dibulatkan ke 2 desimal (misal 33.3333333 -> 33.33)
+    return roundQty(Math.min(Math.max(progress, 0), 100), 2);
 }
 
 export function getPurchasingTotal(purchasing: any) {
+    // Total uang biasanya aman, tapi kalau mau dibulatkan ke 2 desimal juga bisa: roundQty(..., 2)
     return Number(purchasing.total_harga || 0);
 }
 
@@ -79,18 +97,18 @@ export function getSupplierName(purchasing: any) {
     const supplier = purchasing.supplier;
 
     if (!supplier) return '-';
-
     if (typeof supplier === 'string') return supplier;
 
     return supplier.nama_perusahaan || supplier.nama || supplier.name || '-';
 }
 
 function getTotalPlannedQty(job: any) {
-    return Number(job?.sample_qty || 0) + Number(job?.quantity || job?.q || 0);
+    const total = Number(job?.sample_qty || 0) + Number(job?.quantity || job?.q || 0);
+    return roundQty(total);
 }
 
 function getTotalRequiredQty(purchasing: any) {
-    return Number(
+    return roundQty(
         purchasing.required_qty ??
         purchasing.qty_bahan ??
         purchasing.purchase_qty ??
@@ -106,25 +124,15 @@ export function getRequiredQty(
     const scope = purchasing.purchase_scope || 'sample_and_production';
     const totalRequiredQty = getTotalRequiredQty(purchasing);
 
-    if (scope === 'additional') {
-        return 0;
-    }
-
-    if (type === 'sample' && scope === 'production') {
-        return 0;
-    }
-
-    if (type === 'production' && scope === 'sample') {
-        return 0;
-    }
-
+    if (scope === 'additional') return 0;
+    if (type === 'sample' && scope === 'production') return 0;
+    if (type === 'production' && scope === 'sample') return 0;
+    
     if (scope === type) {
         return totalRequiredQty;
     }
 
-    if (scope !== 'sample_and_production') {
-        return 0;
-    }
+    if (scope !== 'sample_and_production') return 0;
 
     const sampleQty = Number(job?.sample_qty || 0);
     const productionQty = Number(job?.quantity || job?.q || 0);
@@ -136,12 +144,14 @@ export function getRequiredQty(
         return 0;
     }
 
+    // Karena di sini ada pembagian (qty / totalOrderQty), ini sudah otomatis 
+    // dilindungi roundQty dari kode Anda sebelumnya
     return roundQty(totalRequiredQty * (qty / totalOrderQty));
 }
 
 export function getSampleReceivedQty(purchasing: any, job: any) {
     const receivedQty = getReceivedQty(purchasing);
-    const sampleRequiredQty =  getRequiredQty(purchasing, job, 'sample');
+    const sampleRequiredQty = getRequiredQty(purchasing, job, 'sample');
 
     return roundQty(Math.min(receivedQty, sampleRequiredQty));
 }
@@ -159,18 +169,13 @@ export function getProductionReceivedQty(purchasing: any, job: any) {
 export function getProgressPercentage(received: number, required: number) {
     if (!required || required <= 0) return 0;
 
-    return Math.min(Math.max((received / required) * 100, 0), 100);
-}
-
-function roundQty(value: number, precision = 4) {
-    const multiplier = Math.pow(10, precision);
-
-    return Math.round((Number(value || 0) + Number.EPSILON) * multiplier) / multiplier;
+    const progress = (received / required) * 100;
+    // Persentase progress bar dibulatkan ke 2 desimal
+    return roundQty(Math.min(Math.max(progress, 0), 100), 2);
 }
 
 export function formatMaterialQty(value: number, unit?: string) {
     const normalizedUnit = (unit || '').toLowerCase();
-
     const isWholeNumberUnit = ['pcs', 'pc', 'set', 'unit'].includes(normalizedUnit);
 
     return Number(value || 0).toLocaleString('id-ID', {

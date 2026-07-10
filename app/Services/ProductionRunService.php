@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Pesanan;
+use App\Models\Sample;
 use App\Models\ProductionRun;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,24 +13,25 @@ class ProductionRunService
     /**
      * Membuat atau memastikan Sample Run ada untuk SPESIFIK 1 Pesanan
      */
-    public function ensureSampleRun(Pesanan $pesanan, ?int $quantity = null): ?ProductionRun
+    public function ensureSampleRun(Pesanan $pesanan, ?int $quantity = null): ?Sample
     {
         return DB::transaction(function () use ($pesanan, $quantity) {
             $pesanan->loadMissing([
-                'manufacturingSpecs',
-                'productionRuns',
+                'samples',
                 'jobTicket'
             ]);
 
-            $existingRun = $pesanan->productionRuns()
-                ->where('type', 'sample')
-                ->whereNotIn('status', ['rejected'])
+            // Cari sample aktif (bukan rejected)
+            $activeSample = $pesanan->samples()
+                ->whereIn('status', ['draft', 'in_production', 'completed', 'in_delivery'])
                 ->latest()
                 ->first();
 
-            if ($existingRun) {
-                return $existingRun;
+            if ($activeSample) {
+                return $activeSample;
             }
+
+            
 
             $sampleQty = $quantity ?: (int) ($pesanan->sample_qty ?: 1);
 
@@ -37,34 +39,35 @@ class ProductionRunService
                 return null;
             }
 
-            // Buat Induk Production Run (Level Pesanan)
-            $run = $pesanan->productionRuns()->create([
-                'type' => 'sample', 
+            // Cari Invoice Sample yang aktif untuk Job Ticket ini
+            $activeInvoice = $pesanan->jobTicket->invoices()
+                ->where('kategori_invoice', 'sample')
+                ->whereNotIn('status_tagihan', ['cancelled'])
+                ->latest()
+                ->first();
+
+            $sample = $pesanan->samples()->create([
+                'qty' => $sampleQty,
                 'status' => 'draft',
+                'invoice_id' => $activeInvoice?->id, // <--- Link otomatis ke Invoice yang aktif
+                'is_chargeable' => $activeInvoice ? true : false,
+                'created_sample_at' => now(),
             ]);
 
-            $executableSpecs = $this->executableManufacturingSpecs($pesanan);
-
-            foreach ($executableSpecs as $index => $spec) {
-                // pesanan_id sudah dihapus di sini karena sudah tidak ada di fillable Process
-                $run->processes()->create([
-                    'pesanan_manufacturing_spec_id' => $spec->id,
-                    'work_name' => $spec->work_name_snapshot,
-                    'quantity' => $sampleQty,
-                    'sequence' => $index + 1,
-                    'status' => 'pending',
-                    'qc_status' => 'pending',
-                ]);
-            }
+            // Update Workflow Status
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                ['sample_created' => true]
+            );
 
             $pesanan->jobTicket->workflowHistory()->create([
-                'step' => 'production',
-                'action' => 'sample_run_created',
+                'step' => 'sample',
+                'action' => 'sample_created',
                 'user_id' => Auth::id(),
-                'notes' => "Sample production run otomatis dibuat dengan qty {$sampleQty} pcs.",
+                'notes' => "Sample otomatis diinisiasi dari penerimaan material dengan qty {$sampleQty} pcs.",
             ]);
 
-            return $run;
+            return $sample;
         });
     }
 

@@ -64,6 +64,8 @@ export interface ProductMaterial {
   type: 'bahan' | 'aksesoris';
   default_usage: number;
   default_unit?: string;
+  harga_ecer?: string;
+  harga_roll?: string;
   sort_order: number;
   is_required: boolean;
 }

@@ -44,12 +44,26 @@ function QuotationSection({
         initialSampleQtys[order.id] = order.sample_qty || 1;
     });
 
+    const initialSamplePrices: Record<number, number> = {};
+    orders.forEach((order: Pesanan) => {
+        initialSamplePrices[order.id] = order.sample_price_per_piece || 0;
+    });
+
     const sampleInvoiceAmount = orders.reduce<number>((total, order) => {
         const unitPrice = Number(order.price_per_piece ?? 0);
         const sampleQty = Number(order.sample_qty ?? 1);
 
         return total + unitPrice * sampleQty;
     }, 0);
+
+    // 1. Pastikan SEMUA pesanan sudah diisi harga jualnya (price_per_piece > 0)
+    const allPricesSet = orders.every((order) => Number(order.price_per_piece ?? 0) > 0);
+
+    // 2. Pastikan MINIMAL ADA SATU pesanan yang quotation_approved-nya masih false
+    const needsQuotation = orders.some((order) => !order.workflow_status?.quotation_approved);
+
+    // 3. Gabungkan keduanya
+    const canGenerateQuotation = allPricesSet && needsQuotation;
 
     const defaultNotes = [
         'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
@@ -60,6 +74,7 @@ function QuotationSection({
     const quotationForm = useForm({
         valid_until: defaultValidUntil,
         sample_qtys: initialSampleQtys,
+        sample_prices: initialSamplePrices,
         notes: defaultNotes,
 
         // payment_terms:
@@ -96,7 +111,7 @@ function QuotationSection({
         sample_invoice_amount: sampleInvoiceAmount,
     });
     
-    // Cek apakah setiap pesanan di dalam job ticket sudah memiliki harga jual final
+    // Cek apakah setiap pesanan di dalam Job Ticket sudah memiliki harga jual final
     const hasSellingPrice = job.orders && job.orders.length > 0 && job.orders.every((order: any) =>
         Number(order.price_per_piece || order.harga_jual_per_pcs) > 0
     );
@@ -143,11 +158,11 @@ function QuotationSection({
         <SectionCard title="Surat Penawaran / Quotation">
             {!canGenerate && can('quotation.generate') && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Semua pesanan dalam Job Ticket ini harus ditentukan harga jual finalnya terlebih dahulu sebelum membuat surat penawaran.
+                    Semua pesanan dalam Purchase Order ini harus ditentukan harga jual finalnya terlebih dahulu sebelum membuat surat penawaran.
                 </div>
             )}
 
-            {canGenerate && quotations.length === 0 && (
+            {canGenerateQuotation && (
                 <form onSubmit={submitGenerateQuotation} className="space-y-4 rounded-2xl border bg-white p-4">
                     <div>
                         <p className="font-semibold text-slate-900">
@@ -177,29 +192,74 @@ function QuotationSection({
                             />
                         </Field>
                         {/* Render Grid untuk Multi-Orders */}
-                        <div className="grid gap-4 md:grid-cols-3 col-span-2 items-end">
-
+                        <div className="col-span-2 items-start grid gap-6 md:grid-cols-2">
                             {/* 2. Map orders di sini */}
-                            {orders.map((order: Pesanan) => (
-                                <Field 
-                                    key={order.id} 
-                                    label={`Sample Qty - ${order.requested_product_name || order.product_name}`} 
-                                    // Error statenya akan berbentuk string dot notation, misal: sample_qtys.1
-                                    error={quotationForm.errors[`sample_qtys.${order.id}` as keyof typeof quotationForm.errors]}
-                                >
-                                    <FormattedNumberInput
-                                        value={quotationForm.data.sample_qtys[order.id] || 0}
-                                        onValueChange={(value) => {
-                                            // 3. Update spesifik properti di dalam object sample_qtys
-                                            quotationForm.setData('sample_qtys', {
-                                                ...quotationForm.data.sample_qtys,
-                                                [order.id]: Number(value)
-                                            });
-                                        }}
-                                        placeholder='cth: 1'
-                                    />
-                                </Field>
-                            ))}
+                            {orders.map((order: Pesanan) => {
+                                // Cek apakah pesanan ini sudah di-approve di quotation sebelumnya
+                                const isApproved = Boolean(order.workflow_status?.quotation_approved);
+
+                                return (
+                                    <div key={order.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                        {/* Header Title & Badge */}
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-semibold text-slate-800">
+                                                {order.requested_product_name || order.product_name}
+                                            </h4>
+                                            {isApproved && (
+                                                <span className="rounded bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                                    Approved
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Input Qty dan Input Harga bersebelahan */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Input QTY */}
+                                            <Field
+                                                label="Sample Qty"
+                                                error={quotationForm.errors[`sample_qtys.${order.id}` as keyof typeof quotationForm.errors]}
+                                            >
+                                                <FormattedNumberInput
+                                                    value={isApproved ? 0 : (quotationForm.data.sample_qtys[order.id] || 0)}
+                                                    onValueChange={(value) => {
+                                                        quotationForm.setData('sample_qtys', {
+                                                            ...quotationForm.data.sample_qtys,
+                                                            [order.id]: Number(value)
+                                                        });
+                                                    }}
+                                                    disabled={isApproved}
+                                                    placeholder="cth: 1"
+                                                />
+                                            </Field>
+
+                                            {/* Input HARGA */}
+                                            <Field
+                                                label="Harga Sample"
+                                                error={quotationForm.errors[`sample_prices.${order.id}` as keyof typeof quotationForm.errors]}
+                                            >
+                                                <FormattedNumberInput
+                                                    value={isApproved ? 0 : (quotationForm.data.sample_prices?.[order.id] || 0)}
+                                                    onValueChange={(value) => {
+                                                        quotationForm.setData('sample_prices', {
+                                                            ...quotationForm.data.sample_prices,
+                                                            [order.id]: Number(value)
+                                                        });
+                                                    }}
+                                                    disabled={isApproved}
+                                                    placeholder="cth: 150000"
+                                                />
+                                            </Field>
+                                        </div>
+                                        
+                                        {/* Keterangan Tambahan Jika Disable */}
+                                        {isApproved && (
+                                            <p className="text-[11px] leading-tight text-slate-500">
+                                                Artikel ini sudah di-approve. Biaya sample otomatis Rp 0 agar tidak tertagih dua kali.
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -322,7 +382,7 @@ function QuotationSection({
                                         </Field>
                                     )}
 
-                                    {can('quotation.generate') && (
+                                    {/* {can('quotation.generate') && (
                                         <Field label="Nominal Invoice Sample Total" error={approveForm.errors.sample_invoice_amount}>
                                             <FormattedNumberInput
                                                 value={approveForm.data.sample_invoice_amount}
@@ -333,7 +393,7 @@ function QuotationSection({
                                                 Kosongkan/0 jika sample gratis.
                                             </p>
                                         </Field>
-                                    )}
+                                    )} */}
                                 </div>
                             )}
                         </div>

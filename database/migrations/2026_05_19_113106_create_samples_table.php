@@ -18,8 +18,8 @@ return new class extends Migration
             $table->integer('qty'); // Qty Sample
             $table->enum('status', [
                 'draft',
-                'waiting_payment',
-                'paid',
+                'in_production',
+                'completed',
                 'in_delivery',
                 'delivered',
                 'approved',

@@ -86,7 +86,7 @@ export const WorkflowTabs: React.FC<{
   const ws = activePesanan.workflow_status ?? {};
   
   const locked = {
-    purchasing: !ws.sample_paid,
+    purchasing: !ws.sample_paid && !ws.sample_revision,
     sample: !ws.sample_materials_ready,
     productionInvoice: !ws.sample_approved,
     production: !(ws.production_materials_ready),
@@ -160,7 +160,7 @@ export const WorkflowTabs: React.FC<{
             <PurchasingTab job={jobTicket} suppliers={suppliers} />
         </TabsContent>
         <TabsContent value="sample">
-            <SampleTab1 job={jobTicket} />
+            <SampleTab job={jobTicket} />
         </TabsContent>
         <TabsContent value="production">
             <ProductionTab job={jobTicket} />

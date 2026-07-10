@@ -20,8 +20,8 @@ const SampleDeliveryCard = ({
     delivery,
     canDeliver,
     canMarkDelivered,
-    canEditDelivery,
-    canCancelDelivery,
+    canEditDelivery = false,
+    canCancelDelivery = false,
     deliveryForm,
     editDeliveryForm,
     onSubmitDelivery,
@@ -33,16 +33,15 @@ const SampleDeliveryCard = ({
     delivery: any;
     canDeliver: boolean;
     canMarkDelivered: boolean;
-    canEditDelivery: boolean;
-    canCancelDelivery: boolean;
+    canEditDelivery?: boolean;
+    canCancelDelivery?: boolean;
     deliveryForm: any;
-    editDeliveryForm: any;
+    editDeliveryForm?: any; // Dibuat opsional
     onSubmitDelivery: (e: React.FormEvent) => void;
-    onUpdateDelivery: (e: React.FormEvent) => void;
-    onCancelDelivery: (e: React.FormEvent) => void;
+    onUpdateDelivery?: (e: React.FormEvent) => void; // Dibuat opsional
+    onCancelDelivery?: () => void; // Perhatikan ini void biasa tanpa event untuk delete
     onMarkDelivered: () => void;
 }) => {
-
     const [editOpen, setEditOpen] = useState(false);
 
     return (
@@ -55,9 +54,9 @@ const SampleDeliveryCard = ({
                 />
             )}
 
-            {sample && !canDeliver && !canMarkDelivered && sample.status !== 'delivered' && (
+            {sample && !canDeliver && !canMarkDelivered && sample.status !== 'delivered' && sample.status !== 'in_delivery' && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    Sample belum bisa dikirim. Pastikan invoice sample sudah lunas dan payment sudah diverifikasi.
+                    Sample belum bisa dikirim. Pastikan upload bukti sample terlebih dahulu.
                 </div>
             )}
 
@@ -102,17 +101,18 @@ const SampleDeliveryCard = ({
                 </form>
             )}
 
-            {canMarkDelivered && (
+            {delivery && (canMarkDelivered || sample?.status === 'delivered') && (
                 <div className="space-y-3 rounded-xl border bg-slate-50 p-4 text-sm">
-                    <InfoLine label="Courier" value={delivery?.courier_name ?? '-'} />
-                    <InfoLine label="Resi" value={delivery?.tracking_number ?? '-'} />
-                    <InfoLine label="Status" value={delivery?.status ?? 'shipped'} />
+                    <InfoLine label="Courier" value={delivery.courier_name ?? '-'} />
+                    <InfoLine label="Resi" value={delivery.tracking_number ?? '-'} />
+                    <InfoLine label="Status" value={delivery.status ?? 'shipped'} />
 
-                    {delivery?.tracking_url && (
+                    {delivery.tracking_url && (
                         <div>
                             <a
                                 href={delivery.tracking_url}
                                 target="_blank"
+                                rel="noreferrer"
                                 className="inline-block text-blue-600 hover:underline"
                             >
                                 Buka Tracking
@@ -120,40 +120,39 @@ const SampleDeliveryCard = ({
                         </div>
                     )}
 
-                    <div className="flex flex-wrap gap-2">
-                        {canEditDelivery && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setEditOpen(true)}
-                            >
-                                <Edit className="mr-2 size-4" />
-                                Edit Delivery
-                            </Button>
-                        )}
+                    {canMarkDelivered && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {canEditDelivery && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Edit className="mr-2 size-4" /> Edit Delivery
+                                </Button>
+                            )}
 
-                        {canCancelDelivery && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="border-red-200 text-red-700 hover:bg-red-50"
-                                onClick={onCancelDelivery}
-                            >
-                                <Trash2 className="mr-2 size-4" />
-                                Cancel Delivery
-                            </Button>
-                        )}
+                            {canCancelDelivery && onCancelDelivery && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                    onClick={onCancelDelivery}
+                                >
+                                    <Trash2 className="mr-2 size-4" /> Cancel
+                                </Button>
+                            )}
 
-                        <Button type="button" onClick={onMarkDelivered}>
-                            <PackageCheck className="mr-2 size-4" />
-                            Mark as Delivered
-                        </Button>
-                    </div>
+                            <Button type="button" onClick={onMarkDelivered}>
+                                <PackageCheck className="mr-2 size-4" /> Mark as Delivered
+                            </Button>
+                        </div>
+                    )}
                 </div>
             )}
 
             {sample?.status === 'delivered' && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                     Sample sudah diterima customer dan siap direview.
                 </div>
             )}
@@ -167,61 +166,58 @@ const SampleDeliveryCard = ({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={onUpdateDelivery} className="space-y-3">
-                        <Field label="Jasa Kirim" error={editDeliveryForm.errors.courier_name}>
-                            <Input
-                                placeholder="JNE / J&T / GoSend / Internal Courier"
-                                value={editDeliveryForm.data.courier_name}
-                                onChange={(e) =>
-                                    editDeliveryForm.setData('courier_name', e.target.value)
-                                }
-                            />
-                        </Field>
+                    {/* Pastikan editDeliveryForm ada agar tidak crash error undefined data */}
+                    {editDeliveryForm && onUpdateDelivery && (
+                        <form onSubmit={(e) => {
+                            onUpdateDelivery(e);
+                            setEditOpen(false); // Tutup otomatis jika berhasil submit
+                        }} className="space-y-3">
+                            <Field label="Jasa Kirim" error={editDeliveryForm.errors.courier_name}>
+                                <Input
+                                    placeholder="JNE / J&T / GoSend / Internal Courier"
+                                    value={editDeliveryForm.data.courier_name}
+                                    onChange={(e) => editDeliveryForm.setData('courier_name', e.target.value)}
+                                />
+                            </Field>
 
-                        <Field label="Nomor Resi" error={editDeliveryForm.errors.tracking_number}>
-                            <Input
-                                placeholder="Opsional untuk kurir internal"
-                                value={editDeliveryForm.data.tracking_number}
-                                onChange={(e) =>
-                                    editDeliveryForm.setData('tracking_number', e.target.value)
-                                }
-                            />
-                        </Field>
+                            <Field label="Nomor Resi" error={editDeliveryForm.errors.tracking_number}>
+                                <Input
+                                    placeholder="Opsional untuk kurir internal"
+                                    value={editDeliveryForm.data.tracking_number}
+                                    onChange={(e) => editDeliveryForm.setData('tracking_number', e.target.value)}
+                                />
+                            </Field>
 
-                        <Field label="Tracking URL" error={editDeliveryForm.errors.tracking_url}>
-                            <Input
-                                placeholder="https://..."
-                                value={editDeliveryForm.data.tracking_url}
-                                onChange={(e) =>
-                                    editDeliveryForm.setData('tracking_url', e.target.value)
-                                }
-                            />
-                        </Field>
+                            <Field label="Tracking URL" error={editDeliveryForm.errors.tracking_url}>
+                                <Input
+                                    placeholder="https://..."
+                                    value={editDeliveryForm.data.tracking_url}
+                                    onChange={(e) => editDeliveryForm.setData('tracking_url', e.target.value)}
+                                />
+                            </Field>
 
-                        <Field label="Catatan Pengiriman" error={editDeliveryForm.errors.delivery_note}>
-                            <Textarea
-                                rows={3}
-                                value={editDeliveryForm.data.delivery_note}
-                                onChange={(e) =>
-                                    editDeliveryForm.setData('delivery_note', e.target.value)
-                                }
-                            />
-                        </Field>
+                            <Field label="Catatan Pengiriman" error={editDeliveryForm.errors.delivery_note}>
+                                <Textarea
+                                    rows={3}
+                                    value={editDeliveryForm.data.delivery_note}
+                                    onChange={(e) => editDeliveryForm.setData('delivery_note', e.target.value)}
+                                />
+                            </Field>
 
-                        <div className="flex justify-end gap-2 border-t pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setEditOpen(false)}
-                            >
-                                Batal
-                            </Button>
-
-                            <Button type="submit" disabled={editDeliveryForm.processing}>
-                                Simpan Perubahan
-                            </Button>
-                        </div>
-                    </form>
+                            <div className="flex justify-end gap-2 border-t pt-4 mt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(false)}
+                                >
+                                    Batal
+                                </Button>
+                                <Button type="submit" disabled={editDeliveryForm.processing}>
+                                    Simpan Perubahan
+                                </Button>
+                            </div>
+                        </form>
+                    )}
                 </DialogContent>
             </Dialog>
         </SectionCard>

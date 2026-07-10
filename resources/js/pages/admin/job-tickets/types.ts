@@ -225,12 +225,17 @@ export interface WorkflowStatus {
   design_approved?: boolean;
   article_synced?: boolean;
   design_specs_completed?: boolean;
+  price_approved?: boolean;
   quotation_created?: boolean;
   quotation_approved?: boolean;
-  sample_created?: boolean;
   sample_paid?: boolean;
+  sample_created?: boolean;
+  sample_started?: boolean;
+  sample_completed?: boolean;
+  sample_uploaded?: boolean;
   sample_delivered?: boolean;
   sample_approved?: boolean;
+  sample_revision?: boolean;
   production_invoice_created?: boolean;
   production_dp_paid?: boolean;
   materials_purchased?: boolean;
@@ -409,6 +414,7 @@ export interface Pesanan {
   quantity: number;
   sample_qty?: number;
   price_per_piece?: number;
+  sample_price_per_piece?: number;
   estimated_hpp_per_piece?: number;
   status?: string;
 

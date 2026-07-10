@@ -66,7 +66,7 @@ const ReceivingDialog = ({
                             /> */}
                             <FormattedNumberInput
                                 min={0}
-                                max={remainingQty}
+                                // max={remainingQty}
                                 value={form.data.received_qty}
                                 onValueChange={(value) => form.setData('received_qty', value)}
                                 placeholder='cth: 35.000'

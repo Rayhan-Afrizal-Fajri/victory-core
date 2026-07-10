@@ -108,13 +108,13 @@ class DashboardController extends Controller
         $summaryCards = [
             [
                 'key' => 'total_orders',
-                'title' => 'Total Job Ticket',
+                'title' => 'Total Purchase Order',
                 'value' => $totalOrders,
                 'type' => 'total',
             ],
             [
                 'key' => 'active_orders',
-                'title' => 'Job Ticket Aktif',
+                'title' => 'Purchase Order Aktif',
                 'value' => $activeOrders,
                 'type' => 'active',
             ],
@@ -189,7 +189,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Status Job Ticket dihitung dari semua pesanan di dalamnya.
+     * Status Purchase Order dihitung dari semua pesanan di dalamnya.
      */
     private function getJobTicketStatusLabel($jobTicket): string
     {
@@ -208,7 +208,7 @@ class DashboardController extends Controller
         }
 
         /**
-         * Jika semua artikel completed, maka Job Ticket Done.
+         * Jika semua artikel completed, maka Purchase Order Done.
          */
         if (
             $workflows->count() === $pesanans->count() &&
@@ -218,7 +218,7 @@ class DashboardController extends Controller
         }
 
         /**
-         * Selain Done, status Job Ticket mengikuti progress terjauh
+         * Selain Done, status Purchase Order mengikuti progress terjauh
          * dari salah satu artikel/pesanan.
          */
         if ($workflows->contains(fn ($workflow) => (bool) $workflow->delivered)) {

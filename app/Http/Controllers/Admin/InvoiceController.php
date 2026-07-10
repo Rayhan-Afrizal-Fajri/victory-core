@@ -452,10 +452,14 @@ class InvoiceController extends Controller
 
         // dd($invoice, $invoice->jobTicket->pesanans, $invoice->jobTicket->customer, $invoice->payments);
 
+        $pesanans = Pesanan::where('job_ticket_id', $invoice->jobTicket->id)->whereHas('workflowStatus', function ($query) {
+            $query->where('sample_revision', true);
+        })->get();
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $invoice->jobTicket->companyProfile,
-            'pesanans' => $invoice->jobTicket->pesanans,
+            'pesanans' => $pesanans,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
         ])->setPaper('a4', 'portrait');

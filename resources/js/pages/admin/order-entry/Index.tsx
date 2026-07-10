@@ -207,14 +207,14 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
 
     if (isEditing && editingJobTicket) {
       form.patch(update(editingJobTicket.id).url, {
-        onSuccess: () => toast.success('Job Ticket berhasil diperbarui.'),
+        onSuccess: () => toast.success('Purchase Order berhasil diperbarui.'),
         onError: (err) => toast.error(Object.values(err)[0] as string || 'Gagal menyimpan perubahan.'),
       });
       return;
     }
 
     form.post(store().url, {
-      onSuccess: () => toast.success('Job Ticket berhasil dibuat.'),
+      onSuccess: () => toast.success('Purchase Order berhasil dibuat.'),
       onError: (err) => toast.error(Object.values(err)[0] as string || 'Gagal menyimpan order.'),
     });
   };
@@ -224,22 +224,22 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
 
   return (
     <>
-      <Head title={isEditing ? 'Edit Job Ticket' : 'Order Entry'} />
+      <Head title={isEditing ? 'Edit Purchase Order' : 'Order Entry'} />
 
       <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.85fr_1fr]">
         <div className="space-y-6">
           
-          {/* SECTION 1: DATA JOB TICKET */}
+          {/* SECTION 1: DATA Purchase Order */}
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Job Ticket</h3>
+            <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Purchase Order</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>No Job Ticket *</Label>
+                <Label>No Purchase Order *</Label>
                 <Input readOnly value={form.data.no_job_ticket} required />
               </div>
               
               <div className="space-y-2">
-                <Label>Deadline Job Ticket *</Label>
+                <Label>Deadline Purchase Order *</Label>
                 <Input
                   type="date"
                   value={form.data.deadline}
@@ -504,7 +504,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button type="submit" disabled={form.processing} className="w-full sm:w-auto">
-              {isEditing ? 'Simpan Perubahan Job Ticket' : 'Buat Job Ticket'}
+              {isEditing ? 'Simpan Perubahan Purchase Order' : 'Buat Purchase Order'}
             </Button>
           </div>
         </div>
@@ -513,7 +513,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
         <aside className="space-y-6">
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 mb-5">
-              Ringkasan Job Ticket
+              Ringkasan Purchase Order
             </p>
 
             <div className="space-y-3">

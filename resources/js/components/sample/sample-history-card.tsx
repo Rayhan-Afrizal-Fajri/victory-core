@@ -279,6 +279,8 @@ function SampleHistoryDetailSheet({
     if (!sample) return null;
 
     const invoice = sample.invoice || null;
+
+    console.log(invoice, sample);
     const payments = invoice?.payments || [];
     const media = sample.media || [];
     const totalInvoice = getInvoiceTotal(sample);

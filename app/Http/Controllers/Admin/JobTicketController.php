@@ -286,6 +286,7 @@ class JobTicketController extends Controller
                     'quantity' => $pesanan->q,
                     'sample_qty' => $pesanan->sample_qty,
                     'price_per_piece' => (float) $pesanan->harga_jual_per_pcs,
+                    'sample_price_per_piece' => (float) $pesanan->harga_sample_per_pcs,
                     'estimated_hpp_per_piece' => (float) $pesanan->estimasi_hpp_per_pcs,
                     'status' => $pesanan->status_divisi,
                     
@@ -321,17 +322,14 @@ class JobTicketController extends Controller
                         'file_path' => $d->file_path,
                         'note' => $d->revision_note,
                         'status' => $d->status,
+                        'revision_note' => $d->revision_note,
+                        'customer_revision_note' => $d->customer_revision_note,
+                        'designer_revision_note' => $d->designer_revision_note,
                         'approved' => (bool) $d->approved_at,
                         'created_at' => $d->uploaded_at,
                     ])->toArray(),
 
-                    'samples' => $pesanan->samples->map(fn ($s) => [
-                        'id' => $s->id,
-                        'qty' => $s->qty,
-                        'status' => $s->status,
-                        'approved_at' => $s->approved_at,
-                        'invoice' => $s->invoice,
-                    ])->toArray(),
+                    'samples' => $pesanan->samples?->toArray() ?? [],
 
                     'purchasings' => $pesanan->purchasing->map(fn ($p) => [
                         'id' => $p->id,

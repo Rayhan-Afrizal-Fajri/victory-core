@@ -74,31 +74,37 @@ const PurchasingSummaryCard = ({ purchasings, job }: { purchasings: any[]; job: 
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <ReceivingProgressBox
-                    title="Progress Material Sample"
-                    description={
-                        workflow?.sample_materials_ready
-                            ? 'Material untuk sample sudah cukup.'
-                            : 'Material untuk sample belum cukup.'
-                    }
-                    received={totalSampleReceivedQty}
-                    required={totalSampleRequiredQty}
-                    progress={sampleProgress}
-                    ready={Boolean(workflow?.sample_materials_ready)}
-                />
+                {/* Muncul jika sample BELUM ready, ATAU jika production SUDAH ready (semua selesai) */}
+                {(workflow.sample_materials_ready == 0 || workflow.production_materials_ready == 1) && (
+                    <ReceivingProgressBox
+                        title="Progress Material Sample"
+                        description={
+                            workflow?.sample_materials_ready
+                                ? 'Material untuk sample sudah cukup.'
+                                : 'Material untuk sample belum cukup.'
+                        }
+                        received={totalSampleReceivedQty}
+                        required={totalSampleRequiredQty}
+                        progress={sampleProgress}
+                        ready={Boolean(workflow?.sample_materials_ready)}
+                    />
+                )}
 
-                <ReceivingProgressBox
-                    title="Progress Material Production"
-                    description={
-                        workflow?.production_materials_ready
-                            ? 'Material untuk produksi sudah cukup.'
-                            : 'Material untuk produksi belum cukup.'
-                    }
-                    received={totalProductionReceivedQty}
-                    required={totalProductionRequiredQty}
-                    progress={productionProgress}
-                    ready={Boolean(workflow?.production_materials_ready)}
-                />
+                {/* Muncul pokoknya asal sample SUDAH ready */}
+                {workflow.sample_materials_ready == 1 && (
+                    <ReceivingProgressBox
+                        title="Progress Material Production"
+                        description={
+                            workflow?.production_materials_ready
+                                ? 'Material untuk produksi sudah cukup.'
+                                : 'Material untuk produksi belum cukup.'
+                        }
+                        received={totalProductionReceivedQty}
+                        required={totalProductionRequiredQty}
+                        progress={productionProgress}
+                        ready={Boolean(workflow?.production_materials_ready)}
+                    />
+                )}
             </div>
         </SectionCard>
     );

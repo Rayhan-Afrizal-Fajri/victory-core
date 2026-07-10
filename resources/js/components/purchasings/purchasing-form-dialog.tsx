@@ -71,13 +71,13 @@ const PurchasingFormDialog = ({
                     </Field>
 
                     {jobTickets && jobTickets.length > 0 && (
-                        <Field label="Job Ticket" error={form.errors.pesanan_id}>
+                        <Field label="Purchase Order" error={form.errors.pesanan_id}>
                             <Select
                                 value={form.data.pesanan_id ? String(form.data.pesanan_id) : ''}
                                 onValueChange={(value) => form.setData('pesanan_id', value)}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Pilih Job Ticket" />
+                                    <SelectValue placeholder="Pilih Purchase Order" />
                                 </SelectTrigger>
 
                                 <SelectContent>

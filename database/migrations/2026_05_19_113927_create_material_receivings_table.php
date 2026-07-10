@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('material_receivings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('purchasing_id')->constrained('purchasings')->onDelete('cascade');
-            $table->decimal('received_qty', 15, 2); // Qty yang diterima pada penerimaan barang ini
+            $table->decimal('received_qty', 15, 4); // Qty yang diterima pada penerimaan barang ini
             $table->dateTime('received_at'); // Tanggal dan waktu ketika barang diterima
             $table->foreignId('checked_by')->constrained('users'); // Relasi ke user yang memeriksa barang yang diterima
             $table->text('notes')->nullable(); // Catatan tambahan untuk penerimaan barang

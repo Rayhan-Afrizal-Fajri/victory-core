@@ -186,7 +186,7 @@ class DesignController extends Controller
             $pesanan->workflowStatus()->updateOrCreate(
                 ['pesanan_id' => $pesanan->id],
                 [
-                    'design_uploaded' => true,
+                    'design_uploaded' => false,
                     'design_approved' => false,
                 ]
             );
@@ -218,7 +218,8 @@ class DesignController extends Controller
             'productMaterials.defaultSupplier',
             'productManufacturingWorks.manufacturingWork.defaultVendor',
         ])->findOrFail($validated['product_id']);
-        
+
+        // dd($product);       
 
         DB::transaction(function () use ($pesanan, $product) {
             $pesanan->update([
@@ -266,6 +267,8 @@ class DesignController extends Controller
 
             foreach ($product->productManufacturingWorks as $component) {
                 $work = $component->manufacturingWork;
+
+                dd($work);
 
                 $costPerPcs = $component->default_usage * ($work?->default_max_estimate ?? 0);
 
@@ -419,6 +422,24 @@ class DesignController extends Controller
         return back()->with('success', 'Spesifikasi manufaktur berhasil diperbarui.');
     }
 
+    public function lockBOM(Request $request, Pesanan $pesanan)
+    {
+        $validated = $request->validate([
+            'is_lock_bom' => ['required', 'boolean'],
+        ]);
+
+        // Langsung gunakan nilai boolean dari request
+        $pesanan->workflowStatus()->updateOrCreate(
+            ['pesanan_id' => $pesanan->id],
+            [
+                'design_specs_completed' => $validated['is_lock_bom'],
+            ]
+        );
+
+        // Pastikan mengembalikan response (misal menggunakan Inertia/redirect)
+        return back()->with('success', 'Status BOM berhasil diubah.');
+    }
+
     public function updateOwnerSellingPrice(Request $request, string $pesananId)
     {
         $validated = $request->validate([
@@ -441,7 +462,7 @@ class DesignController extends Controller
             $pesanan->workflowStatus()->updateOrCreate(
                 ['pesanan_id' => $pesanan->id],
                 [
-                    'design_specs_completed' => true,
+                    'price_approved' => true,
                 ]
             );
 

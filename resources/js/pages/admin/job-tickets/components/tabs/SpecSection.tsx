@@ -5,7 +5,7 @@ import { formatCurrency, formatDecimal } from '@/helpers/format';
 import { useCan } from '@/hooks/use-can';
 
 // Renders a specification table for materials or accessories with an Edit action.
-function SpecSection({ title, items, onEdit, onDelete }: { title: string; items: any[]; onEdit: (spec: any) => void; onDelete?: (spec: any) => void }) {
+function SpecSection({ title, items, workflow, onEdit, onDelete }: { title: string; items: any[]; workflow: any; onEdit: (spec: any) => void; onDelete?: (spec: any) => void }) {
     const can = useCan();
     return (
         <SectionCard title={title}>
@@ -67,7 +67,7 @@ function SpecSection({ title, items, onEdit, onDelete }: { title: string; items:
                                 size="sm" 
                                 variant="outline" 
                                 onClick={() => onEdit(item)}
-                                disabled={!can('boms.edit')}
+                                disabled={!can('boms.edit') || workflow.design_specs_completed}
                                 >
                                 Edit
                                 </Button>
@@ -78,7 +78,7 @@ function SpecSection({ title, items, onEdit, onDelete }: { title: string; items:
                                     variant="outline"
                                     className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => onDelete(item)}
-                                    disabled={!can('boms.delete')}
+                                    disabled={!can('boms.delete') || workflow.design_specs_completed}
                                 >
                                     Hapus
                                 </Button>

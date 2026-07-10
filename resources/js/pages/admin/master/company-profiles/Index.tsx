@@ -143,7 +143,7 @@ export default function Index({ companyProfiles }: Props) {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Master Data</p>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Company Profiles</h1>
             <p className="max-w-2xl text-sm leading-6 text-slate-500">
-              Kelola data perusahaan yang digunakan pada dokumen dan job ticket.
+              Kelola data perusahaan yang digunakan pada dokumen dan purchase order.
             </p>
           </div>
           <Dialog

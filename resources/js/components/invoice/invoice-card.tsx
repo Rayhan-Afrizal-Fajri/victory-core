@@ -162,7 +162,7 @@ const InvoiceCard = ({
                     </Button>
                 )} */}
 
-                {canPay && onPay && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
+                {can('invoices.pay') && onPay && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
                     <Button
                         type="button"
                         className="min-w-27.5 flex-1"

@@ -349,7 +349,7 @@ export default function Index({
           ),
       },
       {
-          header: 'Job Ticket',
+          header: 'Purchase Order',
           accessor: 'no_job_ticket',
           cell: (row) => (
               <div>
@@ -442,14 +442,14 @@ export default function Index({
                       <DialogHeader>
                           <DialogTitle>Buat Invoice Manual</DialogTitle>
                           <DialogDescription>
-                              Buat invoice untuk job ticket yang belum memiliki invoice aktif.
+                              Buat invoice untuk Purchase Order yang belum memiliki invoice aktif.
                           </DialogDescription>
                       </DialogHeader>
 
                       <form onSubmit={submitCreateInvoice} className="space-y-4">
                           <div className="grid gap-2">
                               <label className="text-sm font-medium text-slate-700">
-                                  Job Ticket
+                                  Purchase Order
                               </label>
 
                               <Select
@@ -478,13 +478,13 @@ export default function Index({
                                   }}
                               >
                                   <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Pilih job ticket" />
+                                      <SelectValue placeholder="Pilih Purchase Order" />
                                   </SelectTrigger>
 
                                   <SelectContent>
                                       {eligibleJobTickets.length === 0 ? (
                                           <SelectItem value="empty" disabled>
-                                              Tidak ada job ticket eligible
+                                              Tidak ada Purchase Order eligible
                                           </SelectItem>
                                       ) : (
                                           eligibleJobTickets.map((ticket) => (
@@ -685,7 +685,7 @@ export default function Index({
                       columns={columns}
                       data={filteredInvoices}
                       searchKeys={['no_invoice', 'no_invoice']}
-                      searchPlaceholder="Cari invoice / job ticket"
+                      searchPlaceholder="Cari invoice / Purchase Order"
                   />
               </CardContent>
           </Card>

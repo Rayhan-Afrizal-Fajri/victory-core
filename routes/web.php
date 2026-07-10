@@ -113,6 +113,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/pesanan/{pesanan}/sync-article', [DesignController::class, 'syncArticle'])
         ->name('designs.sync-article');
+        
+    Route::post('/pesanan/{pesanan}/lock-bom', [DesignController::class, 'lockBOM'])
+        ->name('designs.lock-bom');
 
     Route::patch('/pesanan/{pesanan}/owner-selling-price', [DesignController::class, 'updateOwnerSellingPrice'])
         ->name('designs.owner-selling-price');
@@ -164,17 +167,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Samples
      */
-    Route::post('/pesanan/{id}/samples', [SampleController::class, 'store'])
-        ->name('samples.store');
+    // Route::post('/pesanan/{id}/samples', [SampleController::class, 'store'])
+    //     ->name('samples.store');
 
-    Route::post('/samples/{id}/media', [SampleController::class, 'uploadMedia'])
+    Route::post('/samples/{sample}/media', [SampleController::class, 'storeMedia'])
         ->name('samples.media.store');
 
-    Route::patch('/samples/{sample}', [SampleController::class, 'update'])
-        ->name('samples.update');
+    Route::delete('/samples/{sample}/media', [SampleController::class, 'deleteMedia'])
+        ->name('samples.media.store');
 
-    Route::delete('/sample/{sample}', [SampleController::class, 'destroy'])
-        ->name('samples.destroy');
+    Route::patch('/samples/{sample}/start', [SampleController::class, 'start'])
+        ->name('samples.start');
+
+    Route::patch('/samples/{sample}/complete', [SampleController::class, 'complete'])
+        ->name('samples.complete');
+
+    // Route::patch('/samples/{sample}', [SampleController::class, 'update'])
+    //     ->name('samples.update');
+
+    // Route::delete('/sample/{sample}', [SampleController::class, 'destroy'])
+    //     ->name('samples.destroy');
 
     Route::post('/samples/{id}/delivery', [SampleController::class, 'ship'])
         ->name('samples.delivery.store');

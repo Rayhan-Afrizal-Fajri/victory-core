@@ -97,7 +97,7 @@ class OrderEntryController extends Controller
     {
         $grouped = DefaultSizeBreakdown::query()
             ->select('type', 'label')
-            ->orderBy('label')
+            ->orderBy('sequence', 'asc')
             ->get()
             ->groupBy('type');
 
@@ -179,7 +179,7 @@ class OrderEntryController extends Controller
         $jobTicket = DB::transaction(function () use ($validated) {
             $customer = $this->resolveCustomer($validated);
 
-            // 1. Buat Job Ticket
+            // 1. Buat Purchase Order
             $jobTicket = JobTicket::create([
                 'no_job_ticket' => $validated['no_job_ticket'],
                 'date' => now(),
@@ -228,14 +228,14 @@ class OrderEntryController extends Controller
                     'step' => 'order_entry',
                     'action' => 'created',
                     'user_id' => Auth::id(),
-                    'notes' => "Pesanan {$pesanan->produk} masuk dalam Job Ticket.",
+                    'notes' => "Pesanan {$pesanan->produk} masuk dalam Purchase Order.",
                 ]);
             }
 
             return $jobTicket;
         });
 
-        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Job Ticket berhasil dibuat.');
+        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Purchase Order berhasil dibuat.');
     }
 
     /**
@@ -361,7 +361,7 @@ class OrderEntryController extends Controller
             }
         });
 
-        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Job Ticket berhasil diperbarui.');
+        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Purchase Order berhasil diperbarui.');
     }
 
     public function destroy(JobTicket $jobTicket)
@@ -369,6 +369,6 @@ class OrderEntryController extends Controller
 
         $jobTicket->delete();
 
-        return redirect()->route('job-tickets.index')->with('success', 'Job Ticket berhasil dihapus.');
+        return redirect()->route('job-tickets.index')->with('success', 'Purchase Order berhasil dihapus.');
     }
 }

@@ -122,7 +122,7 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
-                {/* KARTU 1: DATA PELANGGAN & JOB TICKET (GLOBAL) */}
+                {/* KARTU 1: DATA PELANGGAN & Purchase Order (GLOBAL) */}
                 <SectionCard title="Informasi Global & Pelanggan" icon={<User className="w-4 h-4 text-white dark:text-black" />}>
                     <div className="space-y-3">
                         <div className="flex flex-col">
@@ -145,7 +145,7 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
                             </span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-slate-500 font-medium">Deadline Job Ticket</span>
+                            <span className="text-xs text-slate-500 font-medium">Deadline Purchase Order</span>
                             <span className="text-sm text-slate-700 flex items-center gap-2">
                                 <CalendarClock className="w-4 h-4 text-slate-400" />
                                 {jobTicket.deadline ?? 'Tidak ada deadline'}
@@ -267,7 +267,7 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
                             {jobTicket.customer_notes}
                         </p>
                     ) : (
-                        <p className="text-sm text-slate-400 italic">Tidak ada catatan global untuk Job Ticket ini.</p>
+                        <p className="text-sm text-slate-400 italic">Tidak ada catatan global untuk Purchase Order ini.</p>
                     )}
                 </SectionCard>
             </div>

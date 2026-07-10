@@ -14,8 +14,9 @@ function GenerateBomPoCard({
     onSubmit: (e: React.FormEvent) => void;
 }) {
     const can = useCan();
-
-    const productionQty = Number(job.quantity || job.q || 0);
+    
+    const workflow = job.workflow_status || {};
+    const productionQty = workflow.sample_revision == true ? 0 : Number(job.quantity || job.q || 0);
     const sampleQty = Number(job.sample_qty || 1);
     const totalPlannedQty = productionQty + sampleQty;
 
@@ -24,18 +25,22 @@ function GenerateBomPoCard({
             <form onSubmit={onSubmit} className="space-y-4">
                 <div>
                     <p className="font-semibold text-slate-900">
-                        Generate purchasing dari BOM
+                        Generate {workflow.sample_revision == true ? 'BOM / PO untuk Revisi Sample' : 'BOM / PO untuk Sample dan Production'}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                        Sistem akan membuat daftar pembelian bahan dari spesifikasi Design untuk kebutuhan sample dan production sekaligus.
+                        {workflow.sample_revision == true
+                            ? 'Qty pembelian akan disesuaikan dengan kebutuhan revisi sample.'
+                            : 'Qty pembelian akan disesuaikan dengan kebutuhan sample dan production.'}
                     </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                    <InfoBox
-                        label="Production Qty"
-                        value={`${productionQty} pcs`}
-                    />
+                    {workflow.sample_revision == false && (
+                        <InfoBox
+                            label="Production Qty"
+                            value={`${productionQty} pcs`}
+                        />
+                    )}
 
                     <InfoBox
                         label="Sample Qty"
@@ -49,7 +54,9 @@ function GenerateBomPoCard({
                 </div>
 
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Purchasing ini dibuat satu kali untuk kebutuhan sample dan production. Qty pembelian masih bisa diedit setelah BOM/PO digenerate.
+                    {workflow.sample_revision == true
+                        ? 'Purchasing ini dibuat untuk kebutuhan revisi sample. Qty pembelian masih bisa diedit setelah BOM/PO digenerate.'
+                        : 'Purchasing ini dibuat satu kali untuk kebutuhan sample dan production. Qty pembelian masih bisa diedit setelah BOM/PO digenerate.'}
                 </div>
 
                 <div className="flex justify-end border-t pt-4">

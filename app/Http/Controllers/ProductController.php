@@ -102,6 +102,7 @@ class ProductController extends Controller
                     'manufacturing_work_id' => $pmw->manufacturing_work_id,
                     'work_name' => $pmw->manufacturingWork->name,
                     'default_usage' => (float) $pmw->default_usage,
+                    'default_max_estimate' => $pmw->default_max_estimate,
                     'default_unit' => $pmw->default_unit,
                     'process_behavior' => $pmw->manufacturingWork->process_behavior,
                     'usage_note' => $pmw->usage_note,

@@ -296,7 +296,7 @@ export default function Index({
 
   const columns: DataTableColumn<PurchaseRow>[] = [
     {
-      header: 'Job Ticket',
+      header: 'Purchase Order',
       accessor: 'no_job_ticket',
       cell: (row) => (
         <div>
@@ -491,7 +491,7 @@ export default function Index({
               columns={columns}
               data={filteredPurchases}
               searchKeys={['no_job_ticket', 'customer', 'item_bahan']}
-              searchPlaceholder="Cari Job Ticket / Customer / Material"
+              searchPlaceholder="Cari Purchase Order / Customer / Material"
             />
           </CardContent>
         </Card>

@@ -57,7 +57,7 @@ export default function AuthSplitLayout({
                         Kelola alur produksi tekstil dari pesanan hingga laba rugi.
                     </h2>
                     <p className="text-blue-200 text-sm max-w-md">
-                        Task scheduling, digital job ticket, kanban board, dan tracking realtime
+                        Task scheduling, digital purchase order, kanban board, dan tracking realtime
                         untuk seluruh divisi.
                     </p>
                 </div>

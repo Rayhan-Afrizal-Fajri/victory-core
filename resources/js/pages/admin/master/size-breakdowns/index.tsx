@@ -19,6 +19,7 @@ type DefaultSizeBreakdown = {
   id: number;
   type: 'color' | 'fabric' | 'size' | 'unit';
   label: string;
+  sequence: number;
 };
 
 type Props = {

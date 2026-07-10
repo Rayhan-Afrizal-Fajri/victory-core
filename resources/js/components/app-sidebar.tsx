@@ -99,7 +99,6 @@ export function AppSidebar() {
     ]
 
     const page = usePage();
-    console.log(page.props.auth);
     
     const masterItems = [
         ...(can('users.view') || can('roles.view') ? [{

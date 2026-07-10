@@ -13,12 +13,13 @@ class DefaultSizeBreakdownController extends Controller
     public function index()
     {
         $breakdowns = DefaultSizeBreakdown::query()
-            ->latest()
+            ->orderBy('sequence', 'asc')
             ->get()
             ->map(fn ($item) => [
                 'id' => $item->id,
                 'type' => $item->type,
                 'label' => $item->label,
+                'sequence' => $item->sequence,
             ]);
 
         return Inertia::render('admin/master/size-breakdowns/index', [
