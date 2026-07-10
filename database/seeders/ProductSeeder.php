@@ -134,13 +134,24 @@ class ProductSeeder extends Seeder
             // Insert Manufacturing Works
             $sortOrderWork = 1;
             foreach ($prodData['works'] as $workName) {
+                // Simpan instance model master ke dalam variabel agar lebih rapi
+                $workMaster = $works[$workName]; 
+
                 ProductManufacturingWork::create([
-                    'product_id' => $product->id,
-                    'manufacturing_work_id' => $works[$workName]->id,
-                    'default_usage' => 1,
-                    'default_unit' => 'pcs',
-                    'sort_order' => $sortOrderWork++,
-                    'is_required' => true,
+                    'product_id'            => $product->id,
+                    'manufacturing_work_id' => $workMaster->id,
+                    
+                    // Ambil default_max_estimate dari master ManufacturingWork
+                    'max_estimate'          => $workMaster->default_max_estimate, 
+                    
+                    // Jika Anda memiliki default cost di master, panggil juga di sini.
+                    // Contoh jika nilainya statis atau mau diset 0 sementara:
+                    'cost_per_pcs'          => 0, 
+
+                    'default_usage'         => 1,
+                    'default_unit'          => 'pcs', // atau bisa $workMaster->default_unit
+                    'sort_order'            => $sortOrderWork++,
+                    'is_required'           => true,
                 ]);
             }
         }
