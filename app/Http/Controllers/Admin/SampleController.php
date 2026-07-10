@@ -278,7 +278,7 @@ class SampleController extends Controller
             // Opsional: Jika Anda punya field catatan revisi di tabel Pesanan/Desain, bisa disave di sini agar Designer baca.
             $pesanan->designs()->where('status', 'approved')->latest()->first()->update(['status' => 'revision_needed', 'revision_note' => $request->customer_review_note]);
 
-            dd($pesanan->designs()->where('status', 'approved')->latest()->first(), 'Design yang direvisi'); // Debugging line
+            // dd($pesanan->designs()->where('status', 'approved')->latest()->first(), 'Design yang direvisi'); // Debugging line
 
             $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'sample',
