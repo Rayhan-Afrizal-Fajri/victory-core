@@ -227,12 +227,22 @@ class QuotationController extends Controller
             // --- LOGIKA PERHITUNGAN INVOICE SAMPLE OTOMATIS ---
             $totalSampleInvoiceAmount = 0;
 
+            $isFirstQuotation = $jobTicket->invoices->isEmpty();
             // 1. Hitung total tagihan global untuk menentukan apakah invoice perlu dicetak
             foreach ($pesanans as $pesanan) {
                 $qty = (int) $pesanan->sample_qty;
-                if (!$pesanan->workflowStatus?->sample_revision) {
-                    $qty = 0; // Jika sudah approved sebelumnya, jangan hitung lagi
+                
+                // JIKA INI BUKAN QUOTATION PERTAMA (Artinya ada revisi/pembuatan ulang)
+                if (!$isFirstQuotation) {
+                    // Baru kita terapkan filter:
+                    // Jika pesanan ini TIDAK minta revisi, berarti sebelumnya sudah approved, jadikan qty 0
+                    if (!$pesanan->workflowStatus?->sample_revision) {
+                        $qty = 0; 
+                    }
                 }
+                // Jika ini Quotation Pertama, logika `if (!$isFirstQuotation)` diabaikan,
+                // sehingga $qty tetap utuh nilainya sesuai inputan user.
+
                 $price = (float) $pesanan->harga_sample_per_pcs;
                 $totalSampleInvoiceAmount += ($qty * $price);
             }
