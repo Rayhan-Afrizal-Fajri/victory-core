@@ -58,13 +58,38 @@ class ProductSeeder extends Seeder
                 ],
                 'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
             ],
-            // ... (Data produk lain dibiarkan sama seperti milik Anda)
             [
                 'name' => 'T-shirt S/S combed reguler Sablon Premium sablon 1-3 warna',
                 'category' => 'Casual Wear',
                 'materials' => [
                     ['mat' => 'Kain Combed', 'sup' => 'CKP', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
                     ['mat' => 'Bahan Rib', 'sup' => 'CKP', 'qty' => 0.008, 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon DTF', 'sup' => 'Max Print', 'qty' => 0.1, 'unit' => 'cm', 'price' => 35000],
+                ],
+                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+            ],
+            [
+                'name' => 'T-shirt S/S combed premium DTF',
+                'category' => 'Casual Wear',
+                'materials' => [
+                    ['mat' => 'Kain Combed', 'sup' => 'Fabriku', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'Fabriku', 'qty' => 0.008, 'unit' => 'kg', 'price' => 114000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon Plastisol', 'sup' => 'Lucas', 'qty' => 0.05, 'unit' => 'kg', 'price' => 96570],
+                ],
+                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+            ],
+            [
+                'name' => 'T-shirt S/S combed Reguler DTF',
+                'category' => 'Casual Wear',
+                'materials' => [
+                    ['mat' => 'Kain Combed', 'sup' => 'Intan', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'Intan', 'qty' => 0.008, 'unit' => 'kg', 'price' => 114000],
                     ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
                     ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
                     ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
