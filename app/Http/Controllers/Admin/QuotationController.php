@@ -313,7 +313,7 @@ class QuotationController extends Controller
             ->whereIn('status_tagihan', ['unpaid', 'partial_paid']) // Cari yang masih bisa ditambah tagihannya
             ->first();
 
-        dd($unpaidInvoice, 'Unpaid Invoice', $amount, 'Amount to Add'); // Debugging line
+        // dd($unpaidInvoice, 'Unpaid Invoice', $amount, 'Amount to Add'); // Debugging line
 
         // 2. Jika ada invoice unpaid, UPDATE total tagihannya
         if ($unpaidInvoice) {
