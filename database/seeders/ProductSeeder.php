@@ -146,7 +146,7 @@ class ProductSeeder extends Seeder
                     
                     // Jika Anda memiliki default cost di master, panggil juga di sini.
                     // Contoh jika nilainya statis atau mau diset 0 sementara:
-                    'cost_per_pcs'          => 0, 
+                    // 'cost_per_pcs'          => 0, 
 
                     'default_usage'         => 1,
                     'default_unit'          => 'pcs', // atau bisa $workMaster->default_unit
