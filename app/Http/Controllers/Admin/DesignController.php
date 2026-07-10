@@ -268,8 +268,6 @@ class DesignController extends Controller
             foreach ($product->productManufacturingWorks as $component) {
                 $work = $component->manufacturingWork;
 
-                dd($work);
-
                 $costPerPcs = $component->default_usage * ($work?->default_max_estimate ?? 0);
 
                 $pesanan->manufacturingSpecs()->create([
