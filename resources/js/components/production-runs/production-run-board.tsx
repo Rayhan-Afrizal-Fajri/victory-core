@@ -312,7 +312,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                             <Field label="Courier" error={deliveryForm.errors.courier_name}>
                                 <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    disabled={!can('productions.delivery') || !can('samples.delivery')}
+                                    disabled={!can('productions.delivery')}
                                     value={deliveryForm.data.courier_name}
                                     onChange={(e) =>
                                         deliveryForm.setData('courier_name', e.target.value)
