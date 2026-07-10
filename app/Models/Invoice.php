@@ -30,4 +30,9 @@ class Invoice extends Model
     {
         return $this->hasOne(Sample::class);
     }
+
+    public function items()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
 }

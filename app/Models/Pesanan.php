@@ -174,4 +174,9 @@ class Pesanan extends Model
     {
         return $this->hasMany(ProductionDefectHistory::class);
     }
+
+    public function invoiceItems()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
 }

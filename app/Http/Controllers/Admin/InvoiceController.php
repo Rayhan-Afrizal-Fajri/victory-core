@@ -448,6 +448,7 @@ class InvoiceController extends Controller
             'jobTicket.companyProfile',
             'jobTicket.pesanans.sizeBreakdowns',
             'payments',
+            'items.pesanan',
         ])->findOrFail($invoiceId);
 
         // OPTIMASI: Filter langsung dari data yang sudah di-load, 
@@ -460,7 +461,7 @@ class InvoiceController extends Controller
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $invoice->jobTicket->companyProfile,
-            'pesanans' => $pesanans, // Kirim pesanan yang sudah difilter
+            'items' => $invoice->items,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
         ])->setPaper('a4', 'portrait');

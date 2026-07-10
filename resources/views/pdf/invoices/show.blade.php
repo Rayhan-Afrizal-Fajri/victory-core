@@ -268,18 +268,19 @@
                 $grandSubtotal = 0;
             @endphp
 
-            @foreach ($pesanans as $index => $pesanan)
+            @foreach ($items as $index => $item)
 
                 @php
-                    $kategoriInvoice = $invoice->kategori_invoice;
-                    $qty = $kategoriInvoice === 'sample'
-                        ? ($pesanan->sample_qty ?? 0)
-                        : ($pesanan->qty ?? $pesanan->quantity ?? 0);
-                    $price = $kategoriInvoice === 'sample'
-                        ? ($pesanan->harga_sample_per_pcs ?? 0)
-                        : ($pesanan->harga_jual_per_pcs ?? 0);
+                    // $pesanan = $item->pesanan;
+                    // $kategoriInvoice = $invoice->kategori_invoice;
+                    // $qty = $kategoriInvoice === 'sample'
+                    //     ? ($pesanan->sample_qty ?? 0)
+                    //     : ($pesanan->qty ?? $pesanan->quantity ?? 0);
+                    // $price = $kategoriInvoice === 'sample'
+                    //     ? ($pesanan->harga_sample_per_pcs ?? 0)
+                    //     : ($pesanan->harga_jual_per_pcs ?? 0);
 
-                    $subtotal = $qty * $price;
+                    $subtotal = $item->subtotal ?? $item->quantity * $item->price_per_pcs;
 
                     $grandSubtotal += $subtotal;
                 @endphp
@@ -293,22 +294,22 @@
                     <td>
 
                         <strong>
-                            {{ $pesanan->requested_product_name ?? $pesanan->produk ?? '-' }}
+                            {{ $item->item_name ?? '-' }}
                         </strong>
 
-                        @if($pesanan->product)
+                        @if($item->pesanan && $item->pesanan->product)
                             <br>
                             <span style="font-size:9px;color:#6b7280">
-                                {{ $pesanan->product->category }}
+                                {{ $item->pesanan->product->category }}
                             </span>
                         @endif
 
                     </td>
 
                     <td>                        
-                        @if($pesanan && $pesanan->sizeBreakdowns && $pesanan->sizeBreakdowns->count() > 0)
+                        @if($item->pesanan && $item->pesanan->sizeBreakdowns && $item->pesanan->sizeBreakdowns->count() > 0)
                             <div style="font-size: 9px;">
-                                @foreach($pesanan->sizeBreakdowns as $breakdown)
+                                @foreach($item->pesanan->sizeBreakdowns as $breakdown)
                                     <span class="breakdown-tag">
                                         {{ $breakdown->color ? $breakdown->color . ' - ' : '' }}<strong>{{ $breakdown->size_label }}</strong>: {{ $breakdown->qty }}pcs ({{ $breakdown->fabric_spec }})
                                     </span>
@@ -319,13 +320,13 @@
 
                     <td class="text-center">
 
-                        {{ number_format($qty) }}
+                        {{ number_format($item->quantity) }}
 
                     </td>
 
                     <td class="text-right">
 
-                        Rp {{ number_format($price,0,',','.') }}
+                        Rp {{ number_format($item->price_per_pcs,0,',','.') }}
 
                     </td>
 

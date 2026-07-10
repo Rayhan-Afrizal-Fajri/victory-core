@@ -224,9 +224,10 @@ class QuotationController extends Controller
             $jobTicket = $quotation->jobTicket;
             $pesanans = $jobTicket->pesanans;
             
+            
             // --- LOGIKA PERHITUNGAN INVOICE SAMPLE OTOMATIS ---
+            $pesanansCalculated = [];
             $totalSampleInvoiceAmount = 0;
-
             $isFirstQuotation = $jobTicket->invoices->isEmpty();
             // 1. Hitung total tagihan global untuk menentukan apakah invoice perlu dicetak
             foreach ($pesanans as $pesanan) {
@@ -244,7 +245,20 @@ class QuotationController extends Controller
                 // sehingga $qty tetap utuh nilainya sesuai inputan user.
 
                 $price = (float) $pesanan->harga_sample_per_pcs;
-                $totalSampleInvoiceAmount += ($qty * $price);
+                $subtotal = $qty * $price;
+
+                // Hanya masukkan ke array jika ada qty/tagihan
+                if ($qty > 0) {
+                    $pesanansCalculated[] = [
+                        'pesanan_id' => $pesanan->id,
+                        'name' => $pesanan->produk ?? 'Product Sample',
+                        'qty' => $qty,
+                        'price' => $price,
+                        'subtotal' => $subtotal
+                    ];
+                }
+                
+                $totalSampleInvoiceAmount += $subtotal;
             }
 
             // dd($totalSampleInvoiceAmount, 'Total Sample Invoice Amount', $pesanans); // Debugging line
@@ -280,22 +294,12 @@ class QuotationController extends Controller
                 ]);
             }
             
-            // 3. Generate Invoice hanya jika nominal GLOBAL-nya lebih dari 0
-            if (!$isGlobalInvoiceZero) {
-                $this->generateSampleInvoiceIfNotExists(
-                    jobTicket: $jobTicket,
-                    quotation: $quotation,
-                    amount: $totalSampleInvoiceAmount
-                );
-
-                $jobTicket->update([
-                    'status' => 'Sample Payment'
-                ]);
+            if ($totalSampleInvoiceAmount > 0) {
+                // KIRIM $pesanansCalculated BUKAN $totalSampleInvoiceAmount
+                $this->generateSampleInvoiceIfNotExists($jobTicket, $quotation, $pesanansCalculated);
+                $jobTicket->update(['status' => 'Sample Payment']);
             } else {
-                // Jika semua pesanan tagihannya 0, langsung ubah status JT ke proses selanjutnya
-                $jobTicket->update([
-                    'status' => 'Purchasing Sample'
-                ]);
+                $jobTicket->update(['status' => 'Purchasing Sample']);
             }
         });
 
@@ -305,43 +309,55 @@ class QuotationController extends Controller
         return back()->with('success', 'Quotation disetujui. Workflow pesanan diperbarui.');
     }
 
-    private function generateSampleInvoiceIfNotExists(JobTicket $jobTicket, Quotation $quotation, float $amount): void
+    private function generateSampleInvoiceIfNotExists(JobTicket $jobTicket, Quotation $quotation, array $pesanansCalculated): void
     {
-        // 1. Cari invoice sample yang statusnya masih 'unpaid' atau 'partial_paid'
+        // 1. Cari invoice sample yang masih bisa ditambah (unpaid/partial)
         $unpaidInvoice = $jobTicket->invoices()
             ->where('kategori_invoice', 'sample')
-            ->whereIn('status_tagihan', ['unpaid', 'partial_paid']) // Cari yang masih bisa ditambah tagihannya
+            ->whereIn('status_tagihan', ['unpaid', 'partial_paid'])
             ->first();
 
-        // dd($unpaidInvoice, 'Unpaid Invoice', $amount, 'Amount to Add'); // Debugging line
-
-        // 2. Jika ada invoice unpaid, UPDATE total tagihannya
         if ($unpaidInvoice) {
-            $newTotal = (float)$unpaidInvoice->total_tagihan + $amount;
+            // Jika invoice ada, tambahkan item baru ke invoice tersebut
+            foreach ($pesanansCalculated as $data) {
+                if ($data['qty'] > 0) {
+                    $unpaidInvoice->items()->create([
+                        'pesanan_id' => $data['pesanan_id'],
+                        'item_name' => $data['name'],
+                        'quantity' => $data['qty'],
+                        'price_per_pcs' => $data['price'],
+                        'subtotal' => $data['qty'] * $data['price'],
+                    ]);
+                }
+            }
             
-            $unpaidInvoice->update([
-                'total_tagihan' => $newTotal,
-                // Jika total jadi 0, mungkin bisa dianggap paid (tapi jarang terjadi di sini)
-                'status_tagihan' => $newTotal > 0 ? 'unpaid' : 'paid',
-            ]);
+            // Update total tagihan berdasarkan jumlah subtotal item
+            $newTotal = $unpaidInvoice->items()->sum('subtotal');
+            $unpaidInvoice->update(['total_tagihan' => $newTotal]);
             
-            // Update workflow flag untuk pesanan yang baru saja direvisi
-            $this->updateWorkflowFlags($jobTicket, true);
             return;
         }
 
-        // 3. Jika tidak ada invoice unpaid (mungkin sudah lunas / belum pernah dibuat),
-        // kita buat invoice baru
-        $jobTicket->invoices()->create([
+        // 2. Jika tidak ada invoice unpaid, buat invoice baru beserta items-nya
+        $invoice = $jobTicket->invoices()->create([
             'no_invoice' => $this->generateInvoiceNumber('SAMPLE'),
             'kategori_invoice' => 'sample',
-            'total_tagihan' => $amount,
-            'status_tagihan' => $amount == 0 ? 'paid' : 'unpaid',
+            'total_tagihan' => array_sum(array_column($pesanansCalculated, 'subtotal')),
+            'status_tagihan' => 'unpaid',
             'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);
 
-        // Update workflow flag
-        $this->updateWorkflowFlags($jobTicket, ($amount == 0));
+        foreach ($pesanansCalculated as $data) {
+            if ($data['qty'] > 0) {
+                $invoice->items()->create([
+                    'pesanan_id' => $data['pesanan_id'],
+                    'item_name' => $data['name'],
+                    'quantity' => $data['qty'],
+                    'price_per_pcs' => $data['price'],
+                    'subtotal' => $data['subtotal'],
+                ]);
+            }
+        }
     }
 
     /**
