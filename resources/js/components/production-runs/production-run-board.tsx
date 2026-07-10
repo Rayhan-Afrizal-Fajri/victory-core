@@ -294,7 +294,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                                 />
                             </Field>
 
-                            <Button type="submit" disabled={packingForm.processing || !can('productions.packing') || !can('samples.packing')}>
+                            <Button type="submit" disabled={packingForm.processing || !can('productions.packing')}>
                                 <CheckCircle2 className="size-4" />
                                 Complete Packing
                             </Button>
