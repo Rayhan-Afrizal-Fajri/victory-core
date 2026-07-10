@@ -251,6 +251,8 @@ class QuotationController extends Controller
 
             $isGlobalInvoiceZero = ($totalSampleInvoiceAmount <= 0);
 
+            // dd($isGlobalInvoiceZero, 'Is Global Invoice Zero', $totalSampleInvoiceAmount, 'Total Sample Invoice Amount'); // Debugging line
+
             // 2. Update status per-pesanan secara spesifik
             foreach ($pesanans as $pesanan) {
                 $qty = (int) $pesanan->sample_qty;
@@ -310,6 +312,8 @@ class QuotationController extends Controller
             ->where('kategori_invoice', 'sample')
             ->whereIn('status_tagihan', ['unpaid', 'partial_paid']) // Cari yang masih bisa ditambah tagihannya
             ->first();
+
+        dd($unpaidInvoice, 'Unpaid Invoice', $amount, 'Amount to Add'); // Debugging line
 
         // 2. Jika ada invoice unpaid, UPDATE total tagihannya
         if ($unpaidInvoice) {
