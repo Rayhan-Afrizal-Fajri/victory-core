@@ -64,8 +64,8 @@ export interface ProductMaterial {
   type: 'bahan' | 'aksesoris';
   default_usage: number;
   default_unit?: string;
-  harga_ecer?: string;
-  harga_roll?: string;
+  harga_ecer?: number;
+  harga_roll?: number;
   sort_order: number;
   is_required: boolean;
 }
@@ -77,6 +77,7 @@ export interface ProductManufacturingWork {
   default_usage: number;
   default_unit?: string;
   process_behavior?: string;
+  max_estimate?: number;
   usage_note?: string;
   sort_order: number;
   is_required: boolean;

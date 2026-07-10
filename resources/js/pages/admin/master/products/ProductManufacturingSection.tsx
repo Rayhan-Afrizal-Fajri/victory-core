@@ -10,24 +10,27 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { ProductManufacturingWork, ManufacturingWork } from '@/types';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 
 interface Props {
   productId: number;
-  manufacturingWorks: ProductManufacturingWork[];
-  availableWorks: ManufacturingWork[];
+  manufacturingWorks: any[];
+  availableWorks: any[];
 }
 
 export default function ProductManufacturingSection({ productId, manufacturingWorks, availableWorks }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingWork, setEditingWork] = useState<ProductManufacturingWork | null>(null);
+  const [editingWork, setEditingWork] = useState<any | null>(null);
+
+  const formatIDR = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
   const form = useForm({
     product_id: productId,
     manufacturing_work_id: '',
     default_usage: 1,
     default_unit: 'pcs',
+    min_estimate: 0,
+    max_estimate: 0,
     usage_note: '',
     sort_order: manufacturingWorks.length,
     is_required: true,
@@ -55,13 +58,15 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
     });
   };
 
-  const handleEdit = (work: ProductManufacturingWork) => {
+  const handleEdit = (work: any) => {
     setEditingWork(work);
     form.setData({
       product_id: productId,
       manufacturing_work_id: work.manufacturing_work_id.toString(),
       default_usage: work.default_usage,
       default_unit: work.default_unit || 'pcs',
+      min_estimate: work.min_estimate || 0,
+      max_estimate: work.max_estimate || 0,
       usage_note: work.usage_note || '',
       sort_order: work.sort_order,
       is_required: work.is_required,
@@ -69,53 +74,35 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (work: ProductManufacturingWork) => {
+  const handleDelete = (work: any) => {
     if (!confirm('Hapus work ini?')) return;
     form.delete(route('product-manufacturing-works.destroy', work.id), {
-      onSuccess: () => {
-        toast.success('Work berhasil dihapus');
-      },
+      onSuccess: () => toast.success('Work berhasil dihapus'),
     });
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg">Manufacturing Works</CardTitle>
-        <Dialog
-          open={isDialogOpen}
-          onOpenChange={(open) => {
+        <CardTitle className="text-lg">Proses Manufaktur & Vendor</CardTitle>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) {
-              setEditingWork(null);
-              form.reset();
-              form.clearErrors();
-            }
-          }}
-        >
+            if (!open) { setEditingWork(null); form.reset(); form.clearErrors(); }
+          }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Plus className="size-4" /> Tambah Work
-            </Button>
+            <Button variant="outline" size="sm" className="gap-2"><Plus className="size-4" /> Tambah Work</Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>{editingWork ? 'Edit Work' : 'Tambah Manufacturing Work'}</DialogTitle>
-              <DialogDescription>Tambahkan pekerjaan manufaktur untuk produk ini.</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4">
+            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Manufacturing Work</label>
                 <Select value={form.data.manufacturing_work_id} onValueChange={(val) => form.setData('manufacturing_work_id', val)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih work..." />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Pilih work..." /></SelectTrigger>
                   <SelectContent>
-                    {availableWorks.map((w) => (
-                      <SelectItem key={w.id} value={w.id.toString()}>
-                        {w.name}
-                      </SelectItem>
-                    ))}
+                    {availableWorks.map((w) => (<SelectItem key={w.id} value={w.id.toString()}>{w.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
                 <InputError message={form.errors.manufacturing_work_id as string} />
@@ -124,52 +111,34 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Default Usage</label>
-                  <FormattedNumberInput
-                      value={form.data.default_usage}
-                      onValueChange={(value) => form.setData('default_usage', value)}
-                      placeholder='cth: 0,9'
-                  />
+                  <FormattedNumberInput value={form.data.default_usage} onValueChange={(val) => form.setData('default_usage', val)} />
                   <InputError message={form.errors.default_usage as string} />
                 </div>
-
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Unit</label>
-                  <Input
-                    value={form.data.default_unit}
-                    onChange={(e) => form.setData('default_unit', e.target.value)}
-                  />
-                  <InputError message={form.errors.default_unit as string} />
+                  <Input value={form.data.default_unit} onChange={(e) => form.setData('default_unit', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Min Estimate (Cost)</label>
+                  <FormattedNumberInput value={form.data.min_estimate} onValueChange={(val) => form.setData('min_estimate', val)} />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Max Estimate (Cost)</label>
+                  <FormattedNumberInput value={form.data.max_estimate} onValueChange={(val) => form.setData('max_estimate', val)} />
                 </div>
               </div>
 
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Usage Note (Optional)</label>
-                <Textarea
-                  value={form.data.usage_note}
-                  onChange={(e) => form.setData('usage_note', e.target.value)}
-                  placeholder="Catatan tambahan untuk pekerjaan ini"
-                  rows={3}
-                />
-                <InputError message={form.errors.usage_note as string} />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_required"
-                  checked={form.data.is_required}
-                  onChange={(e) => form.setData('is_required', e.target.checked)}
-                />
-                <label htmlFor="is_required" className="text-sm font-medium">
-                  Required
-                </label>
+                <label className="text-sm font-medium">Catatan (Opsional)</label>
+                <Textarea value={form.data.usage_note} onChange={(e) => form.setData('usage_note', e.target.value)} rows={3} />
               </div>
             </div>
 
             <DialogFooter>
-              <Button onClick={handleSubmit} disabled={form.processing}>
-                {editingWork ? 'Update' : 'Add'} Work
-              </Button>
+              <Button onClick={handleSubmit} disabled={form.processing}>{editingWork ? 'Update' : 'Add'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -178,30 +147,41 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
         {manufacturingWorks.length === 0 ? (
           <p className="text-sm text-slate-500">Tidak ada manufacturing work yang ditambahkan.</p>
         ) : (
-          <div className="space-y-2">
-            {manufacturingWorks.map((work) => (
-              <div key={work.id} className="flex items-center justify-between rounded border border-slate-200 p-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-900">{work.work_name}</span>
-                    {work.is_required && <Badge variant="default" className="text-xs">Required</Badge>}
-                    {work.process_behavior && <Badge variant="default" className="text-xs">{work.process_behavior}</Badge>}
+          <div className="space-y-3">
+            {manufacturingWorks.map((work) => {
+              const subtotal = work.default_usage * (work.max_estimate || 0);
+
+              return (
+                <div key={work.id} className="flex flex-col rounded border border-slate-200 p-3 bg-slate-50/50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-900">{work.work_name}</span>
+                        {work.is_required && <Badge variant="default" className="text-[10px] h-4 px-1.5">Req</Badge>}
+                        {work.process_behavior && <Badge variant="outline" className="text-[10px] h-4">{work.process_behavior}</Badge>}
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">
+                        Volume: <strong>{work.default_usage} {work.default_unit}</strong>
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Est Biaya: {formatIDR(work.min_estimate)} - {formatIDR(work.max_estimate)}
+                      </p>
+                      {work.usage_note && <p className="text-[11px] italic text-slate-500 mt-2">"{work.usage_note}"</p>}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEdit(work)}><Pencil className="size-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDelete(work)}><Trash2 className="size-3.5 text-red-500" /></Button>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Subtotal Max</p>
+                        <p className="font-bold text-slate-900">{formatIDR(subtotal)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    {work.default_usage} {work.default_unit || '-'}
-                  </p>
-                  {work.usage_note && <p className="text-xs text-slate-600 mt-1">{work.usage_note}</p>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(work)}>
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(work)}>
-                    <Trash2 className="size-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </CardContent>

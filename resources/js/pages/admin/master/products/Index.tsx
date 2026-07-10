@@ -13,12 +13,15 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { Product } from '@/types';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 
 type Props = {
   products: Product[];
+  materials: any[];
+  works: any[];
 };
 
-export default function Index({ products }: Props) {
+export default function Index({ products, materials, works }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -28,11 +31,16 @@ export default function Index({ products }: Props) {
     description: '',
     is_active: true,
     is_pattern_available: false,
+    materials: [] as any[],
+    manufacturing_works: [] as any[],
   });
 
   const filteredProducts = useMemo(() => products, [products]);
 
-  const openEditDialog = (product: Product) => {
+  const openEditDialog = (product: any) => {
+    // Jika Anda ingin Load full data relasi saat edit, pastikan index() me-load data tersebut.
+    // Jika data pivot tidak di-load di index, Anda mungkin butuh Axios untuk fetch data detail produk terlebih dahulu, 
+    // atau gunakan metode form kosong ini hanya untuk *Create*.
     setEditingProduct(product);
     productForm.setData({
       name: product.name,
@@ -40,6 +48,8 @@ export default function Index({ products }: Props) {
       description: product.description || '',
       is_active: product.is_active,
       is_pattern_available: product.is_pattern_available,
+      materials: product.product_materials || [], // Asumsi ada relation loaded, jika belum biarkan []
+      manufacturing_works: product.product_manufacturing_works || [],
     });
     setIsDialogOpen(true);
   };
@@ -66,6 +76,22 @@ export default function Index({ products }: Props) {
         toast.success('Produk berhasil dibuat');
       },
     });
+  };
+
+  // Function Handler untuk menambah Baris Bahan
+  const addMaterialRow = () => {
+    productForm.setData('materials', [
+      ...productForm.data.materials,
+      { material_id: '', type: 'bahan', default_usage: 0, default_unit: '', harga_ecer: 0, harga_roll: 0, is_required: true }
+    ]);
+  };
+
+  // Function Handler untuk menambah Baris Work
+  const addWorkRow = () => {
+    productForm.setData('manufacturing_works', [
+      ...productForm.data.manufacturing_works,
+      { manufacturing_work_id: '', default_usage: 1, default_unit: '', min_estimate: 0, max_estimate: 0, is_required: true }
+    ]);
   };
 
   const handleToggleStatus = (product: Product, checked: boolean) => {
@@ -199,93 +225,157 @@ export default function Index({ products }: Props) {
               Kelola template produk/artikel garment beserta komponen bahan, aksesoris, dan manufaktur.
             </p>
           </div>
-          <Dialog
-            open={isDialogOpen}
-            onOpenChange={(open) => {
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);
-              if (!open) {
-                setEditingProduct(null);
-                productForm.reset();
-                productForm.clearErrors();
-              }
-            }}
-          >
+              if (!open) { setEditingProduct(null); productForm.reset(); }
+          }}>
             <DialogTrigger asChild>
               <Button variant="default" className="inline-flex items-center gap-2">
                 <Plus className="size-4" /> Tambah Produk
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
-                <DialogDescription>
-                  {editingProduct ? 'Perbarui informasi produk.' : 'Tambahkan template produk/artikel baru.'}
-                </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Nama Produk</label>
-                  <Input
-                    value={productForm.data.name}
-                    onChange={(e) => productForm.setData('name', e.target.value)}
-                    placeholder="T-Shirt Oversize, Hoodie, etc"
-                  />
-                  <InputError message={productForm.errors.name as string} />
+              
+              <div className="grid gap-6 py-4">
+                {/* 1. INFORMASI UTAMA */}
+                <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-sm font-medium">Nama Produk</label>
+                    <Input value={productForm.data.name} onChange={(e) => productForm.setData('name', e.target.value)} />
+                    <InputError message={productForm.errors.name as string} />
+                  </div>
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-sm font-medium">Kategori</label>
+                    <Input value={productForm.data.category} onChange={(e) => productForm.setData('category', e.target.value)} />
+                  </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Kategori (Optional)</label>
-                  <Input
-                    value={productForm.data.category}
-                    onChange={(e) => productForm.setData('category', e.target.value)}
-                    placeholder="T-Shirt, Outerwear, etc"
-                  />
-                  <InputError message={productForm.errors.category as string} />
+                {/* 2. TABEL BAHAN & MATERIAL */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-md font-semibold">Komponen Bahan & Aksesoris</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={addMaterialRow}>+ Tambah Bahan</Button>
+                  </div>
+                  <div className="border rounded-md p-3 space-y-3 bg-slate-50">
+                    {productForm.data.materials.map((mat, index) => (
+                      <div key={index} className="grid grid-cols-6 gap-2 items-center bg-white p-2 rounded border">
+                        <div className="col-span-2">
+                          <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            value={mat.material_id}
+                            onChange={(e) => {
+                                const newMats = [...productForm.data.materials];
+                                newMats[index].material_id = e.target.value;
+                                productForm.setData('materials', newMats);
+                            }}
+                          >
+                            <option value="">Pilih Bahan...</option>
+                            {materials.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
+                          </select>
+                        </div>
+                        <div className="col-span-1">
+
+                          <FormattedNumberInput 
+                              placeholder="Usage" 
+                              value={mat.default_usage} 
+                              allowDecimal={true} // Aktifkan jika usage memperbolehkan desimal (misal 0.5 kg)
+                              onValueChange={(value) => {
+                                  const newMats = [...productForm.data.materials];
+                                  newMats[index].default_usage = value;
+                                  productForm.setData('materials', newMats);
+                              }} 
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <FormattedNumberInput 
+                              placeholder="Harga Ecer" 
+                              value={mat.harga_ecer} 
+                              allowDecimal={true} // Aktifkan jika harga memperbolehkan desimal
+                              onValueChange={(value) => {
+                                  const newMats = [...productForm.data.materials];
+                                  newMats[index].harga_ecer = value;
+                                  productForm.setData('materials', newMats);
+                              }} 
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <FormattedNumberInput 
+                              placeholder="Harga Roll" 
+                              value={mat.harga_roll} 
+                              allowDecimal={true} // Aktifkan jika harga memperbolehkan desimal
+                              onValueChange={(value) => {
+                                  const newMats = [...productForm.data.materials];
+                                  newMats[index].harga_roll = value;
+                                  productForm.setData('materials', newMats);
+                              }} 
+                          />
+                        </div>
+                        <div className="col-span-1 flex justify-end">
+                           <Button type="button" variant="destructive" size="icon" onClick={() => {
+                               const newMats = productForm.data.materials.filter((_, i) => i !== index);
+                               productForm.setData('materials', newMats);
+                           }}><Trash2 className="size-4" /></Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Deskripsi (Optional)</label>
-                  <Textarea
-                    value={productForm.data.description}
-                    onChange={(e) => productForm.setData('description', e.target.value)}
-                    placeholder="Deskripsi produk, spesifikasi, fitur khusus, etc"
-                    rows={4}
-                  />
-                  <InputError message={productForm.errors.description as string} />
+                {/* 3. TABEL MANUFAKTUR */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-md font-semibold">Proses Manufaktur</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={addWorkRow}>+ Tambah Proses</Button>
+                  </div>
+                  <div className="border rounded-md p-3 space-y-3 bg-slate-50">
+                    {productForm.data.manufacturing_works.map((work, index) => (
+                      <div key={index} className="grid grid-cols-5 gap-2 items-center bg-white p-2 rounded border">
+                        <div className="col-span-2">
+                          <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            value={work.manufacturing_work_id}
+                            onChange={(e) => {
+                                const newWorks = [...productForm.data.manufacturing_works];
+                                newWorks[index].manufacturing_work_id = e.target.value;
+                                productForm.setData('manufacturing_works', newWorks);
+                            }}
+                          >
+                            <option value="">Pilih Proses...</option>
+                            {works.map((w) => (<option key={w.id} value={w.id}>{w.name}</option>))}
+                          </select>
+                        </div>
+                        <div className="col-span-1">
+                          <Input type="number" placeholder="Min Est" value={work.min_estimate} 
+                             onChange={(e) => {
+                                 const newWorks = [...productForm.data.manufacturing_works];
+                                 newWorks[index].min_estimate = parseFloat(e.target.value);
+                                 productForm.setData('manufacturing_works', newWorks);
+                             }} />
+                        </div>
+                        <div className="col-span-1">
+                           <Input type="number" placeholder="Max Est" value={work.max_estimate} 
+                             onChange={(e) => {
+                                 const newWorks = [...productForm.data.manufacturing_works];
+                                 newWorks[index].max_estimate = parseFloat(e.target.value);
+                                 productForm.setData('manufacturing_works', newWorks);
+                             }} />
+                        </div>
+                        <div className="col-span-1 flex justify-end">
+                           <Button type="button" variant="destructive" size="icon" onClick={() => {
+                               const newWorks = productForm.data.manufacturing_works.filter((_, i) => i !== index);
+                               productForm.setData('manufacturing_works', newWorks);
+                           }}><Trash2 className="size-4" /></Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                      id="is_active"
-                      checked={productForm.data.is_active}
-                      onCheckedChange={(checked) => productForm.setData('is_active', checked)}
-                  />
-                  <label
-                    htmlFor="is_active"
-                    className="text-sm font-medium text-slate-700 cursor-pointer select-none"
-                  >
-                    Active
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                      id="is_pattern_available"
-                      checked={productForm.data.is_pattern_available}
-                      onCheckedChange={(checked) => productForm.setData('is_pattern_available', checked)}
-                  />                  
-                  <label 
-                      htmlFor="is_pattern_available" 
-                      className="text-sm font-medium text-slate-700 cursor-pointer select-none"
-                  >
-                      Pola Tersedia
-                  </label>
-              </div>
               </div>
 
               <DialogFooter>
                 <Button onClick={handleSubmitProduct} disabled={productForm.processing}>
-                  {editingProduct ? 'Update' : 'Create'} Produk
+                  {editingProduct ? 'Simpan Perubahan' : 'Buat Produk'}
                 </Button>
               </DialogFooter>
             </DialogContent>

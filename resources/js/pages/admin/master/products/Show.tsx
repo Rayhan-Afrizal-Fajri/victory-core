@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,16 +16,31 @@ type Props = {
 };
 
 export default function Show({ product, materials, works }: Props) {
+  // Fungsi format mata uang
+  const formatIDR = (value: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+  };
+
+  // Kalkulasi Total Estimasi
+  const totalMaterialCost = product.materials
+    .filter(m => m.type === 'bahan')
+    .reduce((acc, curr) => acc + (curr.default_usage * (curr.harga_ecer || 0)), 0);
+
+  const totalAccessoryCost = product.materials
+    .filter(m => m.type === 'aksesoris')
+    .reduce((acc, curr) => acc + (curr.default_usage * (curr.harga_ecer || 0)), 0);
+
+  const totalManufacturingCost = product.manufacturing_works
+    .reduce((acc, curr) => acc + (curr.default_usage * (curr.max_estimate || 0)), 0);
+
+  const grandTotal = totalMaterialCost + totalAccessoryCost + totalManufacturingCost;
+
   return (
     <>
       <Head title={`${product.name} - Components`} />
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.get(route('products.index'))}
-          >
+          <Button variant="outline" size="sm" onClick={() => router.get(route('products.index'))}>
             <ArrowLeft className="size-4" />
           </Button>
           <div>
@@ -34,35 +49,69 @@ export default function Show({ product, materials, works }: Props) {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Information</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700">Nama Produk</label>
-              <p className="text-slate-900">{product.name}</p>
-            </div>
-            {product.category && (
+        {/* SUMMARY CARD HPP */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="md:col-span-3">
+            <CardHeader>
+              <CardTitle>Product Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-slate-700">Kategori</label>
-                <p className="text-slate-900">{product.category}</p>
+                <label className="text-sm font-medium text-slate-700">Nama Produk</label>
+                <p className="text-slate-900">{product.name}</p>
               </div>
-            )}
-            {product.description && (
+              {product.category && (
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Kategori</label>
+                  <p className="text-slate-900">{product.category}</p>
+                </div>
+              )}
+              {product.description && (
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Deskripsi</label>
+                  <p className="text-slate-900 whitespace-pre-wrap">{product.description}</p>
+                </div>
+              )}
               <div>
-                <label className="text-sm font-medium text-slate-700">Deskripsi</label>
-                <p className="text-slate-900 whitespace-pre-wrap">{product.description}</p>
+                <label className="text-sm font-medium text-slate-700">Status</label>
+                <div className="mt-1">
+                  <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                    {product.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
               </div>
-            )}
-            <div>
-              <label className="text-sm font-medium text-slate-700">Status</label>
-              <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                {product.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* TOTAL ESTIMATION CARD */}
+          <Card className="bg-slate-50 text-black">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calculator className="size-5" /> Estimasi Modal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1 border-b border-slate-700 pb-3">
+                <div className="flex justify-between text-sm text-slate-700">
+                  <span>Bahan</span>
+                  <span>{formatIDR(totalMaterialCost)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-700">
+                  <span>Aksesoris</span>
+                  <span>{formatIDR(totalAccessoryCost)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-700">
+                  <span>Manufaktur</span>
+                  <span>{formatIDR(totalManufacturingCost)}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-slate-700">Total HPP per Pcs</p>
+                <p className="text-2xl font-bold text-emerald-400">{formatIDR(grandTotal)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <ProductMaterialSection

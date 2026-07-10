@@ -27,6 +27,7 @@ class StoreProductManufacturingWorkRequest extends FormRequest
             'default_usage' => ['required', 'numeric', 'min:0'],
             'default_unit' => ['nullable', 'string', 'max:255'],
             'usage_note' => ['nullable', 'string'],
+            'max_estimate' => ['nullable', 'integer'],
             'sort_order' => ['nullable', 'integer'],
             'is_required' => ['boolean'],
         ];
