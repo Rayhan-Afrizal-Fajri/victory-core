@@ -20,6 +20,8 @@ return new class extends Migration
             $table->decimal('default_usage', 15, 4)->default(1);
             $table->string('default_unit')->nullable();
             $table->string('usage_note')->nullable();
+            $table->integer('min_estimate')->nullable();
+            $table->integer('max_estimate')->nullable();
 
             $table->integer('sort_order')->default(0);
             $table->boolean('is_required')->default(true);

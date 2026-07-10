@@ -12,6 +12,8 @@ class ProductManufacturingWork extends Model
         'manufacturing_work_id',
         'default_usage',
         'default_unit',
+        'min_estimate',
+        'max_estimate',
         'usage_note',
         'sort_order',
         'is_required',
