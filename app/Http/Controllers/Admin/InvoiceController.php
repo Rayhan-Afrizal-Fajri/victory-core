@@ -450,18 +450,17 @@ class InvoiceController extends Controller
             'payments',
         ])->findOrFail($invoiceId);
 
-        // dd($invoice, $invoice->jobTicket->pesanans, $invoice->jobTicket->customer, $invoice->payments);
-
-        $pesanans = Pesanan::where('job_ticket_id', $invoice->jobTicket->id);
-        
-        // $pesanans = $pesanans->whereHas('workflowStatus', function ($query) {
-        //     $query->where('sample_revision', true);
-        // })->get();
+        // OPTIMASI: Filter langsung dari data yang sudah di-load, 
+        // tidak perlu query ulang ke database.
+        $pesanans = $invoice->jobTicket->pesanans->filter(function ($pesanan) {
+            // Tampilkan jika Qty > 0 (Harga 0 / gratis akan tetap ikut tampil)
+            return $pesanan->sample_qty > 0;
+        })->values(); // values() berguna untuk merapikan ulang index array
 
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $invoice->jobTicket->companyProfile,
-            'pesanans' => $pesanans,
+            'pesanans' => $pesanans, // Kirim pesanan yang sudah difilter
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
         ])->setPaper('a4', 'portrait');
