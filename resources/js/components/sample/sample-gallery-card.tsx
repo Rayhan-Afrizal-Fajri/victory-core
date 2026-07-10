@@ -5,6 +5,7 @@ import EmptyState from "./empty-state";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
 import FormImageUpload from "../ui/form-image";
 import { Button } from "../ui/button";
+import { SampleMedia } from "@/pages/admin/job-tickets/types";
 
 const SampleGalleryCard = ({
     media,
@@ -12,7 +13,7 @@ const SampleGalleryCard = ({
     canDeleteMedia = false,
     onDeleteMedia
 }: {
-    media: any[];
+    media: SampleMedia[] | undefined;
     sampleId: number;
     canDeleteMedia?: boolean;
     onDeleteMedia?: (mediaId: number) => void;
@@ -50,7 +51,7 @@ const SampleGalleryCard = ({
 
     return (
         <SectionCard title="Foto Sample">
-            {media.length > 0 ? (
+            {media && media.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     {media.map((item) => (
                         <div

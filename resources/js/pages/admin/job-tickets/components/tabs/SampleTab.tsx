@@ -14,15 +14,18 @@ import SampleDeliveryCard from '@/components/sample/sample-delivery-card';
 
 const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
-    const activeOrder: Pesanan = job?.orders?.[activeOrderIndex];
-
+    
+    // Pastikan aman dengan default object/array
+    const activeOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
     const workflow = activeOrder?.workflow_status;
     const samples = activeOrder?.samples || [];
-    const sample = samples[0] || null;
+    const sample = samples[0]; 
 
     const designApproved = workflow?.design_approved ?? false;
-    const media = sample?.media || [];
-    const delivery = sample?.delivery || null;
+    
+    // Gunakan ternary if biasa. Dijamin 100% aman dari error 'undefined'
+    const media = sample ? sample.media : [];
+    const delivery = sample ? sample.delivery : null;
 
     const [revisionOpen, setRevisionOpen] = useState(false);
     const [rejectOpen, setRejectOpen] = useState(false);
@@ -55,6 +58,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
 
     const updateDelivery = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!sample) return; // <-- Guard clause (Mencegah error)
         editDeliveryForm.patch(`/samples/${sample.id}/delivery`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Data pengiriman sample diupdate.'),
@@ -62,6 +66,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const cancelDelivery = () => {
+        if (!sample) return;
         if (confirm('Yakin ingin membatalkan pengiriman ini?')) {
             router.delete(`/samples/${sample.id}/delivery`, {
                 preserveScroll: true,
@@ -75,6 +80,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
 
     // --- NEW ACTIONS: START & COMPLETE PRODUCTION ---
     const startProduction = () => {
+        if (!sample) return;
         router.patch(`/samples/${sample.id}/start`, {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('Produksi sample dimulai.'),
@@ -82,6 +88,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const completeProduction = () => {
+        if (!sample) return;
         router.patch(`/samples/${sample.id}/complete`, {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('Produksi sample selesai.'),
@@ -103,6 +110,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     // --- EXISTING ACTIONS ---
     const submitDelivery = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!sample) return;
         deliveryForm.post(`/samples/${sample.id}/delivery`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -113,6 +121,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const markDelivered = () => {
+        if (!sample) return;
         router.patch(`/samples/${sample.id}/mark-delivered`, {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('Sample ditandai sudah diterima.'),
@@ -120,6 +129,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const approveSample = () => {
+        if (!sample) return;
         router.patch(`/samples/${sample.id}/approve`, {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('Sample disetujui.'),
@@ -127,6 +137,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const submitRevision = () => {
+        if (!sample) return;
         revisionForm.patch(`/samples/${sample.id}/revision`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -138,6 +149,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     };
 
     const submitReject = () => {
+        if (!sample) return;
         rejectForm.patch(`/samples/${sample.id}/reject`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -193,7 +205,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                             />
 
                             {/* GALLERY MUNCUL JIKA SAMPLE SUDAH MULAI/SELESAI */}
-                            {(workflow?.sample_started == true || workflow?.sample_completed == true) && (
+                            {(sample && (workflow?.sample_started == true || workflow?.sample_completed == true)) && (
                                 <SampleGalleryCard
                                     media={media}
                                     sampleId={sample.id}
