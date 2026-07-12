@@ -61,10 +61,10 @@ export function getPurchasingTotal(purchasing: any) {
 
 export function getPurchasingStatusLabel(status?: string) {
     if (status === 'draft') return 'Draft';
-    if (status === 'ordered') return 'Ordered';
-    if (status === 'partial_received') return 'Partial Received';
-    if (status === 'received') return 'Received';
-    if (status === 'cancelled') return 'Cancelled';
+    if (status === 'ordered') return 'Dipesan';
+    if (status === 'partial_received') return 'Diterima sebagian';
+    if (status === 'received') return 'Diterima';
+    if (status === 'cancelled') return 'Dibatalkan';
 
     return status || '-';
 }
@@ -86,7 +86,7 @@ export function canDeletePurchasing(purchasing: any) {
 }
 
 export function canMarkOrdered(purchasing: any) {
-    return purchasing.status === 'draft';
+    return purchasing.status === 'draft' || purchasing.status === 'ordered';
 }
 
 export function canReceiveMaterial(purchasing: any) {
@@ -126,9 +126,9 @@ export function getRequiredQty(
 
     if (scope === 'additional') return 0;
     if (type === 'sample' && scope === 'production') return 0;
-    if (type === 'production' && scope === 'sample') return 0;
+    if (type === 'production' && (scope === 'sample' || scope === 'sample_revision')) return 0;
     
-    if (scope === type) {
+    if (scope === type || (type === 'sample' && scope === 'sample_revision')) {
         return totalRequiredQty;
     }
 

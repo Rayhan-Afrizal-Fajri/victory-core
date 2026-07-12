@@ -15,9 +15,10 @@ type Props = {
     productOptions: ProductOption[] | null;
     colors: DefaultSizeBreakdown[];
     units: DefaultSizeBreakdown[];
+    tab: string; // Tab yang dipilih dari backend, default ke 'overview'
 };
 
-export default function Show({ jobTicket, suppliers, productOptions, colors, units }: Props) {
+export default function Show({ jobTicket, suppliers, productOptions, colors, units, tab }: Props) {
     // State untuk Switcher / Tab pesanan mana yang sedang dilihat
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
     const activePesanan: Pesanan | undefined = jobTicket?.orders?.[activeOrderIndex];
@@ -66,6 +67,7 @@ export default function Show({ jobTicket, suppliers, productOptions, colors, uni
                         colors={colors}
                         units={units}
                         productOptions={productOptions} 
+                        tab={tab}
                     />
                 </>
             ) : (

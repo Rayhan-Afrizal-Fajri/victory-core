@@ -334,6 +334,7 @@ export interface ManufacturingSpec {
   vendor_id?: number;
   min_estimate?: number | null;
   max_estimate?: number | null;
+  sort_order?: number | null;
   cost_per_pcs?: number | null;
 }
 

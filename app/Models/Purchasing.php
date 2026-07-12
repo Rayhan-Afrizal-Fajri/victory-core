@@ -11,6 +11,7 @@ class Purchasing extends Model
         'pesanan_material_spec_id',
         'supplier_id',
         'item_bahan',
+        'color',
         'qty_bahan',
         'required_qty',
         'purchase_qty',

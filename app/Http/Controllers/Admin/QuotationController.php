@@ -274,7 +274,8 @@ class QuotationController extends Controller
                 $itemTotal = $qty * $price;
 
                 // Cek khusus untuk item ini: Apakah dia gratis atau qty-nya 0 (karena sudah approved sebelumnya)?
-                $isThisPesananFreeOrNotNeeded = ($itemTotal <= 0);
+                $isSampleFree = ($itemTotal <= 0);
+                $isSampleNotRequired = ($qty <= 0);
 
                 $pesanan->workflowStatus()->updateOrCreate(
                     ['pesanan_id' => $pesanan->id],
@@ -282,7 +283,14 @@ class QuotationController extends Controller
                         'quotation_created' => true,
                         'quotation_approved' => true,
                         // ✅ FIX: Otomatis lunas (true) HANYA untuk pesanan yang tagihannya 0 di penawaran ini
-                        'sample_paid' => $isThisPesananFreeOrNotNeeded ? true : false, 
+                        'sample_paid' => $isSampleFree ? true : false, 
+                        'sample_approved' => $isSampleNotRequired,
+                        'sample_materials_ready' => $isSampleNotRequired,
+                        'sample_created' => $isSampleNotRequired,
+                        'sample_started' => $isSampleNotRequired,
+                        'sample_completed' => $isSampleNotRequired,
+                        'sample_uploaded' => $isSampleNotRequired,
+                        'sample_delivered' => $isSampleNotRequired,
                     ]
                 );
                 

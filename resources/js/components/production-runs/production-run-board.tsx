@@ -51,7 +51,7 @@ function formatDateTime(value?: string | null) {
 const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardProps) => {
     const can = useCan();
     
-    const run = runType === 'sample' ? activeOrder.sample_run : activeOrder.production_run;
+    const run = activeOrder.production_run;
 
     const ensureRunForm = useForm({
         quantity: Number((activeOrder as any).sample_qty || 3),
@@ -156,47 +156,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
         );
     };
 
-    const approveSample = () => {
-        if (!run) return;
-
-        reviewForm.patch(
-            `/production-runs/${run.id}/approve-sample`,
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success('Sample disetujui.');
-                    reviewForm.reset();
-                },
-            }
-        );
-    };
-
-    const requestRevision = () => {
-        if (!run) return;
-
-        reviewForm.patch(`/production-runs/${run.id}/revision-sample`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Revisi sample berhasil diminta.');
-                reviewForm.reset();
-            },
-        });
-    };
-
-    const rejectSample = () => {
-        if (!run) return;
-
-        reviewForm.patch(`/production-runs/${run.id}/reject-sample`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Sample ditolak.');
-                reviewForm.reset();
-            },
-        });
-    };
-
-    const title = runType === 'sample' ? 'Sample Production' : 'Production';
-    const createLabel = runType === 'sample' ? 'Create Sample Production' : 'Create Production';
+    const title = 'Production';
 
     if (!run) {
         return (
@@ -242,7 +202,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
     const canMarkDelivered = run.status === 'in_delivery';
     const isDeliverySubmitted = run.status === 'in_delivery';
     const isDelivered = ['delivered', 'approved'].includes(run.status ?? '');
-    const canReview = run.status === 'delivered' || can('samples.approve') || can('samples.revision');
+    const canReview = run.status === 'delivered';
 
     return (
         <div className="space-y-6">
@@ -323,7 +283,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                             <Field label="Tracking Number" error={deliveryForm.errors.tracking_number}>
                                 <Input
                                     readOnly={isDeliverySubmitted || isDelivered}
-                                    disabled={!can('productions.delivery') || !can('samples.delivery')}
+                                    disabled={!can('productions.delivery')}
                                     value={deliveryForm.data.tracking_number}
                                     onChange={(e) =>
                                         deliveryForm.setData('tracking_number', e.target.value)
@@ -335,7 +295,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         <Field label="Tracking URL" error={deliveryForm.errors.tracking_url}>
                             <Input
                                 readOnly={isDeliverySubmitted || isDelivered}
-                                disabled={!can('productions.delivery') || !can('samples.delivery')}
+                                disabled={!can('productions.delivery')}
                                 value={deliveryForm.data.tracking_url}
                                 onChange={(e) =>
                                     deliveryForm.setData('tracking_url', e.target.value)
@@ -346,7 +306,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         <Field label="Delivery Note" error={deliveryForm.errors.delivery_note}>
                             <Textarea
                                 readOnly={isDeliverySubmitted || isDelivered}
-                                disabled={!can('productions.delivery') || !can('samples.delivery')}
+                                disabled={!can('productions.delivery')}
                                 rows={3}
                                 value={deliveryForm.data.delivery_note}
                                 onChange={(e) =>
@@ -356,7 +316,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         </Field>
 
                         {Number(canDelivery) !== 0 && (
-                            <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery') || !can('samples.delivery')}>
+                            <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')}>
                                 <Truck className="size-4" />
                                 Submit Delivery
                             </Button>
@@ -364,7 +324,7 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                     </form>
 
                     {canMarkDelivered && (
-                        <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery') || !can('samples.delivery')}>
+                        <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery')}>
                             Mark Delivered
                         </Button>
                     )}
@@ -381,55 +341,6 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         </p>
                     )}
                 </SectionCard>
-
-                {runType === 'sample' && (
-                    <SectionCard title="Sample Approval">
-                            <div className="space-y-4">
-                                <Field label="Catatan Customer" error={reviewForm.errors.customer_review_note}>
-                                    <Textarea
-                                        rows={3}
-                                        value={reviewForm.data.customer_review_note}
-                                        onChange={(e) =>
-                                            reviewForm.setData('customer_review_note', e.target.value)
-                                        }
-                                        readOnly={!canReview}
-                                        placeholder="Catatan revisi/penolakan jika ada..."
-                                    />
-                                </Field>
-
-                                {canReview ? (
-
-                                <div className="flex flex-wrap gap-2">
-                                    <Button type="button" onClick={approveSample}>
-                                        Approve Sample
-                                    </Button>
-
-                                    <Button type="button" variant="outline" onClick={requestRevision}>
-                                        Request Revision
-                                    </Button>
-
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="border-red-200 text-red-700 hover:bg-red-50"
-                                        onClick={rejectSample}
-                                    >
-                                        Reject Sample
-                                    </Button>
-                                </div>
-
-                                ) : run.status === 'approved' ? (
-                                    <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                                        Sample sudah approved.
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-slate-500">
-                                        Approval bisa dilakukan setelah sample delivered.
-                                    </p>
-                                )}
-                            </div>
-                    </SectionCard>
-                )}
             </>
             )}
         </div>

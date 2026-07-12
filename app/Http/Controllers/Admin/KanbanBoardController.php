@@ -7,6 +7,7 @@ use App\Models\Pesanan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\User;
 
 class KanbanBoardController extends Controller
 {
@@ -29,7 +30,7 @@ class KanbanBoardController extends Controller
             });
         }
 
-        $columns = $this->columns(); // MEMANGGIL FUNCTION COLUMNS MILIK ANDA
+        $columns = $this->columns($user); // MEMANGGIL FUNCTION COLUMNS MILIK ANDA
 
         $cards = $cardsQuery
             ->get()
@@ -46,8 +47,7 @@ class KanbanBoardController extends Controller
 
                 $sampleProgress = $this->mapRunProgress($pesanan->productionRuns->where('type', 'sample')->first());
                 $productionProgress = $this->mapRunProgress($pesanan->productionRuns->where('type', 'production')->first());
-                $showUrl = route('job-tickets.show', $jobTicket?->id ?? 0);
-
+                
                 // KONDISI KHUSUS DUAL CARD:
                 // Invoice produksi sudah dibuat, DP belum dibayar, TAPI proses produksi/purchasing sudah dimulai
                 $isInvoiceUnpaidButProductionStarted = $w->production_invoice_created 
@@ -55,10 +55,12 @@ class KanbanBoardController extends Controller
                     && ($w->materials_purchased || $w->production_materials_ready || $w->production_started);
 
                 $generatedCards = [];
+                $jobId = $jobTicket?->id ?? 0;
 
                 if ($isInvoiceUnpaidButProductionStarted) {
                     // CARD 1: Tertahan di kolom "INVOICE PRODUCTION" (menunggu pelunasan)
                     $stage1 = 'invoice_production';
+                    $tab1 = $this->getTabForStage($stage1);
                     $generatedCards[] = [
                         'id' => $pesanan->id, 
                         'jobNo' => ($jobTicket?->no_job_ticket ?? '-') . ' (INV)',
@@ -73,11 +75,12 @@ class KanbanBoardController extends Controller
                         'blocker' => 'Menunggu Pembayaran DP Produksi',
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => $showUrl,
+                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab1),
                     ];
 
                     // CARD 2: Melaju ke Purchasing Production atau Production (mengikuti kondisi riil pabrik)
                     $stage2 = $this->resolveStage($w, true); // true = abaikan cek status DP
+                    $tab2 = $this->getTabForStage($stage2);
                     $generatedCards[] = [
                         'id' => $pesanan->id,
                         'jobNo' => $jobTicket?->no_job_ticket ?? '-',
@@ -92,11 +95,12 @@ class KanbanBoardController extends Controller
                         'blocker' => $blocker,
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => $showUrl,
+                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab2),
                     ];
                 } else {
                     // JIKA NORMAL: Hanya 1 Card
                     $stage = $this->resolveStage($w, false);
+                    $tab = $this->getTabForStage($stage);
                     $generatedCards[] = [
                         'id' => $pesanan->id,
                         'jobNo' => $jobTicket?->no_job_ticket ?? '-',
@@ -111,7 +115,7 @@ class KanbanBoardController extends Controller
                         'blocker' => $blocker,
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => $showUrl,
+                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab),
                     ];
                 }
 
@@ -124,89 +128,212 @@ class KanbanBoardController extends Controller
         ]);
     }
 
-    // --- ARRAY COLUMNS ASLI MILIK ANDA (TIDAK DIUBAH SAMA SEKALI) ---
-    private function columns(): array
+    private function canAny(User $user, array $permissions): bool
     {
-        return [
+        foreach ($permissions as $permission) {
+            if ($user->can($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // --- ARRAY COLUMNS ASLI MILIK ANDA (TIDAK DIUBAH SAMA SEKALI) ---
+    private function columns(User $user): array
+    {
+        $definitions = [
             [
-                'id' => 'upload_design',
-                'name' => 'UPLOAD DESIGN',
-                'bgColor' => 'bg-slate-50',
-                'borderColor' => 'border-l-slate-400',
+                'permissions' => ['designs.upload'],
+                'column' => [
+                    'id' => 'upload_design',
+                    'name' => 'UPLOAD DESIGN',
+                    'bgColor' => 'bg-slate-50',
+                    'borderColor' => 'border-l-slate-400',
+                ],
             ],
+
             [
-                'id' => 'approval_design',
-                'name' => 'APPROVAL DESIGN',
-                'bgColor' => 'bg-blue-50',
-                'borderColor' => 'border-l-blue-400',
+                'permissions' => [
+                    'designs.approve',
+                    'designs.revision',
+                ],
+                'column' => [
+                    'id' => 'approval_design',
+                    'name' => 'APPROVAL DESIGN',
+                    'bgColor' => 'bg-blue-50',
+                    'borderColor' => 'border-l-blue-400',
+                ],
             ],
+
             [
-                'id' => 'bom',
-                'name' => 'BOM',
-                'bgColor' => 'bg-amber-50',
-                'borderColor' => 'border-l-amber-400',
+                'permissions' => [
+                    'bom.sync',
+                    'bom.create',
+                    'bom.edit',
+                    'bom.delete',
+                    'manufactures.create',
+                    'manufactures.edit',
+                    'manufactures.delete',
+                ],
+                'column' => [
+                    'id' => 'bom',
+                    'name' => 'BOM',
+                    'bgColor' => 'bg-amber-50',
+                    'borderColor' => 'border-l-amber-400',
+                ],
             ],
+
             [
-                'id' => 'price_approval',
-                'name' => 'APPROVAL HARGA JUAL',
-                'bgColor' => 'bg-cyan-50',
-                'borderColor' => 'border-l-cyan-400',
+                'permissions' => [
+                    'costing.input_price',
+                ],
+                'column' => [
+                    'id' => 'price_approval',
+                    'name' => 'APPROVAL HARGA JUAL',
+                    'bgColor' => 'bg-cyan-50',
+                    'borderColor' => 'border-l-cyan-400',
+                ],
             ],
+
             [
-                'id' => 'quotation',
-                'name' => 'QUOTATION',
-                'bgColor' => 'bg-violet-50',
-                'borderColor' => 'border-l-violet-400',
+                'permissions' => [
+                    'quotation.generate',
+                    'quotation.print',
+                    'quotation.approve',
+                ],
+                'column' => [
+                    'id' => 'quotation',
+                    'name' => 'QUOTATION',
+                    'bgColor' => 'bg-violet-50',
+                    'borderColor' => 'border-l-violet-400',
+                ],
             ],
+
             [
-                'id' => 'invoice_sample',
-                'name' => 'INVOICE SAMPLE',
-                'bgColor' => 'bg-orange-50',
-                'borderColor' => 'border-l-orange-400',
+                'permissions' => [
+                    'invoices.show',
+                    'invoices.print',
+                    'invoices.pay',
+                    'invoices.verify',
+                    'invoices.edit',
+                    'invoices.delete',
+                ],
+                'column' => [
+                    'id' => 'invoice_sample',
+                    'name' => 'INVOICE SAMPLE',
+                    'bgColor' => 'bg-orange-50',
+                    'borderColor' => 'border-l-orange-400',
+                ],
             ],
+
             [
-                'id' => 'purchasing_sample',
-                'name' => 'PURCHASING SAMPLE',
-                'bgColor' => 'bg-emerald-50',
-                'borderColor' => 'border-l-emerald-400',
+                'permissions' => [
+                    'purchasings.generate',
+                    'purchasings.create',
+                    'purchasings.edit',
+                    'purchasings.mark_ordered',
+                    'purchasings.receive',
+                    'purchasings.delete',
+                ],
+                'column' => [
+                    'id' => 'purchasing_sample',
+                    'name' => 'PURCHASING SAMPLE',
+                    'bgColor' => 'bg-emerald-50',
+                    'borderColor' => 'border-l-emerald-400',
+                ],
             ],
+
             [
-                'id' => 'sample',
-                'name' => 'SAMPLE',
-                'bgColor' => 'bg-cyan-50',
-                'borderColor' => 'border-l-cyan-500',
+                'permissions' => [
+                    'samples.start',
+                    'samples.complete',
+                    'samples.packing',
+                    'samples.delivery',
+                    'samples.approve',
+                    'samples.revision',
+                ],
+                'column' => [
+                    'id' => 'sample',
+                    'name' => 'SAMPLE',
+                    'bgColor' => 'bg-cyan-50',
+                    'borderColor' => 'border-l-cyan-500',
+                ],
             ],
+
             [
-                'id' => 'invoice_production',
-                'name' => 'INVOICE PRODUCTION',
-                'bgColor' => 'bg-purple-50',
-                'borderColor' => 'border-l-purple-500',
+                'permissions' => [
+                    'invoices.show',
+                    'invoices.print',
+                    'invoices.pay',
+                    'invoices.verify',
+                    'invoices.edit',
+                    'invoices.delete',
+                ],
+                'column' => [
+                    'id' => 'invoice_production',
+                    'name' => 'INVOICE PRODUCTION',
+                    'bgColor' => 'bg-purple-50',
+                    'borderColor' => 'border-l-purple-500',
+                ],
             ],
+
             [
-                'id' => 'purchasing_production',
-                'name' => 'PURCHASING PRODUCTION',
-                'bgColor' => 'bg-green-50',
-                'borderColor' => 'border-l-green-500',
+                'permissions' => [
+                    'purchasings.generate',
+                    'purchasings.create',
+                    'purchasings.edit',
+                    'purchasings.mark_ordered',
+                    'purchasings.receive',
+                    'purchasings.delete',
+                ],
+                'column' => [
+                    'id' => 'purchasing_production',
+                    'name' => 'PURCHASING PRODUCTION',
+                    'bgColor' => 'bg-green-50',
+                    'borderColor' => 'border-l-green-500',
+                ],
             ],
+
             [
-                'id' => 'production',
-                'name' => 'PRODUCTION',
-                'bgColor' => 'bg-slate-100',
-                'borderColor' => 'border-l-slate-600',
-            ],
-            [
-                'id' => 'done',
-                'name' => 'DONE',
-                'bgColor' => 'bg-slate-100',
-                'borderColor' => 'border-l-slate-600',
-            ],
-            [
-                'id' => 'cancel',
-                'name' => 'CANCEL',
-                'bgColor' => 'bg-slate-100',
-                'borderColor' => 'border-l-slate-600',
+                'permissions' => [
+                    'productions.run',
+                    'productions.packing',
+                    'productions.delivery',
+                ],
+                'column' => [
+                    'id' => 'production',
+                    'name' => 'PRODUCTION',
+                    'bgColor' => 'bg-slate-100',
+                    'borderColor' => 'border-l-slate-600',
+                ],
             ],
         ];
+
+        $columns = [];
+
+        foreach ($definitions as $definition) {
+            if ($this->canAny($user, $definition['permissions'])) {
+                $columns[] = $definition['column'];
+            }
+        }
+
+        // Selalu tampil
+        $columns[] = [
+            'id' => 'done',
+            'name' => 'DONE',
+            'bgColor' => 'bg-slate-100',
+            'borderColor' => 'border-l-slate-600',
+        ];
+
+        $columns[] = [
+            'id' => 'cancel',
+            'name' => 'CANCEL',
+            'bgColor' => 'bg-red-50',
+            'borderColor' => 'border-l-red-500',
+        ];
+
+        return $columns;
     }
 
     /**
@@ -268,6 +395,22 @@ class KanbanBoardController extends Controller
         ];
 
         return $labels[$stage] ?? '-';
+    }
+
+    /**
+     * Memetakan Kanban stage ke tab yang ada di halaman detail job ticket.
+     */
+    private function getTabForStage(string $stage): string
+    {
+        return match ($stage) {
+            'upload_design', 'approval_design', 'bom' => 'design',
+            'price_approval', 'quotation' => 'costing', // Ganti menjadi 'costing & quotation' jika di React masih memakai nama tersebut
+            'invoice_sample', 'invoice_production' => 'invoices',
+            'purchasing_sample', 'purchasing_production' => 'purchasing',
+            'sample' => 'sample',
+            'production', 'done' => 'production',
+            default => 'overview',
+        };
     }
 
     private function calculateProgress(string $stage): int

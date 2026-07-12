@@ -23,7 +23,7 @@ class ProductionRunService
 
             // Cari sample aktif (bukan rejected)
             $activeSample = $pesanan->samples()
-                ->whereIn('status', ['draft', 'in_production', 'completed', 'in_delivery'])
+                ->whereIn('status', ['draft', 'in_production', 'completed', 'in_delivery', 'approved'])
                 ->latest()
                 ->first();
 

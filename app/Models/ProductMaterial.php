@@ -16,6 +16,7 @@ class ProductMaterial extends Model
         'type',
         'default_usage',
         'default_unit',
+        'default_color',
         'sort_order',
         'is_required',
     ];

@@ -189,41 +189,41 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
     );
 }
 
-function KanbanColumnView({
-    column,
-    cards,
-}: {
-    column: KanbanColumn;
-    cards: KanbanCard[];
-}) {
-    return (
-        <div className={`flex min-h-105 flex-col rounded-xl border ${column.bgColor} p-4`}>
-            <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-bold tracking-wide text-slate-900">
-                    {column.name}
-                </h3>
+    function KanbanColumnView({
+        column,
+        cards,
+    }: {
+        column: KanbanColumn;
+        cards: KanbanCard[];
+    }) {
+        return (
+            <div className={`flex min-h-105 flex-col rounded-xl border ${column.bgColor} p-4`}>
+                <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-bold tracking-wide text-slate-900">
+                        {column.name}
+                    </h3>
 
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-2 text-xs font-bold text-slate-700 shadow-sm">
-                    {cards.length}
-                </span>
-            </div>
+                    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-2 text-xs font-bold text-slate-700 shadow-sm">
+                        {cards.length}
+                    </span>
+                </div>
 
-            <div className="flex-1 space-y-3">
-                {cards.length > 0 ? (
-                    cards.map((card) => (
-                        <KanbanJobCard key={card.id} card={card} />
-                    ))
-                ) : (
-                    <div className="flex h-28 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/60 text-center">
-                        <p className="text-sm text-slate-500">
-                            Tidak ada purchase order
-                        </p>
-                    </div>
-                )}
+                <div className="flex-1 space-y-3">
+                    {cards.length > 0 ? (
+                        cards.map((card) => (
+                            <KanbanJobCard key={card.id} card={card} />
+                        ))
+                    ) : (
+                        <div className="flex h-28 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/60 text-center">
+                            <p className="text-sm text-slate-500">
+                                Tidak ada purchase order
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
 export default function Index({
     cards = [],
@@ -248,13 +248,14 @@ export default function Index({
             <div className="space-y-6">
 
                 <div className="overflow-x-auto pb-2">
-                    <div className="grid min-w-1200 grid-cols-13 gap-4">
-                        {columns.map((column) => (
-                            <KanbanColumnView
-                                key={column.id}
-                                column={column}
-                                cards={cardsByStage[column.id] || []}
-                            />
+                    <div className="flex gap-4 w-max">
+                        {columns.map(column => (
+                            <div key={column.id} className="w-80 shrink-0">
+                                <KanbanColumnView
+                                    column={column}
+                                    cards={cardsByStage[column.id] || []}
+                                />
+                            </div>
                         ))}
                     </div>
                 </div>

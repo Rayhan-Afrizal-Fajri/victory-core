@@ -82,6 +82,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Product Manufacturing Works (BOM)
     Route::resource('product-manufacturing-works', ProductManufacturingWorkController::class)->only(['store', 'update', 'destroy']);
 
+    Route::post('/product-manufacturing-works/reorder', [ProductManufacturingWorkController::class, 'reorder'])
+        ->name('product-manufacturing-works.reorder');
+
     Route::resource('order-entry', OrderEntryController::class);
     
     // Route::resource('purchasings', PurchasingController::class);
@@ -272,6 +275,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('/purchasings/{purchasing}/mark-ordered', [PurchasingController::class, 'markOrdered'])
         ->name('purchasings.mark-ordered');
+
+    Route::patch('/purchasings/{purchasing}/undo-mark-ordered', [PurchasingController::class, 'undoMarkOrdered'])
+        ->name('purchasings.undo-mark-ordered');
 
     Route::post('/purchasings/{purchasing}/receivings', [PurchasingController::class, 'storeReceiving'])
         ->name('purchasings.receivings.store');

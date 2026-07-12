@@ -9,10 +9,16 @@ use App\Models\SampleMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\InvoiceService;
+use App\Services\ProductionRunService;
 use Illuminate\Support\Facades\Storage;
 
 class SampleController extends Controller
 {
+    public function __construct(
+        protected ProductionRunService $productionRunService,
+        protected InvoiceService $invoiceService,
+    ) {}
     /**
      * Mengunggah foto dokumentasi hasil sample berdasarkan ID Sample
      */
@@ -130,7 +136,7 @@ class SampleController extends Controller
     public function ship(Request $request, string $id)
     {
         $request->validate([
-            'courier_name' => 'required|string|max:255',
+            'courier_name' => 'nullable|string|max:255',
             'tracking_number' => 'nullable|string|max:255',
             'tracking_url' => 'nullable|url|max:255',
             'delivery_note' => 'nullable|string',
@@ -164,6 +170,63 @@ class SampleController extends Controller
         });
 
         return back()->with('success', 'Sample berhasil ditandai sedang dikirim.');
+    }
+
+    public function updateDelivery(Request $request, string $id)
+    {
+        $request->validate([
+            'courier_name' => 'nullable|string|max:255',
+            'tracking_number' => 'nullable|string|max:255',
+            'tracking_url' => 'nullable|url|max:255',
+            'delivery_note' => 'nullable|string',
+        ]);
+
+        $sample = Sample::with('pesanan.jobTicket')->findOrFail($id);
+
+        DB::transaction(function () use ($request, $sample) {
+            // Update data delivery
+            if ($sample->delivery) {
+                $sample->delivery()->update([
+                    'courier_name' => $request->courier_name,
+                    'tracking_number' => $request->tracking_number,
+                    'tracking_url' => $request->tracking_url,
+                    'delivery_note' => $request->delivery_note,
+                ]);
+            }
+
+            $sample->pesanan->jobTicket->workflowHistory()->create([
+                'step' => 'sample',
+                'action' => 'sample_delivery_updated',
+                'user_id' => Auth::id(),
+                'notes' => "Informasi pengiriman sample diperbarui.",
+            ]);
+        });
+
+        return back()->with('success', 'Informasi pengiriman sample berhasil diperbarui.');
+    }
+
+    public function cancelDelivery(string $id)
+    {
+        $sample = Sample::with('pesanan.jobTicket')->findOrFail($id);
+
+        DB::transaction(function () use ($sample) {
+            // Hapus data delivery
+            if ($sample->delivery) {
+                $sample->delivery()->delete();
+            }
+
+            // Ubah status sample menjadi completed (karena sebelumnya sudah selesai produksi)
+            $sample->update(['status' => 'completed']);
+
+            $sample->pesanan->jobTicket->workflowHistory()->create([
+                'step' => 'sample',
+                'action' => 'sample_delivery_cancelled',
+                'user_id' => Auth::id(),
+                'notes' => "Pengiriman sample dibatalkan.",
+            ]);
+        });
+
+        return back()->with('success', 'Pengiriman sample berhasil dibatalkan.');
     }
 
     /**
@@ -227,6 +290,16 @@ class SampleController extends Controller
                 'user_id' => Auth::id(),
                 'notes' => 'Customer telah menyetujui sample.',
             ]);
+
+            $this->invoiceService
+                ->ensureProductionInvoice(
+                    $sample->pesanan->jobTicket
+                );
+
+            $this->productionRunService
+                ->ensureProductionRun(
+                    $sample->pesanan
+                );
         });
 
         return back()->with('success', 'Sample berhasil di-approve. Siap untuk produksi massal.');
@@ -257,11 +330,12 @@ class SampleController extends Controller
                 [
                     'design_uploaded' => false, 
                     'design_approved' => false,
-                    'article_synced' => false,
                     'design_specs_completed' => false,
                     'price_approved' => false,
                     'quotation_created' => false,
                     'quotation_approved' => false,
+                    
+                    'purchasing_generated' => false,
                     
                     // Reset semua flag sample agar bisa dibuatkan sample baru nanti
                     'sample_paid' => false,

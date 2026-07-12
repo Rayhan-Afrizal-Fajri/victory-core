@@ -25,6 +25,7 @@ return new class extends Migration
             $table->enum('type', ['bahan', 'aksesoris']);
             $table->decimal('default_usage', 15, 4)->default(0);
             $table->string('default_unit')->nullable();
+            $table->string('default_color')->nullable();
 
             $table->integer('sort_order')->default(0);
             $table->boolean('is_required')->default(true);

@@ -114,9 +114,11 @@ class Pesanan extends Model
         return $this->belongsTo(Product::class);
     }
 
+    // Di dalam Model Pesanan.php
     public function manufacturingSpecs()
     {
-        return $this->hasMany(PesananManufacturingSpecs::class);
+        return $this->hasMany(PesananManufacturingSpecs::class) // sesuaikan dengan class model Anda
+                    ->orderBy('sort_order'); // <-- Tambahkan ini
     }
 
     public function quotationItems()

@@ -10,10 +10,12 @@ import {
     getProgressPercentage,
 } from './purchasing-utils';
 import { JobTicket } from '@/pages/admin/job-tickets/types';
+import InfoBox from '@/pages/admin/job-tickets/components/tabs/InfoBox';
 
 const PurchasingSummaryCard = ({ purchasings, job }: { purchasings: any[]; job: any }) => {
     const totalItems = purchasings.length;
     const workflow = job.workflow_status;
+    const hasSample = Number(job.sample_qty || 0) > 0;
 
     const totalCost = purchasings.reduce((total, item) => {
         return total + getPurchasingTotal(item);
@@ -75,7 +77,9 @@ const PurchasingSummaryCard = ({ purchasings, job }: { purchasings: any[]; job: 
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {/* Muncul jika sample BELUM ready, ATAU jika production SUDAH ready (semua selesai) */}
-                {(workflow.sample_materials_ready == 0 || workflow.production_materials_ready == 1) && (
+                {!hasSample ? (
+                    <SampleNotRequiredBox />
+                ) : (
                     <ReceivingProgressBox
                         title="Progress Material Sample"
                         description={
@@ -202,6 +206,39 @@ function formatQty(value: number) {
     return Number(value || 0).toLocaleString('id-ID', {
         maximumFractionDigits: 2,
     });
+}
+
+import { Info } from 'lucide-react';
+
+function SampleNotRequiredBox() {
+    return (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+            <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-100">
+                    <Info className="h-6 w-6 text-sky-600" />
+                </div>
+
+                <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-900">
+                            Sample Tidak Diperlukan
+                        </h3>
+
+                        <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">
+                            Skip Sample
+                        </span>
+                    </div>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Job ini tidak memiliki <strong>qty sample</strong>,
+                        sehingga purchasing material untuk sample tidak perlu
+                        dilakukan. Seluruh proses purchasing akan langsung
+                        mengacu pada kebutuhan produksi.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default PurchasingSummaryCard;

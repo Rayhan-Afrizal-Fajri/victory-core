@@ -49,53 +49,53 @@ class ProductSeeder extends Seeder
                 'name' => 'T-shirt S/S combed premium Sablon Premium sablon 1-3 warna',
                 'category' => 'Casual Wear',
                 'materials' => [
-                    ['mat' => 'Kain Combed', 'sup' => 'Knitto', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Bahan Rib', 'sup' => 'Knitto', 'qty' => 0.008, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
-                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
-                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
-                    ['mat' => 'Sablon Plastisol', 'sup' => 'Lucas', 'qty' => 0.05, 'unit' => 'kg', 'price' => 96570],
+                    ['mat' => 'Kain Combed', 'sup' => 'Knitto', 'qty' => 0.23, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'Knitto', 'qty' => 0.008, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'color' => 'Hitam', 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon Plastisol', 'sup' => 'Lucas', 'qty' => 0.05, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 96570],
                 ],
-                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+                'works' => ['Cutting', 'Sablon', 'Jahit', 'QC']
             ],
             [
                 'name' => 'T-shirt S/S combed reguler Sablon Premium sablon 1-3 warna',
                 'category' => 'Casual Wear',
                 'materials' => [
-                    ['mat' => 'Kain Combed', 'sup' => 'CKP', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Bahan Rib', 'sup' => 'CKP', 'qty' => 0.008, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
-                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
-                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
-                    ['mat' => 'Sablon DTF', 'sup' => 'Max Print', 'qty' => 0.1, 'unit' => 'cm', 'price' => 35000],
+                    ['mat' => 'Kain Combed', 'sup' => 'CKP', 'qty' => 0.23, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'CKP', 'qty' => 0.008, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'color' => 'Hitam', 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon DTF', 'sup' => 'Max Print', 'qty' => 0.1, 'color' => 'Hitam', 'unit' => 'cm', 'price' => 35000],
                 ],
-                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+                'works' => ['Cutting', 'Sablon', 'Jahit', 'QC']
             ],
             [
                 'name' => 'T-shirt S/S combed premium DTF',
                 'category' => 'Casual Wear',
                 'materials' => [
-                    ['mat' => 'Kain Combed', 'sup' => 'Fabriku', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Bahan Rib', 'sup' => 'Fabriku', 'qty' => 0.008, 'unit' => 'kg', 'price' => 114000],
-                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
-                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
-                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
-                    ['mat' => 'Sablon Plastisol', 'sup' => 'Lucas', 'qty' => 0.05, 'unit' => 'kg', 'price' => 96570],
+                    ['mat' => 'Kain Combed', 'sup' => 'Fabriku', 'qty' => 0.23, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'Fabriku', 'qty' => 0.008, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 114000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'color' => 'Hitam', 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon Plastisol', 'sup' => 'Lucas', 'qty' => 0.05, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 96570],
                 ],
-                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+                'works' => ['Cutting', 'Sablon', 'Jahit', 'QC']
             ],
             [
                 'name' => 'T-shirt S/S combed Reguler DTF',
                 'category' => 'Casual Wear',
                 'materials' => [
-                    ['mat' => 'Kain Combed', 'sup' => 'Intan', 'qty' => 0.23, 'unit' => 'kg', 'price' => 122000],
-                    ['mat' => 'Bahan Rib', 'sup' => 'Intan', 'qty' => 0.008, 'unit' => 'kg', 'price' => 114000],
-                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'unit' => 'lusin', 'price' => 25000],
-                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'unit' => 'Pc', 'price' => 370],
-                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'unit' => 'Pc', 'price' => 15],
-                    ['mat' => 'Sablon DTF', 'sup' => 'Max Print', 'qty' => 0.1, 'unit' => 'cm', 'price' => 35000],
+                    ['mat' => 'Kain Combed', 'sup' => 'Intan', 'qty' => 0.23, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 122000],
+                    ['mat' => 'Bahan Rib', 'sup' => 'Intan', 'qty' => 0.008, 'color' => 'Hitam', 'unit' => 'kg', 'price' => 114000],
+                    ['mat' => 'Benang Katun', 'sup' => '1001', 'qty' => 0.04, 'color' => 'Hitam', 'unit' => 'lusin', 'price' => 25000],
+                    ['mat' => 'Plastik OPP 30 Mikron', 'sup' => 'Mapan Plastik', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 370],
+                    ['mat' => 'Label Woven', 'sup' => '1001', 'qty' => 1, 'color' => 'Hitam', 'unit' => 'Pc', 'price' => 15],
+                    ['mat' => 'Sablon DTF', 'sup' => 'Max Print', 'qty' => 0.1, 'color' => 'Hitam', 'unit' => 'cm', 'price' => 35000],
                 ],
-                'works' => ['Cutting', 'Jahit', 'QC', 'Sablon']
+                'works' => ['Cutting', 'Sablon', 'Jahit', 'QC']
             ],
         ];
 
@@ -118,6 +118,7 @@ class ProductSeeder extends Seeder
                     'type' => $materials[$matSpec['mat']]->category, 
                     'default_usage' => $matSpec['qty'],
                     'default_unit' => $matSpec['unit'],
+                    'default_color' => $matSpec['color'],
                     'harga_ecer' => $matSpec['price'],
                     'harga_roll' => $matSpec['price'], 
                     'sort_order' => $sortOrderMat++,

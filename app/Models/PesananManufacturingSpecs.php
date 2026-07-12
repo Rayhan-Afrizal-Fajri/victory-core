@@ -21,6 +21,7 @@ class PesananManufacturingSpecs extends Model
         'process_behavior',
         'min_estimate',
         'max_estimate',
+        'sort_order',
         'cost_per_pcs',
     ];
 

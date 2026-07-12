@@ -51,4 +51,24 @@ class ProductManufacturingWorkController extends Controller
 
         return back();
     }
+
+    /**
+     * Memperbarui urutan (sort_order) secara massal.
+     */
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'ordered_ids' => ['required', 'array'],
+            'ordered_ids.*' => ['required', 'integer', 'exists:product_manufacturing_works,id'],
+        ]);
+
+        // Loop array id yang dikirimkan, lalu update sort_order-nya berdasarkan index array
+        foreach ($validated['ordered_ids'] as $index => $id) {
+            ProductManufacturingWork::where('id', $id)->update([
+                'sort_order' => $index + 1 // Urutan dimulai dari 1
+            ]);
+        }
+
+        return back(); // Inertia akan me-reload props otomatis
+    }
 }

@@ -88,14 +88,14 @@ function CostingSummaryCard({
                         <button
                             key={marginValue}
                             type="button"
-                            disabled={!can('costings.input_price')}
+                            disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
                             onClick={() =>
                                 form.setData(
                                     'harga_jual_per_pcs',
                                     Math.ceil(recommendations[marginValue as keyof typeof recommendations] || 0)
                                 )
                             }
-                            className="cursor-pointer rounded-xl border bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50"
+                            className={`rounded-xl border p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 ${form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <p className="text-xs text-slate-500">
                                 Margin {marginValue}%
@@ -125,7 +125,7 @@ function CostingSummaryCard({
                         </label>
                         <FormattedNumberInput
                             value={form.data.harga_jual_per_pcs}
-                            disabled={!can('costings.input_price')}
+                            disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
                             onValueChange={(value) => form.setData('harga_jual_per_pcs', value)}
                             placeholder='cth: 35.000'
                         />

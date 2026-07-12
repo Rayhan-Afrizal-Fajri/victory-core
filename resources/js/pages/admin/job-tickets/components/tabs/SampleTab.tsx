@@ -11,6 +11,7 @@ import SampleGalleryCard from '@/components/sample/sample-gallery-card';
 import SampleApprovalCard from '@/components/sample/sample-approval-card';
 import SampleOverviewCard from '@/components/sample/sample-overview-card';
 import SampleDeliveryCard from '@/components/sample/sample-delivery-card';
+import { CheckCircle2 } from 'lucide-react'; // Pastikan ikon ini di-import
 
 const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
@@ -22,6 +23,10 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const sample = samples[0]; 
 
     const designApproved = workflow?.design_approved ?? false;
+    
+    // PENGECEKAN UTAMA: Apakah pesanan ini butuh sample?
+    // Mengubah nilai menjadi number untuk memastikannya. Jika null/undefined, dianggap 0.
+    const isNoSample = Number(activeOrder?.sample_qty || 0) <= 0;
     
     // Gunakan ternary if biasa. Dijamin 100% aman dari error 'undefined'
     const media = sample ? sample.media : [];
@@ -45,10 +50,6 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     const revisionForm = useForm({ customer_review_note: '' });
     const rejectForm = useForm({ customer_review_note: '' });
 
-    // if (!designApproved && (!workflow?.sample_revision && !workflow?.sample_approved)) {
-    //     return <WorkflowGate reason="Desain belum disetujui. Sampel terkunci." />;
-    // }
-
     const editDeliveryForm = useForm({
         courier_name: delivery?.courier_name || '',
         tracking_number: delivery?.tracking_number || '',
@@ -58,7 +59,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
 
     const updateDelivery = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!sample) return; // <-- Guard clause (Mencegah error)
+        if (!sample) return; 
         editDeliveryForm.patch(`/samples/${sample.id}/delivery`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Data pengiriman sample diupdate.'),
@@ -163,17 +164,17 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     return (
         <div className="space-y-6">
             {job.orders && job.orders.length > 1 && (
-                <div className="mb-6 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pilih Produk Pesanan:</p>
+                <div className="mb-6 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Pilih Produk Pesanan:</p>
                     <div className="flex gap-2 overflow-x-auto pb-2">
                         {job.orders.map((order, index) => (
                             <button
                                 key={order.id}
                                 onClick={() => setActiveOrderIndex(index)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap ${
+                                className={`flex items-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                                     activeOrderIndex === index
                                         ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                        : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                                 }`}
                             >
                                 <span className={`mr-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeOrderIndex === index ? 'bg-blue-500/50' : 'bg-slate-200'}`}>
@@ -185,14 +186,26 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                     </div>
                 </div>
             )}
-            <SampleProgressStepper workflow={workflow} sample={sample} />
+            
+            {/* Sembunyikan stepper jika tidak butuh sample untuk menghindari kebingungan UI */}
+            {!isNoSample && <SampleProgressStepper workflow={workflow} sample={sample} />}
 
             <div className="grid gap-6 xl:grid-cols-3">
                 <div className="space-y-6 xl:col-span-2">
-                    
-                    {!sample && (!workflow?.sample_revision && !workflow?.sample_approved ) ? (
+                    {/* LOGIKA PENGECEKAN UTAMA */}
+                    {isNoSample ? (
+                        <div className="flex flex-col items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 p-12 text-center shadow-sm">
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-emerald-900">Tahap Sample Dilewati</h3>
+                            <p className="mt-2 max-w-md text-sm text-emerald-700">
+                                Kebutuhan Sample Qty untuk pesanan ini adalah 0. Sistem otomatis meneruskan pesanan ini langsung ke tahap Produksi.
+                            </p>
+                        </div>
+                    ) : !sample && (!workflow?.sample_revision && !workflow?.sample_approved) ? (
                         <WorkflowGate reason="Menunggu material sample diterima oleh gudang (Otomatis dibuat saat receiving)." />
-                    ) : !designApproved && (!workflow?.sample_revision && !workflow?.sample_approved) ?(
+                    ) : !designApproved && (!workflow?.sample_revision && !workflow?.sample_approved) ? (
                         <WorkflowGate reason="Desain belum disetujui. Sampel terkunci." />
                     ) : (
                         <>
@@ -218,7 +231,9 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                 </div>
 
                 <div className="space-y-6">
-                    {sample && (
+                    {/* Sembunyikan action cards jika isNoSample true, 
+                        karena tidak ada pengiriman atau persetujuan yang bisa dilakukan lagi */}
+                    {!isNoSample && sample && (
                         <>
                             <SampleDeliveryCard
                                 sample={sample}
@@ -251,6 +266,9 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                         </>
                     )}
 
+                    {/* HISTORY TETAP MUNCUL jika samples.length > 0 
+                        Ini memungkinkan user tetap melihat riwayat sample jika sebelumnya 
+                        pernah dibuat, lalu direvisi, lalu akhirnya memutuskan tidak buat sample (qty diubah jadi 0) */}
                     {samples.length > 0 && (
                         <SampleHistoryCard samples={samples} />
                     )}

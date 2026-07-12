@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('defect_qty');
             $table->text('defect_reason'); // Penjelasan cacatnya apa
             $table->string('corrective_action'); // rework, throw_away, repurchase_material
+            $table->enum('status', ['pending', 'in_progress', 'completed'])->default('pending');
             
             $table->foreignId('reported_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

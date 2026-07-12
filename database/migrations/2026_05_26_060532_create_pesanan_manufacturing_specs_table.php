@@ -28,6 +28,7 @@ return new class extends Migration
             $table->decimal('min_estimate', 15, 2)->default(0);
             $table->decimal('max_estimate', 15, 2)->default(0);
 
+            $table->integer('sort_order')->default(0);
             $table->decimal('cost_per_pcs', 15, 2)->default(0);
 
             $table->timestamps();

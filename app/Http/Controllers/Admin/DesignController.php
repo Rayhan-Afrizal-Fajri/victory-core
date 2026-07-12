@@ -251,6 +251,7 @@ class DesignController extends Controller
                     'color' => null,
                     'usage' => $component->default_usage,
                     'unit' => $component->default_unit ?: $material?->unit,
+                    'color' => $component->default_color ?: $material?->default_color,
 
                     'usage_per_set' => 1,
 
@@ -268,6 +269,7 @@ class DesignController extends Controller
             foreach ($product->productManufacturingWorks as $component) {
                 $work = $component->manufacturingWork;
 
+
                 $costPerPcs = $component->default_usage * ($work?->default_max_estimate ?? 0);
 
                 $pesanan->manufacturingSpecs()->create([
@@ -284,6 +286,7 @@ class DesignController extends Controller
 
                     'min_estimate' => $work?->default_min_estimate ?? 0,
                     'max_estimate' => $work?->default_max_estimate ?? 0,
+                    'sort_order' => $component?->sort_order ?? 0,
                     'cost_per_pcs' => $costPerPcs,
                 ]);
             }

@@ -31,8 +31,9 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
     const canOpenCosting =
         activeOrder &&
         (
-            activeOrder.material_specs?.length ||
-            activeOrder.manufacturing_specs?.length
+            (activeOrder.material_specs?.length ||
+            activeOrder.manufacturing_specs?.length) &&
+            activeOrder.workflow_status?.design_specs_completed
         );
 
     function getRecommendedPrice(cost: number, margin: number) {

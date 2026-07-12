@@ -131,7 +131,7 @@ class JobTicketController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $id, string $tab = 'overview')
     {        
         // 1. Sesuaikan Eager Load
         $jobTicket = JobTicket::with([
@@ -376,6 +376,7 @@ class JobTicketController extends Controller
                         'usage_note' => $spec->usage_note,
                         'min_estimate' => $spec->min_estimate,
                         'max_estimate' => $spec->max_estimate,
+                        'sort_order' => $spec->sort_order,
                         'vendor' => $spec->vendor?->nama_perusahaan,
                         'vendor_id' => $spec->vendor?->id,
                         'cost_per_pcs' => $spec->cost_per_pcs,

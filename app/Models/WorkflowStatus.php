@@ -17,6 +17,15 @@ class WorkflowStatus extends Model
         'quotation_created',
         'quotation_approved',
 
+        'purchasing_generated',
+        'materials_purchased',
+        'materials_received',
+        'materials_distributed',
+
+        'sample_materials_ready',
+        'production_materials_ready',
+        
+        'sample_invoice_created',
         'sample_paid',
         'sample_created',
         'sample_started',
@@ -28,21 +37,13 @@ class WorkflowStatus extends Model
 
         'production_invoice_created',
         'production_dp_paid',
-        
-        'materials_purchased',
-        'materials_received',
-        'materials_distributed',
-
-        'sample_materials_ready',
-        'production_materials_ready',
+        'final_payment_paid',
 
         'production_started',
         'production_completed',
         
         'qc_completed',
         'packing_completed',
-        
-        'final_payment_paid',
         
         'delivered',
         'completed',

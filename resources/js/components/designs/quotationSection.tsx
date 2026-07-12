@@ -9,7 +9,7 @@ import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
 import FormattedNumberInput from "../ui/formatted-number-input";
 import { Pesanan } from "@/pages/admin/job-tickets/types";
-import { Plus, Trash2 } from "lucide-react";
+import { Info, Plus, Trash2 } from "lucide-react";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -63,7 +63,7 @@ function QuotationSection({
     const needsQuotation = orders.some((order) => !order.workflow_status?.quotation_approved);
 
     // 3. Gabungkan keduanya
-    const canGenerateQuotation = allPricesSet && needsQuotation;
+    const canGenerateQuotation = allPricesSet && needsQuotation && orders.every((order) => order.workflow_status?.price_approved);
 
     const defaultNotes = [
         'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
@@ -191,6 +191,39 @@ function QuotationSection({
                                 placeholder='cth: 35.000'
                             />
                         </Field>
+                        {/* Section untuk informasi pengisian sample qty dan harga qty */}
+                        <div className="col-span-2">
+                            <div className="rounded-lg border border-sky-100 bg-sky-50 p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <Info className="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-sky-900">
+                                            Panduan Pengisian Sample
+                                        </p>
+                                        <ul className="mt-2 space-y-2 text-xs text-sky-800">
+                                            <li className="flex items-start gap-2">
+                                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                                                <span>
+                                                    <strong>Sample Berbayar:</strong> Isi <em>Sample Qty</em> dan <em>Harga Sample</em>.
+                                                </span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                                                <span>
+                                                    <strong>Sample Gratis:</strong> Isi <em>Sample Qty</em>, lalu kosongkan <em>Harga Sample</em> (atau isi 0).
+                                                </span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                                                <span>
+                                                    <strong>Tanpa Sample:</strong> Kosongkan <em>Sample Qty</em>.
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {/* Render Grid untuk Multi-Orders */}
                         <div className="col-span-2 items-start grid gap-6 md:grid-cols-2">
                             {/* 2. Map orders di sini */}
@@ -245,7 +278,7 @@ function QuotationSection({
                                                             [order.id]: Number(value)
                                                         });
                                                     }}
-                                                    disabled={isApproved}
+                                                    disabled={isApproved || quotationForm.data.sample_qtys[order.id] === 0}
                                                     placeholder="cth: 150000"
                                                 />
                                             </Field>

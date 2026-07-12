@@ -14,17 +14,6 @@ import GenerateBomPoCard from '@/components/purchasings/generate-bom-po-card';
 import EditPoDialog from '@/components/purchasings/edit-po-dialog';
 
 const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
-    useEffect(() => {
-        const interval =  setInterval(() => {
-            router.reload({
-                only: ['job'],
-                preserveScroll: true,
-                preserveState: true,
-            });
-        }, 3000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     const [activeOrderIndex, setActiveOrderIndex] = useState<number>(0);
     const activerOrder: Pesanan | undefined = job?.orders?.[activeOrderIndex];
@@ -166,17 +155,6 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                     setOpenPurchasingForm(false);
                     setEditingPurchasing(null);
                     purchasingForm.reset();
-                    useEffect(() => {
-                        const interval =  setInterval(() => {
-                            router.reload({
-                                only: ['job'],
-                                preserveScroll: true,
-                                preserveState: true,
-                            });
-                        }, 3000);
-
-                        return () => clearInterval(interval);
-                    }, []);
                 },
             });
 
@@ -227,18 +205,20 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Material ditandai ordered.');
-                    useEffect(() => {
-                        const interval =  setInterval(() => {
-                            router.reload({
-                                only: ['job'],
-                                preserveScroll: true,
-                                preserveState: true,
-                            });
-                        }, 3000);
+                    toast.success('Material sudah dipesan.');
+                },
+            }
+        );
+    };
 
-                        return () => clearInterval(interval);
-                    }, []);
+    const undoMarkOrdered = (purchasing: any) => {
+        router.patch(
+            `/purchasings/${purchasing.id}/undo-mark-ordered`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Material batal dipesan.');
                 },
             }
         );
@@ -306,7 +286,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
             <DesignSpecsReferenceCard job={activerOrder} />
 
-            {(purchasings.length === 0 || workflow.sample_revision === true) && (
+            {(purchasings.length === 0 || workflow.sample_revision) && (
                 <GenerateBomPoCard
                     job={activerOrder}
                     form={generateBomForm}
@@ -326,6 +306,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                             onEditPo={setEditingPo}
                             onDelete={deletePurchasing}
                             onMarkOrdered={markOrdered}
+                            onUndoMarkOrdered={undoMarkOrdered}
                             onReceive={openReceiveMaterial}
                             onDeleteReceiving={deleteReceiving}
                         />

@@ -17,20 +17,36 @@ function GenerateBomPoCard({
     
     const workflow = job.workflow_status || {};
     const productionQty = workflow.sample_revision == true ? 0 : Number(job.quantity || job.q || 0);
-    const sampleQty = Number(job.sample_qty || 1);
+    const sampleQty = Number(job.sample_qty || 0);
     const totalPlannedQty = productionQty + sampleQty;
+
+    const hasSample = Number(sampleQty) > 0;
+
+    const title = workflow.sample_revision
+        ? hasSample
+            ? 'BOM / PO untuk Revisi Sample'
+            : 'BOM / PO untuk Production'
+        : hasSample
+            ? 'BOM / PO untuk Sample dan Production'
+            : 'BOM / PO untuk Production';
+
+    const description = workflow.sample_revision
+        ? hasSample
+            ? 'Qty pembelian akan disesuaikan dengan kebutuhan revisi sample.'
+            : 'Qty pembelian akan disesuaikan dengan kebutuhan production.'
+        : hasSample
+            ? 'Qty pembelian akan disesuaikan dengan kebutuhan sample dan production.'
+            : 'Qty pembelian akan disesuaikan dengan kebutuhan production.';
 
     return (
         <SectionCard title="Generate BOM / Purchase Order">
             <form onSubmit={onSubmit} className="space-y-4">
                 <div>
                     <p className="font-semibold text-slate-900">
-                        Generate {workflow.sample_revision == true ? 'BOM / PO untuk Revisi Sample' : 'BOM / PO untuk Sample dan Production'}
+                        Generate {title}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                        {workflow.sample_revision == true
-                            ? 'Qty pembelian akan disesuaikan dengan kebutuhan revisi sample.'
-                            : 'Qty pembelian akan disesuaikan dengan kebutuhan sample dan production.'}
+                        {description}
                     </p>
                 </div>
 
@@ -42,10 +58,12 @@ function GenerateBomPoCard({
                         />
                     )}
 
-                    <InfoBox
-                        label="Sample Qty"
-                        value={`${sampleQty} pcs`}
-                    />
+                    {sampleQty !== 0 && (
+                        <InfoBox
+                            label="Sample Qty"
+                            value={`${sampleQty} pcs`}
+                        />
+                    )}
 
                     <InfoBox
                         label="Total Planned Qty"
