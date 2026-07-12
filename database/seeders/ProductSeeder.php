@@ -27,9 +27,12 @@ class ProductSeeder extends Seeder
             'Bahan Rib' => ['category' => 'bahan', 'unit' => 'kg'],
             'Benang Katun' => ['category' => 'aksesoris', 'unit' => 'lusin'],
             'Plastik OPP 30 Mikron' => ['category' => 'aksesoris', 'unit' => 'Pc'],
+            'Tali' => ['category' => 'aksesoris', 'unit' => 'meter'],
             'Label Woven' => ['category' => 'aksesoris', 'unit' => 'Pc'],
+            'Kancing' => ['category' => 'aksesoris', 'unit' => 'Pc'],
             'Sablon Plastisol' => ['category' => 'aksesoris', 'unit' => 'kg'],
             'Sablon DTF' => ['category' => 'aksesoris', 'unit' => 'cm'],
+            'Zipper' => ['category' => 'aksesoris', 'unit' => 'Pc'],
         ];
         $materials = [];
         foreach ($materialsData as $name => $data) {

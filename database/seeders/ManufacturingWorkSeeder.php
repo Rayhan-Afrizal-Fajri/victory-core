@@ -22,6 +22,14 @@ class ManufacturingWorkSeeder extends Seeder
         ]);
 
         ManufacturingWork::create([
+            'name' => 'Sablon',
+            'default_unit' => 'pcs',
+            'default_max_estimate' => 1600,
+            'is_active' => true,
+            'process_behavior' => 'production_process',
+        ]);
+
+        ManufacturingWork::create([
             'name' => 'Jahit',
             'default_unit' => 'pcs',
             'default_max_estimate' => 1400,
@@ -30,9 +38,9 @@ class ManufacturingWorkSeeder extends Seeder
         ]);
 
         ManufacturingWork::create([
-            'name' => 'Sablon',
+            'name' => 'Pasang Kancing',
             'default_unit' => 'pcs',
-            'default_max_estimate' => 1600,
+            'default_max_estimate' => 1400,
             'is_active' => true,
             'process_behavior' => 'production_process',
         ]);
