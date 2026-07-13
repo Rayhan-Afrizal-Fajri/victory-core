@@ -164,7 +164,7 @@ class DesignController extends Controller
             ]);
         });
 
-        $usersToNotify = User::permission('bom.sync')->get();
+        $usersToNotify = User::permission('boms.sync')->get();
 
         if ($usersToNotify->isNotEmpty()) {
             Notification::send($usersToNotify, new SystemNotification(

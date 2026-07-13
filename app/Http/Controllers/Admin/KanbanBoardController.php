@@ -248,10 +248,10 @@ class KanbanBoardController extends Controller
 
             [
                 'permissions' => [
-                    'bom.sync',
-                    'bom.create',
-                    'bom.edit',
-                    'bom.delete',
+                    'boms.sync',
+                    'boms.create',
+                    'boms.edit',
+                    'boms.delete',
                     'manufactures.create',
                     'manufactures.edit',
                     'manufactures.delete',
