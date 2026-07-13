@@ -14,6 +14,17 @@ type KanbanColumn = {
     borderColor: string;
 };
 
+type ProcessDetail = {
+    id: string;
+    work_name: string;
+    status: string;
+    qc_status: string;
+    target_qty: number;
+    checked_qty: number;
+    passed_qty: number;
+    defect_qty: number;
+}
+
 type RunProgress = {
     type: 'sample' | 'production';
     status: string;
@@ -21,6 +32,7 @@ type RunProgress = {
     completed: number;
     total: number;
     percent: number;
+    process_details: ProcessDetail[];
 };
 
 type KanbanCard = {
@@ -143,27 +155,37 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                 </div>
             </div>
 
-            {activeRun && (
-                <div className="mt-4 rounded-lg border bg-slate-50 p-3">
-                    <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-slate-700">
-                            {activeRun.type === 'sample' ? 'Sample' : 'Production'} Run
-                        </span>
-                        <span className="text-slate-500">
-                            {activeRun.completed}/{activeRun.total}
-                        </span>
-                    </div>
-
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                            className="h-full rounded-full bg-emerald-500"
-                            style={{ width: `${activeRun.percent}%` }}
-                        />
-                    </div>
-
-                    <p className="mt-2 text-[11px] text-slate-500">
-                        Status: {activeRun.status} · Qty: {activeRun.quantity}
+            {/* Rincian Proses Produksi (Cutting, Sewing, dll) */}
+            {activeRun?.process_details && activeRun?.process_details.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Rincian QC & Proses
                     </p>
+                    
+                    {activeRun?.process_details.map((process: any) => (
+                        <div 
+                            key={process.id} 
+                            className="rounded border border-slate-100 bg-white p-2 text-[11px] shadow-sm"
+                        >
+                            <div className="mb-1 flex items-center justify-between font-medium text-slate-700">
+                                <span>{process.work_name}</span>
+                                <span className="font-normal text-slate-400">
+                                    Target: {process.target_qty}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-500">
+                                    Cek: <span className="font-semibold text-slate-700">{process.checked_qty}</span>
+                                </span>
+                                <span className="text-emerald-600">
+                                    Lolos: <span className="font-semibold">{process.passed_qty}</span>
+                                </span>
+                                <span className="text-rose-500">
+                                    Cacat: <span className="font-semibold">{process.defect_qty}</span>
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -255,6 +277,7 @@ export default function Index({
         window.location.href = url;
     };
 
+
     return (
         <>
             <Head title="Kanban Board" />
@@ -276,7 +299,7 @@ export default function Index({
                         </div>
 
                         {/* List Content */}
-                        <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <div className="divide-y divide-slate-100 max-h-75 overflow-y-auto custom-scrollbar">
                             {urgentIssues.map((order) => (
                                 <div key={order.id} className="flex flex-col md:flex-row p-4 hover:bg-slate-50 transition-colors">
                                     
@@ -305,23 +328,21 @@ export default function Index({
                                                 <div className="pl-2">
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-bold text-slate-800">
-                                                            {issue.item_bahan}
+                                                            {issue.title} {/* Diubah dari issue.item_bahan */}
                                                         </p>
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                                                            issue.condition === 'damaged' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                                                        }`}>
-                                                            {issue.condition}
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-100 text-red-700`}>
+                                                            {issue.condition === 'damaged_issue' ? 'Damaged' : issue.condition}
                                                         </span>
                                                     </div>
                                                     
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-600">
                                                         <div className="flex items-center gap-1">
                                                             <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                                                            <span>{issue.supplier}</span>
+                                                            <span>{issue.subtitle}</span> {/* Diubah dari issue.supplier */}
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                                            <span>Diterima: {issue.received_at}</span>
+                                                            <span>Status: {issue.date}</span> {/* Diubah dari issue.received_at */}
                                                         </div>
                                                     </div>
 
@@ -336,7 +357,7 @@ export default function Index({
                                                     <p className="text-xs text-slate-500 font-medium hidden md:block">Qty Bermasalah</p>
                                                     <div className="flex items-center gap-1 text-red-600 font-bold text-lg md:mt-1">
                                                         <PackageX className="w-4 h-4 md:hidden" />
-                                                        {issue.received_qty} <span className="text-sm font-medium">{issue.satuan}</span>
+                                                        {issue.qty} <span className="text-sm font-medium">{issue.satuan}</span> {/* Diubah dari issue.received_qty */}
                                                     </div>
                                                 </div>
                                             </div>

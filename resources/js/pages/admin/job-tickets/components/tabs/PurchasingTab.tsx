@@ -287,7 +287,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
             <DesignSpecsReferenceCard job={activerOrder} />
 
-            {(purchasings.length === 0 || workflow.sample_revision) && (
+            {(purchasings.length === 0 || workflow.sample_revision !== 0) && (
                 <GenerateBomPoCard
                     job={activerOrder}
                     form={generateBomForm}

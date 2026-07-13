@@ -55,6 +55,7 @@ class PurchasingSheetExport implements FromCollection, WithHeadings, WithMapping
         return [
             'ID',
             'Job Ticket',
+            'Pesanan',
             'Item Bahan',
             'Supplier',
             'Status',
@@ -112,6 +113,7 @@ class PurchasingSheetExport implements FromCollection, WithHeadings, WithMapping
         return [
             $p->id,
             $pesanan ? $pesanan->jobTicket->no_job_ticket : '-',
+            $pesanan ? $pesanan->produk : '-',
             $p->item_bahan,
             $p->supplier ? $p->supplier->nama_perusahaan : '-',
             $p->status,

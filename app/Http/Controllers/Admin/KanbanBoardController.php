@@ -37,14 +37,12 @@ class KanbanBoardController extends Controller
         $pesanans = $cardsQuery->get();
 
         // 2. Buat list terpisah khusus untuk Urgent Issues
-        // MAPPING URGENT ISSUES (GABUNGAN PURCHASING & PRODUCTION)
         $urgentIssuesList = $pesanans->filter(function ($pesanan) {
             
-            // 1. Cek Issue Produksi
+            // --- 1. Cek Issue Produksi (Logika Anda sudah benar) ---
             $productionIssues = collect();
             foreach($pesanan->productionRuns as $run) {
                 foreach($run->processes as $process) {
-                    // Hitung defect yang belum selesai di-rework
                     $initialDefects = $process->qcLogs->where('qc_type', 'initial_check')->sum('defect_qty');
                     $reworkedPassed = $process->qcLogs->where('qc_type', 'rework_check')->sum('passed_qty');
                     $unresolved = max($initialDefects - $reworkedPassed, 0);
@@ -59,31 +57,61 @@ class KanbanBoardController extends Controller
                     }
                 }
             }
-
-            // Simpan sementara di object pesanan agar tidak perlu dilooping 2x
             $pesanan->calculated_production_issues = $productionIssues;
-            
-            // Masuk ke Urgent Board jika punya issue purchasing ATAU produksi
-            return $pesanan->urgentMaterialIssues->count() > 0 || $productionIssues->count() > 0;
+
+            // 2. Cek Issue Purchasing (Logika BARU: Hanya jika jumlah rusak > jumlah bagus)
+            $unresolvedPurchasingIssues = $pesanan->purchasing->filter(function($p) {
+                // Hitung total barang BAGUS yang sudah masuk
+                $goodReceived = $p->materialReceivings()
+                                ->whereNotIn('item_condition', ['damaged', 'expired'])
+                                ->sum('received_qty');
+                                
+                // Hitung total barang RUSAK/EXPIRED yang masuk
+                $damagedReceived = $p->materialReceivings()
+                                    ->whereIn('item_condition', ['damaged', 'expired'])
+                                    ->sum('received_qty');
+
+                // SYARAT URGENT: Hanya tampil jika barang rusak LEBIH BANYAK dari barang bagus
+                // Artinya: kerusakan belum "ditambal" oleh kiriman barang bagus berikutnya
+                return ($damagedReceived > $goodReceived); 
+            });
+
+            $pesanan->calculated_purchasing_issues = $unresolvedPurchasingIssues;
+
+            // Board hanya tampil jika ada issue produksi ATAU issue purchasing (kerusakan belum tertutupi)
+            return $unresolvedPurchasingIssues->count() > 0 || $productionIssues->count() > 0;
             
         })->map(function ($pesanan) {
             
             // Map Data Purchasing
-            $purchasingIssues = $pesanan->urgentMaterialIssues->map(function ($issue) {
+            $purchasingIssues = $pesanan->calculated_purchasing_issues->map(function ($p) {
+                $goodReceived = $p->materialReceivings()
+                                ->whereNotIn('item_condition', ['damaged', 'expired'])
+                                ->sum('received_qty');
+                
+                $damagedReceived = $p->materialReceivings()
+                                    ->whereIn('item_condition', ['damaged', 'expired'])
+                                    ->sum('received_qty');
+
+                // Gunakan + 0 atau (float) untuk membuang nol tidak penting
+                $qtyRusak = (float) $damagedReceived; 
+                $totalBagus = (float) $goodReceived;
+                $required = (float) $p->required_qty;
+
                 return [
-                    'id' => 'pur_'.$issue->id,
+                    'id' => 'pur_'.$p->id,
                     'type' => 'purchasing',
-                    'title' => $issue->purchasing->item_bahan ?? 'Material Tidak Diketahui',
-                    'subtitle' => $issue->purchasing->supplier->nama_perusahaan ?? '-',
-                    'qty' => (float) $issue->received_qty,
-                    'satuan' => $issue->purchasing->satuan ?? '',
-                    'condition' => $issue->item_condition, // damaged, expired
-                    'date' => Carbon::parse($issue->received_at)->translatedFormat('d M Y'),
-                    'notes' => $issue->notes,
+                    'title' => $p->item_bahan,
+                    'subtitle' => $p->supplier->nama_perusahaan ?? '-',
+                    'qty' => $qtyRusak, // Sekarang sudah bersih
+                    'satuan' => $p->satuan ?? '',
+                    'condition' => 'damaged_issue',
+                    'date' => 'Perlu Tindakan',
+                    'notes' => "Terdapat {$qtyRusak} {$p->satuan} barang cacat/expired. Total barang bagus diterima: {$totalBagus} / {$required} {$p->satuan}.",
                 ];
             })->toArray();
 
-            // Map Data Production
+            // Map Data Production (Tetap seperti semula)
             $productionIssues = $pesanan->calculated_production_issues->map(function ($issue, $idx) {
                 return [
                     'id' => 'prod_'.$idx,
@@ -103,8 +131,7 @@ class KanbanBoardController extends Controller
                 'jobNo' => $pesanan->jobTicket?->no_job_ticket ?? '-',
                 'customer' => $pesanan->jobTicket?->customer?->nama_perusahaan ?? '-',
                 'product' => $pesanan->produk ?? '-',
-                'showUrl' => '/job-tickets/' . ($pesanan->jobTicket?->id ?? 0),
-                // Gabungkan kedua issue ke dalam 1 array
+                'showUrl' => '/job-tickets/' . ($pesanan->jobTicket?->id ?? 0) . '?tab=purchasing',
                 'issues' => array_merge($purchasingIssues, $productionIssues),
             ];
         })->values()->toArray();
@@ -198,8 +225,6 @@ class KanbanBoardController extends Controller
 
                 return $generatedCards;
             });
-
-            // dd($cards, $columns);
 
         return Inertia::render('admin/kanban/Index', [
             'cards' => $cards,
@@ -599,12 +624,13 @@ class KanbanBoardController extends Controller
          * Nanti jika sudah ada payment_term / allow_production_without_dp
          * di job_tickets, blocker DP ini jangan dibuat mutlak.
          */
-        if (
-            ($w->production_invoice_created ?? false) &&
-            ! ($w->production_dp_paid ?? false)
-        ) {
-            return 'Menunggu DP production / approval tempo';
-        }
+        // if (
+        //     ($w->production_invoice_created ?? false) &&
+        //     ! ($w->production_dp_paid ?? false) && 
+        //     (!$w->production_materials_ready || !$w->production_started)
+        // ) {
+        //     return 'Menunggu DP production / approval tempo';
+        // }
 
         if (! ($w->production_materials_ready ?? false)) {
             return 'Menunggu material produksi siap';
@@ -658,6 +684,21 @@ class KanbanBoardController extends Controller
             })
             ->count();
 
+        // --- TAMBAHAN: Mapping detail proses untuk memunculkan qty qc ---
+        $processDetails = $processes->map(function ($process) {
+            return [
+                'id' => $process->id,
+                'work_name' => $process->work_name, // Contoh: "Cutting", "Sewing"
+                'status' => $process->status,
+                'qc_status' => $process->qc_status,
+                'target_qty' => (int) $process->quantity,
+                'checked_qty' => (int) $process->checked_qty,
+                'passed_qty' => (int) $process->passed_qty,
+                'defect_qty' => (int) $process->defect_qty,
+            ];
+        })->values()->toArray();
+        // ----------------------------------------------------------------
+
         return [
             'type' => $run->type,
             'status' => $run->status,
@@ -667,6 +708,9 @@ class KanbanBoardController extends Controller
             'percent' => $total > 0
                 ? (int) round(($completed / $total) * 100)
                 : 0,
+            
+            // Masukkan rincian proses ke dalam response balikan
+            'process_details' => $processDetails, 
         ];
     }
 

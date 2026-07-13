@@ -8,6 +8,7 @@ import {
     getSampleReceivedQty,
     getProductionReceivedQty,
     getProgressPercentage,
+    roundQty,
 } from './purchasing-utils';
 import { JobTicket } from '@/pages/admin/job-tickets/types';
 import InfoBox from '@/pages/admin/job-tickets/components/tabs/InfoBox';
@@ -72,7 +73,7 @@ const PurchasingSummaryCard = ({ purchasings, job }: { purchasings: any[]; job: 
                 <SummaryBox label="Total Item" value={`${totalItems} item`} />
                 <SummaryBox label="Total Estimasi" value={formatRupiah(totalCost)} />
                 <SummaryBox label="Material Received" value={`${receivedItems}/${totalItems}`} />
-                <SummaryBox label="Sisa Qty" value={totalRemainingQty} danger={totalRemainingQty > 0} />
+                <SummaryBox label="Sisa Qty" value={roundQty(totalRemainingQty)} danger={totalRemainingQty > 0} />
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
