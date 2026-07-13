@@ -508,7 +508,7 @@ const DesignAndSpecsTab: React.FC<{
                                     isSearchable={true}
                                 />
                             </div>
-                            <Button type="submit" size="sm" className="w-full" disabled={syncArticleForm.processing || workflow.quotation_created}>
+                            <Button type="submit" size="sm" className="w-full" disabled={syncArticleForm.processing || workflow.quotation_created || workflow.design_specs_completed}>
                                 Simpan / Tautkan
                             </Button>
                         </form>

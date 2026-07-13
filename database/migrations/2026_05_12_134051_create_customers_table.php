@@ -14,10 +14,16 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->string('nama')->nullable();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // Relasi ke tabel users
+            $table->string('jabatan')->nullable();
             $table->string('no_hp')->nullable();
             $table->string('nama_perusahaan')->nullable();
-            $table->text('alamat')->nullable();
+            
+            // Pecah alamat menjadi beberapa kolom
+            $table->string('provinsi')->nullable();
+            $table->string('kota')->nullable();
+            $table->string('kecamatan')->nullable();
+            $table->string('kelurahan')->nullable();
+            $table->text('alamat_detail')->nullable(); // Untuk Jalan, RT/RW, Gedung
             $table->timestamps();
         });
     }

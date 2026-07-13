@@ -23,10 +23,14 @@ import { Textarea } from '@/components/ui/textarea';
 type CustomerRow = {
   id: number;
   name: string;
+  position: string;
   company_name: string;
-  email: string;
   contact: string;
-  address: string;
+  province: string;
+  city: string;
+  district: string;
+  village: string;
+  detail_address: string;
   total_orders: number;
   order_history: {
     id: number;
@@ -50,10 +54,14 @@ export default function Index({ customers }: Props) {
 
   const customerForm = useForm({
     nama: '',
+    jabatan: '',
     nama_perusahaan: '',
-    email: '',
     no_hp: '',
-    alamat: '',
+    provinsi: '',
+    kota: '',
+    kecamatan: '',
+    kelurahan: '',
+    alamat_detail: '',
   });
 
   const filteredCustomers = useMemo(() => customers, [customers]);
@@ -68,10 +76,14 @@ export default function Index({ customers }: Props) {
 
     customerForm.setData({
       nama: customer.name,
+      jabatan: customer.position,
       nama_perusahaan: customer.company_name,
-      email: customer.email,
       no_hp: customer.contact,
-      alamat: customer.address,
+      alamat_detail: customer.detail_address,
+      provinsi: customer.province,
+      kota: customer.city,
+      kecamatan: customer.district,
+      kelurahan: customer.village,
     });
 
     setIsDialogOpen(true);
@@ -139,7 +151,12 @@ export default function Index({ customers }: Props) {
     {
       header: 'Nama Pelanggan',
       accessor: 'name',
-      cell: (row) => <span className="font-medium text-slate-900">{row.name}</span>,
+      cell: (row) =>(
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-slate-900">{row.name}</span>
+                        <span className="font-regular text-slate-600 text-sm">{row.position}</span>
+                      </div>
+                    ),
     },
     {
       header: 'Nama Perusahaan',
@@ -153,7 +170,7 @@ export default function Index({ customers }: Props) {
     {
       header: 'Alamat',
       accessor: 'address',
-      cell: (row) => <span className="text-slate-700">{row.address}</span>,
+      cell: (row) => <span className="text-slate-700">{row.detail_address}</span>,
     },
     {
       header: 'Total Pesanan',
@@ -220,7 +237,7 @@ export default function Index({ customers }: Props) {
             <DataTable
               columns={columns}
               data={filteredCustomers}
-              searchKeys={['name', 'contact', 'address']}
+              searchKeys={['name', 'contact', 'detail_address']}
               searchPlaceholder="Cari customer atau kontak"
             />
           </CardContent>
@@ -242,7 +259,7 @@ export default function Index({ customers }: Props) {
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Customer</p>
                     <h2 className="mt-2 text-2xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
                     <p className="mt-1 text-sm text-slate-600">{selectedCustomer.contact}</p>
-                    <p className="mt-1 text-sm text-slate-500">{selectedCustomer.address}</p>
+                    <p className="mt-1 text-sm text-slate-500">{selectedCustomer.detail_address}</p>
                   </div>
                   <div className="rounded-2xl bg-slate-50 p-4 text-center dark:bg-slate-900">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Total orders</p>

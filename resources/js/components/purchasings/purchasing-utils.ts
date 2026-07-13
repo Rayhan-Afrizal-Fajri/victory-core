@@ -176,10 +176,22 @@ export function getProgressPercentage(received: number, required: number) {
 
 export function formatMaterialQty(value: number, unit?: string) {
     const normalizedUnit = (unit || '').toLowerCase();
-    const isWholeNumberUnit = ['pcs', 'pc', 'set', 'unit'].includes(normalizedUnit);
 
-    return Number(value || 0).toLocaleString('id-ID', {
+    if (['pcs', 'pc', 'set', 'unit'].includes(normalizedUnit)) {
+        return Number(value).toLocaleString('id-ID', {
+            maximumFractionDigits: 0,
+        });
+    }
+
+    const abs = Math.abs(Number(value));
+
+    let digits = 2;
+
+    if (abs < 1) digits = 3;
+    if (abs < 0.1) digits = 4;
+
+    return Number(value).toLocaleString('id-ID', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: isWholeNumberUnit ? 0 : 2,
+        maximumFractionDigits: digits,
     });
 }

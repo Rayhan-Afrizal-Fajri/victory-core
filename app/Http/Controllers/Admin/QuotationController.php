@@ -228,7 +228,7 @@ class QuotationController extends Controller
             // --- LOGIKA PERHITUNGAN INVOICE SAMPLE OTOMATIS ---
             $pesanansCalculated = [];
             $totalSampleInvoiceAmount = 0;
-            $isFirstQuotation = $jobTicket->invoices->isEmpty();
+            $isFirstQuotation = $jobTicket->quotations()->where('id', '!=', $quotation->id)->doesntExist();
             // 1. Hitung total tagihan global untuk menentukan apakah invoice perlu dicetak
             foreach ($pesanans as $pesanan) {
                 $qty = (int) $pesanan->sample_qty;
@@ -269,6 +269,33 @@ class QuotationController extends Controller
 
             // 2. Update status per-pesanan secara spesifik
             foreach ($pesanans as $pesanan) {
+                $workflow = $pesanan->workflowStatus;
+
+                // Cek apakah pesanan INI sedang mengalami revisi?
+                $isBeingRevised = (!$isFirstQuotation && $workflow?->sample_revision);
+
+                // JIKA BUKAN QUOTATION PERTAMA & PESANAN INI TIDAK DIREVISI:
+                // Berarti pesanan ini sudah selesai (approved) sebelumnya. 
+                // Kita bypass (lewati) agar status sample-nya yang sudah True tidak tertimpa menjadi False.
+                if (!$isFirstQuotation && !$isBeingRevised) {
+                    $pesanan->workflowStatus()->updateOrCreate(
+                        ['pesanan_id' => $pesanan->id],
+                        [
+                            'quotation_created' => true,
+                            'quotation_approved' => true,
+                        ]
+                    );
+                    
+                    // Lanjut ke pesanan berikutnya
+                    continue; 
+                }
+                
+                // ==========================================================
+                // LOGIKA DI BAWAH HANYA JALAN UNTUK:
+                // 1. Quotation Pertama (Semua pesanan baru diproses)
+                // 2. Pesanan yang memang sedang di-revisi (sample_revision = true)
+                // ==========================================================
+
                 $qty = (int) $pesanan->sample_qty;
                 $price = (float) $pesanan->harga_sample_per_pcs;
                 $itemTotal = $qty * $price;
@@ -364,6 +391,16 @@ class QuotationController extends Controller
                     'price_per_pcs' => $data['price'],
                     'subtotal' => $data['subtotal'],
                 ]);
+            }
+
+            if ($invoice) {
+                $pesanan = Pesanan::with('workflowStatus')->find($data['pesanan_id']);
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        'sample_invoice_created' => true,
+                    ]
+                );
             }
         }
     }

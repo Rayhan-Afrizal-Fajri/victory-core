@@ -213,7 +213,12 @@
                     <div class="company-name">
                         {{ $jobTicket->customer_perusahaan_snapshot ?? $jobTicket->customer->nama_perusahaan ?? $jobTicket->customer->nama }}
                     </div>
-                    {{ $jobTicket->customer->alamat ?? '' }}<br>
+                    {{ $jobTicket->customer->alamat_detail ?? '' }},
+                    {{ $jobTicket->customer->kelurahan ?? '' }},
+                    {{ $jobTicket->customer->kecamatan ?? '' }},
+                    {{ $jobTicket->customer->kota ?? '' }},
+                    {{ $jobTicket->customer->provinsi ?? '' }}
+                    <br>
                     Telp: {{ $jobTicket->customer->kontak ?? $jobTicket->customer->no_hp ?? '-' }}<br>
                     Up: {{ $jobTicket->customer_nama_snapshot ?? $jobTicket->customer->nama }}
                 </div>

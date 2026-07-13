@@ -13,6 +13,7 @@ type FormDialogProps = {
     loading?: boolean;
     onSubmit: () => void;
     children: ReactNode;
+    isButtonAdd: boolean;
 };
 
 export function FormDialog({
@@ -25,15 +26,18 @@ export function FormDialog({
     loading,
     onSubmit,
     children,
+    isButtonAdd = true,
 }: FormDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                <Button variant="default" className="inline-flex items-center gap-2">
-                  <Plus className="size-4" /> Tambah Customer
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-xl">
+            {isButtonAdd === true && (
+                <DialogTrigger asChild>
+                    <Button variant="default" className="inline-flex items-center gap-2">
+                    <Plus className="size-4" /> Tambah Customer
+                    </Button>
+                </DialogTrigger>
+            )}
+            <DialogContent className="md:max-w-4xl max-w-xl overflow-y-auto max-h-screen">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     {description && (

@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, CalendarDays, Eye } from 'lucide-react';
+import { AlertTriangle, CalendarDays, Eye, FileSpreadsheet } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,11 @@ type PageProps = {
     cards: KanbanCard[];
     columns: KanbanColumn[];
 };
+
+type HandleExportProps = {
+    type: number;
+    param: string;
+}
 
 function getDeadlineText(daysLeft?: number | null) {
     if (daysLeft === null || daysLeft === undefined) {
@@ -240,6 +245,13 @@ export default function Index({
 
         return grouped;
     }, [cards, columns]);
+    
+    // React Component
+    const handleExport = ({type, param = ''}: HandleExportProps) => {
+        // Cara paling mudah untuk download file tanpa ribet urus Blob axios
+        const url = `/export/purchasing?type=${type}&param=${param}`;
+        window.location.href = url;
+    };
 
     return (
         <>
@@ -264,12 +276,31 @@ export default function Index({
     );
 }
 
-Index.layout = (page: React.ReactNode) => (
-    <AppLayout
-        title="Kanban Board"
-        description="Monitoring visual untuk briefing harian. Setiap card menunjukkan posisi purchase order berdasarkan workflow terbaru, tanpa aksi pindah status manual."
-        information="MONITORING PURCHASE ORDER"
-    >
-        {page}
-    </AppLayout>
-);
+Index.layout = (page: React.ReactNode) => {
+    // React Component
+    const handleExport = (type, param = '') => {
+        // Cara paling mudah untuk download file tanpa ribet urus Blob axios
+        const url = `/export/purchasing?type=${type}&param=${param}`;
+        window.location.href = url;
+    };
+    return (
+        <AppLayout
+            title="Kanban Board"
+            description="Monitoring visual untuk briefing harian. Setiap card menunjukkan posisi purchase order berdasarkan workflow terbaru, tanpa aksi pindah status manual."
+            information="MONITORING PURCHASE ORDER"
+            actions={
+                <>
+                    <Button
+                        onClick={() => handleExport(4)}
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Export Purchasing
+                    </Button>
+                </>
+            }
+        >
+            {page}
+        </AppLayout>
+    )
+};

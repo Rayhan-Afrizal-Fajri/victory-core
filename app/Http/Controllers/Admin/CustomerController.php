@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -23,10 +22,14 @@ class CustomerController extends Controller
             ->map(fn ($customer) => [
                 'id' => $customer->id,
                 'name' => $customer->nama,
+                'position' => $customer->jabatan,
                 'company_name' => $customer->nama_perusahaan,
-                'email' => $customer->user->email,
                 'contact' => $customer->no_hp,
-                'address' => $customer->alamat,
+                'province' => $customer->provinsi,
+                'city' => $customer->kota,
+                'district' => $customer->kecamatan,
+                'village' => $customer->kelurahan,
+                'detail_address' => $customer->alamat_detail,
                 'total_orders' => $customer->jobTicket->count(),
                 'order_history' => $customer->jobTicket->map(fn ($order) => [
                     'id' => $order->id,
@@ -68,31 +71,39 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
             'nama_perusahaan' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
             'no_hp' => ['required', 'string', 'max:20'],
-            'alamat' => ['required', 'string'],
+            'provinsi' => ['required', 'string'],
+            'kota' => ['required', 'string'],
+            'kecamatan' => ['required', 'string'],
+            'kelurahan' => ['required', 'string'],
+            'alamat_detail' => ['required', 'string'],
         ]);
 
         DB::transaction(function () use ($validated) {
 
-            // buat user dulu
-            $user = User::create([
-                'name' => $validated['nama'],
-                'email' => $validated['email'],
-                'password' => bcrypt('password'),
-                'is_active' => true,
-            ]);
+            // // buat user dulu
+            // $user = User::create([
+            //     'name' => $validated['nama'],
+            //     'email' => $validated['email'],
+            //     'password' => bcrypt('password'),
+            //     'is_active' => true,
+            // ]);
 
-            $user->assignRole('Customer');
+            // $user->assignRole('Customer');
 
             // baru buat customer
             Customer::create([
-                'user_id' => $user->id,
                 'nama' => $validated['nama'],
+                'jabatan' => $validated['jabatan'],
                 'nama_perusahaan' => $validated['nama_perusahaan'],
                 'no_hp' => $validated['no_hp'],
-                'alamat' => $validated['alamat'],
+                'provinsi' => $validated['provinsi'],
+                'kota' => $validated['kota'],
+                'kecamatan' => $validated['kecamatan'],
+                'kelurahan' => $validated['kelurahan'],
+                'alamat_detail' => $validated['alamat_detail'],
             ]);
         });
 
@@ -122,8 +133,14 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
+            'nama_perusahaan' => ['required', 'string', 'max:255'],
             'no_hp' => ['required', 'string', 'max:20'],
-            'alamat' => ['required', 'string'],
+            'provinsi' => ['required', 'string'],
+            'kota' => ['required', 'string'],
+            'kecamatan' => ['required', 'string'],
+            'kelurahan' => ['required', 'string'],
+            'alamat_detail' => ['required', 'string'],
         ]);
 
         $customer->update($validated);
@@ -146,9 +163,9 @@ class CustomerController extends Controller
             $customer->delete();
 
             // 3. Hapus akun login user-nya
-            if ($userId) {
-                User::where('id', $userId)->delete();
-            }
+            // if ($userId) {
+            //     User::where('id', $userId)->delete();
+            // }
         });
 
         return back();

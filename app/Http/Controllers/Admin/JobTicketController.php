@@ -8,6 +8,7 @@ use App\Models\JobTicket;
 // use App\Models\Pesanan;
 use App\Models\Supplier;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\CompanyProfile;
 use App\Models\DefaultSizeBreakdown;
 use Illuminate\Http\Request;
@@ -135,7 +136,7 @@ class JobTicketController extends Controller
     {        
         // 1. Sesuaikan Eager Load
         $jobTicket = JobTicket::with([
-            'customer.user', // Tambahkan .user agar relasi email customer terbaca
+            'customer', // Tambahkan .user agar relasi email customer terbaca
             'companyProfile',
             'invoices.payments', 
             'quotations.items',
@@ -180,6 +181,7 @@ class JobTicketController extends Controller
                 'processes' => $run->processes->sortBy('sequence')->values()->map(fn ($process) => [
                     'id' => $process->id,
                     'work_name' => $process->work_name,
+                    'worker_qty' => $process->worker_qty,
                     'sequence' => $process->sequence,
                     'status' => $process->status,
                     'quantity' => $process->quantity,
@@ -192,6 +194,15 @@ class JobTicketController extends Controller
                     'passed_qty' => $process->passed_qty,
                     'defect_qty' => $process->defect_qty,
                     'qc_notes' => $process->qc_notes,
+                    'qc_logs' => $process->qcLogs?->values()->map(fn ($log) => [
+                        'checked_qty' => $log->checked_qty,
+                        'passed_qty' => $log->passed_qty,
+                        'defect_qty' => $log->defect_qty,
+                        'defect_reason' => $log->defect_reason,
+                        'corrective_action' => $log->corrective_action,
+                        'qc_type' => $log->qc_type,
+                        'checked_by' => User::find($log->checked_by)->toArray(),
+                    ])
                 ])->toArray(),
             ];
         };
@@ -331,25 +342,69 @@ class JobTicketController extends Controller
 
                     'samples' => $pesanan->samples?->toArray() ?? [],
 
-                    'purchasings' => $pesanan->purchasing->map(fn ($p) => [
-                        'id' => $p->id,
-                        'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
-                        'supplier' => $p->supplier ? ['nama' => $p->supplier->nama_perusahaan] : null,
-                        'item' => $p->item_bahan,
-                        'status' => $p->status,
-                        'qty_bahan' => $p->qty_bahan,
-                        'required_qty' => $p->required_qty,
-                        'purchase_qty' => $p->purchase_qty,
-                        'stock_qty' => $p->stock_qty,
-                        'leftover_qty' => $p->leftover_qty,
-                        'unit' => $p->satuan,
-                        'harga_satuan' => $p->harga_satuan,
-                        'total_harga' => $p->total_harga,
-                        'purchase_scope' => $p->purchase_scope,
-                        'remaining_qty' => $p->remaining_qty,
-                        'receiving_status' => $p->receiving_status,
-                        'material_receivings' => $p->materialReceiving->toArray(),
-                    ])->toArray(),
+                    'purchasings' => $pesanan->purchasing->map(function ($p) use ($pesanan) {
+
+                        $sampleQty = (float) $pesanan->sample_qty;
+                        $productionQty = (float) $pesanan->q;
+                        $totalQty = $sampleQty + $productionQty;
+
+                        $sampleRequiredQty = 0;
+                        $productionRequiredQty = 0;
+
+                        if ($p->purchase_scope === 'sample') {
+                            $sampleRequiredQty = (float) $p->required_qty;
+                        }
+
+                        elseif ($p->purchase_scope === 'production') {
+                            $productionRequiredQty = (float) $p->required_qty;
+                        }
+
+                        elseif ($p->purchase_scope === 'sample_revision') {
+                            $sampleRequiredQty = (float) $p->required_qty;
+                        }
+
+                        elseif ($p->purchase_scope === 'sample_and_production') {
+
+                            if ($totalQty > 0) {
+
+                                $sampleRequiredQty =
+                                    round(((float)$p->required_qty) * ($sampleQty / $totalQty), 4);
+
+                                $productionRequiredQty =
+                                    round(((float)$p->required_qty) * ($productionQty / $totalQty), 4);
+                            }
+                        }
+
+                        return [
+                            'id' => $p->id,
+                            'pesanan_material_spec_id' => $p->pesanan_material_spec_id,
+                            'supplier' => $p->supplier ? ['nama' => $p->supplier->nama_perusahaan] : null,
+                            'item' => $p->item_bahan,
+                            'status' => $p->status,
+                            'qty_bahan' => $p->qty_bahan,
+                            'required_qty' => (float) $p->required_qty,
+                            'sample_required_qty' => $sampleRequiredQty,
+                            'production_required_qty' => $productionRequiredQty,
+                            'sample_received_qty' => min(
+                                $p->received_qty,
+                                $sampleRequiredQty
+                            ),
+                            'production_received_qty' => min(
+                                max($p->received_qty - $sampleRequiredQty, 0),
+                                $productionRequiredQty
+                            ),
+                            'purchase_qty' => $p->purchase_qty,
+                            'stock_qty' => $p->stock_qty,
+                            'leftover_qty' => $p->leftover_qty,
+                            'unit' => $p->satuan,
+                            'harga_satuan' => $p->harga_satuan,
+                            'total_harga' => $p->total_harga,
+                            'purchase_scope' => $p->purchase_scope,
+                            'remaining_qty' => $p->remaining_qty,
+                            'receiving_status' => $p->receiving_status,
+                            'material_receivings' => $p->materialReceiving->toArray(),
+                        ];
+                    })->toArray(),
 
                     'material_specs' => $pesanan->materialSpecs->map(fn ($spec) => [
                         'id' => $spec->id,

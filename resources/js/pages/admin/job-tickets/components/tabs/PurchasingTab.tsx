@@ -286,7 +286,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
             <DesignSpecsReferenceCard job={activerOrder} />
 
-            {(purchasings.length === 0 || workflow.sample_revision) && (
+            {(purchasings.length === 0 || workflow.sample_revision === true) && (
                 <GenerateBomPoCard
                     job={activerOrder}
                     form={generateBomForm}
@@ -300,7 +300,8 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
                         <PurchasingMaterialTable
                             purchasings={purchasings}
-                            job={activerOrder}
+                            order={activerOrder}
+                            job={job}
                             onCreate={openCreatePurchasing}
                             onEditManual={openEditPurchasing}
                             onEditPo={setEditingPo}
@@ -347,6 +348,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
             <ReceivingDialog
                 open={openReceiving}
+                job={activerOrder}
                 onOpenChange={(open) => {
                     setOpenReceiving(open);
 

@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\QuotationController;
 use App\Http\Controllers\Admin\ProductionRunController;
 use App\Http\Controllers\Admin\PesananMaterialSpecController;
 use App\Http\Controllers\Admin\PesananManufacturingSpecController;
+use App\Http\Controllers\Admin\PurchasingExportController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -284,6 +285,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/material-receivings/{receiving}', [PurchasingController::class, 'destroyReceiving'])
         ->name('material-receivings.destroy');
+
+    Route::get('/export/purchasing', [PurchasingExportController::class, 'export'])->name('export.purchasing');
 
     /**
      * Production Run

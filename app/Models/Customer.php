@@ -7,17 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     protected $fillable = [
-        'nama',
-        'user_id',
-        'no_hp',
-        'nama_perusahaan',
-        'alamat',
+        'nama','jabatan','no_hp','nama_perusahaan',
+        'provinsi', 'kota', 'kecamatan', 'kelurahan', 'alamat_detail'
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
     
     public function jobTicket()
     {

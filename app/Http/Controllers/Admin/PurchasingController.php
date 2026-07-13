@@ -656,6 +656,8 @@ class PurchasingController extends Controller
 
         // dd($request->received_qty > $remainingQty, 3.12 > 3.12);
 
+        // dd($receivedQty, $remainingQty);
+
         // if ((float) $request->received_qty > $remainingQty) {
         //     abort(422, 'Qty diterima melebihi sisa qty bahan, received qty: ' . $request->received_qty . ' remainig qty: '  .$remainingQty);
         // }
@@ -895,82 +897,82 @@ class PurchasingController extends Controller
     }
 
     private function syncPesananPurchasingWorkflow(Pesanan $pesanan): void
-{
-    $pesanan->loadMissing([
-        'workflowStatus',
-        'purchasing',
-        'manufacturingSpecs',
-        'productionRuns.processes',  
-        'materialSpecs'          
-    ]);
+    {
+        $pesanan->loadMissing([
+            'workflowStatus',
+            'purchasing',
+            'manufacturingSpecs',
+            'productionRuns.processes',  
+            'materialSpecs'          
+        ]);
 
-    $purchasings = $pesanan->purchasing()->with('materialReceivings')->get();
-    $hasPurchasing = $purchasings->count() > 0;
+        $purchasings = $pesanan->purchasing()->with('materialReceivings')->get();
+        $hasPurchasing = $purchasings->count() > 0;
 
-    $allReceived = $hasPurchasing && $purchasings->every(function ($item) {
-        return $item->is_received || $item->status === 'received';
-    });
+        $allReceived = $hasPurchasing && $purchasings->every(function ($item) {
+            return $item->is_received || $item->status === 'received';
+        });
 
-    $currentWorkflow = $pesanan->workflowStatus;
+        $currentWorkflow = $pesanan->workflowStatus;
 
-    // 1. DETEKSI APAKAH PESANAN INI BUTUH SAMPLE ATAU TIDAK
-    $isNoSample = (float) ($pesanan->sample_qty ?? 0) <= 0;
+        // 1. DETEKSI APAKAH PESANAN INI BUTUH SAMPLE ATAU TIDAK
+        $isNoSample = (float) ($pesanan->sample_qty ?? 0) <= 0;
 
-    // 2. BYPASS LOGIC UNTUK SAMPLE
-    // Jika tidak butuh sample, anggap material sample selalu "ready" agar workflow bisa lanjut.
-    $sampleMaterialsReady = $isNoSample ? true : $this->isSampleMaterialsReady($pesanan);
-    
-    $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
+        // 2. BYPASS LOGIC UNTUK SAMPLE
+        // Jika tidak butuh sample, anggap material sample selalu "ready" agar workflow bisa lanjut.
+        $sampleMaterialsReady = $isNoSample ? true : $this->isSampleMaterialsReady($pesanan);
+        
+        $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
 
-    if ($pesanan->samples()->whereNot('status', 'revision_needed')->exists()) {
-        $sampleMaterialsReady = true;
+        if ($pesanan->samples()->whereNot('status', 'revision_needed')->exists()) {
+            $sampleMaterialsReady = true;
+        }
+
+        if ($pesanan->productionRuns()->where('type', 'production')->exists()) {
+            $productionMaterialsReady = true;
+        }
+
+        if ($pesanan->productionRuns()
+            ->where('type', 'production')
+            ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
+            ->exists()
+        ) {
+            $productionMaterialsReady = true;
+        }
+
+        $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
+            return $item->is_distributed || $item->status === 'distributed';
+        });
+
+        // 3. UPDATE WORKFLOW STATUS
+        // Jika isNoSample true, kita juga harus nge-bypass sample_paid dan sample_approved
+        // agar kartu Kanban tidak nyangkut di step sample.
+        $pesanan->workflowStatus()->updateOrCreate(
+            ['pesanan_id' => $pesanan->id],
+            [
+                'materials_purchased' => $hasPurchasing,
+                'materials_received' => $allReceived,
+                'materials_distributed' => $allDistributed,
+
+                // Bypass logic diaplikasikan ke DB
+                'sample_materials_ready' => $sampleMaterialsReady,
+                'sample_paid' => $isNoSample ? true : ($currentWorkflow->sample_paid ?? false),
+                'sample_approved' => $isNoSample ? true : ($currentWorkflow->sample_approved ?? false),
+                
+                'production_materials_ready' => $productionMaterialsReady,
+            ]
+        );
+
+        // 4. GUARD UNTUK ENSURE RUN
+        // Pastikan kita HANYA men-generate Sample Run jika material ready DAN memang butuh sample
+        if ($sampleMaterialsReady && !$isNoSample) {
+            $this->productionRunService->ensureSampleRun($pesanan);
+        }
+
+        if ($productionMaterialsReady) {
+            $this->productionRunService->ensureProductionRun($pesanan);
+        }
     }
-
-    if ($pesanan->productionRuns()->where('type', 'production')->exists()) {
-        $productionMaterialsReady = true;
-    }
-
-    if ($pesanan->productionRuns()
-        ->where('type', 'production')
-        ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
-        ->exists()
-    ) {
-        $productionMaterialsReady = true;
-    }
-
-    $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
-        return $item->is_distributed || $item->status === 'distributed';
-    });
-
-    // 3. UPDATE WORKFLOW STATUS
-    // Jika isNoSample true, kita juga harus nge-bypass sample_paid dan sample_approved
-    // agar kartu Kanban tidak nyangkut di step sample.
-    $pesanan->workflowStatus()->updateOrCreate(
-        ['pesanan_id' => $pesanan->id],
-        [
-            'materials_purchased' => $hasPurchasing,
-            'materials_received' => $allReceived,
-            'materials_distributed' => $allDistributed,
-
-            // Bypass logic diaplikasikan ke DB
-            'sample_materials_ready' => $sampleMaterialsReady,
-            'sample_paid' => $isNoSample ? true : ($currentWorkflow->sample_paid ?? false),
-            'sample_approved' => $isNoSample ? true : ($currentWorkflow->sample_approved ?? false),
-            
-            'production_materials_ready' => $productionMaterialsReady,
-        ]
-    );
-
-    // 4. GUARD UNTUK ENSURE RUN
-    // Pastikan kita HANYA men-generate Sample Run jika material ready DAN memang butuh sample
-    if ($sampleMaterialsReady && !$isNoSample) {
-        $this->productionRunService->ensureSampleRun($pesanan);
-    }
-
-    if ($productionMaterialsReady) {
-        $this->productionRunService->ensureProductionRun($pesanan);
-    }
-}
 
     private function ensureSampleProductionRun(Pesanan $pesanan)
     {

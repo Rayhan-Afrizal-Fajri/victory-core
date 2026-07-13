@@ -26,7 +26,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
     
     // PENGECEKAN UTAMA: Apakah pesanan ini butuh sample?
     // Mengubah nilai menjadi number untuk memastikannya. Jika null/undefined, dianggap 0.
-    const isNoSample = Number(activeOrder?.sample_qty || 0) <= 0;
+    const isNoSample = Number(activeOrder?.sample_qty || 0) <= 0 && job.quotations?.length !== 0;
     
     // Gunakan ternary if biasa. Dijamin 100% aman dari error 'undefined'
     const media = sample ? sample.media : [];
@@ -191,7 +191,7 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
             {!isNoSample && <SampleProgressStepper workflow={workflow} sample={sample} />}
 
             <div className="grid gap-6 xl:grid-cols-3">
-                <div className="space-y-6 xl:col-span-2">
+                <div className={`space-y-6 ${isNoSample || (!sample && (!workflow?.sample_revision && !workflow?.sample_approved)) || (!designApproved && (!workflow?.sample_revision && !workflow?.sample_approved)) ? 'col-span-3' : 'xl:col-span-2'}`}>
                     {/* LOGIKA PENGECEKAN UTAMA */}
                     {isNoSample ? (
                         <div className="flex flex-col items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 p-12 text-center shadow-sm">

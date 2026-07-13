@@ -13,7 +13,8 @@ class ProductionDefectHistory extends Model
         'defect_qty',
         'defect_reason',
         'corrective_action',
-        'reported_by'
+        'reported_by',
+        'status'
     ];
 
     public function jobTicket()

@@ -7,7 +7,7 @@ use App\Models\JobTicket;
 use App\Models\Invoice;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunProcess;
-use App\Models\ProductionDefectHistory;
+use App\Models\ProductionQcLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,17 +52,24 @@ class ProductionRunController extends Controller
         return back()->with('success', 'Mass production run berhasil disiapkan.');
     }
 
-    public function startProcess(string $processId)
+    public function startProcess(Request $request, string $processId)
     {
-        $process = ProductionRunProcess::with('productionRun')->findOrFail($processId);
+        $request->validate([
+            'worker_qty' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $process = ProductionRunProcess::with('productionRun')
+            ->findOrFail($processId);
 
         if ($process->status !== 'pending') {
             abort(422, 'Process tidak bisa dimulai.');
         }
 
-        DB::transaction(function() use ($process) {
+        DB::transaction(function () use ($process, $request) {
+
             $process->update([
                 'status' => 'in_progress',
+                'worker_qty' => $request->worker_qty,
                 'started_at' => now(),
             ]);
 
@@ -74,8 +81,8 @@ class ProductionRunController extends Controller
             ]);
 
             if ($run->type === 'production') {
-                $process->productionRun->pesanan->workflowStatus()->updateOrCreate(
-                    ['pesanan_id' => $process->productionRun->pesanan->id],
+                $run->pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $run->pesanan->id],
                     [
                         'production_started' => true,
                     ]
@@ -83,8 +90,8 @@ class ProductionRunController extends Controller
             }
 
             if ($run->type === 'sample') {
-                $process->productionRun->pesanan->workflowStatus()->updateOrCreate(
-                    ['pesanan_id' => $process->productionRun->pesanan->id],
+                $run->pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $run->pesanan->id],
                     [
                         'sample_created' => true,
                     ]
@@ -150,6 +157,9 @@ class ProductionRunController extends Controller
             'defect_qty' => ['required', 'integer', 'min:0'],
             'qc_notes' => ['nullable', 'string'],
 
+            // Tambahkan validasi qc_type dari frontend (jika ada form bypass/rework)
+            'qc_type' => ['nullable', Rule::in(['initial_check', 'rework_check'])],
+
             'defect_reason' => [
                 Rule::requiredIf(fn () => (int) $request->defect_qty > 0),
                 'nullable',
@@ -168,32 +178,61 @@ class ProductionRunController extends Controller
         }
 
         $process = ProductionRunProcess::with('productionRun.pesanan.jobTicket')->findOrFail($processId);
-        $qcStatus = $validated['defect_qty'] == $validated['checked_qty'] ? 'failed' : ($validated['defect_qty'] > 0 ? 'conditionally_passed' : 'passed');
 
-        DB::transaction(function () use ($process, $validated, $qcStatus) {
-            $process->update([
+        DB::transaction(function () use ($process, $validated) {
+            ProductionQcLog::create([
+                'production_run_process_id' => $process->id,
                 'checked_qty' => $validated['checked_qty'],
                 'passed_qty' => $validated['passed_qty'],
                 'defect_qty' => $validated['defect_qty'],
+                'defect_reason' => $validated['defect_reason'],
+                'corrective_action' => $validated['corrective_action'],
+                'qc_type' => $validated['qc_type'] ?? 'initial_check',
+                'checked_by' => Auth::id(),
+            ]);
+
+            // 2. RUMUS KUMULATIF
+            // Total Checked = HANYA hitung log yang bertipe 'initial_check'
+            // (Jadi kalau awal cek 55, totalChecked tetap 55, meskipun ada log rework setelahnya)
+            $totalChecked = $process->qcLogs()->where('qc_type', 'initial_check')->sum('checked_qty');
+            
+            // Total Passed = Hitung SEMUA barang yang lulus (baik dari initial maupun rework)
+            // (Awal lulus 50, Rework lulus 5. Total Passed = 55)
+            $totalPassed = $process->qcLogs()->sum('passed_qty');
+            
+            // Total Defect Saat Ini = Total Awal yang diperiksa - Total yang akhirnya lulus
+            // (55 - 55 = 0 Defect!)
+            $totalDefect = $totalChecked - $totalPassed;
+
+            // 3. Tentukan Status QC berdasarkan TOTAL (Bukan per request lagi)
+            $qcStatus = 'passed';
+            $targetQty = $process->quantity;
+
+            if ($totalPassed >= $targetQty) {
+
+                $qcStatus = 'passed';
+
+            } elseif ($totalDefect > 0) {
+
+                $qcStatus = 'conditionally_passed';
+
+            } else {
+
+                // semua yang masuk sudah lolos,
+                // tetapi jumlahnya belum mencapai target produksi
+                $qcStatus = 'pending';
+            }
+
+            $process->update([
+                'checked_qty' => $totalChecked,
+                'passed_qty' => $totalPassed,
+                'defect_qty' => $totalDefect,
                 'qc_status' => $qcStatus,
                 'qc_notes' => $validated['qc_notes'],
                 'corrective_action' => $validated['corrective_action'] ?? null,
                 'qc_checked_at' => now(),
                 'qc_checked_by' => Auth::id(),
             ]);
-
-            // Jika ada defect, catat ke tabel Defect History
-            if ($validated['defect_qty'] > 0) {
-                ProductionDefectHistory::create([
-                    'job_ticket_id' => $process->productionRun->pesanan->job_ticket_id,
-                    'pesanan_id' => $process->productionRun->pesanan_id,
-                    'production_run_process_id' => $process->id,
-                    'defect_qty' => $validated['defect_qty'],
-                    'defect_reason' => $validated['defect_reason'],
-                    'corrective_action' => $validated['corrective_action'],
-                    'reported_by' => Auth::id(),
-                ]);
-            }
 
             $this->recalculateRunStatus($process->productionRun);
         });
@@ -309,15 +348,28 @@ class ProductionRunController extends Controller
             return;
         }
 
-        $allCompleted = $run->processes->every(fn($p) => $p->status === 'completed');
-        $allQcPassed = $run->processes->every(fn($p) => in_array($p->qc_status, ['passed', 'conditionally_passed']));
+        // 1. Cek apakah tim produksi sudah "Selesai" mengerjakan tugasnya
+        $allWorkersCompleted = $run->processes->every(fn($p) => $p->status === 'completed');
+        
+        // 2. Cek apakah QC sudah dinyatakan "Lulus" ATAU "Lulus Bersyarat"
+        // $allQcPassedFlags = $run->processes->every(fn($p) => in_array($p->qc_status, ['passed', 'conditionally_passed']));
 
-        if ($allCompleted && $allQcPassed) {
+        $allQcFinished = $run->processes->every(function ($p) {
+            return $p->passed_qty >= $p->quantity;
+        });
+        
+        // 3. LOGIKA BARU: Cek apakah SEMUA barang sudah di-QC 100%
+        // (Checked Qty harus sama atau lebih besar dari Target Quantity)
+        $allFullyQcChecked = $run->processes->every(fn($p) => $p->checked_qty >= $p->quantity);
+
+        // KONDISI A: Produksi Selesai & QC 100% Selesai
+        if ($allWorkersCompleted && $allQcFinished) {
             $run->update([
                 'status' => 'qc_completed',
                 'completed_at' => $run->completed_at ?? now(),
             ]);
-            // Opsional: Update global workflow
+            
+            // Update workflow global jika ini mass production
             if ($run->type === 'production') {
                 $pesanan->workflowStatus()->updateOrCreate(
                     ['pesanan_id' => $pesanan->id],
@@ -330,13 +382,18 @@ class ProductionRunController extends Controller
             return;
         }
 
+        // KONDISI B: Masih ada proses yang sedang dikerjakan
         $hasInProgress = $run->processes->contains(fn($p) => $p->status === 'in_progress');
         if ($hasInProgress) {
-            $run->update(['status' => 'in_progress', 'started_at' => $run->started_at ?? now()]);
+            $run->update([
+                'status' => 'in_progress', 
+                'started_at' => $run->started_at ?? now()
+            ]);
             return;
         }
 
-        if ($allCompleted && !$allQcPassed) {
+        // KONDISI C: Tukang jahit/potong sudah selesai, tapi QC belum 100% beres (parsial)
+        if ($allWorkersCompleted && !$allQcFinished) {
             $run->update(['status' => 'waiting_qc']);
         }
     }

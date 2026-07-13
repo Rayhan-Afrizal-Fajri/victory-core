@@ -5,7 +5,8 @@ import {
     PackageCheck,
     PlusCircle,
     Trash2,
-    History
+    History,
+    FileSpreadsheet
 } from 'lucide-react';
 
 import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
@@ -37,6 +38,7 @@ import { useCan } from '@/hooks/use-can';
 
 const PurchasingMaterialTable = ({
     purchasings,
+    order,
     job,
     onCreate,
     onEditPo,
@@ -48,6 +50,7 @@ const PurchasingMaterialTable = ({
     onDeleteReceiving,
 }: {
     purchasings: any[];
+    order: any;
     job: any;
     onCreate: () => void;
     onEditPo: (purchasing: any) => void;
@@ -59,8 +62,15 @@ const PurchasingMaterialTable = ({
     onDeleteReceiving: (receiving: any) => void;
 }) => {
     const can = useCan();
-    const workflow = job.workflow_status;
-    const hasSample = Number(job.sample_qty || 0) > 0;
+    const workflow = order.workflow_status;
+    const hasSample = Number(order.sample_qty || 0) > 0;
+
+    // React Component
+    const handleExport = (type, param = '') => {
+        // Cara paling mudah untuk download file tanpa ribet urus Blob axios
+        const url = `/export/purchasing?type=${type}&param=${param}`;
+        window.location.href = url;
+    };
 
     // Gunakan useMemo untuk columns agar tidak me-render ulang jika props tidak berubah
     const columns = useMemo<DataTableColumn<any>[]>(() => [
@@ -121,10 +131,10 @@ const PurchasingMaterialTable = ({
             accessor: 'id', // Fallback accessor
             className: 'min-w-[200px] align-top',
             cell: (row) => {
-                const sampleRequiredQty = getRequiredQty(row, job, 'sample');
-                const productionRequiredQty = getRequiredQty(row, job, 'production');
-                const sampleReceivedQty = getSampleReceivedQty(row, job);
-                const productionReceivedQty = getProductionReceivedQty(row, job);
+                const sampleRequiredQty = getRequiredQty(row, order, 'sample');
+                const productionRequiredQty = getRequiredQty(row, order, 'production');
+                const sampleReceivedQty = getSampleReceivedQty(row, order);
+                const productionReceivedQty = getProductionReceivedQty(row, order);
                 const sampleProgress = getProgressPercentage(sampleReceivedQty, sampleRequiredQty);
                 const productionProgress = getProgressPercentage(productionReceivedQty, productionRequiredQty);
 
@@ -195,18 +205,27 @@ const PurchasingMaterialTable = ({
                 );
             }
         },
-    ], [job, can, onReceive, onMarkOrdered, onUndoMarkOrdered, onEditPo, onEditManual, onDelete, onDeleteReceiving, hasSample, workflow]);
+    ], [order, can, onReceive, onMarkOrdered, onUndoMarkOrdered, onEditPo, onEditManual, onDelete, onDeleteReceiving, hasSample, workflow]);
 
     return (
         <SectionCard title="Daftar Material">
-            {can('purchasings.create') && (
-                <div className="mb-4 flex justify-end">
-                    <Button type="button" onClick={onCreate} disabled={!can('purchasings.create')}>
-                        <PlusCircle className="mr-2 size-4" />
-                        Tambah Item Manual
-                    </Button>
-                </div>
-            )}
+            <div className="flex gap-2 justify-end">
+                {can('purchasings.create') && (
+                    <div className="mb-4 flex justify-end">
+                        <Button type="button" onClick={onCreate} disabled={!can('purchasings.create')}>
+                            <PlusCircle className="size-4" />
+                            Tambah Item Manual
+                        </Button>
+                    </div>
+                )}
+                <Button
+                    onClick={() => handleExport(2, job.no_job_ticket)}
+                    className="mb-4 bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+                >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Export Purchasing
+                </Button>
+            </div>
 
             <DataTable
                 columns={columns}
@@ -281,6 +300,7 @@ function QuantityAndHistoryCell({ item, can, onDeleteReceiving }: { item: any, c
 
 function MiniProgressBar({ label, progress, text }: { label: string; progress: number; text: string }) {
     const isDone = progress >= 100;
+
     return (
         <div className="w-full">
             <div className="flex justify-between text-[11px] mb-1">

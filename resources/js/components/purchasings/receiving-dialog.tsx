@@ -13,25 +13,47 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-import { getRemainingQty } from './purchasing-utils';
+// 1. Tambahkan import fungsi-fungsi utilitas yang dibutuhkan
+import { 
+    getRemainingQty,
+    getRequiredQty,
+    getSampleReceivedQty,
+    getProductionReceivedQty,
+    getProgressPercentage,
+    formatMaterialQty,
+} from './purchasing-utils';
 import FormattedNumberInput from '../ui/formatted-number-input';
 
 const ReceivingDialog = ({
     open,
     onOpenChange,
     purchasing,
+    job, // 2. Tambahkan prop job untuk kalkulasi sample & production
     form,
     onSubmit,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     purchasing: any | null;
+    job: any; // Definisi tipe job
     form: any;
     onSubmit: (e: React.FormEvent) => void;
 }) => {
     if (!purchasing) return null;
 
     const remainingQty = getRemainingQty(purchasing);
+    
+    // 3. Kalkulasi data sample dan production (Sama seperti di Table)
+    const workflow = job?.workflow_status;
+    const hasSample = Number(job?.sample_qty || 0) > 0;
+
+    const sampleRequiredQty = getRequiredQty(purchasing, job, 'sample');
+    const productionRequiredQty = getRequiredQty(purchasing, job, 'production');
+    const sampleReceivedQty = getSampleReceivedQty(purchasing, job);
+    const productionReceivedQty = getProductionReceivedQty(purchasing, job);
+    
+    const sampleProgress = getProgressPercentage(sampleReceivedQty, sampleRequiredQty);
+    const productionProgress = getProgressPercentage(productionReceivedQty, productionRequiredQty);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,29 +66,48 @@ const ReceivingDialog = ({
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="rounded-2xl border bg-slate-50 p-4">
-                        <p className="text-xs text-slate-500">Material</p>
-                        <p className="mt-1 font-semibold text-slate-900">
-                            {purchasing.item || purchasing.item_bahan}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                            Sisa: {remainingQty} {purchasing.unit}
-                        </p>
+                    {/* 4. Perombakan Box Informasi Material */}
+                    <div className="rounded-xl border bg-slate-50 p-4 space-y-4">
+                        <div>
+                            <p className="text-xs text-slate-500">Material</p>
+                            <div className="flex justify-between items-start mt-1">
+                                <p className="font-semibold text-slate-900">
+                                    {purchasing.item || purchasing.item_bahan}
+                                </p>
+                                <div className="text-right">
+                                    <p className="text-xs font-medium text-slate-700 bg-white px-2 py-1 rounded-md border shadow-sm">
+                                        Total Sisa PO: <span className="text-red-600 font-bold">{remainingQty} {purchasing.unit}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Progress Bar Kebutuhan */}
+                        <div className="space-y-3 pt-3 border-t border-slate-200">
+                            {hasSample && sampleRequiredQty > 0 && (
+                                <MiniProgressBar 
+                                    label="Target Sample" 
+                                    progress={sampleProgress} 
+                                    text={`${formatMaterialQty(sampleReceivedQty)} / ${formatMaterialQty(sampleRequiredQty)} ${purchasing.unit}`} 
+                                />
+                            )}
+                            {workflow?.sample_materials_ready == 1 && productionRequiredQty > 0 && (
+                                <MiniProgressBar 
+                                    label="Target Produksi" 
+                                    progress={productionProgress} 
+                                    text={`${formatMaterialQty(productionReceivedQty)} / ${formatMaterialQty(productionRequiredQty)} ${purchasing.unit}`} 
+                                />
+                            )}
+                            {sampleRequiredQty <= 0 && productionRequiredQty <= 0 && (
+                                <span className="text-xs text-slate-400 italic">Tidak ada target spesifik</span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <Field label="Qty Diterima" error={form.errors.received_qty}>
-                            {/* <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                max={remainingQty}
-                                value={form.data.received_qty}
-                                onChange={(e) => form.setData('received_qty', Number(e.target.value))}
-                            /> */}
                             <FormattedNumberInput
                                 min={0}
-                                // max={remainingQty}
                                 value={form.data.received_qty}
                                 onValueChange={(value) => form.setData('received_qty', value)}
                                 placeholder='cth: 35.000'
@@ -105,5 +146,24 @@ const ReceivingDialog = ({
         </Dialog>
     );
 };
+
+// 5. Salin komponen MiniProgressBar ke file ini agar bisa digunakan
+function MiniProgressBar({ label, progress, text }: { label: string; progress: number; text: string }) {
+    const isDone = progress >= 100;
+    return (
+        <div className="w-full">
+            <div className="flex justify-between text-xs mb-1">
+                <span className="font-medium text-slate-700">{label}</span>
+                <span className="text-slate-600 font-semibold">{text} <span className="font-normal text-slate-400 ml-1">({Math.round(progress)}%)</span></span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div 
+                    className={`h-full rounded-full transition-all ${isDone ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                    style={{ width: `${progress}%` }} 
+                />
+            </div>
+        </div>
+    );
+}
 
 export default ReceivingDialog;

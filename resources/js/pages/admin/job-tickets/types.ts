@@ -1,3 +1,5 @@
+import { User } from "@/types";
+
 export type Role =
   | 'Customer'
   | 'CS'
@@ -338,9 +340,21 @@ export interface ManufacturingSpec {
   cost_per_pcs?: number | null;
 }
 
+export interface ProductionQcLogs {
+  id: number;
+  checked_qty: number;
+  passed_qty: number;
+  defect_qty: number;
+  defect_reason: string;
+  corrective_action: string;
+  qc_type: 'initial_check' | 'rework_check';
+  checked_by: User;
+}
+
 export interface ProductionRunProcess {
   id: number;
   work_name: string;
+  work_qty: number;
   sequence: number;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   qc_status?: 'pending' | 'passed' | 'failed' | null;
@@ -354,6 +368,7 @@ export interface ProductionRunProcess {
   completed_at?: string;
   qc_checked_at?: string;
   qc_checked_by?: string;
+  qc_logs?: ProductionQcLogs[];
 }
 
 export interface ProductionRun {
@@ -435,6 +450,10 @@ export interface Pesanan {
   attachments?: Attachment[];
 }
 
+// export interface DefectHistory {
+//   pesanan_id
+// }
+
 export interface CompanyProfile {
   id: number;
   company_name: string;
@@ -457,6 +476,7 @@ export interface JobTicket {
   customer_notes?: string | null;
   status?: string;
   created_at?: string | null;
+  // defect_histories?: DefectHistory[] | null;
   
   // Array Global di Job Ticket
   invoices?: Invoice[];

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\Customer;
 
 class CustomerSeeder extends Seeder
@@ -14,11 +13,13 @@ class CustomerSeeder extends Seeder
             [
                 'user' => [
                     'name' => 'Budi Santoso',
+                    'jabatan' => 'Admin',
                     'email' => 'budi.customer@example.com',
                     'password' => bcrypt('password!'),
                 ],
                 'customer' => [
                     'nama' => 'Budi Santoso',
+                    'jabatan' => 'Admin',
                     'no_hp' => '081234567890',
                     'nama_perusahaan' => 'Budi Konveksi',
                     'alamat' => 'Jl. Melati No. 10, Bandung',
@@ -32,6 +33,7 @@ class CustomerSeeder extends Seeder
                 ],
                 'customer' => [
                     'nama' => 'Siti Aminah',
+                    'jabatan' => 'Admin',
                     'no_hp' => '081298765432',
                     'nama_perusahaan' => 'Siti Fashion',
                     'alamat' => 'Jl. Mawar No. 21, Jakarta',
@@ -45,6 +47,7 @@ class CustomerSeeder extends Seeder
                 ],
                 'customer' => [
                     'nama' => 'Andi Pratama',
+                    'jabatan' => 'Admin',
                     'no_hp' => '082112223333',
                     'nama_perusahaan' => 'Andi Apparel',
                     'alamat' => 'Jl. Kenanga No. 7, Surabaya',
@@ -58,6 +61,7 @@ class CustomerSeeder extends Seeder
                 ],
                 'customer' => [
                     'nama' => 'Dewi Lestari',
+                    'jabatan' => 'Admin',
                     'no_hp' => '083144445555',
                     'nama_perusahaan' => 'Dewi Collection',
                     'alamat' => 'Jl. Anggrek No. 15, Yogyakarta',
@@ -66,16 +70,13 @@ class CustomerSeeder extends Seeder
         ];
 
         foreach ($customers as $data) {
-            $user = User::create($data['user']);
-
-            $user->assignRole('Customer');
 
             Customer::create([
                 'nama' => $data['customer']['nama'],
-                'user_id' => $user->id,
+                'jabatan' => $data['customer']['jabatan'],
                 'no_hp' => $data['customer']['no_hp'],
                 'nama_perusahaan' => $data['customer']['nama_perusahaan'],
-                'alamat' => $data['customer']['alamat'],
+                // 'alamat' => $data['customer']['alamat'],
             ]);
         }
     }

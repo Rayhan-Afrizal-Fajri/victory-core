@@ -20,7 +20,7 @@ class PesananSeeder extends Seeder
         $listSales = ['Salman', 'Faris', 'Rudi', 'Andi'];
 
         // Looping 13 kali untuk membuat 13 Job Ticket
-        for ($i = 1; $i <= 13; $i++) {
+        for ($i = 13; $i <= 13; $i++) {
             
             // Membuat format nomor berurutan: VL-2026-001, VL-2026-002, dst.
             $noUrut = str_pad($i, 3, '0', STR_PAD_LEFT);

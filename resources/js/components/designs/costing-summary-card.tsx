@@ -162,7 +162,7 @@ function CostingSummaryCard({
                 <div className="flex justify-end border-t pt-4">
                     <Button 
                         type="submit" 
-                        disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
+                        disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created || form.data.harga_jual_per_pcs === 0}
                     >
                         Simpan Harga Jual Final
                     </Button>

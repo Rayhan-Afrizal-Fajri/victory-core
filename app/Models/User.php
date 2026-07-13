@@ -41,11 +41,6 @@ class User extends Authenticatable
         return $this->hasMany(Pesanan::class, 'created_by');
     }
 
-    public function customer()
-    {
-        return $this->hasOne(Customer::class);
-    }
-
     public function paymentVerified()
     {
         return $this->hasMany(Payment::class, 'verified_by');
@@ -69,6 +64,11 @@ class User extends Authenticatable
     public function materialReceivingCheckedBy()
     {
         return $this->hasMany(MaterialReceiving::class, 'checked_by');
+    }
+
+    public function productionQcLogCheckedBy()
+    {
+        return $this->hasMany(ProductionQcLog::class, 'checked_by');
     }
 
     public function workflowHistory()

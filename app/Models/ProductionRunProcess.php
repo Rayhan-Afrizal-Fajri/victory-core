@@ -19,6 +19,7 @@ class ProductionRunProcess extends Model
         'completed_at',
 
         'quantity',
+        'worker_qty',
         'checked_qty',
         'passed_qty',
         'defect_qty',
@@ -54,5 +55,10 @@ class ProductionRunProcess extends Model
     public function defectHistories()
     {
         return $this->hasMany(ProductionDefectHistory::class);
+    }
+
+    public function qcLogs()
+    {
+        return $this->hasMany(ProductionQcLog::class);
     }
 }

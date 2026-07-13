@@ -9,21 +9,6 @@ import CostingSummaryCard from '@/components/designs/costing-summary-card';
 
 const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
 
-    useEffect(() => {
-        // Atur interval setiap 3 detik (3000 ms)
-        const interval = setInterval(() => {
-            router.reload({ 
-                // Ganti 'job' atau 'designs' dengan nama props yang memuat data desain dari Controller
-                only: ['jobTicket'], 
-                preserveScroll: true, // Layar tidak akan scroll ke atas saat update
-                preserveState: true,  // Jika user lagi ngetik di input lain, ketikannya tidak akan hilang
-            });
-        }, 3000);
-
-        // Bersihkan interval saat user pindah tab/halaman
-        return () => clearInterval(interval);
-    }, []);
-
     const [activeOrderIndex, setActiveOrderIndex] = useState(0);
 
     const activeOrder = jobTicket.orders?.[activeOrderIndex];
