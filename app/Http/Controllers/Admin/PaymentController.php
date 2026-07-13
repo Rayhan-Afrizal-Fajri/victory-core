@@ -85,7 +85,7 @@ class PaymentController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Verifikasi Pembayaran',
                 "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=invoices",
+                "/job-tickets/{$invoice->job_ticket_id}?tab=invoices",
                 'info'
             ));
         }
