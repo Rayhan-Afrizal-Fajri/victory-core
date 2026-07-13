@@ -72,13 +72,13 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'jabatan' => ['nullable', 'string', 'max:255'],
-            'nama_perusahaan' => ['required', 'string', 'max:255'],
+            'nama_perusahaan' => ['nullable', 'string', 'max:255'],
             'no_hp' => ['required', 'string', 'max:20'],
-            'provinsi' => ['required', 'string'],
-            'kota' => ['required', 'string'],
-            'kecamatan' => ['required', 'string'],
-            'kelurahan' => ['required', 'string'],
-            'alamat_detail' => ['required', 'string'],
+            'provinsi' => ['nullable', 'string'],
+            'kota' => ['nullable', 'string'],
+            'kecamatan' => ['nullable', 'string'],
+            'kelurahan' => ['nullable', 'string'],
+            'alamat_detail' => ['nullable', 'string'],
         ]);
 
         DB::transaction(function () use ($validated) {
