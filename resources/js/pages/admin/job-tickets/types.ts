@@ -229,6 +229,7 @@ export interface WorkflowStatus {
   article_synced?: boolean | number;
   design_specs_completed?: boolean | number;
   price_approved?: boolean | number;
+  purchasing_generated?: boolean | number;
   quotation_created?: boolean | number;
   quotation_approved?: boolean | number;
   sample_paid?: boolean | number;

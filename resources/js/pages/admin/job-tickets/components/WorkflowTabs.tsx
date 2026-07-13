@@ -18,12 +18,12 @@ import CostingTab from './tabs/CostingTab';
 import { useCan } from '@/hooks/use-can';
 
 export const WorkflowTabs: React.FC<{ 
-  jobTicket: JobTicket;
-  activePesanan: Pesanan;
-  suppliers: Supplier[]; 
-  productOptions: ProductOption[] | null;
-  colors: DefaultSizeBreakdown[];
-  units: DefaultSizeBreakdown[];
+    jobTicket: JobTicket;
+    activePesanan: Pesanan;
+    suppliers: Supplier[]; 
+    productOptions: ProductOption[] | null;
+    colors: DefaultSizeBreakdown[];
+    units: DefaultSizeBreakdown[];
 }> = ({ jobTicket, activePesanan, suppliers, productOptions, colors, units }) => {
     const can = useCan();
 
@@ -53,6 +53,67 @@ export const WorkflowTabs: React.FC<{
 
     // State untuk menyimpan tab yang aktif
     const [activeTab, setActiveTab] = useState<string>('overview');
+
+    // Filter unpaid invoice
+    const unpaidInvoices = jobTicket.invoices 
+      ? jobTicket.invoices.filter((inv) => !['paid', 'Paid'].includes(inv.status_tagihan || inv.status || 'unpaid')) 
+      : [];
+
+    // Fungsi untuk menghitung task yang tertunda berdasarkan Workflow Status dan Permission
+    const getPendingTasksCount = (tabName: string): number => {
+        let count = 0;
+
+        switch (tabName) {
+            case 'design':
+                if (!ws.design_uploaded && can(['designs.upload'])) count++;
+                if (ws.design_uploaded && !ws.design_approved && can(['designs.approve'])) count++;
+                if (ws.design_approved && !ws.article_synced && can(['boms.sync'])) count++;
+                if (ws.article_synced && !ws.design_specs_completed && can(['boms.create', 'boms.edit'])) count++;
+                break;
+
+            case 'costing & quotation':
+                if (ws.design_specs_completed && !ws.price_approved && can(['costings.input_price'])) count++;
+                if (ws.price_approved && !ws.quotation_created && can(['quotation.generate'])) count++;
+                if (ws.quotation_created && !ws.quotation_approved && can(['quotation.approve'])) count++;
+                break;
+
+            case 'invoices':
+                // Jika memiliki permission untuk memverifikasi/membayar dan ada invoice tertunggak
+                if (unpaidInvoices.length > 0 && can(['invoices.pay', 'invoices.verify'])) {
+                    count += unpaidInvoices.length;
+                }
+                break;
+
+            case 'purchasing':
+                // Kebutuhan sample
+                if (ws.sample_paid && !ws.purchasing_generated && can(['purchasings.generate'])) count++;
+                if (ws.purchasing_generated && !ws.sample_materials_ready && can(['purchasings.receive'])) count++;
+                // Kebutuhan produksi (jika DP sudah dibayar tapi bahan belum ready)
+                if (ws.production_dp_paid && !ws.production_materials_ready && can(['purchasings.receive'])) count++;
+                break;
+
+            case 'sample':
+                if (ws.sample_materials_ready && !ws.sample_started && can(['samples.start'])) count++;
+                if (ws.sample_started && !ws.sample_completed && can(['samples.complete'])) count++;
+                if (ws.sample_completed && !ws.sample_uploaded && can(['samples.complete'])) count++; // Asumsi update foto proof pakai permission ini
+                if (ws.sample_uploaded && !ws.sample_delivered && can(['samples.delivery'])) count++;
+                if (ws.sample_delivered && !ws.sample_approved && can(['samples.approve'])) count++;
+                break;
+
+            case 'production':
+                if (ws.production_materials_ready && !ws.production_started && can(['productions.run'])) count++;
+                if (ws.production_started && !ws.production_completed && can(['productions.run'])) count++;
+                if (ws.production_completed && !ws.qc_completed && can(['productions.run'])) count++; // QC diasumsikan di dalam team produksi
+                if (ws.qc_completed && !ws.packing_completed && can(['productions.packing'])) count++;
+                if (ws.packing_completed && ws.final_payment_paid && !ws.delivered && can(['productions.delivery'])) count++;
+                break;
+
+            default:
+                break;
+        }
+
+        return count;
+    };
 
     // Membaca Parameter URL saat pertama kali load
     useEffect(() => {
@@ -85,15 +146,12 @@ export const WorkflowTabs: React.FC<{
         window.history.replaceState({}, '', url); // Update URL parameter
     };
 
-    const unpaidInvoices = jobTicket.invoices 
-      ? jobTicket.invoices.filter((inv) => !['paid', 'Paid'].includes(inv.status_tagihan || inv.status || 'unpaid')) 
-      : [];
-
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-4 w-full">
             <TabsList className='w-full justify-start overflow-x-auto overflow-y-hidden gap-2 h-full'>
                 {tabs.map((t) => {
                     const isLockedTab = t !== 'invoices' && t !== 'overview' && t !== 'activity' && (locked as any)[t];
+                    const pendingCount = getPendingTasksCount(t);
                     
                     return (
                         <TabsTrigger
@@ -107,11 +165,12 @@ export const WorkflowTabs: React.FC<{
                             }}
                         >
                             <div className="flex items-center gap-2">
-                                <span className="capitalize">
+                                <span className="capitalize flex items-center">
                                     {t} 
-                                    {t === 'invoices' && unpaidInvoices.length > 0 && (
-                                        <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                                            {unpaidInvoices.length}
+                                    {/* Merender badge notifikasi jika ada tugas yang tertunda dan bukan tab yang dilock */}
+                                    {pendingCount > 0 && !isLockedTab && (
+                                        <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                                            {pendingCount}
                                         </span>
                                     )}
                                 </span>
