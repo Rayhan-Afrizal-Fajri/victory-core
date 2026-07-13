@@ -172,7 +172,7 @@ const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
             {/* WORKFLOW GATES */}
             {!workflow?.sample_approved ? (
                 <WorkflowGate reason="Sample belum disetujui. Production terkunci." />
-            ) : !workflow?.production_materials_ready || !workflow?.materials_received ? (
+            ) : (!workflow?.production_materials_ready || !workflow?.materials_received) && !workflow.production_started ? (
                 <WorkflowGate reason="Material produksi belum cukup diterima." />
             ) : !run ? (
                 /* EMPTY STATE: BELUM ADA PRODUCTION RUN */
