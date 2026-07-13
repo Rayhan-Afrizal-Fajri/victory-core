@@ -312,18 +312,17 @@ class PaymentController extends Controller
                     'notes'=>'Invoice sample telah dibayar.',
                 ]);
 
-                $usersToNotify = User::permission('purchasings.generate')->get();
-                if ($usersToNotify->isNotEmpty()) {
-                    Notification::send($usersToNotify, new SystemNotification(
-                        'Buat kebutuhan Pesanan',
-                        "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
-                        "/job-tickets/{$pesanan->job_ticket_id}?tab=purchasing",
-                        'info'
-                    ));
-                }
-
             }
+        }
 
+        $usersToNotify = User::permission('purchasings.generate')->get();
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Buat kebutuhan Pesanan',
+                "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
+                "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                'info'
+            ));
         }
     }
 
