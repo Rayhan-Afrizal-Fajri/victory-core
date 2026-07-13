@@ -17,7 +17,6 @@ class MaterialController extends Controller
     public function index()
     {
         $materials = Material::query()
-            ->with('defaultSupplier')
             ->latest()
             ->paginate(15);
 

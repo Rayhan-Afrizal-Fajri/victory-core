@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('pesanan_id')->constrained('pesanan');
             $table->foreignId('supplier_id')->constrained('suppliers');
             $table->string('item_bahan');
-            $table->string('color');
+            $table->string('color')->nullable();
             $table->decimal('qty_bahan', 10, 4);
             $table->string('satuan'); // kg, yard, pcs
             $table->decimal('harga_satuan', 15, 2)->default(0);
