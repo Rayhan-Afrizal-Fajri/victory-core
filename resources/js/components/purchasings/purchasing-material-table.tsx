@@ -128,15 +128,23 @@ const PurchasingMaterialTable = ({
         },
         {
             header: 'Progress Kebutuhan',
-            accessor: 'id', // Fallback accessor
+            accessor: 'id',
             className: 'min-w-[200px] align-top',
             cell: (row) => {
                 const sampleRequiredQty = getRequiredQty(row, order, 'sample');
                 const productionRequiredQty = getRequiredQty(row, order, 'production');
-                const sampleReceivedQty = getSampleReceivedQty(row, order);
+                
+                // Karena backend sudah difilter, ini otomatis HANYA barang GOOD
+                const sampleReceivedQty = getSampleReceivedQty(row, order); 
                 const productionReceivedQty = getProductionReceivedQty(row, order);
+                
                 const sampleProgress = getProgressPercentage(sampleReceivedQty, sampleRequiredQty);
                 const productionProgress = getProgressPercentage(productionReceivedQty, productionRequiredQty);
+
+                // Menghitung barang rusak untuk ditampilkan sebagai info tambahan (Opsional)
+                const badQty = row.material_receivings
+                    ?.filter(m => m.item_condition !== 'good')
+                    ?.reduce((sum, item) => sum + parseFloat(item.received_qty || 0), 0) || 0;
 
                 return (
                     <div className="space-y-3 py-1">
@@ -154,6 +162,14 @@ const PurchasingMaterialTable = ({
                                 text={`${formatMaterialQty(productionReceivedQty)} / ${formatMaterialQty(productionRequiredQty)}`} 
                             />
                         )}
+                        
+                        {/* Tampilkan pesan kecil jika ada barang diretur/cacat */}
+                        {badQty > 0 && (
+                            <div className="text-xs text-red-500 font-medium">
+                                {formatMaterialQty(badQty)} {row.satuan} diretur (cacat/expired)
+                            </div>
+                        )}
+                        
                         {sampleRequiredQty <= 0 && productionRequiredQty <= 0 && (
                             <span className="text-xs text-slate-400 italic">Tidak ada target spesifik</span>
                         )}
@@ -280,7 +296,12 @@ function QuantityAndHistoryCell({ item, can, onDeleteReceiving }: { item: any, c
                             {receivings.map((receiving: any) => (
                                 <div key={receiving.id} className="flex items-start justify-between gap-2 p-2 rounded-md bg-slate-50 border border-slate-200">
                                     <div>
-                                        <p className="font-medium text-slate-800 text-[11px]">{formatDecimal(receiving.received_qty)} {item.unit}</p>
+                                       <div className="flex gap-1">
+                                            <p className="font-medium text-slate-800 text-[11px]">{formatDecimal(receiving.received_qty)} {item.unit}</p>
+                                            <p className={`text-[11px] ${receiving.item_condition === 'good' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                                {receiving.item_condition === 'good' ? 'Baik' : receiving.item_condition === 'damaged' ? 'Rusak' : 'Kadaluarsa'}
+                                            </p>
+                                       </div>
                                         <p className="text-[10px] text-slate-500 mt-0.5">{receiving.received_at?.slice(0,10) || '-'} • Oleh: {receiving.checked_by?.name || '-'}</p>
                                     </div>
                                     {item.status !== 'received' && can('purchasings.create') && (

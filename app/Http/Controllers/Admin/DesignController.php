@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\SystemNotification; // Pastikan import ini
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\Design;
 use App\Models\Pesanan;
 use App\Models\PesananManufacturingSpecs;
 use App\Models\PesananMaterialSpecs;
 use App\Models\Product;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,6 +70,17 @@ class DesignController extends Controller
                 'status' => 'Design'
             ]);
         });
+
+        $usersToNotify = User::permission('designs.approve')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Desain menunggu approval',
+                "Desain untuk produk '{$pesanan->produk}' telah diunggah dan menunggu persetujuan Anda.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                'info'
+            ));
+        }
 
         return back()->with('success', 'Desain berhasil diunggah.');
     }
@@ -150,6 +164,17 @@ class DesignController extends Controller
             ]);
         });
 
+        $usersToNotify = User::permission('bom.sync')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Buat Spesifikasi Desain',
+                "Desain untuk produk '{$pesanan->produk}' telah disetujui, sinkronkan spesifikasi desain.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                'info'
+            ));
+        }
+
         return back()->with('success', 'Desain disetujui.');
     }
 
@@ -198,6 +223,17 @@ class DesignController extends Controller
                 'notes' => "Revisi desain {$pesanan->produk}: {$request->revision_note}",
             ]);
         });
+
+        $usersToNotify = User::permission('designs.upload')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Desain direvisi',
+                "Desain untuk produk '{$pesanan->produk}' direvisi, upload ulang desain Anda.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                'info'
+            ));
+        }
 
         return back()->with('success', 'Revisi desain berhasil diminta.');
     }
@@ -437,6 +473,17 @@ class DesignController extends Controller
             ]
         );
 
+        $usersToNotify = User::permission('costings.input_price')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Tentukan Harga Jual Pesanan',
+                "Spesifikasi desain untuk pesanan '{$pesanan->produk}' telah selesai, Tentukan harga jual pesanan.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                'info'
+            ));
+        }
+
         // Pastikan mengembalikan response (misal menggunakan Inertia/redirect)
         return back()->with('success', 'Status BOM berhasil diubah.');
     }
@@ -479,6 +526,17 @@ class DesignController extends Controller
             ]);
             
         });
+
+        $usersToNotify = User::permission('quotation.generate')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Buat Surat Penawaran',
+                "Harga jual '{$pesanan->produk}' telah ditentukan, buat surat penawaran.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                'info'
+            ));
+        }
 
         return back()->with('success', 'Harga jual final berhasil disimpan.');
     }

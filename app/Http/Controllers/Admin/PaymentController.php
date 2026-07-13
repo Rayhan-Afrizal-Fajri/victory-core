@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\User;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,6 +79,16 @@ class PaymentController extends Controller
             'catatan_finance' => $request->catatan_finance,
             'status' => 'pending',
         ]);
+
+        $usersToNotify = User::permission('invoices.pay')->get();
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Verifikasi Pembayaran',
+                "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=invoices",
+                'info'
+            ));
+        }
 
         return back()->with('success', 'Pembayaran berhasil dikirim dan menunggu verifikasi finance.');
     }
@@ -298,6 +311,16 @@ class PaymentController extends Controller
                     'user_id'=>Auth::id(),
                     'notes'=>'Invoice sample telah dibayar.',
                 ]);
+
+                $usersToNotify = User::permission('purchasings.generate')->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new SystemNotification(
+                        'Buat kebutuhan Pesanan',
+                        "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
+                        "/job-tickets/{$pesanan->job_ticket_id}?tab=purchasing",
+                        'info'
+                    ));
+                }
 
             }
 

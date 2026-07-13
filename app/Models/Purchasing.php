@@ -59,14 +59,28 @@ class Purchasing extends Model
         return $this->belongsTo(PesananMaterialSpecs::class, 'pesanan_material_spec_id');
     }
 
+    /**
+     * Hanya menghitung quantity yang kondisinya GOOD
+     * Ini yang akan digunakan untuk progress bar dan penentuan sisa kebutuhan
+     */
     public function getReceivedQtyAttribute()
+    {
+        return (float) $this->materialReceivings()
+            ->whereNotIn('item_condition', ['damaged', 'expired']) // Hanya hitung yang Good
+            ->sum('received_qty');
+    }
+
+    /**
+     * Menghitung semua quantity (Good + Damaged + Expired)
+     */
+    public function getTotalReceivedQtyAttribute()
     {
         return (float) $this->materialReceivings()->sum('received_qty');
     }
 
     public function getRemainingQtyAttribute()
     {
-        // Bulatkan ke 4 angka desimal
+        // Bulatkan ke 4 angka desimal menggunakan received_qty yang GOOD saja
         $sisa = ((float) $this->qty_bahan) - ((float) $this->received_qty);
         return max(round($sisa, 4), 0);
     }
@@ -74,7 +88,7 @@ class Purchasing extends Model
     public function getReceivingStatusAttribute()
     {
         // Bulatkan juga saat mengecek qty di sini agar akurat
-        $received = round((float) $this->received_qty, 4);
+        $received = round((float) $this->received_qty, 4); // Menggunakan received_qty (Good)
         $required = round((float) $this->qty_bahan, 4);
 
         if ($received <= 0) {

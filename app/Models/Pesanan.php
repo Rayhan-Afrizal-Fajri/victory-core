@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Pesanan extends Model
 {
@@ -180,5 +181,22 @@ class Pesanan extends Model
     public function invoiceItems()
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * Mengambil semua material receiving yang bermasalah untuk pesanan ini.
+     */
+    public function urgentMaterialIssues(): HasManyThrough
+    {
+        return $this->hasManyThrough(MaterialReceiving::class, Purchasing::class)
+                    ->whereIn('material_receivings.item_condition', ['damaged', 'expired']);
+    }
+
+    /**
+     * Accessor flag boolean agar frontend mudah melakukan pengecekan.
+     */
+    public function getHasUrgentIssuesAttribute(): bool
+    {
+        return $this->urgentMaterialIssues()->count() > 0;
     }
 }

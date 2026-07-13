@@ -17,6 +17,7 @@ return new class extends Migration
             $table->decimal('received_qty', 15, 4); // Qty yang diterima pada penerimaan barang ini
             $table->dateTime('received_at'); // Tanggal dan waktu ketika barang diterima
             $table->foreignId('checked_by')->constrained('users'); // Relasi ke user yang memeriksa barang yang diterima
+            $table->enum('item_condition', ['good', 'damaged', 'expired'])->default('good'); // Kondisi barang yang diterima
             $table->text('notes')->nullable(); // Catatan tambahan untuk penerimaan barang
             $table->timestamps();
         });

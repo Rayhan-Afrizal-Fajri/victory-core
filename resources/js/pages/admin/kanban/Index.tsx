@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, CalendarDays, Eye, FileSpreadsheet } from 'lucide-react';
+import { AlertTriangle, Building2, Calendar, CalendarDays, Eye, FileSpreadsheet, PackageX } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ type KanbanCard = {
 type PageProps = {
     cards: KanbanCard[];
     columns: KanbanColumn[];
+    urgentIssues: any[]; // Add this line
 };
 
 type HandleExportProps = {
@@ -233,6 +234,7 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
 export default function Index({
     cards = [],
     columns = [],
+    urgentIssues = [],
 }: PageProps) {
     const cardsByStage = useMemo(() => {
         const grouped: Record<string, KanbanCard[]> = {};
@@ -257,7 +259,95 @@ export default function Index({
         <>
             <Head title="Kanban Board" />
 
-            <div className="space-y-6">
+            <div className="space-y-6 flex flex-col overflow-hidden bg-gray-50 p-4">
+
+                {/* --- MULAI SECTION URGENT ISSUES (NEW UI) --- */}
+                {urgentIssues && urgentIssues.length > 0 && (
+                    <div className="mb-6 bg-white border border-red-200 rounded-lg shadow-sm overflow-hidden flex-shrink-0">
+                        {/* Header Banner */}
+                        <div className="bg-red-50/80 border-b border-red-100 px-4 py-3 flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-red-600 animate-pulse" />
+                            <h2 className="text-sm font-bold text-red-800 uppercase tracking-wider">
+                                Urgent Briefing: Material Bermasalah
+                            </h2>
+                            <span className="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {urgentIssues.length} Kasus
+                            </span>
+                        </div>
+
+                        {/* List Content */}
+                        <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            {urgentIssues.map((order) => (
+                                <div key={order.id} className="flex flex-col md:flex-row p-4 hover:bg-slate-50 transition-colors">
+                                    
+                                    {/* Info Pesanan (Sebelah Kiri) */}
+                                    <div className="md:w-1/4 mb-3 md:mb-0 md:pr-4">
+                                        <Link 
+                                            href={order.showUrl} 
+                                            className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                                        >
+                                            {order.jobNo}
+                                        </Link>
+                                        <p className="text-sm font-medium text-slate-800 mt-1">{order.customer}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{order.product}</p>
+                                    </div>
+
+                                    {/* Detail Item Cacat (Sebelah Kanan) */}
+                                    <div className="md:w-3/4 flex flex-col gap-2">
+                                        {order.issues.map((issue, idx) => (
+                                            <div 
+                                                key={issue.id} 
+                                                className="flex flex-wrap md:flex-nowrap items-start justify-between bg-white border border-red-100 p-3 rounded-md shadow-sm gap-4 relative overflow-hidden"
+                                            >
+                                                {/* Efek Garis Merah di Kiri */}
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+                                                
+                                                <div className="pl-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-bold text-slate-800">
+                                                            {issue.item_bahan}
+                                                        </p>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                                                            issue.condition === 'damaged' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                            {issue.condition}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-600">
+                                                        <div className="flex items-center gap-1">
+                                                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                                                            <span>{issue.supplier}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                                            <span>Diterima: {issue.received_at}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {issue.notes && (
+                                                        <p className="text-xs text-red-600 font-medium italic mt-2 bg-red-50 inline-block px-2 py-1 rounded">
+                                                            Catatan: "{issue.notes}"
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="text-right flex flex-row md:flex-col items-center md:items-end gap-2 md:gap-0 pl-2 md:pl-0 w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0 mt-2 md:mt-0 border-slate-100">
+                                                    <p className="text-xs text-slate-500 font-medium hidden md:block">Qty Bermasalah</p>
+                                                    <div className="flex items-center gap-1 text-red-600 font-bold text-lg md:mt-1">
+                                                        <PackageX className="w-4 h-4 md:hidden" />
+                                                        {issue.received_qty} <span className="text-sm font-medium">{issue.satuan}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {/* --- SELESAI SECTION URGENT ISSUES --- */}
 
                 <div className="overflow-x-auto pb-2">
                     <div className="flex gap-4 w-max">

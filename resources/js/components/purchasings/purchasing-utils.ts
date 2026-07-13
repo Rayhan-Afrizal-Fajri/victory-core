@@ -13,7 +13,7 @@ export function getReceivedQty(purchasing: any) {
     }
 
     // Penjumlahan rentan terhadap presisi desimal, jadi dibungkus roundQty
-    const total = getReceivings(purchasing).reduce((total: number, item: any) => {
+    const total = getReceivings(purchasing)?.filter(m => m.item_condition === 'good').reduce((total: number, item: any) => {
         return total + Number(item.qty_received || item.received_qty || 0);
     }, 0);
 

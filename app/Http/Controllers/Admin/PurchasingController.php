@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\MaterialReceiving;
 use App\Models\Pesanan;
+use App\Models\User;
 use App\Models\Quotation;
 use App\Models\Purchasing;
 use App\Models\Supplier;
@@ -352,6 +356,16 @@ class PurchasingController extends Controller
             ]);
         });
 
+        $usersToNotify = User::permission('purchasings.mark_ordered')->get();
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Purchasing BOM Digenerate',
+                "Purchasing untuk pesanan {$pesanan->jobTicket->no_job_ticket} telah dibuat. Silakan lakukan pemesanan.",
+                "/job-tickets/{$pesanan->jobTicket->id}?tab=purchasing",
+                'info'
+            ));
+        }
+
         return back()->with('success', 'Purchasing BOM/PO berhasil digenerate.');
     }
 
@@ -638,6 +652,7 @@ class PurchasingController extends Controller
         $request->validate([
             'received_qty' => ['required', 'numeric', 'min:0.0001'],
             'received_at' => ['required', 'date'],
+            'item_condition' => ['required', 'in:good,damaged,expired'],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -667,6 +682,7 @@ class PurchasingController extends Controller
             $purchasing->materialReceivings()->create([
                 'received_qty' => $request->received_qty,
                 'received_at' => $request->received_at,
+                'item_condition' => $request->item_condition,
                 'checked_by' => Auth::id(),
                 'notes' => $request->notes,
             ]);
@@ -691,6 +707,19 @@ class PurchasingController extends Controller
             //         $purchasing->pesanan
             //     );
         });
+
+        // Notifikasi jika barang diterima cacat atau expired
+        if (in_array($request->item_condition, ['damaged', 'expired'])) {
+            $usersToNotify = User::permission('purchasings.edit')->get();
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new SystemNotification(
+                    'Penerimaan Barang Cacat / Expired',
+                    "Material {$purchasing->item_bahan} diterima dengan kondisi {$request->item_condition} pada Job Ticket {$purchasing->pesanan->jobTicket->no_job_ticket}.",
+                    "/job-tickets/{$purchasing->pesanan->jobTicket->id}?tab=purchasing",
+                    'warning'
+                ));
+            }
+        }
 
         return back()->with('success', 'Material receiving berhasil disimpan.');
     }
@@ -724,7 +753,7 @@ class PurchasingController extends Controller
     {
         $purchasing->refresh();
 
-        $receivedQty = (float) $purchasing->materialReceivings()->sum('received_qty');
+        $receivedQty = (float) $purchasing->materialReceivings()->whereNotIn('item_condition', ['damaged', 'expired'])->sum('received_qty');
         $qty = (float) $purchasing->qty_bahan;
 
         // Tentukan status purchasing berdasarkan jumlah yang diterima.
@@ -962,6 +991,22 @@ class PurchasingController extends Controller
                 'production_materials_ready' => $productionMaterialsReady,
             ]
         );
+
+        // Ambil status sebelumnya untuk memastikan notifikasi hanya dikirim sekali
+        $wasSampleMaterialsReady = $currentWorkflow->sample_materials_ready ?? false;
+
+        // Notifikasi jika material sample BARU SAJA dinyatakan siap dan butuh sample
+        if ($sampleMaterialsReady && !$wasSampleMaterialsReady && !$isNoSample) {
+            $usersToNotify = User::permission('samples.start')->get();
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new SystemNotification(
+                    'Material Sample Siap',
+                    "Semua material sample untuk Job Ticket {$pesanan->jobTicket->no_job_ticket} telah siap. Silakan mulai proses pembuatan sample.",
+                    "/job-tickets/{$pesanan->jobTicket->id}?tab=sample",
+                    'success'
+                ));
+            }
+        }
 
         // 4. GUARD UNTUK ENSURE RUN
         // Pastikan kita HANYA men-generate Sample Run jika material ready DAN memang butuh sample

@@ -83,6 +83,7 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     const receivingForm = useForm({
         received_qty: 1,
+        item_condition: 'good',
         received_at: new Date().toISOString().slice(0, 10),
         notes: '',
     });

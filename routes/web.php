@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DefaultSizeBreakdownController;
@@ -346,6 +347,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
     
     Route::resource('profit-loss-report', ProfitLossReportController::class);
+
+
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
 });
 
 require __DIR__.'/settings.php';

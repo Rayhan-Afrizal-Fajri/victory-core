@@ -12,6 +12,7 @@ class MaterialReceiving extends Model
         'received_at',
         'checked_by',
         'notes',
+        'item_condition', // Kondisi barang yang diterima
     ];
 
     public function purchasing()

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\JobTicket;
@@ -153,7 +155,16 @@ class QuotationController extends Controller
             return $quotation;
         });
 
-        // $this->generateQuotationPdf($quotation);
+        $usersToNotify = User::permission('quotation.approve')->get();
+
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Setujui Surat Penawaran',
+                "Surat Penawaran '{$pesanan->jobTicket->no_job_ticket}' telah dibuat, menunggu approval.",
+                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                'info'
+            ));
+        }
 
         return back()->with('success', 'Surat penawaran berhasil dibuat.');
     }
@@ -332,9 +343,30 @@ class QuotationController extends Controller
             if ($totalSampleInvoiceAmount > 0) {
                 // KIRIM $pesanansCalculated BUKAN $totalSampleInvoiceAmount
                 $this->generateSampleInvoiceIfNotExists($jobTicket, $quotation, $pesanansCalculated);
+                
                 $jobTicket->update(['status' => 'Sample Payment']);
+                
+                $usersToNotify = User::permission('invoices.pay')->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new SystemNotification(
+                        'Invoice Sample telah dibuat',
+                        "Invoice Sample untuk produk '{$pesanan->produk}' telah dibuat.",
+                        "/job-tickets/{$pesanan->job_ticket_id}?tab=invoices",
+                        'info'
+                    ));
+                }
             } else {
                 $jobTicket->update(['status' => 'Purchasing Sample']);
+
+                $usersToNotify = User::permission('invoices.pay')->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new SystemNotification(
+                        'Buat kebutuhan Pesanan',
+                        "Quotation telah disetujui, lakukan pembelian bahan & aksesoris.",
+                        "/job-tickets/{$pesanan->job_ticket_id}?tab=purchasing",
+                        'info'
+                    ));
+                }
             }
         });
 

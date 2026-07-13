@@ -23,6 +23,8 @@ import {
     formatMaterialQty,
 } from './purchasing-utils';
 import FormattedNumberInput from '../ui/formatted-number-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import suppliers from '@/routes/suppliers';
 
 const ReceivingDialog = ({
     open,
@@ -112,6 +114,32 @@ const ReceivingDialog = ({
                                 onValueChange={(value) => form.setData('received_qty', value)}
                                 placeholder='cth: 35.000'
                             />
+                        </Field>
+
+                        <Field label="Kondisi Barang" error={form.errors.received_qty}>
+                            <Select
+                                required={true}
+                                value={form.data.item_condition ? String(form.data.item_condition) : ''}
+                                onValueChange={(value) =>
+                                    form.setData('item_condition', String(value))
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Pilih kondisi barang" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="good">
+                                        Baik
+                                    </SelectItem>
+                                    <SelectItem value="damaged">
+                                        Rusak
+                                    </SelectItem>
+                                    <SelectItem value="expired">
+                                        Kedaluwarsa
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </Field>
 
                         <Field label="Tanggal Terima" error={form.errors.received_at}>

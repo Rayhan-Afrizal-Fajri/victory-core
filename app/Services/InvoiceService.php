@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Invoice;
 use App\Models\JobTicket;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService
@@ -40,6 +43,7 @@ class InvoiceService
             $status = 'partially_paid';
         } else {
             $status = 'paid';
+            
         }
 
         $invoice->update([
@@ -168,5 +172,15 @@ class InvoiceService
                 );
             }
         });
+
+        $usersToNotify = User::permission('invoices.pay')->get();
+        if ($usersToNotify->isNotEmpty()) {
+            Notification::send($usersToNotify, new SystemNotification(
+                'Invoice Produksi telah dibuat',
+                "Invoice Poduksi telah dibuat, lakukan pembayaran.",
+                "/job-tickets/{$jobTicket->id}?tab=invoices",
+                'info'
+            ));
+        }
     }
 }

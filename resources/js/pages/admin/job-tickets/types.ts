@@ -153,6 +153,7 @@ export interface MaterialReceiving {
   id: number;
   qty_received: number;
   received_at?: string | null;
+  item_condition: 'good' | 'damaged' | 'expired';
   notes?: string | null;
   checked_by?: {
     id?: number;

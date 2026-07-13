@@ -20,7 +20,8 @@ class KanbanBoardController extends Controller
             ->with([
                 'jobTicket.customer',
                 'workflowStatus',
-                'productionRuns.processes',
+                'productionRuns.processes.qcLogs',
+                'urgentMaterialIssues.purchasing.supplier'
             ])
             ->latest('id');
 
@@ -31,6 +32,82 @@ class KanbanBoardController extends Controller
         }
 
         $columns = $this->columns($user); // MEMANGGIL FUNCTION COLUMNS MILIK ANDA
+
+        // 1. Eksekusi query sekali dan simpan di variabel (agar tidak query berulang)
+        $pesanans = $cardsQuery->get();
+
+        // 2. Buat list terpisah khusus untuk Urgent Issues
+        // MAPPING URGENT ISSUES (GABUNGAN PURCHASING & PRODUCTION)
+        $urgentIssuesList = $pesanans->filter(function ($pesanan) {
+            
+            // 1. Cek Issue Produksi
+            $productionIssues = collect();
+            foreach($pesanan->productionRuns as $run) {
+                foreach($run->processes as $process) {
+                    // Hitung defect yang belum selesai di-rework
+                    $initialDefects = $process->qcLogs->where('qc_type', 'initial_check')->sum('defect_qty');
+                    $reworkedPassed = $process->qcLogs->where('qc_type', 'rework_check')->sum('passed_qty');
+                    $unresolved = max($initialDefects - $reworkedPassed, 0);
+                    
+                    if ($unresolved > 0) {
+                        $productionIssues->push((object)[
+                            'process_name' => $process->work_name,
+                            'run_type' => $run->type,
+                            'unresolved_qty' => $unresolved,
+                            'total_defects' => $initialDefects
+                        ]);
+                    }
+                }
+            }
+
+            // Simpan sementara di object pesanan agar tidak perlu dilooping 2x
+            $pesanan->calculated_production_issues = $productionIssues;
+            
+            // Masuk ke Urgent Board jika punya issue purchasing ATAU produksi
+            return $pesanan->urgentMaterialIssues->count() > 0 || $productionIssues->count() > 0;
+            
+        })->map(function ($pesanan) {
+            
+            // Map Data Purchasing
+            $purchasingIssues = $pesanan->urgentMaterialIssues->map(function ($issue) {
+                return [
+                    'id' => 'pur_'.$issue->id,
+                    'type' => 'purchasing',
+                    'title' => $issue->purchasing->item_bahan ?? 'Material Tidak Diketahui',
+                    'subtitle' => $issue->purchasing->supplier->nama_perusahaan ?? '-',
+                    'qty' => (float) $issue->received_qty,
+                    'satuan' => $issue->purchasing->satuan ?? '',
+                    'condition' => $issue->item_condition, // damaged, expired
+                    'date' => Carbon::parse($issue->received_at)->translatedFormat('d M Y'),
+                    'notes' => $issue->notes,
+                ];
+            })->toArray();
+
+            // Map Data Production
+            $productionIssues = $pesanan->calculated_production_issues->map(function ($issue, $idx) {
+                return [
+                    'id' => 'prod_'.$idx,
+                    'type' => 'production',
+                    'title' => 'Proses ' . $issue->process_name,
+                    'subtitle' => 'Tahap ' . ucfirst($issue->run_type),
+                    'qty' => $issue->unresolved_qty,
+                    'satuan' => 'pcs',
+                    'condition' => 'defect',
+                    'date' => 'Menunggu Rework',
+                    'notes' => "Total defect awal: {$issue->total_defects} pcs. Sisa {$issue->unresolved_qty} pcs belum lolos QC Rework.",
+                ];
+            })->toArray();
+
+            return [
+                'id' => $pesanan->id,
+                'jobNo' => $pesanan->jobTicket?->no_job_ticket ?? '-',
+                'customer' => $pesanan->jobTicket?->customer?->nama_perusahaan ?? '-',
+                'product' => $pesanan->produk ?? '-',
+                'showUrl' => '/job-tickets/' . ($pesanan->jobTicket?->id ?? 0),
+                // Gabungkan kedua issue ke dalam 1 array
+                'issues' => array_merge($purchasingIssues, $productionIssues),
+            ];
+        })->values()->toArray();
 
         $cards = $cardsQuery
             ->get()
@@ -122,9 +199,12 @@ class KanbanBoardController extends Controller
                 return $generatedCards;
             });
 
+            // dd($cards, $columns);
+
         return Inertia::render('admin/kanban/Index', [
             'cards' => $cards,
             'columns' => $columns,
+            'urgentIssues' => $urgentIssuesList,
         ]);
     }
 
@@ -186,7 +266,7 @@ class KanbanBoardController extends Controller
 
             [
                 'permissions' => [
-                    'costing.input_price',
+                    'costings.input_price',
                 ],
                 'column' => [
                     'id' => 'price_approval',
@@ -404,7 +484,7 @@ class KanbanBoardController extends Controller
     {
         return match ($stage) {
             'upload_design', 'approval_design', 'bom' => 'design',
-            'price_approval', 'quotation' => 'costing', // Ganti menjadi 'costing & quotation' jika di React masih memakai nama tersebut
+            'price_approval', 'quotation' => 'costing & quotation', // Ganti menjadi 'costing & quotation' jika di React masih memakai nama tersebut
             'invoice_sample', 'invoice_production' => 'invoices',
             'purchasing_sample', 'purchasing_production' => 'purchasing',
             'sample' => 'sample',
