@@ -30,7 +30,9 @@ type CustomerRow = {
   city: string;
   district: string;
   village: string;
+  postal_code: string;
   detail_address: string;
+  address_merge: string;
   total_orders: number;
   order_history: {
     id: number;
@@ -61,6 +63,7 @@ export default function Index({ customers }: Props) {
     kota: '',
     kecamatan: '',
     kelurahan: '',
+    kode_pos: '',
     alamat_detail: '',
   });
 
@@ -84,6 +87,7 @@ export default function Index({ customers }: Props) {
       kota: customer.city,
       kecamatan: customer.district,
       kelurahan: customer.village,
+      kode_pos: customer.postal_code,
     });
 
     setIsDialogOpen(true);
@@ -170,7 +174,16 @@ export default function Index({ customers }: Props) {
     {
       header: 'Alamat',
       accessor: 'address',
-      cell: (row) => <span className="text-slate-700">{row.detail_address}</span>,
+      cell: (row) => (
+        <span className="text-slate-700">
+          {row.detail_address}
+          {row.village ? `, Kelurahan ${row.village}` : ''}
+          {row.district ? `, Kecamatan ${row.district}` : ''}
+          {row.city ? `, Kabupaten/Kota ${row.city}` : ''}
+          {row.province ? `, Provinsi ${row.province}` : ''}
+          {row.postal_code ? ` ${row.postal_code}` : ''}
+        </span>
+      )
     },
     {
       header: 'Total Pesanan',
@@ -211,6 +224,7 @@ export default function Index({ customers }: Props) {
           <div className="flex gap-3">
 
             <FormDialog
+              isButtonAdd={true}
               open={isDialogOpen}
               onOpenChange={setIsDialogOpen}
               title={

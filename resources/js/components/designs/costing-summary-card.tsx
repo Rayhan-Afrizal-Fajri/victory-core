@@ -111,7 +111,7 @@ function CostingSummaryCard({
             <form onSubmit={onSubmit} className="mt-5 space-y-4 rounded-2xl border bg-white p-4">
                 <div>
                     <p className="font-semibold text-slate-900">
-                        Harga Jual Final Owner
+                        Harga Jual Final
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                         Harga ini akan digunakan untuk generate surat penawaran.

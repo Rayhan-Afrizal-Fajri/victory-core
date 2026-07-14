@@ -20,6 +20,9 @@ export function CustomerForm({ form }: Props) {
   const [selectedCityId, setSelectedCityId] = useState('');
   const [selectedDistId, setSelectedDistId] = useState('');
 
+  const normalize = (text: string) =>
+    (text ?? '').trim().toLowerCase();
+
   // ==========================================
   // LOGIKA FETCH API & AUTO-SYNC MODE EDIT
   // ==========================================
@@ -34,7 +37,9 @@ export function CustomerForm({ form }: Props) {
   // 1.1 (Mode Edit) Cocokkan nama provinsi untuk dapat ID
   useEffect(() => {
     if (provinces.length > 0 && form.data.provinsi && !selectedProvId) {
-      const match = provinces.find((p) => p.name === form.data.provinsi);
+      const match = provinces.find(
+          p => normalize(p.name) === normalize(form.data.provinsi)
+      );
       if (match) setSelectedProvId(match.id);
     }
   }, [provinces, form.data.provinsi]);
@@ -50,7 +55,9 @@ export function CustomerForm({ form }: Props) {
   // 2.1 (Mode Edit) Cocokkan nama kota untuk dapat ID
   useEffect(() => {
     if (cities.length > 0 && form.data.kota && !selectedCityId) {
-      const match = cities.find((c) => c.name === form.data.kota);
+      const match = cities.find(
+          p => normalize(p.name) === normalize(form.data.kota)
+      );
       if (match) setSelectedCityId(match.id);
     }
   }, [cities, form.data.kota]);
@@ -66,7 +73,9 @@ export function CustomerForm({ form }: Props) {
   // 3.1 (Mode Edit) Cocokkan nama kecamatan untuk dapat ID
   useEffect(() => {
     if (districts.length > 0 && form.data.kecamatan && !selectedDistId) {
-      const match = districts.find((d) => d.name === form.data.kecamatan);
+      const match = districts.find(
+          p => normalize(p.name) === normalize(form.data.kecamatan)
+      );
       if (match) setSelectedDistId(match.id);
     }
   }, [districts, form.data.kecamatan]);
@@ -175,13 +184,37 @@ export function CustomerForm({ form }: Props) {
 
       {/* ================= KOLOM KANAN: DETAIL ALAMAT WILAYAH ================= */}
       <div className="space-y-4">
+      <div className="grid gap-2">
+          <label className="text-sm font-medium text-slate-700">Detail Alamat</label>
+          <Textarea
+            value={form.data.alamat_detail}
+            onChange={(e) => form.setData('alamat_detail', e.target.value)}
+            placeholder="Nama jalan, nomor rumah, RT/RW, nomor gedung/lantai..."
+            rows={2}
+            className="resize-none"
+          />
+          <InputError message={form.errors.alamat_detail} />
+        </div>
+      <div className="grid gap-2">
+          <label className="text-sm font-medium text-slate-700">Kode Pos</label>
+          <Input
+            value={form.data.kode_pos}
+            onChange={(e) => form.setData('kode_pos', e.target.value)}
+            placeholder="53164"
+          />
+          <InputError message={form.errors.kode_pos} />
+        </div>
         <div className="grid gap-2">
           <label className="text-sm font-medium text-slate-700">Provinsi</label>
           <Select
             className="text-sm"
             classNamePrefix="select"
             options={provinceOptions}
-            value={provinceOptions.find((opt) => opt.label === form.data.provinsi) || null}
+            value={
+                provinceOptions.find(
+                    (opt) => normalize(opt.label) === normalize(form.data.provinsi)
+                ) || null
+            }
             onChange={(selectedOption) => {
               if (selectedOption) handleProvinceChange(selectedOption.value, selectedOption.label);
             }}
@@ -197,7 +230,11 @@ export function CustomerForm({ form }: Props) {
             className="text-sm"
             classNamePrefix="select"
             options={cityOptions}
-            value={cityOptions.find((opt) => opt.label === form.data.kota) || null}
+            value={
+              cityOptions.find(
+                (opt) => normalize(opt.label) === normalize(form.data.kota)
+              ) || null
+            }
             onChange={(selectedOption) => {
               if (selectedOption) handleCityChange(selectedOption.value, selectedOption.label);
             }}
@@ -214,7 +251,7 @@ export function CustomerForm({ form }: Props) {
             className="text-sm"
             classNamePrefix="select"
             options={districtOptions}
-            value={districtOptions.find((opt) => opt.label === form.data.kecamatan) || null}
+            value={districtOptions.find((opt) => normalize(opt.label) === normalize(form.data.kecamatan)) || null}
             onChange={(selectedOption) => {
               if (selectedOption) handleDistrictChange(selectedOption.value, selectedOption.label);
             }}
@@ -231,7 +268,7 @@ export function CustomerForm({ form }: Props) {
             className="text-sm"
             classNamePrefix="select"
             options={villageOptions}
-            value={villageOptions.find((opt) => opt.label === form.data.kelurahan) || null}
+            value={villageOptions.find((opt) => normalize(opt.label) === normalize(form.data.kelurahan)) || null}
             onChange={(selectedOption) => {
               if (selectedOption) form.setData('kelurahan', selectedOption.label);
             }}
@@ -240,18 +277,6 @@ export function CustomerForm({ form }: Props) {
             isSearchable={true}
           />
           <InputError message={form.errors.kelurahan} />
-        </div>
-
-        <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Detail Alamat</label>
-          <Textarea
-            value={form.data.alamat_detail}
-            onChange={(e) => form.setData('alamat_detail', e.target.value)}
-            placeholder="Nama jalan, nomor rumah, RT/RW, nomor gedung/lantai..."
-            rows={2}
-            className="resize-none"
-          />
-          <InputError message={form.errors.alamat_detail} />
         </div>
       </div>
 

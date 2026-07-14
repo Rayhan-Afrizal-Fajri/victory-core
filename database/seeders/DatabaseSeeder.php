@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             CompanyProfileSeeder::class,
             DefaultSizeBreakdownSeeder::class,
-            PesananSeeder::class,
+            // PesananSeeder::class,
         ]);
     }
 }

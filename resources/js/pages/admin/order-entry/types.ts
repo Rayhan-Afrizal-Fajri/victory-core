@@ -1,4 +1,4 @@
-export type Customer = { id: number; name: string; };
+export type Customer = { id: number; name: string; company_name: string };
 export type CompanyProfile = { id: number; name: string; type: string; };
 export type OrderData = {
   id?: number | null;

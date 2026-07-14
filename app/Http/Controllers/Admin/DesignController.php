@@ -15,6 +15,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class DesignController extends Controller
 {
@@ -41,7 +44,18 @@ class DesignController extends Controller
         $request->validate($rules, $messages);
 
         DB::transaction(function () use ($request, $pesanan) {
-            $path = $request->file('file_desain')->store('designs', 'public');
+            $file = $request->file('file_desain');
+            $folder = 'designs/' . Str::slug($pesanan->jobTicket->no_job_ticket);
+
+            $filename = sprintf(
+                '%s-PESANAN-%d-DESIGN-%s.%s',
+                Str::slug($pesanan->jobTicket->no_job_ticket),
+                $pesanan->id,
+                now()->format('YmdHis'),
+                $file->getClientOriginalExtension()
+            );
+
+            $path = $file->storeAs($folder, $filename, 'public');
 
             $pesanan->designs()->create([
                 'designer_id' => Auth::user()->id,
@@ -83,6 +97,28 @@ class DesignController extends Controller
         }
 
         return back()->with('success', 'Desain berhasil diunggah.');
+    }
+
+    public function destroy(Design $design)
+    {
+        if ($design->status !== 'waiting_approval') {
+            return back()->withErrors([
+                'design' => 'Desain yang sudah diproses tidak dapat dihapus.'
+            ]);
+        }
+
+        DB::transaction(function () use ($design) {
+
+            if ($design->file_path &&
+                Storage::disk('public')->exists($design->file_path)) {
+
+                Storage::disk('public')->delete($design->file_path);
+            }
+
+            $design->delete();
+        });
+
+        return back()->with('success', 'Desain berhasil dihapus.');
     }
 
     public function exportPdf(Pesanan $pesanan)
@@ -354,10 +390,19 @@ class DesignController extends Controller
             'unit' => ['required', 'string', 'max:50'],
             'usage_per_set' => ['nullable', 'numeric'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
-            'harga_ecer' => ['required', 'numeric', 'min:0'],
-            'harga_roll' => ['required', 'numeric', 'min:0'],
             'price_type' => ['required', 'in:ecer,roll'],
-            'roll_qty' => ['nullable', 'numeric', 'min:0'],
+            'harga_ecer' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'ecer'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_roll' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'roll'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
         ]);
 
         $spec = PesananMaterialSpecs::with('pesanan.workflowStatus')->findOrFail($id);

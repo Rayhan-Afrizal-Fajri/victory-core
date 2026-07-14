@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('kota')->nullable();
             $table->string('kecamatan')->nullable();
             $table->string('kelurahan')->nullable();
+            $table->string('kode_pos')->nullable();
             $table->text('alamat_detail')->nullable(); // Untuk Jalan, RT/RW, Gedung
             $table->timestamps();
         });

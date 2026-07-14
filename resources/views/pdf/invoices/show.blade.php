@@ -129,7 +129,7 @@
             margin-bottom: 0;
             line-height: 1.5;
             color: #111827;
-            font-weight: bold;
+            font-weight: regular;
         }
         .pesan-list li {
             margin-bottom: 2px;
@@ -356,7 +356,13 @@
         <tr>
             <!-- PESAN -->
             <td style="width: 60%; padding-right: 15px;">
+                <div class="address-title">Pesan</div>
                 <ul class="pesan-list">
+                    <li>Untuk pembayaran mohon untuk ditransfer ke 
+                        <b>{{ $invoice->jobTicket->companyProfile->bank_type ?? 'BCA' }}</b>, no acc 
+                        <b>{{ $invoice->jobTicket->companyProfile->account_number ?? '453.12.06660' }}</b>, 
+                        Atas nama <b>{{ strtoupper($invoice->jobTicket->companyProfile->account_name) ?? 'VICTOR HARLIM.MBA' }}</b>.
+                    </li>
                 </ul>
             </td>
            <!-- SUBTOTAL & TOTAL -->

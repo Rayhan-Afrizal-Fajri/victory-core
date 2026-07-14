@@ -953,25 +953,33 @@ class PurchasingController extends Controller
         
         $productionMaterialsReady = $this->isProductionMaterialsReady($pesanan);
 
-        if ($pesanan->samples()->whereNot('status', 'revision_needed')->exists()) {
-            $sampleMaterialsReady = true;
-        }
+        // if ($pesanan->samples()->whereNot('status', 'revision_needed')->exists()) {
+        //     $sampleMaterialsReady = true;
+        // }
 
-        if ($pesanan->productionRuns()->where('type', 'production')->exists()) {
-            $productionMaterialsReady = true;
-        }
+        // if ($pesanan->productionRuns()->where('type', 'production')->exists()) {
+        //     $productionMaterialsReady = true;
+        // }
 
-        if ($pesanan->productionRuns()
-            ->where('type', 'production')
-            ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
-            ->exists()
-        ) {
-            $productionMaterialsReady = true;
-        }
+        // if ($pesanan->productionRuns()
+        //     ->where('type', 'production')
+        //     ->whereIn('status', ['draft', 'in_progress', 'waiting_qc', 'qc_completed', 'packed', 'in_delivery', 'delivered'])
+        //     ->exists()
+        // ) {
+        //     $productionMaterialsReady = true;
+        // }
 
         $allDistributed = $hasPurchasing && $purchasings->every(function ($item) {
             return $item->is_distributed || $item->status === 'distributed';
         });
+
+        // dd(
+        //     'ada purchasing:', $hasPurchasing,
+        //     'all received', $allReceived,
+        //     'sampleMaterialsReady', $sampleMaterialsReady,
+        //     'allDistributed', $allDistributed,
+        //     'productionMaterialsReady', $productionMaterialsReady,
+        // );
 
         // 3. UPDATE WORKFLOW STATUS
         // Jika isNoSample true, kita juga harus nge-bypass sample_paid dan sample_approved

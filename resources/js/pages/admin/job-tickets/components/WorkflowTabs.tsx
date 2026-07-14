@@ -32,9 +32,9 @@ export const WorkflowTabs: React.FC<{
   
     const locked = {
         purchasing: !ws.sample_paid && !ws.sample_revision,
-        sample: !ws.sample_materials_ready,
+        sample: !ws.sample_materials_ready && !ws.sample_created,
         productionInvoice: !ws.sample_approved,
-        production: !(ws.production_materials_ready),
+        production: !(ws.production_materials_ready) && !ws.production_created,
         qc: !ws.production_completed,
         packing: !ws.qc_completed,
         delivery: !(ws.packing_completed && ws.final_payment_paid),
@@ -85,11 +85,13 @@ export const WorkflowTabs: React.FC<{
                 break;
 
             case 'purchasing':
-                // Kebutuhan sample
-                if (ws.sample_paid && !ws.purchasing_generated && can(['purchasings.generate'])) count++;
-                if (ws.purchasing_generated && !ws.sample_materials_ready && can(['purchasings.receive'])) count++;
-                // Kebutuhan produksi (jika DP sudah dibayar tapi bahan belum ready)
-                if (ws.production_dp_paid && !ws.production_materials_ready && can(['purchasings.receive'])) count++;
+                if (ws.quotation_created) {
+                    // Kebutuhan sample
+                    if (ws.sample_paid && !ws.purchasing_generated && can(['purchasings.generate'])) count++;
+                    if (ws.purchasing_generated && !ws.sample_materials_ready && can(['purchasings.receive'])) count++;
+                    // Kebutuhan produksi (jika DP sudah dibayar tapi bahan belum ready)
+                    if (ws.sample_materials_ready && !ws.production_materials_ready && can(['purchasings.receive'])) count++;
+                }
                 break;
 
             case 'sample':

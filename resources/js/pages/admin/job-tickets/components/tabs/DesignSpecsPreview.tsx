@@ -58,31 +58,35 @@ function DesignSpecsPreview({
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap justify-end gap-2">
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleToggleLock}
-                    // Disabled jika quotation sudah dibuat ATAU sedang proses loading
-                    disabled={workflow.quotation_approved || isLoading} 
-                >
-                    {/* Ubah ikon dan teks secara dinamis */}
-                    {isBomLocked ? (
-                        <>
-                            <Unlock className="size-4 mr-2" /> Buka Kunci BOM
-                        </>
-                    ) : (
-                        <>
-                            <Lock className="size-4 mr-2" /> Kunci BOM
-                        </>
-                    )}
-                </Button>
+                {
+                    can(['boms.create', 'boms.edit', 'boms.delete']) && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleToggleLock}
+                            // Disabled jika quotation sudah dibuat ATAU sedang proses loading
+                            disabled={Boolean(workflow.quotation_approved) || isLoading} 
+                        >
+                            {/* Ubah ikon dan teks secara dinamis */}
+                            {isBomLocked ? (
+                                <>
+                                    <Unlock className="size-4 mr-2" /> Buka Kunci BOM
+                                </>
+                            ) : (
+                                <>
+                                    <Lock className="size-4 mr-2" /> Kunci BOM
+                                </>
+                            )}
+                        </Button>
+                    )
+                }
                 {onCreateMaterial && can('boms.create') && (
                     <Button
                         type="button"
                         size="sm"
                         onClick={onCreateMaterial}
-                        disabled={workflow.quotation_approved || workflow.design_specs_completed}
+                        disabled={Boolean(workflow.quotation_approved) || Boolean(workflow.design_specs_completed)}
                     >
                         <Plus className="size-4 mr-2" /> Tambah Bahan / Aksesoris
                     </Button>
@@ -94,7 +98,7 @@ function DesignSpecsPreview({
                         size="sm"
                         variant="outline"
                         onClick={onCreateManufacturing}
-                        disabled={workflow.quotation_approved || workflow.design_specs_completed}
+                        disabled={Boolean(workflow.quotation_approved) || Boolean(workflow.design_specs_completed)}
                     >
                         <Plus className="size-4 mr-2" /> Tambah Manufaktur
                     </Button>

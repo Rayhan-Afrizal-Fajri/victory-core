@@ -12,6 +12,7 @@ import PurchasingFormDialog from '@/components/purchasings/purchasing-form-dialo
 import ReceivingDialog from '@/components/purchasings/receiving-dialog';
 import GenerateBomPoCard from '@/components/purchasings/generate-bom-po-card';
 import EditPoDialog from '@/components/purchasings/edit-po-dialog';
+import { getProductionReceivedQty, getProgressPercentage, getRequiredQty, getSampleReceivedQty } from '@/components/purchasings/purchasing-utils';
 
 const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ job, suppliers }) => {
 
@@ -107,8 +108,32 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
 
     useEffect(() => {
         if (selectedPurchasing) {
+            // 1. Ambil data kalkulasi
+            const sampleRequiredQty = getRequiredQty(selectedPurchasing, activerOrder, 'sample');
+            const productionRequiredQty = getRequiredQty(selectedPurchasing, activerOrder, 'production');
+            
+            const sampleReceivedQty = getSampleReceivedQty(selectedPurchasing, activerOrder);
+            const productionReceivedQty = getProductionReceivedQty(selectedPurchasing, activerOrder);
+            
+            const sampleProgress = getProgressPercentage(sampleReceivedQty, sampleRequiredQty);
+            const productionProgress = getProgressPercentage(productionReceivedQty, productionRequiredQty);
+
+            // 2. Tentukan default qty berdasarkan kondisi progress
+            let defaultQty = 1; // Fallback jika semua progress sudah 100
+            
+            if (sampleProgress < 100) {
+                defaultQty = sampleRequiredQty; 
+                // Opsional: Jika Anda ingin merekomendasikan sisa kekurangannya saja, gunakan:
+                // defaultQty = Math.max(0, sampleRequiredQty - sampleReceivedQty);
+            } else if (sampleProgress >= 100 && productionProgress < 100) {
+                defaultQty = productionRequiredQty;
+                // Opsional: defaultQty = Math.max(0, productionRequiredQty - productionReceivedQty);
+            }
+
+            // 3. Set data form
             receivingForm.setData({
-                received_qty: 1,
+                received_qty: defaultQty,
+                item_condition: 'good', // Celah error kondisi barang yang sudah diperbaiki
                 received_at: new Date().toISOString().slice(0, 10),
                 notes: '',
             });

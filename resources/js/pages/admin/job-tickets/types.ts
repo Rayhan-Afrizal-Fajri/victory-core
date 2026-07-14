@@ -247,6 +247,7 @@ export interface WorkflowStatus {
   materials_distributed?: boolean | number;
   sample_materials_ready?: boolean | number;
   production_materials_ready?: boolean | number;
+  production_created?: boolean | number;
   production_started?: boolean | number;
   production_completed?: boolean | number;
   production_payment_verified?: boolean | number;

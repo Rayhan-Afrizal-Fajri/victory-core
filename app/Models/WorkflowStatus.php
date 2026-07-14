@@ -39,6 +39,7 @@ class WorkflowStatus extends Model
         'production_dp_paid',
         'final_payment_paid',
 
+        'production_created',
         'production_started',
         'production_completed',
         

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('designer_id')->constrained('users'); // Relasi ke tabel users untuk designer
 
             $table->string('file_path'); // Path atau URL ke file desain
+            $table->string('preview_path')->nullable();
             $table->string('revision_note')->nullable(); // Catatan revisi dari designer
 
             $table->enum('status', ['draft', 'waiting_approval', 'revision_needed', 'approved', 'rejected'])->default('draft'); // Status desain

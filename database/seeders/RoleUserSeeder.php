@@ -243,10 +243,6 @@ class RoleUserSeeder extends Seeder
             'job_tickets.show',
 
             'designs.upload',
-            'boms.sync',
-            'boms.create',
-            'boms.edit',
-            'boms.delete',
 
             'samples.start',
             'samples.complete',
@@ -254,6 +250,8 @@ class RoleUserSeeder extends Seeder
             'samples.delivery',
             'samples.approve',
             'samples.revision',
+
+            'productions.delivery',
 
             'activities.view',
         ]);

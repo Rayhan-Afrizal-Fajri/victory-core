@@ -82,7 +82,10 @@ export default function DesignPreviewDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent closeButton={false} className="flex h-[90vh] max-w-6xl flex-col overflow-hidden p-0">
+            <DialogContent
+                closeButton={false}
+                className="flex h-[95vh] w-[95vw]! max-w-[95vw]! flex-col overflow-hidden p-0"
+            >
                 <DialogHeader className="border-b px-5 py-4">
                     <div className="flex items-center justify-between gap-4">
                         <DialogTitle>{title}</DialogTitle>

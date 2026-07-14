@@ -1,7 +1,7 @@
 import { useForm, router } from '@inertiajs/react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, Download, XCircle } from 'lucide-react';
+import { CheckCircle, Download, Trash2, XCircle } from 'lucide-react';
 import type { DefaultSizeBreakdown, JobTicket, Pesanan, ProductOption, Supplier } from '../../types';
 import SectionCard from '../SectionCard';
 import FormImageUpload from '@/components/ui/form-image';
@@ -23,6 +23,10 @@ import ManufacturingSpecEditDialog from './ManufacturingSpecEditDialog';
 import DesignPreviewDialog from '@/components/designs/design-preview-dialog';
 import CostingSummaryCard from '@/components/designs/costing-summary-card';
 import { useCan } from '@/hooks/use-can';
+
+function isPdf(path: string) {
+    return path.toLowerCase().endsWith('.pdf');
+}
 
 const DesignAndSpecsTab: React.FC<{
     jobTicket: JobTicket;
@@ -155,6 +159,30 @@ const DesignAndSpecsTab: React.FC<{
             onSuccess: () => {
                 toast.success(needsRevisionUpload ? 'Desain revisi diunggah!' : 'Desain berhasil diunggah!');
                 designForm.reset();
+            },
+        });
+    };
+
+    const handleDeleteDesign = (designId: number) => {
+        toast.warning('Hapus desain ini?', {
+            description:
+                'Desain yang masih menunggu approval beserta file yang diunggah akan dihapus permanen.',
+            action: {
+                label: 'Ya, Hapus',
+                onClick: () => {
+                    router.delete(
+                        route('design.destroy', designId),
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                toast.success('Desain berhasil dihapus.');
+                            },
+                            onError: () => {
+                                toast.error('Gagal menghapus desain.');
+                            },
+                        }
+                    );
+                },
             },
         });
     };
@@ -396,23 +424,46 @@ const DesignAndSpecsTab: React.FC<{
                                                 <button
                                                     type='button'
                                                     onClick={() => openDesignPreview(`/storage/${d.file_path}`, `Design #${d.id}`)}
-                                                    className="block"
+                                                    className="block cursor-pointer"
                                                 >
-                                                    <img
-                                                        src={`/storage/${d.file_path}`}
-                                                        alt="Thumbnail desain"
-                                                        className="mb-2 h-40 w-full rounded border object-cover"
-                                                    />
+                                                    {isPdf(d.file_path) ? (
+                                                        <iframe
+                                                            src={`/storage/${d.file_path}#toolbar=0`}
+                                                            className="pointer-events-none mb-2 h-40 w-full rounded border"
+                                                        />
+                                                    ) : (
+                                                        <img
+                                                            src={`/storage/${d.file_path}`}
+                                                            alt="Thumbnail desain"
+                                                            className="mb-2 h-40 w-full rounded border object-cover"
+                                                        />
+                                                    )}
                                                 </button>
                                             )}
-                                            <a
-                                                href={route('design.export-pdf', d.id)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                                            >
-                                                <Download className="size-3.5" /> Export PDF
-                                            </a>
+                                            <div className="mb-3 flex items-center gap-2">
+                                                <a
+                                                    href={route('design.export-pdf', d.id)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                                >
+                                                    <Download className="size-3.5" />
+                                                    Export PDF
+                                                </a>
+
+                                                {d.status === 'waiting_approval' && can('designs.upload') && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-red-600 hover:text-red-600"
+                                                        onClick={() => handleDeleteDesign(d.id)}
+                                                    >
+                                                        <Trash2 className="mr-1 size-3.5" />
+                                                        Hapus
+                                                    </Button>
+                                                )}
+                                            </div>
 
                                             {d.revision_note && (
                                                 <div className="mb-2 rounded border border-red-100 bg-red-50 p-2 text-xs text-red-700">
@@ -504,7 +555,7 @@ const DesignAndSpecsTab: React.FC<{
                                         )
                                     }}
                                     placeholder="Pilih produk..."
-                                    isDisabled={workflow.quotation_created}
+                                    isDisabled={Boolean(workflow.quotation_created)}
                                     isSearchable={true}
                                 />
                             </div>

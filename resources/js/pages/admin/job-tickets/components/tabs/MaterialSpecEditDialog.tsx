@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
     Dialog,
@@ -45,6 +45,39 @@ function MaterialSpecEditDialog({
     units: DefaultSizeBreakdown[];
 }) {
     const isCreate = mode === 'create';
+    const [isCustomColor, setIsCustomColor] = useState(false);
+    const [isCustomUnit, setIsCustomUnit] = useState(false);
+
+    useEffect(() => {
+        if (!form.data.color) return;
+
+        const exists = colors.some(
+            (c) =>
+                c.label.toLowerCase() === form.data.color.toLowerCase()
+        );
+
+        setIsCustomColor(!exists);
+    }, [colors, form.data.color]);
+
+    useEffect(() => {
+        if (!form.data.unit) return;
+
+        const exists = units.some(
+            (c) =>
+                c.label.toLowerCase() === form.data.unit.toLowerCase()
+        );
+
+        setIsCustomColor(!exists);
+    }, [colors, form.data.color]);
+
+    const toggleCustomColor = () => {
+        setIsCustomColor((prev) => !prev);
+    };
+
+    const toggleCustomUnit = () => {
+        setIsCustomUnit((prev) => !prev);
+    };
+    
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,18 +152,59 @@ function MaterialSpecEditDialog({
 
                     <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Warna" error={form.errors.color}>
-                            <Select1 value={form.data.color} onValueChange={(val) => form.setData('color', val)}>
-                                <SelectTrigger className='w-full'>
-                                    <SelectValue placeholder="Pilih warna..."/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {colors.map((c) => (
-                                        <SelectItem key={c.id} value={c.label.toString()}>
-                                            {c.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select1>
+                            {isCustomColor ? (
+                                <div className="space-y-2">
+                                    <Input
+                                        value={form.data.color || ''}
+                                        placeholder="Masukkan warna..."
+                                        onChange={(e) =>
+                                            form.setData('color', e.target.value)
+                                        }
+                                    />
+
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={toggleCustomColor}
+                                    >
+                                        Pilih dari daftar
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Select1
+                                        value={form.data.color || ''}
+                                        onValueChange={(value) =>
+                                            form.setData('color', value)
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Pilih warna..." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                            {colors.map((color) => (
+                                                <SelectItem
+                                                    key={color.id}
+                                                    value={color.label}
+                                                >
+                                                    {color.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select1>
+
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={toggleCustomColor}
+                                    >
+                                        + Warna Custom
+                                    </Button>
+                                </div>
+                            )}
                         </Field>
 
                         <Field label="Pemakaian / pcs" error={form.errors.usage}>
@@ -144,19 +218,60 @@ function MaterialSpecEditDialog({
                             />
                         </Field>
 
-                        <Field label="Unit" error={form.errors.unit}>
-                            <Select1 value={form.data.unit} onValueChange={(val) => form.setData('unit', val)}>
-                                <SelectTrigger className='w-full'>
-                                    <SelectValue placeholder="Pilih warna..."/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {units.map((c) => (
-                                        <SelectItem key={c.id} value={c.label.toString()}>
-                                            {c.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select1>
+                        <Field label="Warna" error={form.errors.unit}>
+                            {isCustomUnit ? (
+                                <div className="space-y-2">
+                                    <Input
+                                        value={form.data.unit || ''}
+                                        placeholder="Masukkan warna..."
+                                        onChange={(e) =>
+                                            form.setData('unit', e.target.value)
+                                        }
+                                    />
+
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={toggleCustomUnit}
+                                    >
+                                        Pilih dari daftar
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Select1
+                                        value={form.data.unit || ''}
+                                        onValueChange={(value) =>
+                                            form.setData('unit', value)
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Pilih unit..." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                            {units.map((unit) => (
+                                                <SelectItem
+                                                    key={unit.id}
+                                                    value={unit.label}
+                                                >
+                                                    {unit.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select1>
+
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={toggleCustomUnit}
+                                    >
+                                        + Unit Custom
+                                    </Button>
+                                </div>
+                            )}
                         </Field>
                     </div>
 
@@ -229,25 +344,30 @@ function MaterialSpecEditDialog({
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
-                        <Field label="Harga Ecer" error={form.errors.harga_ecer}>
-                            <FormattedNumberInput
-                                value={form.data.harga_ecer}
-                                onValueChange={(value) =>
-                                    form.setData('harga_ecer', value)
-                                }
-                                placeholder="cth: 35.000"
-                            />
-                        </Field>
+                        {form.data.price_type === 'ecer' && (
+                            <Field label="Harga Ecer" error={form.errors.harga_ecer}>
+                                <FormattedNumberInput
+                                    value={form.data.harga_ecer}
+                                    onValueChange={(value) =>
+                                        form.setData('harga_ecer', value)
+                                    }
+                                    placeholder="cth: 35.000"
+                                />
+                            </Field>
+                        )}
 
-                        <Field label="Harga Roll" error={form.errors.harga_roll}>
-                            <FormattedNumberInput
-                                value={form.data.harga_roll}
-                                onValueChange={(value) =>
-                                    form.setData('harga_roll', value)
-                                }
-                                placeholder="cth: 350.000"
-                            />
-                        </Field>
+                        {form.data.price_type === 'roll' && (
+                            <Field label="Harga Roll" error={form.errors.harga_roll}>
+                                <FormattedNumberInput
+                                    value={form.data.harga_roll}
+                                    onValueChange={(value) =>
+                                        form.setData('harga_roll', value)
+                                    }
+                                    placeholder="cth: 350.000"
+                                />
+                            </Field>
+                        )}
+
 
                         {/* <Field label="Isi Roll" error={form.errors.roll_qty}>
                             <FormattedNumberInput

@@ -143,6 +143,7 @@ class OrderEntryController extends Controller
         $customers = Customer::all()->map(fn ($customer) => [
             'id' => $customer->id,
             'name' => $customer->nama,
+            'company_name' => $customer->nama_perusahaan ?? '',
         ]);
 
         $companyProfiles = CompanyProfile::all()->map(fn ($company) => [

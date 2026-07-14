@@ -10,6 +10,7 @@ class Design extends Model
         'pesanan_id',
         'designer_id',
         'file_path',
+        'preview_path',
         'revision_note',
         'customer_revision_note',
         'designer_revision_note',

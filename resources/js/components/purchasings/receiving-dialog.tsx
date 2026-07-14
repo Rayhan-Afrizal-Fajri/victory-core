@@ -116,12 +116,12 @@ const ReceivingDialog = ({
                             />
                         </Field>
 
-                        <Field label="Kondisi Barang" error={form.errors.received_qty}>
+                        <Field label="Kondisi Barang" error={form.errors.item_condition}>
                             <Select
                                 required={true}
-                                value={form.data.item_condition ? String(form.data.item_condition) : ''}
+                                value={form.data.item_condition} // Langsung gunakan state dari form
                                 onValueChange={(value) =>
-                                    form.setData('item_condition', String(value))
+                                    form.setData('item_condition', value)
                                 }
                             >
                                 <SelectTrigger className="w-full">
@@ -129,15 +129,9 @@ const ReceivingDialog = ({
                                 </SelectTrigger>
 
                                 <SelectContent>
-                                    <SelectItem value="good">
-                                        Baik
-                                    </SelectItem>
-                                    <SelectItem value="damaged">
-                                        Rusak
-                                    </SelectItem>
-                                    <SelectItem value="expired">
-                                        Kedaluwarsa
-                                    </SelectItem>
+                                    <SelectItem value="good">Baik</SelectItem>
+                                    <SelectItem value="damaged">Rusak</SelectItem>
+                                    <SelectItem value="expired">Kedaluwarsa</SelectItem>
                                 </SelectContent>
                             </Select>
                         </Field>

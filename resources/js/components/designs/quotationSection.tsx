@@ -169,7 +169,7 @@ function QuotationSection({
                             Generate Surat Penawaran
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                            Surat penawaran akan merangkum seluruh pesanan dengan memakai harga jual final owner.
+                            Surat penawaran akan merangkum seluruh pesanan dengan memakai harga jual final.
                         </p>
                     </div>
 

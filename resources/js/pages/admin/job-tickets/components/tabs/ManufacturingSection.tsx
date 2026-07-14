@@ -38,10 +38,12 @@ function ManufacturingSection({ items, onEdit, onDelete, workflow }: { items: an
                                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{Number(item.max_estimate || 0).toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3 text-right font-semibold text-slate-900 whitespace-nowrap">{Number(item.cost_per_pcs || 0).toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3 text-right whitespace-nowrap gap-2 space-x-2">
-                                        <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)} disabled={!can('manufactures.edit') || workflow.design_specs_completed}>
-                                            Edit
-                                        </Button>
-                                        {onDelete && (
+                                        {can('manufactures.edit') && (
+                                            <Button type="button" size="sm" variant="outline" onClick={() => onEdit(item)} disabled={!can('manufactures.edit') || workflow.design_specs_completed}>
+                                                Edit
+                                            </Button>
+                                        )}
+                                        {onDelete && can('manufactures.delete') && (
                                             <Button
                                                 type="button"
                                                 size="sm"

@@ -28,7 +28,9 @@ function SpecSection({ title, items, workflow, onEdit, onDelete }: { title: stri
                             <th className="px-4 py-3.5 whitespace-nowrap">Pilihan</th>
                             <th className="px-4 py-3.5 whitespace-nowrap text-right">Total/Pcs</th>
                             {/* BONUS: Menambahkan th ke-10 yang hilang agar sinkron dengan td aksi */}
-                            <th className="px-4 py-3.5 whitespace-nowrap text-right">Aksi</th> 
+                            {can(['boms.edit', 'boms.delete']) && (
+                                <th className="px-4 py-3.5 whitespace-nowrap text-right">Aksi</th> 
+                            )}
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 bg-white">
@@ -62,16 +64,18 @@ function SpecSection({ title, items, workflow, onEdit, onDelete }: { title: stri
                                 {formatCurrency(item.cost_per_pcs || 0)}
                             </td>
                             <td className="px-4 py-3 text-right whitespace-nowrap gap-2 space-x-2">
-                                <Button 
-                                type="button" 
-                                size="sm" 
-                                variant="outline" 
-                                onClick={() => onEdit(item)}
-                                disabled={!can('boms.edit') || workflow.design_specs_completed}
-                                >
-                                Edit
-                                </Button>
-                                {onDelete && (
+                                {can('boms.edit') && (
+                                    <Button 
+                                        type="button" 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => onEdit(item)}
+                                        disabled={!can('boms.edit') || workflow.design_specs_completed}
+                                    >
+                                        Edit
+                                    </Button>
+                                )}
+                                {onDelete && can('boms.delete') && (
                                 <Button
                                     type="button"
                                     size="sm"

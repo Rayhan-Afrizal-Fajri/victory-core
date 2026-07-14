@@ -8,7 +8,7 @@ class Customer extends Model
 {
     protected $fillable = [
         'nama','jabatan','no_hp','nama_perusahaan',
-        'provinsi', 'kota', 'kecamatan', 'kelurahan', 'alamat_detail'
+        'provinsi', 'kota', 'kecamatan', 'kelurahan', 'kode_pos', 'alamat_detail'
     ];
     
     public function jobTicket()

@@ -40,10 +40,25 @@
             <p class="meta">Diunggah: {{ $design->uploaded_at ? \Carbon\Carbon::parse($design->uploaded_at)->translatedFormat('d F Y H:i') : 'Tidak tercatat' }}</p>
             <p class="meta">Disetujui: {{ $design->approved_at ? \Carbon\Carbon::parse($design->approved_at)->translatedFormat('d F Y H:i') : 'Belum disetujui' }}</p>
 
-            @if ($design->file_path)
+            {{-- @if ($design->file_path)
                 <img class="image" src="{{ public_path('storage/' . $design->file_path) }}" alt="Design {{ $design->id }}">
             @else
                 <p class="meta">Tidak ada file desain.</p>
+            @endif --}}
+
+            @php
+                $isPdf = \Illuminate\Support\Str::endsWith(strtolower($design->file_path), '.pdf');
+            @endphp
+
+            @if ($design->file_path)
+                @if ($isPdf)
+                    <div style="padding:12px; border:1px solid #ccc; border-radius:6px;">
+                        <strong>📄 File Desain (PDF)</strong><br>
+                        {{ basename($design->file_path) }}
+                    </div>
+                @else
+                    <img class="image" src="{{ public_path('storage/'.$design->file_path) }}">
+                @endif
             @endif
 
             @if ($design->revision_note)

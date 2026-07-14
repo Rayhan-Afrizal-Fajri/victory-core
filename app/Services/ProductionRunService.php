@@ -120,6 +120,12 @@ class ProductionRunService
                 ]);
             }
 
+            // Update Workflow Status
+            $pesanan->workflowStatus()->updateOrCreate(
+                ['pesanan_id' => $pesanan->id],
+                ['production_created' => true]
+            );
+
             $pesanan->jobTicket->workflowHistory()->create([
                 'step' => 'production',
                 'action' => 'production_run_auto_created',

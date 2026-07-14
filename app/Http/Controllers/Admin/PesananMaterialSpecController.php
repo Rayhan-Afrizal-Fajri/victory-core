@@ -8,6 +8,7 @@ use App\Models\PesananMaterialSpecs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PesananMaterialSpecController extends Controller
 {
@@ -21,9 +22,19 @@ class PesananMaterialSpecController extends Controller
             'usage' => ['required', 'numeric', 'min:0'],
             'unit' => ['required', 'string', 'max:50'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
-            'harga_ecer' => ['required', 'numeric', 'min:0'],
-            'harga_roll' => ['required', 'numeric', 'min:0'],
             'price_type' => ['required', 'in:ecer,roll'],
+            'harga_ecer' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'ecer'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_roll' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'roll'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
             'roll_qty' => ['nullable', 'numeric', 'min:0'],
         ]);
 
@@ -44,10 +55,10 @@ class PesananMaterialSpecController extends Controller
                 'usage' => $validated['usage'],
                 'unit' => $validated['unit'],
                 'usage_per_set' => 1,
-
-                'harga_ecer' => $validated['harga_ecer'],
-                'harga_roll' => $validated['harga_roll'],
+                
                 'price_type' => $validated['price_type'],
+                'harga_ecer' => $validated['harga_ecer'] ?? 0,
+                'harga_roll' => $validated['harga_roll'] ?? 0,
                 'roll_qty' => $validated['roll_qty'] ?? null,
 
                 'total_usage' => $calculated['total_usage'],
@@ -76,9 +87,19 @@ class PesananMaterialSpecController extends Controller
             'usage' => ['required', 'numeric', 'min:0'],
             'unit' => ['required', 'string', 'max:50'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
-            'harga_ecer' => ['required', 'numeric', 'min:0'],
-            'harga_roll' => ['required', 'numeric', 'min:0'],
             'price_type' => ['required', 'in:ecer,roll'],
+            'harga_ecer' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'ecer'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'harga_roll' => [
+                Rule::requiredIf(fn () => (int) $request->price_type === 'roll'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
             'roll_qty' => ['nullable', 'numeric', 'min:0'],
         ]);
 

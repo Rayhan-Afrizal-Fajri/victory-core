@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
+
 
 class CustomerController extends Controller
 {
@@ -30,6 +32,8 @@ class CustomerController extends Controller
                 'district' => $customer->kecamatan,
                 'village' => $customer->kelurahan,
                 'detail_address' => $customer->alamat_detail,
+                'postal_code' => $customer->kode_pos,
+                'merge_address' => "{$customer->alamat_detail}",
                 'total_orders' => $customer->jobTicket->count(),
                 'order_history' => $customer->jobTicket->map(fn ($order) => [
                     'id' => $order->id,
@@ -79,6 +83,7 @@ class CustomerController extends Controller
             'kecamatan' => ['nullable', 'string'],
             'kelurahan' => ['nullable', 'string'],
             'alamat_detail' => ['nullable', 'string'],
+            'kode_pos' => ['nullable', 'string'],
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -99,11 +104,12 @@ class CustomerController extends Controller
                 'jabatan' => $validated['jabatan'],
                 'nama_perusahaan' => $validated['nama_perusahaan'],
                 'no_hp' => $validated['no_hp'],
-                'provinsi' => $validated['provinsi'],
-                'kota' => $validated['kota'],
-                'kecamatan' => $validated['kecamatan'],
-                'kelurahan' => $validated['kelurahan'],
+                'provinsi'  => Str::title(Str::lower($validated['provinsi'])),
+                'kota'      => Str::title(Str::lower($validated['kota'])),
+                'kecamatan' => Str::title(Str::lower($validated['kecamatan'])),
+                'kelurahan' => Str::title(Str::lower($validated['kelurahan'])),
                 'alamat_detail' => $validated['alamat_detail'],
+                'kode_pos' => $validated['kode_pos'],
             ]);
         });
 
@@ -141,9 +147,21 @@ class CustomerController extends Controller
             'kecamatan' => ['required', 'string'],
             'kelurahan' => ['required', 'string'],
             'alamat_detail' => ['required', 'string'],
+            'kode_pos' => ['nullable', 'string'],
         ]);
 
-        $customer->update($validated);
+        $customer->update([
+            'nama' => $validated['nama'],
+            'jabatan' => $validated['jabatan'],
+            'nama_perusahaan' => $validated['nama_perusahaan'],
+            'no_hp' => $validated['no_hp'],
+            'provinsi'  => Str::title(Str::lower($validated['provinsi'])),
+            'kota'      => Str::title(Str::lower($validated['kota'])),
+            'kecamatan' => Str::title(Str::lower($validated['kecamatan'])),
+            'kelurahan' => Str::title(Str::lower($validated['kelurahan'])),
+            'alamat_detail' => $validated['alamat_detail'],
+            'kode_pos' => $validated['kode_pos'],
+        ]);
 
         return back();
     }

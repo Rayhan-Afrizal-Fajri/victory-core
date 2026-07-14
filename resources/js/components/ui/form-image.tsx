@@ -33,14 +33,32 @@ export default function FormImageUpload({
     onRemove,
     disabled
 }: FormImageUploadProps) {
-    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [previews, setPreviews] = useState<
+        {
+            url: string;
+            type: 'image' | 'pdf';
+        }[]
+    >([]);
+
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
     // Inisialisasi preview dari props
     useEffect(() => {
-        if (preview) {
-            setPreviewUrls(Array.isArray(preview) ? preview : [preview]);
+        if (!preview) {
+            setPreviews([]);
+            return;
         }
+
+        const urls = Array.isArray(preview) ? preview : [preview];
+
+        setPreviews(
+            urls.map((url) => ({
+                url,
+                type: url.toLowerCase().split('?')[0].endsWith('.pdf')
+                    ? 'pdf'
+                    : 'image',
+            }))
+        );
     }, [preview]);
 
     const handleChange = useCallback(
@@ -54,14 +72,28 @@ export default function FormImageUpload({
                 setSelectedFiles(newFiles);
                 onChange(newFiles); // Return array of Files
 
-                const newUrls = files.map(file => URL.createObjectURL(file));
-                setPreviewUrls(prev => [...prev, ...newUrls]);
+                const newPreviews = files.map(file => ({
+                    url: URL.createObjectURL(file),
+                    type: file.type === 'application/pdf'
+                        ? 'pdf'
+                        : 'image'
+                }));
+
+                setPreviews(prev => [...prev, ...newPreviews]);
             } else {
                 // Mode single (replace file lama)
                 const file = files[0];
                 setSelectedFiles([file]);
                 onChange(file); // Return 1 File
-                setPreviewUrls([URL.createObjectURL(file)]);
+                setPreviews([
+                    {
+                        url: URL.createObjectURL(file),
+                        type:
+                            file.type === 'application/pdf'
+                                ? 'pdf'
+                                : 'image',
+                    },
+                ]);
             }
         },
         [multiple, onChange, selectedFiles]
@@ -69,21 +101,22 @@ export default function FormImageUpload({
 
     const handleRemove = useCallback(
         (index: number) => {
-            const urlToRemove = previewUrls[index];
+            const previewToRemove = previews[index];
+            const urlToRemove = previewToRemove?.url;
             // Bersihkan URL object dari memory browser jika bukan dari internet
             if (urlToRemove && !urlToRemove.startsWith('http') && !urlToRemove.startsWith('/')) {
                 URL.revokeObjectURL(urlToRemove);
             }
 
             if (multiple) {
-                const newUrls = previewUrls.filter((_, i) => i !== index);
+                const newPreviews = previews.filter((_, i) => i !== index);
                 const newFiles = selectedFiles.filter((_, i) => i !== index);
-                
-                setPreviewUrls(newUrls);
+
+                setPreviews(newPreviews);
                 setSelectedFiles(newFiles);
                 onChange(newFiles.length > 0 ? newFiles : null);
             } else {
-                setPreviewUrls([]);
+                setPreviews([]);
                 setSelectedFiles([]);
                 onChange(null);
             }
@@ -91,7 +124,7 @@ export default function FormImageUpload({
             // Trigger parent event
             onRemove?.();
         },
-        [multiple, onChange, onRemove, previewUrls, selectedFiles]
+        [multiple, onChange, onRemove, previews, selectedFiles]
     );
 
     return (
@@ -101,20 +134,29 @@ export default function FormImageUpload({
                 {required && <span className="text-red-500 ml-1">*</span>}
             </label>
 
-            {previewUrls.length > 0 ? (
+            {previews.length > 0 ? (
                 <div className="flex flex-wrap gap-4">
                     {/* Render Semua Gambar */}
-                    {previewUrls.map((url, index) => (
+                    {previews.map((preview, index) => (
                         <div key={index} className="relative inline-block">
-                            <img
-                                src={url}
-                                alt={`Preview ${index}`}
-                                className="h-40 w-auto rounded-lg object-cover border border-gray-200 dark:border-gray-600"
-                            />
+                            {preview.type === 'image' ? (
+                                <img
+                                    src={preview.url}
+                                    alt={`Preview ${index}`}
+                                    className="h-40 w-auto rounded-lg border object-cover"
+                                />
+                            ) : (
+                                <iframe
+                                    src={`${preview.url}#toolbar=0&navpanes=0&scrollbar=0`}
+                                    className="h-40 w-32 rounded-lg border bg-white"
+                                    title={`PDF ${index}`}
+                                />
+                            )}
+
                             <button
                                 type="button"
                                 onClick={() => handleRemove(index)}
-                                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 shadow-sm"
+                                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-sm hover:bg-red-600"
                             >
                                 <X className="h-4 w-4" />
                             </button>

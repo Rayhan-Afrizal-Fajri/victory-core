@@ -8,18 +8,20 @@ use Illuminate\Support\Facades\Notification;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
-use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Services\ProductionRunService;
+use App\Services\InvoiceService;
+use App\Services\PurchasingService;
 
 class PaymentController extends Controller
 {
     public function __construct(
         protected ProductionRunService $productionRunService,
         protected InvoiceService $invoiceService,
+        protected PurchasingService $purchasingService,
     ) {}
     /**
      * Display a listing of the resource.
@@ -287,6 +289,8 @@ class PaymentController extends Controller
             return;
         }
 
+        $isPurchasingGenerated = false;
+
         foreach ($jobTicket->pesanans as $pesanan) {
 
             $workflow = $pesanan->workflowStatus;
@@ -311,18 +315,43 @@ class PaymentController extends Controller
                     'user_id'=>Auth::id(),
                     'notes'=>'Invoice sample telah dibayar.',
                 ]);
+            }
 
+           $pesanan->load('workflowStatus');
+
+            // --- TRIGGER OTOMATIS GENERATE PURCHASING DI SINI ---
+            // Panggil service yang sudah dibuat
+            $generated = $this->purchasingService->generateFromBom($pesanan);
+            
+            if ($generated) {
+                $isPurchasingGenerated = true;
             }
         }
 
-        $usersToNotify = User::permission('purchasings.generate')->get();
-        if ($usersToNotify->isNotEmpty()) {
-            Notification::send($usersToNotify, new SystemNotification(
-                'Buat kebutuhan Pesanan',
-                "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
-                "/job-tickets/{$jobTicket->id}?tab=purchasing",
-                'info'
-            ));
+        // 2. Sesuaikan Notifikasi
+        // Karena PO sekarang sudah otomatis terbuat, kita ganti pesan notifikasinya
+        // Mengarah langsung ke user purchasing untuk *memesan* barang, bukan men-generate lagi.
+        if ($isPurchasingGenerated) {
+            $usersToNotify = User::permission('purchasings.mark_ordered')->get(); // Sesuaikan permission
+            
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new SystemNotification(
+                    'Purchasing BOM Otomatis Dibuat',
+                    "Invoice {$invoice->no_invoice} telah lunas. Purchasing untuk pesanan {$jobTicket->no_job_ticket} telah otomatis terbuat. Silakan lakukan pemesanan.",
+                    "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                    'info'
+                ));
+            }
+        } else {
+            $usersToNotify = User::permission('purchasings.generate')->get();
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new SystemNotification(
+                    'Buat kebutuhan Pesanan',
+                    "Invoice {$invoice->no_invoice} telah dibayar, lakukan purchasing.",
+                    "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                    'info'
+                ));
+            }
         }
     }
 
