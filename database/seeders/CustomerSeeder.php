@@ -94,7 +94,7 @@ class CustomerSeeder extends Seeder
         // }
 
         Customer::create([
-            'name'=> 'Ibu Dyah',
+            'nama'=> 'Ibu Dyah',
             'jabatan' => 'Vice President',
             'nama_perusahaan' => 'PT. Royal Medika Pharmalab',
             'no_hp' => '08119599489',
