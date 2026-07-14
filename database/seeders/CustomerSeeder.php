@@ -76,22 +76,22 @@ class CustomerSeeder extends Seeder
             ],
         ];
 
-        foreach ($customers as $customer) {
+        // foreach ($customers as $customer) {
 
-            $alamat = $this->randomAddress();
+        //     $alamat = $this->randomAddress();
 
-            Customer::create([
-                'nama' => $customer['nama'],
-                'jabatan' => $customer['jabatan'],
-                'nama_perusahaan' => $customer['nama_perusahaan'],
-                'no_hp' => $customer['no_hp'],
+        //     Customer::create([
+        //         'nama' => $customer['nama'],
+        //         'jabatan' => $customer['jabatan'],
+        //         'nama_perusahaan' => $customer['nama_perusahaan'],
+        //         'no_hp' => $customer['no_hp'],
 
-                ...$alamat,
+        //         ...$alamat,
 
-                'kode_pos' => fake()->postcode(),
-                'alamat_detail' => fake()->streetAddress(),
-            ]);
-        }
+        //         'kode_pos' => fake()->postcode(),
+        //         'alamat_detail' => fake()->streetAddress(),
+        //     ]);
+        // }
 
         Customer::create([
             'name'=> 'Ibu Dyah',
