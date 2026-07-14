@@ -1,5 +1,8 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import type { BreadcrumbItem } from '@/types';
+import { usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function AppLayout({
     breadcrumbs = [],
@@ -16,6 +19,13 @@ export default function AppLayout({
     information: string;
     actions?: React.ReactNode;
 }) {
+    const { flash } = usePage().props as any;
+
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+        if (flash?.warning) toast.warning(flash.warning);
+    }, [flash]);
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>
             <div className="space-y-8 px-4 py-6 lg:px-8">

@@ -14,9 +14,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\PurchasingService;
+use Illuminate\Validation\ValidationException;
 
 class QuotationController extends Controller
 {
+    public function __construct(
+        // protected ProductionRunService $productionRunService,
+        // protected InvoiceService $invoiceService,
+        protected PurchasingService $purchasingService,
+    ) {}
     // Ubah parameter agar mengambil berdasarkan JobTicket
     public function generate(Request $request, string $jobTicketId)
     {
@@ -235,30 +242,34 @@ class QuotationController extends Controller
             $jobTicket = $quotation->jobTicket;
             $pesanans = $jobTicket->pesanans;
             
-            
-            // --- LOGIKA PERHITUNGAN INVOICE SAMPLE OTOMATIS ---
             $pesanansCalculated = [];
             $totalSampleInvoiceAmount = 0;
+            
             $isFirstQuotation = $jobTicket->quotations()->where('id', '!=', $quotation->id)->doesntExist();
-            // 1. Hitung total tagihan global untuk menentukan apakah invoice perlu dicetak
+
+            // 1. Hitung total tagihan global
             foreach ($pesanans as $pesanan) {
+                $workflow = $pesanan->workflowStatus;
                 $qty = (int) $pesanan->sample_qty;
                 
-                // JIKA INI BUKAN QUOTATION PERTAMA (Artinya ada revisi/pembuatan ulang)
-                if (!$isFirstQuotation) {
-                    // Baru kita terapkan filter:
-                    // Jika pesanan ini TIDAK minta revisi, berarti sebelumnya sudah approved, jadikan qty 0
-                    if (!$pesanan->workflowStatus?->sample_revision) {
-                        $qty = 0; 
-                    }
+                // KONDISI BARU: Kapan kita harus memproses pesanan ini?
+                // 1. Jika ini Quotation Pertama, ATAU
+                // 2. Jika ada permintaan Revisi, ATAU
+                // 3. Jika status quotation_approved-nya False (Berarti habis di-undo)
+                $needsProcessing = (
+                    $isFirstQuotation || 
+                    $workflow?->sample_revision || 
+                    !$workflow?->quotation_approved
+                );
+
+                // Jika pesanan ini TIDAK butuh diproses (karena sudah approved di penawaran sebelumnya)
+                if (!$needsProcessing) {
+                    $qty = 0; 
                 }
-                // Jika ini Quotation Pertama, logika `if (!$isFirstQuotation)` diabaikan,
-                // sehingga $qty tetap utuh nilainya sesuai inputan user.
 
                 $price = (float) $pesanan->harga_sample_per_pcs;
                 $subtotal = $qty * $price;
 
-                // Hanya masukkan ke array jika ada qty/tagihan
                 if ($qty > 0) {
                     $pesanansCalculated[] = [
                         'pesanan_id' => $pesanan->id,
@@ -272,46 +283,26 @@ class QuotationController extends Controller
                 $totalSampleInvoiceAmount += $subtotal;
             }
 
-            // dd($totalSampleInvoiceAmount, 'Total Sample Invoice Amount', $pesanans); // Debugging line
-
-            $isGlobalInvoiceZero = ($totalSampleInvoiceAmount <= 0);
-
-            // dd($isGlobalInvoiceZero, 'Is Global Invoice Zero', $totalSampleInvoiceAmount, 'Total Sample Invoice Amount'); // Debugging line
-
             // 2. Update status per-pesanan secara spesifik
             foreach ($pesanans as $pesanan) {
                 $workflow = $pesanan->workflowStatus;
 
-                // Cek apakah pesanan INI sedang mengalami revisi?
-                $isBeingRevised = (!$isFirstQuotation && $workflow?->sample_revision);
+                $needsProcessing = (
+                    $isFirstQuotation || 
+                    $workflow?->sample_revision || 
+                    !$workflow?->quotation_approved
+                );
 
-                // JIKA BUKAN QUOTATION PERTAMA & PESANAN INI TIDAK DIREVISI:
-                // Berarti pesanan ini sudah selesai (approved) sebelumnya. 
-                // Kita bypass (lewati) agar status sample-nya yang sudah True tidak tertimpa menjadi False.
-                if (!$isFirstQuotation && !$isBeingRevised) {
-                    $pesanan->workflowStatus()->updateOrCreate(
-                        ['pesanan_id' => $pesanan->id],
-                        [
-                            'quotation_created' => true,
-                            'quotation_approved' => true,
-                        ]
-                    );
-                    
-                    // Lanjut ke pesanan berikutnya
+                // JIKA TIDAK BUTUH DIPROSES: Lewati agar status yg sudah jalan tidak rusak
+                if (!$needsProcessing) {
                     continue; 
                 }
                 
-                // ==========================================================
-                // LOGIKA DI BAWAH HANYA JALAN UNTUK:
-                // 1. Quotation Pertama (Semua pesanan baru diproses)
-                // 2. Pesanan yang memang sedang di-revisi (sample_revision = true)
-                // ==========================================================
-
+                // LOGIKA DI BAWAH HANYA JALAN UNTUK YANG MEMANG BUTUH DIPROSES
                 $qty = (int) $pesanan->sample_qty;
                 $price = (float) $pesanan->harga_sample_per_pcs;
                 $itemTotal = $qty * $price;
 
-                // Cek khusus untuk item ini: Apakah dia gratis atau qty-nya 0 (karena sudah approved sebelumnya)?
                 $isSampleFree = ($itemTotal <= 0);
                 $isSampleNotRequired = ($qty <= 0);
 
@@ -320,7 +311,7 @@ class QuotationController extends Controller
                     [
                         'quotation_created' => true,
                         'quotation_approved' => true,
-                        // ✅ FIX: Otomatis lunas (true) HANYA untuk pesanan yang tagihannya 0 di penawaran ini
+                        // Sekarang sample_paid akan berhasil diset true jika item gratis
                         'sample_paid' => $isSampleFree ? true : false, 
                         'sample_approved' => $isSampleNotRequired,
                         'sample_materials_ready' => $isSampleNotRequired,
@@ -339,9 +330,8 @@ class QuotationController extends Controller
                     'notes' => 'Surat penawaran disetujui customer.',
                 ]);
             }
-            
+
             if ($totalSampleInvoiceAmount > 0) {
-                // KIRIM $pesanansCalculated BUKAN $totalSampleInvoiceAmount
                 $this->generateSampleInvoiceIfNotExists($jobTicket, $quotation, $pesanansCalculated);
                 
                 $jobTicket->update(['status' => 'Sample Payment']);
@@ -350,30 +340,170 @@ class QuotationController extends Controller
                 if ($usersToNotify->isNotEmpty()) {
                     Notification::send($usersToNotify, new SystemNotification(
                         'Invoice Sample telah dibuat',
-                        "Invoice Sample untuk produk '{$pesanan->produk}' telah dibuat.",
-                        "/job-tickets/{$pesanan->job_ticket_id}?tab=invoices",
+                        "Invoice Sample untuk produk telah dibuat. Lakukan penagihan.",
+                        "/job-tickets/{$jobTicket->id}?tab=invoices",
                         'info'
                     ));
                 }
             } else {
                 $jobTicket->update(['status' => 'Purchasing Sample']);
 
-                $usersToNotify = User::permission('invoices.pay')->get();
-                if ($usersToNotify->isNotEmpty()) {
-                    Notification::send($usersToNotify, new SystemNotification(
-                        'Buat kebutuhan Pesanan',
-                        "Quotation telah disetujui, lakukan pembelian bahan & aksesoris.",
-                        "/job-tickets/{$pesanan->job_ticket_id}?tab=purchasing",
-                        'info'
-                    ));
+                $isPurchasingGenerated = false;
+
+                // Jika total tagihan sample 0, maka langsung generate purchasing
+                foreach($pesanans as $pesanan) {
+                    $pesanan->refresh(); // Pastikan data terbaru, termasuk sample_paid yang baru saja diset True
+                    
+                    // Gunakan Service Purchasing
+                    $generated = app(\App\Services\PurchasingService::class)->generateFromBom($pesanan);
+                    $isPurchasingGenerated = $isPurchasingGenerated || $generated;
+                }
+
+                if ($isPurchasingGenerated) {
+                    $usersToNotify = User::permission('purchasings.mark_ordered')->get();
+                    if ($usersToNotify->isNotEmpty()) {
+                        Notification::send($usersToNotify, new SystemNotification(
+                            'Purchasing BOM Otomatis Dibuat',
+                            "Penawaran disetujui tanpa biaya sample. Purchasing otomatis terbuat. Silakan lakukan pemesanan.",
+                            "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                            'info'
+                        ));
+                    }
                 }
             }
         });
 
         $quotation->refresh();
-        // $this->generateQuotationPdf($quotation);
 
         return back()->with('success', 'Quotation disetujui. Workflow pesanan diperbarui.');
+    }
+
+    public function undoApprove(Request $request, string $quotationId)
+    {
+        $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+
+        $quotation = Quotation::with([
+            'jobTicket.pesanans.purchasing', // Pastikan relasi ke purchasing ada
+            'jobTicket.invoices',
+            'jobTicket.pesanans.workflowStatus'
+        ])->findOrFail($quotationId);
+
+        // 1. GUARD: Cek apakah sudah disetujui
+        if ($quotation->status !== 'approved') {
+            abort(422, 'Quotation belum disetujui atau sudah dibatalkan.');
+        }
+
+        $jobTicket = $quotation->jobTicket;
+
+        // 2. GUARD: Cek status Purchasing
+        // Pastikan tidak ada satupun item yang sudah dipesan (ordered/received)
+        foreach ($jobTicket->pesanans as $pesanan) {
+            $hasProcessedPurchasing = $pesanan->purchasing()
+                ->whereIn('status', ['ordered', 'partial_received', 'received', 'cancelled'])
+                ->exists();
+
+            if ($hasProcessedPurchasing) {
+                throw ValidationException::withMessages([
+                    'undo' => 'Undo gagal: Sebagian atau seluruh material (BOM) sudah masuk proses pemesanan ke Supplier (Ordered/Received). Batalkan pemesanan di menu Purchasing terlebih dahulu.'
+                ]);            
+            }
+        }
+
+        // 3. GUARD: Cek status Invoice Sample
+        // $hasPaidInvoice = $jobTicket->invoices()
+        //     ->where('kategori_invoice', 'sample')
+        //     ->where('status', 'verified') // Sesuaikan dengan status lunas di sistem Anda
+        //     ->exists();
+
+        // if ($hasPaidInvoice) {
+        //     abort(422, 'Undo gagal: Invoice Sample sudah dibayar. Hubungi pihak Finance.');
+        // }
+
+        // 4. JALANKAN TRANSAKSI UNDO
+        DB::transaction(function () use ($quotation, $jobTicket, $request) {
+            
+            // A. Reset Quotation
+            $quotation->update([
+                'status' => 'expired', // Atau 'sent' / 'draft' sesuai default sistem Anda
+                'approved_at' => null,
+                'approved_by_name' => null,
+                // Opsional: hapus file signature jika diperlukan
+                // 'signature_path' => null, 
+            ]);
+
+            // B. Hapus Invoice Sample yang belum dibayar
+            $jobTicket->invoices()
+                ->where('kategori_invoice', 'sample')
+                ->whereIn('status_tagihan', ['unpaid', 'partially_paid'])
+                ->delete();
+
+            // C. Proses per-Pesanan
+            foreach ($jobTicket->pesanans as $pesanan) {
+                // Hapus data purchasing yang masih draft agar nanti bisa digenerate ulang dari BOM yang baru
+                $pesanan->purchasing()->delete();
+
+                // Reset Workflow Status
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    [
+                        // Buka kunci BOM dan Harga
+                        'design_specs_completed' => false,
+                        'price_approved' => false,
+                        
+                        // Batalkan status persetujuan
+                        'quotation_created' => false,
+                        'quotation_approved' => false,
+                        
+                        // Reset status Purchasing
+                        'purchasing_generated' => false,
+                        'materials_purchased' => false,
+                        
+                        // Reset status Sample (termasuk sample gratis yang tadi otomatis lunas)
+                        'sample_invoice_created' => false,
+                        'sample_paid' => false,
+                        'sample_approved' => false,
+                        'sample_materials_ready' => false,
+                        'sample_created' => false,
+                        'sample_started' => false,
+                        'sample_completed' => false,
+                        'sample_uploaded' => false,
+                        'sample_delivered' => false,
+                    ]
+                );
+            }
+
+            // D. Kembalikan status Job Ticket ke tahap BOM/Pricing
+            $jobTicket->update([
+                'status' => 'BOM & Pricing' // Sesuaikan dengan nama status awal Anda
+            ]);
+
+            // E. Catat di History
+            $jobTicket->workflowHistory()->create([
+                'step' => 'quotation',
+                'action' => 'undo_approved',
+                'user_id' => Auth::id(),
+                'notes' => 'Persetujuan Quotation dibatalkan. Alasan: ' . $request->reason,
+            ]);
+            
+            // F. Notifikasi (Opsional: Beri tahu tim terkait)
+            $usersToNotify = User::permission([
+                'purchasings.generate', 'purchasings.create','purchasings.edit',
+                'boms.sync', 'boms.sync','boms.create','boms.edit','boms.delete',
+                'manufactures.create','manufactures.edit','manufactures.delete',
+                ])->get();
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new SystemNotification(
+                    'Quotation Dibatalkan (Undo)',
+                    "Persetujuan Quotation untuk {$jobTicket->no_job_ticket} dibatalkan. BOM dan Desain kembali terbuka untuk direvisi. Alasan: {$request->reason}",
+                    "/job-tickets/{$jobTicket->id}",
+                    'warning'
+                ));
+            }
+        });
+
+        return back()->with('success', 'Persetujuan Quotation berhasil dibatalkan. BOM dan Harga bisa direvisi kembali.');
     }
 
     private function generateSampleInvoiceIfNotExists(JobTicket $jobTicket, Quotation $quotation, array $pesanansCalculated): void

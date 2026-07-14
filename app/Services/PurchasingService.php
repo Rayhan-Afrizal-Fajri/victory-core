@@ -18,25 +18,6 @@ class PurchasingService
             'jobTicket.quotations',
         ]);
 
-        //keperluan testing
-        // $productionQty = $pesanan->workflowStatus->sample_revision == true 
-        //     ? 0 
-        //     : (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-            
-        // $sampleQty = (int) ($pesanan->sample_qty ?: 0);
-        // $totalPlannedQty = $productionQty + $sampleQty;
-
-        // dd(
-        //     'sample paid?',
-        //     $pesanan->workflowStatus->sample_paid,
-        //     'purchasing exists?',
-        //     $pesanan->purchasing()->exists(),
-        //     'sample revision?',
-        //     $pesanan->workflowStatus->sample_revision,
-        //     'total planned qty?',
-        //     $totalPlannedQty, 'sample qty', $sampleQty, 'production qty', $productionQty
-        // );
-
         // 1. Cek validasi dasar, gunakan return alih-alih abort()
         if (! $pesanan->workflowStatus?->sample_paid) {
             return false; // Belum dibayar, lewati

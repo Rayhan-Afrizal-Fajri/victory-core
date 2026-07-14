@@ -9,17 +9,18 @@ import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
 import FormattedNumberInput from "../ui/formatted-number-input";
 import { Pesanan } from "@/pages/admin/job-tickets/types";
-import { Info, Plus, Trash2 } from "lucide-react";
+import { Info, Plus, Trash2, Undo2 } from "lucide-react";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { useState } from "react";
 
 const quillModules = {
-        toolbar: [
-            ['bold', 'italic', 'underline'],
-            [{list: 'ordered'}, {list: 'bullet'}],
-            ['clean']
-        ],
-    };
+    toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['clean']
+    ],
+};
 
 function QuotationSection({
     job,
@@ -31,6 +32,9 @@ function QuotationSection({
     form: any;
 }) {
     const can = useCan();
+
+    // State untuk mengontrol form Undo
+    const [undoQuotationId, setUndoQuotationId] = useState<number | null>(null);
 
     const orders = (job?.orders ?? []) as Array<Pesanan & { harga_jual_per_pcs?: number | null }>;
 
@@ -56,13 +60,8 @@ function QuotationSection({
         return total + unitPrice * sampleQty;
     }, 0);
 
-    // 1. Pastikan SEMUA pesanan sudah diisi harga jualnya (price_per_piece > 0)
     const allPricesSet = orders.every((order) => Number(order.price_per_piece ?? 0) > 0);
-
-    // 2. Pastikan MINIMAL ADA SATU pesanan yang quotation_approved-nya masih false
     const needsQuotation = orders.some((order) => !order.workflow_status?.quotation_approved);
-
-    // 3. Gabungkan keduanya
     const canGenerateQuotation = allPricesSet && needsQuotation && orders.every((order) => order.workflow_status?.price_approved);
 
     const defaultNotes = [
@@ -76,15 +75,13 @@ function QuotationSection({
         sample_qtys: initialSampleQtys,
         sample_prices: initialSamplePrices,
         notes: defaultNotes,
-
-        // payment_terms:
-        //     'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.',
-        // delivery_terms:
-        //     'Estimasi delivery 10–14 hari kerja dari DP dan ACC sample.',
-        // notes:
-        //     'Harga sudah termasuk bahan, proses produksi, dan packing. Harga belum termasuk delivery dan pajak.',
         tax: 0,
         delivery_cost: 0,
+    });
+
+    // Form khusus untuk Undo Approval
+    const undoForm = useForm({
+        reason: '',
     });
 
     const handleAddNote = () => {
@@ -92,12 +89,11 @@ function QuotationSection({
     }
 
     const handleRemoveNote = (indexToRemove: number) => {
-        const newNotes = quotationForm.data.notes.filter((_,idx) => idx !== indexToRemove);
+        const newNotes = quotationForm.data.notes.filter((_, idx) => idx !== indexToRemove);
         quotationForm.setData('notes', newNotes.length ? newNotes : ['']);
     };
 
     const handleNoteChange = (content: string, index: number) => {
-        // Hanya update jika isinya memang berbeda
         if (quotationForm.data.notes[index] !== content) {
             const newNotes = [...quotationForm.data.notes];
             newNotes[index] = content;
@@ -110,8 +106,7 @@ function QuotationSection({
         signature: null as File | null,
         sample_invoice_amount: sampleInvoiceAmount,
     });
-    
-    // Cek apakah setiap pesanan di dalam Job Ticket sudah memiliki harga jual final
+
     const hasSellingPrice = job.orders && job.orders.length > 0 && job.orders.every((order: any) =>
         Number(order.price_per_piece || order.harga_jual_per_pcs) > 0
     );
@@ -120,7 +115,6 @@ function QuotationSection({
 
     const submitGenerateQuotation = (e: React.FormEvent) => {
         e.preventDefault();
-        // Route disesuaikan ke level Job Ticket
         quotationForm.post(`/job-tickets/${job.id}/quotations/generate`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Surat penawaran berhasil dibuat.'),
@@ -132,25 +126,46 @@ function QuotationSection({
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success('Quotation approved dan invoice sample dibuat.');
+                toast.success('Quotation approved dan workflow dilanjutkan.');
                 approveForm.reset();
             },
         });
     };
 
+    const submitUndoQuotation = (e: React.FormEvent, quotationId: number) => {
+        e.preventDefault();
+        undoForm.patch(`/quotations/${quotationId}/undo-approve`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Persetujuan Quotation berhasil dibatalkan. BOM kini terbuka.');
+                setUndoQuotationId(null);
+                undoForm.reset();
+            },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Gagal membatalkan quotation. Pastikan syarat terpenuhi.');
+            }
+        });
+    };
+
+    const cancelUndo = () => {
+        setUndoQuotationId(null);
+        undoForm.reset();
+        undoForm.clearErrors();
+    };
+
     const handleDeleteCustomer = (quotation: any) => {
         toast.warning(`Apakah Anda yakin ingin menghapus surat penawaran ini?`, {
-          action: {
-            label: 'Hapus',
-            onClick: () => {
-              router.delete(`/quotations/${quotation.id}`, {
-                preserveScroll: true,
-                onSuccess: () => {
-                  toast.success('Quotation berhasil dihapus');
+            action: {
+                label: 'Hapus',
+                onClick: () => {
+                    router.delete(`/quotations/${quotation.id}`, {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            toast.success('Quotation berhasil dihapus');
+                        },
+                    });
                 },
-              });
             },
-          },
         });
     };
 
@@ -164,6 +179,7 @@ function QuotationSection({
 
             {canGenerateQuotation && (
                 <form onSubmit={submitGenerateQuotation} className="space-y-4 rounded-2xl border bg-white p-4">
+                    {/* ... BAGIAN FORM GENERATE QUOTATION (Tetap sama seperti aslinya) ... */}
                     <div>
                         <p className="font-semibold text-slate-900">
                             Generate Surat Penawaran
@@ -191,7 +207,7 @@ function QuotationSection({
                                 placeholder='cth: 35.000'
                             />
                         </Field>
-                        {/* Section untuk informasi pengisian sample qty dan harga qty */}
+                        
                         <div className="col-span-2">
                             <div className="rounded-lg border border-sky-100 bg-sky-50 p-4 shadow-sm">
                                 <div className="flex items-start gap-3">
@@ -224,16 +240,13 @@ function QuotationSection({
                                 </div>
                             </div>
                         </div>
-                        {/* Render Grid untuk Multi-Orders */}
+
                         <div className="col-span-2 items-start grid gap-6 md:grid-cols-2">
-                            {/* 2. Map orders di sini */}
                             {orders.map((order: Pesanan) => {
-                                // Cek apakah pesanan ini sudah di-approve di quotation sebelumnya
                                 const isApproved = Boolean(order.workflow_status?.quotation_approved);
 
                                 return (
                                     <div key={order.id} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                        {/* Header Title & Badge */}
                                         <div className="flex items-center justify-between">
                                             <h4 className="font-semibold text-slate-800">
                                                 {order.requested_product_name || order.product_name}
@@ -245,9 +258,7 @@ function QuotationSection({
                                             )}
                                         </div>
 
-                                        {/* Input Qty dan Input Harga bersebelahan */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            {/* Input QTY */}
                                             <Field
                                                 label="Sample Qty"
                                                 error={quotationForm.errors[`sample_qtys.${order.id}` as keyof typeof quotationForm.errors]}
@@ -265,7 +276,6 @@ function QuotationSection({
                                                 />
                                             </Field>
 
-                                            {/* Input HARGA */}
                                             <Field
                                                 label="Harga Sample"
                                                 error={quotationForm.errors[`sample_prices.${order.id}` as keyof typeof quotationForm.errors]}
@@ -284,7 +294,6 @@ function QuotationSection({
                                             </Field>
                                         </div>
                                         
-                                        {/* Keterangan Tambahan Jika Disable */}
                                         {isApproved && (
                                             <p className="text-[11px] leading-tight text-slate-500">
                                                 Artikel ini sudah di-approve. Biaya sample otomatis Rp 0 agar tidak tertagih dua kali.
@@ -306,7 +315,6 @@ function QuotationSection({
 
                         {quotationForm.data.notes.map((note, index) => (
                             <div key={index} className="flex gap-2 items-start">
-                                {/* Rich Text Editor */}
                                 <div className="flex-1 bg-white">
                                     <ReactQuill 
                                         theme="snow"
@@ -321,7 +329,6 @@ function QuotationSection({
                                     />
                                 </div>
                                 
-                                {/* Tombol Hapus */}
                                 <Button 
                                     type="button" 
                                     variant="destructive" 
@@ -352,85 +359,146 @@ function QuotationSection({
                         Belum ada surat penawaran.
                     </p>
                 ) : (
-                    quotations.map((quotation) => (
-                        <div key={quotation.id} className="rounded-2xl border bg-white p-4">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                <div>
-                                    <p className="font-semibold text-slate-900">
-                                        {quotation.quotation_number}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">
-                                        Valid until: {quotation.valid_until || '-'}
-                                    </p>
-                                    <p className="mt-2 text-sm font-bold text-slate-900">
-                                        {formatRupiah(quotation.grand_total || 0)}
-                                    </p>
-                                </div>
+                    quotations.map((quotation) => {
+                        // 1. Fungsi penentuan warna dan teks bahasa Indonesia untuk badge
+                        const getStatusBadge = (status: string) => {
+                            switch (status) {
+                                case 'approved': return { label: 'Disetujui', classes: 'bg-emerald-100 text-emerald-700' };
+                                case 'rejected': return { label: 'Ditolak', classes: 'bg-red-100 text-red-700' };
+                                case 'expired': return { label: 'Kadaluarsa', classes: 'bg-orange-100 text-orange-700' };
+                                case 'sent': return { label: 'Dikirim', classes: 'bg-blue-100 text-blue-700' };
+                                case 'draft':
+                                default: return { label: 'Draft', classes: 'bg-slate-100 text-slate-700' };
+                            }
+                        };
 
-                                <div className="flex flex-wrap gap-2">
-                                    {!quotation.approved_at && can('quotation.generate') && (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            disabled={quotation.status === 'approved'}
-                                            onClick={() => handleDeleteCustomer(quotation)}
-                                        >
-                                            Hapus
-                                        </Button>
-                                    )}
+                        const badge = getStatusBadge(quotation.status);
+                        
+                        // Variabel Guard
+                        // True jika statusnya approved, rejected, atau expired (bukan draft/sent)
+                        const isNotDraftOrSent = !['draft', 'sent'].includes(quotation.status); 
+                        // True jika statusnya rejected atau expired
+                        const isRejectedOrExpired = ['rejected', 'expired'].includes(quotation.status);
 
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={() =>
-                                            window.open(`/quotations/${quotation.id}/print`, '_blank')
-                                        }
-                                    >
-                                        Lihat Surat Penawaran
-                                    </Button>
-
-                                    {quotation.status !== 'approved' && can('quotation.approve') && (
-                                        <Button
-                                            type="button"
-                                            onClick={() => approveQuotation(quotation)}
-                                            disabled={approveForm.processing}
-                                        >
-                                            Approve & Generate Sample Invoice
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {quotation.status !== 'approved' && (
-                                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                    {can('quotation.approve') && (
-                                        <Field label="Nama Approver" error={approveForm.errors.approved_by_name}>
-                                            <Input
-                                                value={approveForm.data.approved_by_name}
-                                                onChange={(e) =>
-                                                    approveForm.setData('approved_by_name', e.target.value)
-                                                }
-                                                placeholder="Nama customer yang menyetujui"
-                                            />
-                                        </Field>
-                                    )}
-
-                                    {/* {can('quotation.generate') && (
-                                        <Field label="Nominal Invoice Sample Total" error={approveForm.errors.sample_invoice_amount}>
-                                            <FormattedNumberInput
-                                                value={approveForm.data.sample_invoice_amount}
-                                                onValueChange={(value) => approveForm.setData('sample_invoice_amount', value)}
-                                                placeholder='cth: 35.000'
-                                            />
-                                            <p className="text-xs text-slate-500">
-                                                Kosongkan/0 jika sample gratis.
+                        return (
+                            <div key={quotation.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-semibold text-slate-900">
+                                                {quotation.quotation_number}
                                             </p>
-                                        </Field>
-                                    )} */}
+                                            {/* Render Badge Status */}
+                                            <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badge.classes}`}>
+                                                {badge.label}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            Valid until: {quotation.valid_until || '-'}
+                                        </p>
+                                        <p className="mt-2 text-sm font-bold text-slate-900">
+                                            {formatRupiah(quotation.grand_total || 0)}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {/* Guard pada Button Hapus */}
+                                        {(!quotation.approved_at && can('quotation.generate')) && (
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                disabled={isNotDraftOrSent} // Disabled jika selain draft & sent
+                                                onClick={() => handleDeleteCustomer(quotation)}
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
+
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() =>
+                                                window.open(`/quotations/${quotation.id}/print`, '_blank')
+                                            }
+                                        >
+                                            Lihat Surat Penawaran
+                                        </Button>
+
+                                        {/* Guard pada Button Approve */}
+                                        {quotation.status !== 'approved' && can('quotation.approve') && (
+                                            <Button
+                                                type="button"
+                                                onClick={() => approveQuotation(quotation)}
+                                                disabled={approveForm.processing || isRejectedOrExpired} // Disabled jika expired/rejected
+                                            >
+                                                Approve & Generate Sample Invoice
+                                            </Button>
+                                        )}
+
+                                        {/* Tombol Undo (Hanya tampil jika sudah approved) */}
+                                        {quotation.status === 'approved' && can('quotation.approve') && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                onClick={() => {
+                                                    setUndoQuotationId(quotation.id);
+                                                    undoForm.reset();
+                                                }}
+                                            >
+                                                <Undo2 className="mr-2 size-4" />
+                                                Batalkan (Undo)
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    ))
+
+                                {/* Form Tambahan untuk Approval */}
+                                {/* Hanya tampilkan form ini jika status bukan approved dan bukan expired/rejected */}
+                                {quotation.status !== 'approved' && !isRejectedOrExpired && (
+                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                        {can('quotation.approve') && (
+                                            <Field label="Nama Approver" error={approveForm.errors.approved_by_name}>
+                                                <Input
+                                                    value={approveForm.data.approved_by_name}
+                                                    onChange={(e) =>
+                                                        approveForm.setData('approved_by_name', e.target.value)
+                                                    }
+                                                    placeholder="Nama customer yang menyetujui"
+                                                />
+                                            </Field>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Form Khusus untuk Undo Approval */}
+                                {undoQuotationId === quotation.id && (
+                                    <form onSubmit={(e) => submitUndoQuotation(e, quotation.id)} className="mt-4 space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                                        <p className="text-sm font-semibold text-red-800">
+                                            Konfirmasi Pembatalan Persetujuan Quotation
+                                        </p>
+                                        <Field label="Alasan Pembatalan" error={undoForm.errors.reason}>
+                                            <Textarea
+                                                value={undoForm.data.reason}
+                                                onChange={(e) => undoForm.setData('reason', e.target.value)}
+                                                placeholder="Jelaskan alasan mengapa persetujuan dibatalkan (min. 5 karakter)..."
+                                                className="bg-white"
+                                                required
+                                            />
+                                        </Field>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <Button type="button" variant="ghost" onClick={cancelUndo}>
+                                                Batal
+                                            </Button>
+                                            <Button type="submit" variant="destructive" disabled={undoForm.processing}>
+                                                Konfirmasi Undo
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        );
+                    })
                 )}
             </div>
         </SectionCard>

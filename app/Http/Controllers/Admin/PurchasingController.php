@@ -432,8 +432,9 @@ class PurchasingController extends Controller
      */
     public function store(Request $request, string $pesananId)
     {
+        // dd($request->all());
         $request->validate([
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'supplier_id' => ['required', 'exists:suppliers,id'],
             'item_bahan' => ['required', 'string'],
             'qty_bahan' => ['required', 'numeric', 'min:0.0001'],
             'satuan' => ['required', 'string'],

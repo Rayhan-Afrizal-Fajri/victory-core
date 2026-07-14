@@ -333,6 +333,7 @@ class RoleUserSeeder extends Seeder
             'products.show',
             'products.modify_materials',
             'products.modify_accecories',
+            'productions.delivery', 
 
             'materials.view',
             'materials.create',

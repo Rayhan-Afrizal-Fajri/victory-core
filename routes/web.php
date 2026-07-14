@@ -159,6 +159,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/quotations/{quotation}/approve', [QuotationController::class, 'approve'])
         ->name('quotations.approve');
 
+    Route::patch('/quotations/{quotation}/undo-approve', [QuotationController::class, 'undoApprove'])
+        ->name('quotations.undoApprove');
+
     Route::patch('/quotations/{quotation}/reject', [QuotationController::class, 'reject'])
         ->name('quotations.reject');
 
