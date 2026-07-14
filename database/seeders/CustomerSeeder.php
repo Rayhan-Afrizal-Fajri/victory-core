@@ -92,5 +92,18 @@ class CustomerSeeder extends Seeder
                 'alamat_detail' => fake()->streetAddress(),
             ]);
         }
+
+        Customer::create([
+            'name'=> 'Ibu Dyah',
+            'jabatan' => 'Vice President',
+            'nama_perusahaan' => 'PT. Royal Medika Pharmalab',
+            'no_hp' => '08119599489',
+            'provinsi' => 'DKI JAKARTA',
+            'kota' => 'KOTA JAKARTA BARAT',
+            'kecamatan' => 'KEBON JERUK',
+            'kelurahan' => 'KEBON JERUK',
+            'kode_pos' => '11530',
+            'alamat_detail' => 'Jl. Perjuangan No. 1, Kedoya Center Blok E1'
+        ]);
     }
 }
