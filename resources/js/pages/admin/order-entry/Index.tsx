@@ -35,6 +35,16 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
     return form.data.orders.map((o) => o.requested_product_name?.trim().toLowerCase()).filter(Boolean);
   }, [form.data.orders]);
 
+  const allOrdersApproved = useMemo(() => {
+    // Pastikan orders ada
+    if (!form.data.orders || form.data.orders.length === 0) return false;
+    
+    return form.data.orders.every((order) => 
+      // Boolean(1) akan menjadi true
+      Boolean(order.workflowStatus?.quotation_approved)
+    );
+  }, [form.data.orders]);
+
   // Handler Orders
   const handleUpdateOrder = (index: number, updatedOrder: OrderData) => {
     const nextOrders = [...form.data.orders];
@@ -72,13 +82,14 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
           
           {/* SECTION 1: DATA PO */}
           <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-             <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Purchase Order</h3>
-             {/* Render Input No PO, Deadline, Select Perusahaan di sini */}
-             <CustomerSelector
+            <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Purchase Order</h3>
+            {/* Render Input No PO, Deadline, Select Perusahaan di sini */}
+            <CustomerSelector
               form={form}
               customers={customers}
               companyProfiles={companyProfiles}
-             />
+              disabled={allOrdersApproved} // Tambahkan ini agar tidak bisa ganti customer
+            />
           </div>
 
           {/* SECTION 2: LIST PESANAN */}
@@ -86,21 +97,34 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
             <h3 className="mb-4 text-base font-semibold text-slate-800">2. Daftar Pesanan Produk</h3>
             
             <div className="space-y-6">
-              {form.data.orders.map((order, idx) => (
-                <OrderItem 
-                  key={idx}
-                  order={order}
-                  oIndex={idx}
-                  isRemovable={form.data.orders.length > 1}
-                  productNamesInUse={productNamesInUse}
-                  defaultSizeBreakdowns={defaultSizeBreakdowns}
-                  onChange={(updated) => handleUpdateOrder(idx, updated)}
-                  onRemove={() => handleRemoveOrder(idx)}
-                />
-              ))}
+              {form.data.orders.map((order, idx) => {
+                // Cek apakah spesifik pesanan ini sudah di-approve
+                const isOrderApproved = Boolean(order.workflowStatus?.quotation_approved);
+
+                return (
+                  <OrderItem 
+                    key={idx}
+                    order={order}
+                    oIndex={idx}
+                    // Tidak bisa dihapus jika cuma 1 pesanan, ATAU jika sudah di-approve
+                    isRemovable={form.data.orders.length > 1 && !isOrderApproved} 
+                    isApproved={isOrderApproved} // Prop baru untuk disable input tertentu
+                    productNamesInUse={productNamesInUse}
+                    defaultSizeBreakdowns={defaultSizeBreakdowns}
+                    onChange={(updated) => handleUpdateOrder(idx, updated)}
+                    onRemove={() => handleRemoveOrder(idx)}
+                  />
+                )
+              })}
             </div>
 
-            <Button type="button" variant="outline" className="mt-4 w-full border-dashed border-2 text-blue-600" onClick={handleAddOrder}>
+            <Button 
+              disabled={allOrdersApproved} // Tombol tambah pesanan ter-disable
+              type="button" 
+              variant="outline" 
+              className="mt-4 w-full border-dashed border-2 text-blue-600" 
+              onClick={handleAddOrder}
+            >
               + Tambah Pesanan Lainnya
             </Button>
           </div>

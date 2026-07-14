@@ -162,13 +162,13 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
       className: 'w-[180px]',
       cell: (row) => (
         <div className="flex items-center gap-2">
-          {row.can_edit && (
-            <Link href={orderEntry.edit(row.id).url}>
-              <Button type="button" size="sm" variant="outline">
-                <Edit className="size-4" /> Edit
-              </Button>
-            </Link>
-          )}
+          {/* {row.can_edit && (
+          )} */}
+          <Link href={orderEntry.edit(row.id).url}>
+            <Button type="button" size="sm" variant="outline">
+              <Edit className="size-4" /> Edit
+            </Button>
+          </Link>
 
           {row.can_delete && (
             <Button

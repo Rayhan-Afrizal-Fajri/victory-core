@@ -41,7 +41,7 @@ class JobTicketController extends Controller
             // Hitung agregasi progress dari semua pesanan di dalam job ticket
             $totalProgress = 0;
             $allSampleAcc = true;
-            $hasStartedProduction = false;
+            $hasApproved = false;
             
             $produkNames = [];
 
@@ -55,15 +55,15 @@ class JobTicketController extends Controller
                     $allSampleAcc = false;
                 }
                 
-                if ($workflow?->design_approved) {
-                    $hasStartedProduction = true;
+                if ($workflow?->quotation_approved) {
+                    $hasApproved = true;
                 }
 
                 $produkNames[] = $pesanan->requested_product_name ?: $pesanan->produk;
             }
 
             $avgProgress = $pesanans->count() > 0 ? round($totalProgress / $pesanans->count()) : 0;
-            $canModify = !$hasStartedProduction;
+            $canModify = !$hasApproved;
 
             return [
                 'id' => $ticket->id,

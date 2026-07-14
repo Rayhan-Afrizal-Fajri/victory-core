@@ -244,7 +244,7 @@ class OrderEntryController extends Controller
      */
     public function edit(string $id)
     {
-        $jobTicket = JobTicket::with(['customer', 'pesanans.sizeBreakdowns', 'companyProfile'])->findOrFail($id);
+        $jobTicket = JobTicket::with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.workflowStatus', 'companyProfile'])->findOrFail($id);
 
         $customers = Customer::orderBy('nama')->get()->map(fn ($customer) => [
             'id' => $customer->id,
@@ -259,6 +259,7 @@ class OrderEntryController extends Controller
 
         $mappedOrders = $jobTicket->pesanans->map(fn($pesanan) => [
             'id' => $pesanan->id,
+            'workflowStatus' => $pesanan->workflowStatus->toArray(),
             'requested_product_name' => $pesanan->requested_product_name ?: $pesanan->produk,
             'q' => (int) $pesanan->q,
             'size_breakdowns' => $pesanan->sizeBreakdowns->isEmpty() 

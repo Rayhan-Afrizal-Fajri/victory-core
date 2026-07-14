@@ -17,9 +17,10 @@ type Props = {
     form: any;
     customers: Customer[]
     companyProfiles: CompanyProfile[];
+    disabled: boolean;
 }
 
-export default function CustomerSelector({ form, customers, companyProfiles }: Props) {
+export default function CustomerSelector({ form, customers, companyProfiles, disabled }: Props) {
     const can = useCan();
 
     const [customerSearch, setCustomerSearch] = useState('');
@@ -105,6 +106,7 @@ export default function CustomerSelector({ form, customers, companyProfiles }: P
                         onFocus={() => setIsDropdownOpen(true)}
                         placeholder="Cari customer..."
                         className="w-full"
+                        disabled={disabled}
                     />
                     
                     {isDropdownOpen && (
@@ -162,7 +164,7 @@ export default function CustomerSelector({ form, customers, companyProfiles }: P
             </div>
 
             <Field label='Perusahaan *'>
-                <Select value={form.data.company_profile_id || ''} onValueChange={(value) => form.setData('company_profile_id', value)}>
+                <Select value={form.data.company_profile_id || ''} onValueChange={(value) => form.setData('company_profile_id', value)} disabled={disabled}>
                     <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
                         <SelectValue placeholder="Pilih perusahaan" />
                     </SelectTrigger>

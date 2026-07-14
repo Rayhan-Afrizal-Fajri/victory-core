@@ -14,9 +14,10 @@ type OrderItemProps = {
   defaultSizeBreakdowns?: { color: string[]; fabric: string[]; size: string[] };
   onChange: (updatedOrder: OrderData) => void;
   onRemove: () => void;
+  isApproved: boolean;
 };
 
-export default function OrderItem({ order, oIndex, isRemovable, productNamesInUse, defaultSizeBreakdowns, onChange, onRemove }: OrderItemProps) {
+export default function OrderItem({ order, oIndex, isRemovable, productNamesInUse, defaultSizeBreakdowns, onChange, onRemove, isApproved }: OrderItemProps) {
   // State UI "Custom Input" dilokalisasi di sini, menggunakan index number (sIndex) saja
   const [customInputs, setCustomInputs] = useState<Record<number, { color?: boolean; fabric_spec?: boolean; size_label?: boolean }>>({});
 
@@ -68,12 +69,13 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
             value={order.requested_product_name}
             onChange={(e) => updateField('requested_product_name', e.target.value)}
             required
+            disabled={isApproved}
           />
           {isDuplicate && <p className="text-xs text-red-500">Nama produk harus unik antar pesanan.</p>}
         </div>
         <div className="space-y-2">
           <Label>Quantity Produksi *</Label>
-          <FormattedNumberInput value={order.q} onValueChange={(val) => updateField('q', val)} placeholder="Jumlah" />
+          <FormattedNumberInput value={order.q} onValueChange={(val) => updateField('q', val)} placeholder="Jumlah" disabled={isApproved} />
         </div>
       </div>
 

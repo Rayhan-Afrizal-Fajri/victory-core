@@ -1,3 +1,5 @@
+import { WorkflowStatus } from '../job-tickets/types';
+
 export type Customer = { id: number; name: string; company_name: string };
 export type CompanyProfile = { id: number; name: string; type: string; };
 export type OrderData = {
@@ -5,6 +7,7 @@ export type OrderData = {
   requested_product_name: string;
   q: number;
   size_breakdowns: Array<{ color: string; size_label: string; fabric_spec: string; qty: number }>;
+  workflowStatus?: WorkflowStatus;
 };
 export type EditingJobTicket = {
   id: number;
