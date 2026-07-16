@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
 import type { DataTableColumn } from '@/components/data-table';
@@ -314,4 +314,18 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
   );
 }
 
-Index.layout = (page) => <AppLayout title="" children={page} />;
+Index.layout = (page: ReactNode) => (
+  <AppLayout
+    title=""
+    description=""
+    information=""
+    breadcrumbs={[
+        {
+            title: 'Materials',
+            href: '',
+        },
+    ]}
+  >
+    {page}
+  </AppLayout>
+);

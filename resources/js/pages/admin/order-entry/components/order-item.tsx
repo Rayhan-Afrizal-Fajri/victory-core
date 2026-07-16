@@ -80,14 +80,16 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
       </div>
 
       <div className="mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex justify-between mb-3">
+        <div className="flex justify-between items-center mb-3">
           <Label className="text-xs font-semibold text-slate-600">Detail Ukuran / Size Breakdown</Label>
-          <Button type="button" variant="secondary" size="sm" className="h-7 text-xs" onClick={handleAddSize}>+ Tambah Size</Button>
+          <Button type="button" variant="secondary" size="sm" className="h-7 text-xs shrink-0" onClick={handleAddSize}>
+            + Tambah Size
+          </Button>
         </div>
 
-        <div className="space-y-2">
+        {/* space-y-4 pada mobile agar tiap "card" berjarak, space-y-2 pada desktop */}
+        <div className="space-y-4 sm:space-y-2">
           {order.size_breakdowns.map((size, sIndex) => {
-            // Evaluasi custom state cukup menggunakan sIndex
             const isCustomColor =
               Boolean(customInputs[sIndex]?.color) ||
               (!!size.color && !defaultSizeBreakdowns?.color.includes(size.color));
@@ -101,14 +103,18 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
               (!!size.size_label && !defaultSizeBreakdowns?.size.includes(size.size_label));
 
             return (
-              <div key={sIndex} className="grid gap-2 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px_40px] items-start">
-                
-                {/* FIELD COLOR */}
-                <div className="space-y-1">
+              <div 
+                key={sIndex} 
+                // Mobile: 12-column grid dengan background, padding, dan border seperti "Card"
+                // Desktop: 5-column grid custom dengan background flat seperti tabel biasa
+                className="grid grid-cols-12 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px_40px] gap-3 sm:gap-2 items-start bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-md sm:rounded-none border border-slate-100 sm:border-transparent"
+              >
+                {/* FIELD COLOR (Mobile: 50% lebar, Desktop: auto/1 bagian) */}
+                <div className="col-span-6 sm:col-span-1 space-y-1">
                   {isCustomColor ? (
-                    <div className="flex items-center gap-2">
-                      <Input placeholder="Warna" value={size.color} onChange={(e) => updateSize(sIndex, 'color', e.target.value)} />
-                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'color')}>List</Button>
+                    <div className="space-y-1">
+                      <Input placeholder="Warna" value={size.color} onChange={(e) => updateSize(sIndex, 'color', e.target.value)} className="w-full" />
+                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs shrink-0" onClick={() => toggleCustomInput(sIndex, 'color')}>List</Button>
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -122,23 +128,24 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'color')}>+ Custom</Button>
+                      {/* Text rata kiri di mobile agar area klik lebih nyaman */}
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs w-full sm:w-auto text-left justify-start sm:justify-center" onClick={() => toggleCustomInput(sIndex, 'color')}>+ Custom</Button>
                     </div>
                   )}
                 </div>
 
-                {/* FIELD FABRIC SPEC */}
-                <div className="space-y-1">
+                {/* FIELD FABRIC SPEC (Mobile: 50% lebar, Desktop: auto/1 bagian) */}
+                <div className="col-span-6 sm:col-span-1 space-y-1">
                   {isCustomFabric ? (
-                    <div className="flex items-center gap-2">
-                      <Input placeholder="Fabric Spec (24s)" value={size.fabric_spec} onChange={(e) => updateSize(sIndex, 'fabric_spec', e.target.value)} />
-                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'fabric_spec')}>List</Button>
+                    <div className="space-y-1">
+                      <Input placeholder="Fabric (24s)" value={size.fabric_spec} onChange={(e) => updateSize(sIndex, 'fabric_spec', e.target.value)} className="w-full" />
+                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs shrink-0" onClick={() => toggleCustomInput(sIndex, 'fabric_spec')}>List</Button>
                     </div>
                   ) : (
                     <div className="space-y-1">
                       <Select value={size.fabric_spec || ''} onValueChange={(value) => updateSize(sIndex, 'fabric_spec', value)}>
                         <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
-                          <SelectValue placeholder="Pilih fabric spec" />
+                          <SelectValue placeholder="Pilih fabric" />
                         </SelectTrigger>
                         <SelectContent>
                           {defaultSizeBreakdowns?.fabric.map((option) => (
@@ -146,17 +153,17 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'fabric_spec')}>+ Custom</Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs w-full sm:w-auto text-left justify-start sm:justify-center" onClick={() => toggleCustomInput(sIndex, 'fabric_spec')}>+ Custom</Button>
                     </div>
                   )}
                 </div>
 
-                {/* FIELD SIZE LABEL */}
-                <div className="space-y-1">
+                {/* FIELD SIZE LABEL (Mobile: 50% lebar di baris ke-2, Desktop: auto/1 bagian) */}
+                <div className="col-span-6 sm:col-span-1 space-y-1">
                   {isCustomSize ? (
-                    <div className="flex items-center gap-2">
-                      <Input placeholder="Size (S/M/L)" value={size.size_label} onChange={(e) => updateSize(sIndex, 'size_label', e.target.value)} />
-                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'size_label')}>List</Button>
+                    <div className="space-y-1">
+                      <Input placeholder="Size (S/M/L)" value={size.size_label} onChange={(e) => updateSize(sIndex, 'size_label', e.target.value)} className="w-full" />
+                      <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs shrink-0" onClick={() => toggleCustomInput(sIndex, 'size_label')}>List</Button>
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -170,15 +177,20 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => toggleCustomInput(sIndex, 'size_label')}>+ Custom</Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs w-full sm:w-auto text-left justify-start sm:justify-center" onClick={() => toggleCustomInput(sIndex, 'size_label')}>+ Custom</Button>
                     </div>
                   )}
                 </div>
 
-                <FormattedNumberInput value={size.qty} onValueChange={(val) => updateSize(sIndex, 'qty', Number(val))} />
+                {/* FIELD QTY (Mobile: ~33% lebar dikanan Size, Desktop: 100px fixed) */}
+                <div className="col-span-4 sm:col-span-1">
+                  <FormattedNumberInput value={size.qty} onValueChange={(val) => updateSize(sIndex, 'qty', Number(val))} className="w-full" />
+                </div>
                 
-                {/* Hapus sisa argumen oIndex di sini juga */}
-                <Button type="button" variant="outline" size="icon" className="text-red-500" onClick={() => handleRemoveSize(sIndex)}>×</Button>
+                {/* FIELD REMOVE (Mobile: sisa lebar di kanan Qty rata kanan, Desktop: 40px fixed) */}
+                <div className="col-span-2 sm:col-span-1 flex justify-end">
+                  <Button type="button" variant="outline" size="icon" className="text-red-500 shrink-0" onClick={() => handleRemoveSize(sIndex)}>×</Button>
+                </div>
               </div>
             );
           })}

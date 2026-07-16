@@ -551,6 +551,12 @@ Index.layout = (page: ReactNode) => (
     title=""
     description="Tracking biaya bahan dan vendor procurement untuk BOM dan perhitungan profit & loss."
     information="Procurement · BOM"
+    breadcrumbs={[
+        {
+            title: 'Purchasings',
+            href: '',
+        },
+    ]}
   >
     {page}
   </AppLayout>

@@ -12,6 +12,7 @@ import OrderItem from './components/order-item';
 import CustomerSelector from './components/customer-selector';
 import { emptyOrderRow, OrderData, Props } from './types';
 import { store, update } from '@/routes/order-entry';
+import AppLayout from '@/layouts/app-layout';
 
 export default function Index({ nextJobTicket, customers, companyProfiles, editingJobTicket, customer, defaultSizeBreakdowns }: Props) {
   const isEditing = Boolean(editingJobTicket);
@@ -149,3 +150,22 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
     </>
   );
 }
+
+Index.layout = (page: React.ReactElement<Props>) => {
+    
+    return (
+        <AppLayout
+            title=""
+            description=""
+            information=""    
+            breadcrumbs={[
+                {
+                    title: 'Order Entry',
+                    href: '',
+                },
+            ]}
+        >
+            {page}
+        </AppLayout>
+    )
+};

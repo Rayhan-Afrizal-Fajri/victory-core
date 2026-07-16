@@ -72,6 +72,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Default Size Breakdown Master
     Route::resource('size-breakdowns', DefaultSizeBreakdownController::class);
+    Route::post('/size-breakdowns/reorder', [DefaultSizeBreakdownController::class, 'reorder'])
+        ->name('size-breakdowns.reorder');
 
     // Manufacturing Work Master
     Route::resource('manufacturing-works', ManufacturingWorkController::class);

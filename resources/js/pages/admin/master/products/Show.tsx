@@ -142,6 +142,12 @@ export default function Show({ product, materials, works }: Props) {
 
 Show.layout = (page: React.ReactElement<Props>) => {
     const product = page.props?.product;
+
+    // 1. Buat fungsi helper untuk truncate text di luar komponen atau di file terpisah
+    const truncateText = (text: string, maxLength: number) => {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    };
      
     return (
         <AppLayout
@@ -154,7 +160,8 @@ Show.layout = (page: React.ReactElement<Props>) => {
                     href: products.index(),
                 },
                 {
-                    title: product ? product.name : 'Produk Detail',
+                    // 2. Gunakan fungsi truncateText di sini (misal dibatasi 20 karakter)
+                    title: product ? truncateText(product.name, 25) : 'Produk Detail',
                     href: product ? products.show(product.id) : '#',
                 }
             ]}

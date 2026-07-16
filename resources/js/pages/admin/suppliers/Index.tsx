@@ -434,6 +434,12 @@ Index.layout = (page: ReactNode) => (
     title=""
     description="Kelola profil vendor eksternal, kategori bahan, dan histori order yang terhubung ke purchasing."
     information="Vendor Management"
+    breadcrumbs={[
+        {
+            title: 'Master Suppliers',
+            href: '',
+        },
+    ]}
   >
     {page}
   </AppLayout>

@@ -399,6 +399,12 @@ Index.layout = (page: React.ReactNode) => {
             title="Kanban Board"
             description="Monitoring visual untuk briefing harian. Setiap card menunjukkan posisi purchase order berdasarkan workflow terbaru, tanpa aksi pindah status manual."
             information="MONITORING PURCHASE ORDER"
+            breadcrumbs={[
+                {
+                    title: 'Kanban Board',
+                    href: '',
+                },
+            ]}
             actions={
                 <>
                     <Button

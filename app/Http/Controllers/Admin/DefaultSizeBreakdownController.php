@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreDefaultSizeBreakdownRequest;
 use App\Http\Requests\UpdateDefaultSizeBreakdownRequest;
 use App\Models\DefaultSizeBreakdown;
@@ -39,6 +40,26 @@ class DefaultSizeBreakdownController extends Controller
         $sizeBreakdown->update($request->validated());
 
         return back();
+    }
+    
+    /**
+     * Memperbarui urutan (sort_order) secara massal.
+     */
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'ordered_ids' => ['required', 'array'],
+            'ordered_ids.*' => ['required', 'integer', 'exists:default_size_breakdowns,id'],
+        ]);
+
+        // Loop array id yang dikirimkan, lalu update sort_order-nya berdasarkan index array
+        foreach ($validated['ordered_ids'] as $index => $id) {
+        DefaultSizeBreakdown::where('id', $id)->update([
+                'sequence' => $index + 1 // Urutan dimulai dari 1
+            ]);
+        }
+
+        return back(); // Inertia akan me-reload props otomatis
     }
 
     public function destroy(DefaultSizeBreakdown $sizeBreakdown)

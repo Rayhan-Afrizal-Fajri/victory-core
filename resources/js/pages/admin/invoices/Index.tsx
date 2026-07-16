@@ -752,6 +752,12 @@ Index.layout = (page: ReactNode) => (
     description="Buat, filter, dan lacak pembayaran invoice produksi berdasarkan milestone produksi dan sample approval."
     information="Finance · Invoice Management"
     actions={null}
+    breadcrumbs={[
+        {
+            title: 'Invoices',
+            href: '',
+        },
+    ]}
   >
     {page}
   </AppLayout>

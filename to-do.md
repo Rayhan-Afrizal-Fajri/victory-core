@@ -2,7 +2,6 @@
 
 *CACATAN:*
 
-* Revisi Sample (dari sample revision dan dari quotation - approve - undo)
 
 
 
@@ -21,6 +20,7 @@
 * Tab Design - Preview PDF ✅
 * Manual Purchase - Kanban Board - Belum Terhubung ke Minimal Require ✅ 
 * Invoice Detail Rekening Pindah ke Catatan Bawah ✅
+* Revisi Sample (dari sample revision dan dari quotation - approve - undo) 
 
 
 

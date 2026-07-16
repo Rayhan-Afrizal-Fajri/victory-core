@@ -349,6 +349,12 @@ Index.layout = (page: ReactNode) => (
     title=""
     description="Kelola profil pelanggan, kontak, dan histori pesanan secara terpusat."
     information="Customer Management"
+    breadcrumbs={[
+        {
+          title: 'Master Customers',
+            href: '',
+        },
+    ]}
   >
     {page}
   </AppLayout>

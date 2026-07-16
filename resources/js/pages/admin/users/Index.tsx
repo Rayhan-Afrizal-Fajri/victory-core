@@ -134,7 +134,17 @@ export default function Index({ users, roles, permissions }: Props) {
 }
 
 Index.layout = (page: ReactNode) => (
-    <AppLayout title="Users & Roles" information="Admin · Access" description="Kelola user, role, dan hak akses sistem.">
+    <AppLayout
+        title="Users & Roles" 
+        information="Admin · Access" 
+        description="Kelola user, role, dan hak akses sistem."
+        breadcrumbs={[
+        {
+            title: 'Master Users & Roles',
+            href: '',
+        },
+    ]}
+    >
         {page}
     </AppLayout>
 );

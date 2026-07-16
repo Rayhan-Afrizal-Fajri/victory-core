@@ -123,9 +123,9 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className={`flex justify-between space-y-0 pb-4 ${isOrderChanged ? 'flex-col sm:flex-col items-start sm:items-center' : 'items-center flex-row'}`}>
         <CardTitle className="text-lg">Proses Manufaktur & Vendor</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 `}>
           {/* Tombol Simpan Urutan muncul jika posisi telah digeser */}
           {isOrderChanged && (
             <Button onClick={handleSaveOrder} size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700">
@@ -150,7 +150,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Manufacturing Work</label>
                   <Select value={form.data.manufacturing_work_id} onValueChange={(val) => form.setData('manufacturing_work_id', val)}>
-                    <SelectTrigger><SelectValue placeholder="Pilih work..." /></SelectTrigger>
+                    <SelectTrigger className='w-full'><SelectValue placeholder="Pilih work..." /></SelectTrigger>
                     <SelectContent>
                       {availableWorks.map((w) => (<SelectItem key={w.id} value={w.id.toString()}>{w.name}</SelectItem>))}
                     </SelectContent>
@@ -221,7 +221,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                           <span className="font-semibold text-slate-900">{work.work_name}</span>
                           {work.is_required && <Badge variant="default" className="text-[10px] h-4 px-1.5">Req</Badge>}
                           {work.process_behavior && <Badge variant="outline" className="text-[10px] h-4">{work.process_behavior}</Badge>}

@@ -2,8 +2,8 @@ declare const route: (name: string, ...params: unknown[]) => string;
 
 import { Head, router, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Plus, Pencil, Trash2, Save } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
 import type { DataTableColumn } from '@/components/data-table';
@@ -29,6 +29,16 @@ type Props = {
 export default function Index({ defaultSizeBreakdowns }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DefaultSizeBreakdown | null>(null);
+
+  // State untuk Drag & Drop
+  const [localBreakdowns, setLocalBreakdowns] = useState<DefaultSizeBreakdown[]>(defaultSizeBreakdowns);
+  const [changedTypes, setChangedTypes] = useState<Set<string>>(new Set());
+
+  // Sinkronisasi local state saat props data berubah (misal setelah tambah/edit/hapus)
+  useEffect(() => {
+    setLocalBreakdowns(defaultSizeBreakdowns);
+    setChangedTypes(new Set());
+  }, [defaultSizeBreakdowns]);
 
   const form = useForm({
     type: 'size' as 'color' | 'fabric' | 'size' | 'unit',
@@ -81,6 +91,42 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
         toast.success('Default size breakdown berhasil dihapus');
       },
     });
+  };
+
+  // --- HANDLER REORDER ---
+  const handleReorder = (type: string, newData: DefaultSizeBreakdown[]) => {
+    setLocalBreakdowns((prev) => {
+      // Ambil data tipe lain yang tidak digeser
+      const otherTypes = prev.filter((item) => item.type !== type);
+      // Gabungkan dengan data baru dari tabel yang digeser
+      return [...otherTypes, ...newData];
+    });
+
+    // Tandai bahwa tabel tipe ini sudah digeser urutannya
+    setChangedTypes((prev) => new Set(prev).add(type));
+  };
+
+  const handleSaveOrder = (type: string) => {
+    // Ambil semua ID berdasarkan tipe (sesuai urutan state terbaru)
+    const orderedIds = localBreakdowns
+      .filter((item) => item.type === type)
+      .map((item) => item.id);
+
+    router.post(
+      route('size-breakdowns.reorder'), 
+      { type, ordered_ids: orderedIds }, 
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success(`Urutan ${type} berhasil disimpan`);
+          setChangedTypes((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(type); // Hilangkan tombol simpan urutan untuk tipe ini
+            return newSet;
+          });
+        },
+      }
+    );
   };
 
   const columns: DataTableColumn<DefaultSizeBreakdown>[] = [
@@ -182,11 +228,38 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
           </Dialog>
         </div>
 
-        <div className=" grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {['color', 'fabric', 'size', 'unit'].map((type) => {
-            const data = filteredItems.filter((item) => item.type === type);
+            // Gunakan localBreakdowns agar urutan UI bereaksi seketika
+            const data = localBreakdowns.filter((item) => item.type === type);
+            const isChanged = changedTypes.has(type);
+
             return (
-                <DataTable columns={columns} data={data} searchKeys={['label']}/>
+              <div key={type} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
+                    {type}
+                  </h3>
+                  {/* Tombol Simpan Urutan muncul hanya untuk tabel yang digeser */}
+                  {isChanged && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleSaveOrder(type)} 
+                      className="h-8 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      <Save className="size-3.5" /> Simpan Urutan
+                    </Button>
+                  )}
+                </div>
+                
+                <DataTable 
+                  columns={columns} 
+                  data={data} 
+                  searchKeys={['label']} 
+                  enableReorder={true} // Aktifkan fitur reorder dari DataTable
+                  onReorder={(newData) => handleReorder(type, newData as DefaultSizeBreakdown[])} 
+                />
+              </div>
             )
           })}
         </div>
@@ -195,4 +268,18 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
   );
 }
 
-Index.layout = (page: ReactNode) => <AppLayout title="" description="" information="" children={page} />;
+Index.layout = (page: ReactNode) => (
+  <AppLayout
+    title=""
+    description=""
+    information=""
+    breadcrumbs={[
+        {
+            title: 'Master Size Breakdowns',
+            href: '',
+        },
+    ]}
+  >
+    {page}
+  </AppLayout>
+);

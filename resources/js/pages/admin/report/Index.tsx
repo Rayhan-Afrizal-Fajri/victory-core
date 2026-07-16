@@ -801,6 +801,12 @@ Index.layout = (page: React.ReactNode) => (
         title="Profit & Loss Report"
         description="Estimasi profitabilitas per order. GOP = (Harga Jual - HPP) × Qty."
         information="FINANCE · GROSS OPERATING PROFIT"
+        breadcrumbs={[
+        {
+            title: 'Profit & Loss Report',
+            href: '',
+        },
+    ]}
     >
         {page}
     </AppLayout>

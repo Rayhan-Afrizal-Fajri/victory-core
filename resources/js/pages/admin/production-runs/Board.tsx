@@ -11,6 +11,7 @@ import Badge from '@/components/sample/badge';
 import Field from '@/components/sample/field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
+import AppLayout from '@/layouts/app-layout';
 
 // --- INTERFACES ---
 interface Customer {
@@ -159,7 +160,7 @@ export default function ProductionBoard({ workerTasks, qcTasks }: BoardProps) {
             </div>
 
             <Tabs defaultValue="worker" className="w-full">
-                <TabsList className="mb-6 grid w-full max-w-md grid-cols-2 h-full">
+                <TabsList className="mb-6 grid w-full max-w-md grid-cols-1 sm:grid-cols-2 h-full">
                     <TabsTrigger value="worker" className="text-base font-medium">
                         Antrean Kerja
                         <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
@@ -423,3 +424,22 @@ function EmptyStateCard({ icon, title, message }: { icon: React.ReactNode, title
         </div>
     );
 }
+
+ProductionBoard.layout = (page: React.ReactElement<BoardProps>) => {
+    
+    return (
+        <AppLayout
+            title=""
+            description=""
+            information=""    
+            breadcrumbs={[
+                {
+                    title: 'Worker Board',
+                    href: '',
+                },
+            ]}
+        >
+            {page}
+        </AppLayout>
+    )
+};

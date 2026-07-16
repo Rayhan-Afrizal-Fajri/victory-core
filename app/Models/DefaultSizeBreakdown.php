@@ -8,6 +8,7 @@ class DefaultSizeBreakdown extends Model
 {
     protected $fillable = [
         'type',
-        'label'
+        'label',
+        'sequence'
     ];
 }
