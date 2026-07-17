@@ -7,6 +7,7 @@ use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class SupplierController extends Controller
 {
@@ -23,6 +24,7 @@ class SupplierController extends Controller
             ->map(fn ($sup) => [
                 'id' => $sup->id,
                 'name' => $sup->nama,
+                'company_name' => $sup->nama_perusahaan,
                 'category' => $sup->kategori,
                 'contact' => $sup->kontak,
                 'address' => $sup->alamat,
@@ -59,6 +61,7 @@ class SupplierController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
+            'nama_perusahaan' => ['required', 'string', 'max:255'],
             'kategori' => [
                 'required',
                 Rule::in(['Bahan Baku', 'Aksesoris', 'CMT / Makloon'])
@@ -95,6 +98,7 @@ class SupplierController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
+            'nama_perusahaan' => ['required', 'string', 'max:255'],
             'kategori' => [
                 'required',
                 Rule::in(['Bahan Baku', 'Aksesoris', 'CMT / Makloon'])
@@ -102,6 +106,8 @@ class SupplierController extends Controller
             'kontak' => ['required', 'string', 'max:20'],
             'alamat' => ['required', 'string'],
         ]);
+
+        // dd($validated);  
 
         $supplier->update($validated);
 
@@ -113,6 +119,12 @@ class SupplierController extends Controller
      */
     public function destroy(Supplier $supplier)
     {
+        if (! $supplier->canBeDeleted()) {
+            return back()->with([
+                'error' => 'Proses ini sedang digunakan di tabel lain dan tidak dapat dihapus.',
+                'flash_id' => Str::uuid(),
+            ]);
+        }
         $supplier->delete();
 
         return back();

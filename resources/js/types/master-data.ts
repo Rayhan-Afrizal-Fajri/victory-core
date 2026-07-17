@@ -90,4 +90,13 @@ export interface Supplier {
   id: number;
   nama?: string;
   nama_perusahaan?: string;
+  email?: string;
+  kategori?: 'Bahan Baku' | 'Aksesoris' | 'CMT / Makloon' | '';
 }
+
+export interface DefaultSizeBreakdown {
+  id: number;
+  type: 'color' | 'fabric' | 'size' | 'unit';
+  label: string;
+  sequence: number;
+};

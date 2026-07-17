@@ -29,4 +29,13 @@ class Supplier extends Model
     {
         return $this->hasMany(ProductMaterial::class, 'default_supplier_id');
     }
+
+    public function canBeDeleted(): bool
+    {
+        return !(
+            $this->purchasing()->exists() ||
+            $this->productMaterials()->exists() ||
+            $this->manufacturingWork()->exists()
+        );
+    }
 }

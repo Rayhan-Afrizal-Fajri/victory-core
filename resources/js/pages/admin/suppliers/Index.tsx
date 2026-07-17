@@ -20,6 +20,7 @@ import AppLayout from '@/layouts/app-layout';
 type SupplierRow = {
   id: number;
   name: string;
+  company_name: string;
   category: 'Bahan Baku' | 'Aksesoris' | 'CMT' | 'Makloon';
   contact: string;
   address: string;
@@ -34,71 +35,6 @@ type SupplierRow = {
   }[];
 };
 
-const sampleSuppliers: SupplierRow[] = [
-  {
-    id: 1,
-    name: 'PT Bahan Prima',
-    category: 'Bahan Baku',
-    contact: '0812-3456-7890',
-    address: 'Jl. Industri No. 7, Bekasi',
-    total_orders: 12,
-    order_history: [
-      {
-        id: 1,
-        job_ticket: 'VL-2026-010',
-        item_name: 'Kain Cotton Combed',
-        quantity: 15,
-        total_cost: 675000,
-        status: 'Delivered',
-      },
-      {
-        id: 2,
-        job_ticket: 'VL-2026-014',
-        item_name: 'Kain Twill',
-        quantity: 10,
-        total_cost: 520000,
-        status: 'Ordered',
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'CV Aksesoris Plus',
-    category: 'Aksesoris',
-    contact: '0821-1122-3344',
-    address: 'Jl. Rajawali No. 9, Bandung',
-    total_orders: 8,
-    order_history: [
-      {
-        id: 3,
-        job_ticket: 'VL-2026-011',
-        item_name: 'Kancing Plastik',
-        quantity: 1200,
-        total_cost: 420000,
-        status: 'Delivered',
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Makloon Jahit Sejahtera',
-    category: 'Makloon',
-    contact: '0838-5566-7788',
-    address: 'Jl. Kapten Tendean No. 45, Solo',
-    total_orders: 5,
-    order_history: [
-      {
-        id: 4,
-        job_ticket: 'VL-2026-012',
-        item_name: 'Jahit Makloon',
-        quantity: 3,
-        total_cost: 3600000,
-        status: 'Ordered',
-      },
-    ],
-  },
-];
-
 type Props = {
   suppliers: SupplierRow[];
 }
@@ -111,6 +47,7 @@ export default function Index({ suppliers }: Props) {
 
   const supplierForm = useForm({
     nama: '',
+    nama_perusahaan: '',
     kategori: 'Bahan Baku' as SupplierRow['category'],
     kontak: '',
     alamat: '',
@@ -128,6 +65,7 @@ export default function Index({ suppliers }: Props) {
 
     supplierForm.setData({
       nama: supplier.name,
+      nama_perusahaan: supplier.company_name,
       kategori: supplier.category,
       kontak: supplier.contact,
       alamat: supplier.address,
@@ -171,9 +109,6 @@ export default function Index({ suppliers }: Props) {
 
     router.delete(supplierDestroy(supplier.id).url, {
       preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Supplier berhasil dihapus');
-      }
     });
   }
 
@@ -192,6 +127,11 @@ export default function Index({ suppliers }: Props) {
   const columns: DataTableColumn<SupplierRow>[] = [
     {
       header: 'Vendor Name',
+      accessor: 'company_name',
+      cell: (row) => <span className="font-medium text-slate-900">{row.company_name}</span>,
+    },
+    {
+      header: 'PIC',
       accessor: 'name',
       cell: (row) => <span className="font-medium text-slate-900">{row.name}</span>,
     },
@@ -289,14 +229,25 @@ export default function Index({ suppliers }: Props) {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-slate-700">Nama Vendor</label>
-                    <Input
-                      value={supplierForm.data.nama}
-                      onChange={(event) => supplierForm.setData('nama', event.target.value)}
-                      className="w-full"
-                    />
-                    <InputError message={supplierForm.errors.nama as string} />
+                  <div className="grid gap-2 grid-cols-2">
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium text-slate-700">Nama Vendor</label>
+                      <Input
+                        value={supplierForm.data.nama_perusahaan}
+                        onChange={(event) => supplierForm.setData('nama_perusahaan', event.target.value)}
+                        className="w-full"
+                      />
+                      <InputError message={supplierForm.errors.nama_perusahaan as string} />
+                    </div>
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium text-slate-700">PIC</label>
+                      <Input
+                        value={supplierForm.data.nama}
+                        onChange={(event) => supplierForm.setData('nama', event.target.value)}
+                        className="w-full"
+                      />
+                      <InputError message={supplierForm.errors.nama as string} />
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Kategori</label>

@@ -16,11 +16,13 @@ interface Props {
   productId: number;
   manufacturingWorks: any[];
   availableWorks: any[];
+  units: any[];
 }
 
-export default function ProductManufacturingSection({ productId, manufacturingWorks, availableWorks }: Props) {
+export default function ProductManufacturingSection({ productId, manufacturingWorks, availableWorks, units }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWork, setEditingWork] = useState<any | null>(null);
+  const [isCustomUnit, setIsCustomUnit] = useState(false);
   
   // State dan Ref untuk Drag and Drop
   const [localWorks, setLocalWorks] = useState(manufacturingWorks);
@@ -121,6 +123,10 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
     });
   };
 
+  const toggleCustomUnit = () => {
+    setIsCustomUnit((prev) => !(prev));
+  }
+
   return (
     <Card>
       <CardHeader className={`flex justify-between space-y-0 pb-4 ${isOrderChanged ? 'flex-col sm:flex-col items-start sm:items-center' : 'items-center flex-row'}`}>
@@ -164,10 +170,50 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                     <FormattedNumberInput value={form.data.default_usage} onValueChange={(val) => form.setData('default_usage', val)} />
                     <InputError message={form.errors.default_usage as string} />
                   </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Unit</label>
-                    <Input value={form.data.default_unit} onChange={(e) => form.setData('default_unit', e.target.value)} />
-                  </div>
+                  {isCustomUnit ? (
+                    <>
+                    <div className='grid gap-2'>
+                      <label className="text-sm font-medium">Satuan (Unit)</label>
+                      <Input value={form.data.default_unit} onChange={(e) => form.setData('default_unit', e.target.value)} placeholder="kg, pcs, lusin" />
+                      <InputError message={form.errors.default_unit as string} />
+                    </div>
+                    <div className="w-full col-span-2 flex justify-end">
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleCustomUnit}
+                          className='flex justify-end w-fit'
+                      >
+                          + Pilih dari daftar
+                      </Button>
+                    </div>
+                    </>
+                  ) : (
+                    <>
+                    <div className='grid gap-2'>
+                      <label className="text-sm font-medium">Satuan (Unit)</label>
+                      <Select value={form.data.default_unit} onValueChange={(val) => form.setData('default_unit', val)}>
+                        <SelectTrigger className='w-full'><SelectValue placeholder="Pilih satuan..." /></SelectTrigger>
+                        <SelectContent>
+                          {units.map((s) => (<SelectItem key={s.id} value={s.label}>{s.label ?? '-'}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <InputError message={form.errors.default_unit as string} />
+                    </div>
+                    <div className="w-full col-span-2 flex justify-end">
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleCustomUnit}
+                          className='flex justify-end w-fit'
+                      >
+                          + Warna Custom
+                      </Button>
+                    </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -177,7 +223,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                   </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Max Estimate (Cost)</label>
-                    <FormattedNumberInput min={form.data.min_estimate} value={form.data.max_estimate} onValueChange={(val) => form.setData('max_estimate', val)} />
+                    <FormattedNumberInput min={0} value={form.data.max_estimate} onValueChange={(val) => form.setData('max_estimate', val)} />
                   </div>
                 </div>
 

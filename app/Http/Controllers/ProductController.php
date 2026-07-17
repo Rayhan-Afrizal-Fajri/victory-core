@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Material;
+use App\Models\DefaultSizeBreakdown;
 use App\Models\ManufacturingWork;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
@@ -104,6 +105,7 @@ class ProductController extends Controller
         $materials = Material::where('is_active', true)->get();
         $works = ManufacturingWork::where('is_active', true)->get();
         $suppliers = Supplier::all();
+        $units = DefaultSizeBreakdown::where('type', 'unit')->get();
 
         $productMapped = [
             'id' => $product->id,
@@ -160,7 +162,17 @@ class ProductController extends Controller
                 'id' => $w->id,
                 'nama' => $w->nama,
                 'nama_perusahaan' => $w->nama_perusahaan,
+                'email' => $w->email,
+                'kategori'=> $w->kategori,
+                'kontak'=> $w->kontak,
+                'alamat' => $w->alamat  
             ])->values(),
+            'units' => $units->map(fn ($u) => [
+                'id' => $u->id,
+                'label' => $u->label,
+                'type' => $u->type,
+                'sequence' => $u->sequence
+            ])
         ]);
     }
 

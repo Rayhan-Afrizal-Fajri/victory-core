@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
-import type { ProductDetail, Material, ManufacturingWork, Supplier } from '@/types';
+import type { ProductDetail, Material, ManufacturingWork, Supplier, DefaultSizeBreakdown } from '@/types';
 import ProductMaterialSection from './ProductMaterialSection';
 import ProductManufacturingSection from './ProductManufacturingSection';
 import products from '@/routes/products';
@@ -15,9 +15,10 @@ type Props = {
   materials: Material[];
   works: ManufacturingWork[];
   suppliers: Supplier[];
+  units: DefaultSizeBreakdown[];
 };
 
-export default function Show({ product, materials, works, suppliers }: Props) {
+export default function Show({ product, materials, works, suppliers, units }: Props) {
   // Fungsi format mata uang
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -120,6 +121,7 @@ export default function Show({ product, materials, works, suppliers }: Props) {
             productId={product.id}
             materials={product.materials}
             suppliers={suppliers}
+            units={units}
             availableMaterials={materials}
             type="bahan"
             title="Bahan"
@@ -128,6 +130,7 @@ export default function Show({ product, materials, works, suppliers }: Props) {
             productId={product.id}
             materials={product.materials}
             suppliers={suppliers}
+            units={units}
             availableMaterials={materials}
             type="aksesoris"
             title="Aksesoris"
@@ -136,6 +139,7 @@ export default function Show({ product, materials, works, suppliers }: Props) {
 
         <ProductManufacturingSection
           productId={product.id}
+          units={units}
           manufacturingWorks={product.manufacturing_works}
           availableWorks={works}
         />

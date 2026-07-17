@@ -22,7 +22,8 @@ class ManufacturingWorkController extends Controller
             ->paginate(15);
 
         $suppliers = Supplier::query()
-            ->select('id', 'nama')
+            ->select('id', 'nama', 'nama_perusahaan')
+            ->where('kategori', 'CMT / Makloon')
             ->get();
 
         $works = $works->map(fn ($work) => [

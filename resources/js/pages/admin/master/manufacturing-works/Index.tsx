@@ -231,7 +231,7 @@ export default function Index({ works, suppliers }: Props) {
                       <SelectContent className=''>
                         {suppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.nama}
+                            {supplier.nama_perusahaan} - {supplier.nama}
                           </SelectItem>
                         ))}
                       </SelectContent>
