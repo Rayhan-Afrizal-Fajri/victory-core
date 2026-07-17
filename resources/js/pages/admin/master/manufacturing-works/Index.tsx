@@ -80,9 +80,9 @@ export default function Index({ works, suppliers }: Props) {
 
     router.delete(route('manufacturing-works.destroy', work.id), {
       preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Manufacturing work berhasil dihapus');
-      },
+      // onSuccess: () => {
+      //   toast.success('Manufacturing work berhasil dihapus');
+      // },
     });
   };
 

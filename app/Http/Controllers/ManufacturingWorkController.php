@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateManufacturingWorkRequest;
 use App\Models\ManufacturingWork;
 use App\Models\Supplier;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class ManufacturingWorkController extends Controller
 {
@@ -97,6 +98,12 @@ class ManufacturingWorkController extends Controller
      */
     public function destroy(ManufacturingWork $manufacturingWork)
     {
+        if (! $manufacturingWork->canBeDeleted()) {
+            return back()->with([
+                'error' => 'Proses ini sedang digunakan di tabel lain dan tidak dapat dihapus.',
+                'flash_id' => Str::uuid(),
+            ]);
+        }
         $manufacturingWork->delete();
 
         return back();
