@@ -125,7 +125,7 @@ export default function ProductMaterialSection({ productId, materials, available
                   <Select value={form.data.default_supplier_id} onValueChange={(val) => form.setData('default_supplier_id', val)}>
                     <SelectTrigger className='w-full'><SelectValue placeholder="Pilih supplier..." /></SelectTrigger>
                     <SelectContent>
-                      {suppliers.map((s) => (<SelectItem key={s.id} value={s.id.toString()}>{s.nama_perusahaan ? s.nama_perusahaan : s.nama}</SelectItem>))}
+                      {suppliers.map((s) => (<SelectItem key={s.id} value={s.id.toString()}>{s.nama_perusahaan ?? '-'}</SelectItem>))}
                     </SelectContent>
                   </Select>
                   <InputError message={form.errors.default_supplier_id as string} />
@@ -189,9 +189,11 @@ export default function ProductMaterialSection({ productId, materials, available
                         <span className="font-semibold text-slate-900">{material.material_name}</span>
                         {material.is_required && <Badge variant="default" className="text-[10px] h-4 px-1.5">Req</Badge>}
                       </div>
-                      <p className="text-xs text-slate-600 mt-1">
-                        Supplier: <strong>{material.defaultSupplier.nama_perusahaan ?? '-'}</strong>
-                      </p>
+                      {material.defaultSupplier && (
+                        <p className="text-xs text-slate-600 mt-1">
+                          Supplier: <strong>{material.defaultSupplier.nama_perusahaan ?? '-'}</strong>
+                        </p>
+                      )}
                       <p className="text-xs text-slate-600 mt-1">
                         Pemakaian: <strong>{material.default_usage} {material.default_unit}</strong>
                       </p>
