@@ -173,11 +173,11 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Min Estimate (Cost)</label>
-                    <FormattedNumberInput value={form.data.min_estimate} onValueChange={(val) => form.setData('min_estimate', val)} />
+                    <FormattedNumberInput min={0} value={form.data.min_estimate} onValueChange={(val) => form.setData('min_estimate', val)} />
                   </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Max Estimate (Cost)</label>
-                    <FormattedNumberInput value={form.data.max_estimate} onValueChange={(val) => form.setData('max_estimate', val)} />
+                    <FormattedNumberInput min={form.data.min_estimate} value={form.data.max_estimate} onValueChange={(val) => form.setData('max_estimate', val)} />
                   </div>
                 </div>
 

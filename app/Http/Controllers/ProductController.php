@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 // use App\Http\Requests\StoreProductRequest;
 // use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\Material;
 use App\Models\ManufacturingWork;
 use Inertia\Inertia;
@@ -102,41 +103,47 @@ class ProductController extends Controller
 
         $materials = Material::where('is_active', true)->get();
         $works = ManufacturingWork::where('is_active', true)->get();
+        $suppliers = Supplier::all();
+
+        $productMapped = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'category' => $product->category,
+            'description' => $product->description,
+            'is_active' => $product->is_active,
+            'materials' => $product->productMaterials->map(fn ($pm) => [
+                'id' => $pm->id,
+                'material_id' => $pm->material_id,
+                'material_name' => $pm->material->name,
+                'material_category' => $pm->material->category,
+                'defaultSupplier' => $pm->defaultSupplier->toArray(),
+                'type' => $pm->type,
+                'default_usage' => (float) $pm->default_usage,
+                'default_supplier_id' => $pm->default_supplier_id,
+                'default_unit' => $pm->default_unit,
+                'harga_ecer' => (float) $pm->harga_ecer, // Tambahan Harga
+                'harga_roll' => (float) $pm->harga_roll, // Tambahan Harga
+                'sort_order' => $pm->sort_order,
+                'is_required' => $pm->is_required,
+                'notes' => $pm->notes,
+            ])->values(),
+            'manufacturing_works' => $product->productManufacturingWorks->map(fn ($pmw) => [
+                'id' => $pmw->id,
+                'manufacturing_work_id' => $pmw->manufacturing_work_id,
+                'work_name' => $pmw->manufacturingWork->name,
+                'default_usage' => (float) $pmw->default_usage,
+                'min_estimate' => (float) $pmw->min_estimate, // Fix mapping
+                'max_estimate' => (float) $pmw->max_estimate, // Fix mapping
+                'default_unit' => $pmw->default_unit,
+                'process_behavior' => $pmw->manufacturingWork->process_behavior,
+                'usage_note' => $pmw->usage_note,
+                'sort_order' => $pmw->sort_order,
+                'is_required' => $pmw->is_required,
+            ])->values(),
+        ];        
 
         return Inertia::render('admin/master/products/Show', [
-            'product' => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'category' => $product->category,
-                'description' => $product->description,
-                'is_active' => $product->is_active,
-                'materials' => $product->productMaterials->map(fn ($pm) => [
-                    'id' => $pm->id,
-                    'material_id' => $pm->material_id,
-                    'material_name' => $pm->material->name,
-                    'material_category' => $pm->material->category,
-                    'type' => $pm->type,
-                    'default_usage' => (float) $pm->default_usage,
-                    'default_unit' => $pm->default_unit,
-                    'harga_ecer' => (float) $pm->harga_ecer, // Tambahan Harga
-                    'harga_roll' => (float) $pm->harga_roll, // Tambahan Harga
-                    'sort_order' => $pm->sort_order,
-                    'is_required' => $pm->is_required,
-                ])->values(),
-                'manufacturing_works' => $product->productManufacturingWorks->map(fn ($pmw) => [
-                    'id' => $pmw->id,
-                    'manufacturing_work_id' => $pmw->manufacturing_work_id,
-                    'work_name' => $pmw->manufacturingWork->name,
-                    'default_usage' => (float) $pmw->default_usage,
-                    'min_estimate' => (float) $pmw->min_estimate, // Fix mapping
-                    'max_estimate' => (float) $pmw->max_estimate, // Fix mapping
-                    'default_unit' => $pmw->default_unit,
-                    'process_behavior' => $pmw->manufacturingWork->process_behavior,
-                    'usage_note' => $pmw->usage_note,
-                    'sort_order' => $pmw->sort_order,
-                    'is_required' => $pmw->is_required,
-                ])->values(),
-            ],
+            'product' => $productMapped,
             'materials' => $materials->map(fn ($m) => [
                 'id' => $m->id,
                 'name' => $m->name,
@@ -148,6 +155,11 @@ class ProductController extends Controller
                 'name' => $w->name,
                 'default_unit' => $w->default_unit,
                 'process_behavior' => $w->process_behavior,
+            ])->values(),
+            'suppliers' => $suppliers->map(fn ($w) => [
+                'id' => $w->id,
+                'nama' => $w->nama,
+                'nama_perusahaan' => $w->nama_perusahaan,
             ])->values(),
         ]);
     }

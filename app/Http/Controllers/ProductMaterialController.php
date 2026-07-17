@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductMaterialRequest;
 use App\Http\Requests\UpdateProductMaterialRequest;
 use App\Models\ProductMaterial;
-use Illuminate\Http\Request;
+// use Illuminate\Http\Request;
 
 class ProductMaterialController extends Controller
 {

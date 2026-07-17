@@ -8,6 +8,8 @@ use App\Models\Material;
 use App\Models\Supplier;
 use App\Models\DefaultSizeBreakdown;
 use Inertia\Inertia;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class MaterialController extends Controller
 {
@@ -104,9 +106,16 @@ class MaterialController extends Controller
      */
     public function destroy(Material $material)
     {
+        if (! $material->canBeDeleted()) {
+            return back()->with([
+                'error' => 'Material ini sedang digunakan di tabel lain dan tidak dapat dihapus.',
+                'flash_id' => Str::uuid(),
+            ]);
+        }
+
         $material->delete();
 
-        return back();
+        return back()->with('success', 'Material berhasil dihapus.');
     }
 
     /**

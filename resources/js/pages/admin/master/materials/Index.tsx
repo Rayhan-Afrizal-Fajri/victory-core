@@ -88,9 +88,6 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
 
     router.delete(route('materials.destroy', material.id), {
       preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Material berhasil dihapus');
-      },
     });
   };
 

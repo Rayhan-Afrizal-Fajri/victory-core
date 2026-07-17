@@ -64,10 +64,12 @@ export interface ProductMaterial {
   type: 'bahan' | 'aksesoris';
   default_usage: number;
   default_unit?: string;
+  default_supplier_id?: number;
   harga_ecer?: number;
   harga_roll?: number;
   sort_order: number;
   is_required: boolean;
+  notes?: string;
 }
 
 export interface ProductManufacturingWork {
@@ -85,5 +87,6 @@ export interface ProductManufacturingWork {
 
 export interface Supplier {
   id: number;
-  nama: string;
+  nama?: string;
+  nama_perusahaan?: string;
 }

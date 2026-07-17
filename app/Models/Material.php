@@ -13,6 +13,7 @@ class Material extends Model
         'category',
         'unit',
         'default_color',
+        'default_vendor_id',
         'description',
         'is_active',
     ];
@@ -25,5 +26,18 @@ class Material extends Model
     public function pesananMaterialSpecs(): HasMany
     {
         return $this->hasMany(PesananMaterialSpecs::class);
+    }
+
+    public function defaultVendor(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'default_vendor_id');
+    }
+
+    public function canBeDeleted(): bool
+    {
+        return !(
+            $this->productMaterials()->exists() ||
+            $this->pesananMaterialSpecs()->exists()
+        );
     }
 }

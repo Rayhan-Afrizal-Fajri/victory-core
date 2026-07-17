@@ -48,6 +48,12 @@ class HandleInertiaRequests extends Middleware
                 'unread_count' => $request->user() ? $request->user()->unreadNotifications()->count() : 0,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'flash' => [
+                'success' => fn () => session('success'),
+                'error' => fn () => session('error'),
+                'warning' => fn () => session('warning'),
+                'id' => fn () => session('flash_id'),
+            ],
         ];
     }
 }

@@ -4,18 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
-import type { ProductDetail, Material, ManufacturingWork } from '@/types';
+import type { ProductDetail, Material, ManufacturingWork, Supplier } from '@/types';
 import ProductMaterialSection from './ProductMaterialSection';
 import ProductManufacturingSection from './ProductManufacturingSection';
 import products from '@/routes/products';
+import suppliers from '@/routes/suppliers';
 
 type Props = {
   product: ProductDetail;
   materials: Material[];
   works: ManufacturingWork[];
+  suppliers: Supplier[];
 };
 
-export default function Show({ product, materials, works }: Props) {
+export default function Show({ product, materials, works, suppliers }: Props) {
   // Fungsi format mata uang
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -117,6 +119,7 @@ export default function Show({ product, materials, works }: Props) {
           <ProductMaterialSection
             productId={product.id}
             materials={product.materials}
+            suppliers={suppliers}
             availableMaterials={materials}
             type="bahan"
             title="Bahan"
@@ -124,6 +127,7 @@ export default function Show({ product, materials, works }: Props) {
           <ProductMaterialSection
             productId={product.id}
             materials={product.materials}
+            suppliers={suppliers}
             availableMaterials={materials}
             type="aksesoris"
             title="Aksesoris"

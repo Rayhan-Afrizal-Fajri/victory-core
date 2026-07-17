@@ -23,9 +23,18 @@ export default function AppLayout({
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
+    }, [flash?.success]);
+
+    useEffect(() => {
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash?.id]);
+
+    useEffect(() => {
         if (flash?.warning) toast.warning(flash.warning);
-    }, [flash]);
+    }, [flash?.warning]);
+
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>
             <div className="space-y-8 px-4 py-6 lg:px-8">

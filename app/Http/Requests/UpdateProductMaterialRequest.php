@@ -25,11 +25,15 @@ class UpdateProductMaterialRequest extends FormRequest
         return [
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'material_id' => ['required', 'integer', 'exists:materials,id'],
+            'default_supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'type' => ['required', Rule::in(['bahan', 'aksesoris'])],
             'default_usage' => ['required', 'numeric', 'min:0'],
             'default_unit' => ['nullable', 'string', 'max:255'],
+            'harga_ecer' => ['nullable', 'integer'],
+            'harga_roll' => ['nullable', 'integer'],
             'sort_order' => ['nullable', 'integer'],
             'is_required' => ['boolean'],
+            'notes' => ['nullable', 'string'],
         ];
     }
 }

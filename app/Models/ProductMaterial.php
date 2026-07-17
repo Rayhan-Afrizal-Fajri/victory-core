@@ -19,6 +19,7 @@ class ProductMaterial extends Model
         'default_color',
         'sort_order',
         'is_required',
+        'notes',
     ];
 
     public function defaultSupplier(): BelongsTo

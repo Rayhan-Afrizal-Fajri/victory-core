@@ -10,16 +10,19 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
+import { Supplier } from '@/types';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Props {
   productId: number;
   materials: any[]; // Sesuaikan tipe dengan schema Anda
+  suppliers: Supplier[];
   availableMaterials: any[];
   type: 'bahan' | 'aksesoris';
   title: string;
 }
 
-export default function ProductMaterialSection({ productId, materials, availableMaterials, type, title }: Props) {
+export default function ProductMaterialSection({ productId, materials, availableMaterials, type, title, suppliers }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<any | null>(null);
 
@@ -34,10 +37,12 @@ export default function ProductMaterialSection({ productId, materials, available
     type: type,
     default_usage: 0,
     default_unit: '',
+    default_supplier_id: '',
     harga_ecer: 0,
     harga_roll: 0,
     sort_order: filteredMaterials.length,
     is_required: true,
+    notes: '',
   });
 
   const handleSubmit = () => {
@@ -70,10 +75,12 @@ export default function ProductMaterialSection({ productId, materials, available
       type: material.type,
       default_usage: material.default_usage,
       default_unit: material.default_unit || '',
+      default_supplier_id: material.default_supplier_id.toString() || '',
       harga_ecer: material.harga_ecer || 0,
       harga_roll: material.harga_roll || 0,
       sort_order: material.sort_order,
       is_required: material.is_required,
+      notes: material.notes || '',
     });
     setIsDialogOpen(true);
   };
@@ -101,15 +108,28 @@ export default function ProductMaterialSection({ productId, materials, available
               <DialogTitle>{editingMaterial ? 'Edit Material' : 'Tambah Material'}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Material</label>
-                <Select value={form.data.material_id} onValueChange={(val) => form.setData('material_id', val)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih material..." /></SelectTrigger>
-                  <SelectContent>
-                    {filteredAvailable.map((m) => (<SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-                <InputError message={form.errors.material_id as string} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Material</label>
+                  <Select value={form.data.material_id} onValueChange={(val) => form.setData('material_id', val)}>
+                    <SelectTrigger className='w-full'><SelectValue placeholder="Pilih material..." /></SelectTrigger>
+                    <SelectContent>
+                      {filteredAvailable.map((m) => (<SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <InputError message={form.errors.material_id as string} />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Supplier</label>
+                  <Select value={form.data.default_supplier_id} onValueChange={(val) => form.setData('default_supplier_id', val)}>
+                    <SelectTrigger className='w-full'><SelectValue placeholder="Pilih supplier..." /></SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map((s) => (<SelectItem key={s.id} value={s.id.toString()}>{s.nama_perusahaan ? s.nama_perusahaan : s.nama}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <InputError message={form.errors.default_supplier_id as string} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -137,6 +157,11 @@ export default function ProductMaterialSection({ productId, materials, available
                   <InputError message={form.errors.harga_roll as string} />
                 </div>
               </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Catatan (Opsional)</label>
+                <Textarea value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} rows={3} />
+              </div>
             </div>
 
             <DialogFooter>
@@ -153,6 +178,8 @@ export default function ProductMaterialSection({ productId, materials, available
           <div className="space-y-3">
             {filteredMaterials.map((material) => {
               const subtotal = material.default_usage * (material.harga_ecer || 0);
+
+              // console.log(material);
               
               return (
                 <div key={material.id} className="flex flex-col rounded border border-slate-200 p-3 bg-slate-50/50">
@@ -163,10 +190,16 @@ export default function ProductMaterialSection({ productId, materials, available
                         {material.is_required && <Badge variant="default" className="text-[10px] h-4 px-1.5">Req</Badge>}
                       </div>
                       <p className="text-xs text-slate-600 mt-1">
+                        Supplier: <strong>{material.defaultSupplier.nama_perusahaan ?? '-'}</strong>
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
                         Pemakaian: <strong>{material.default_usage} {material.default_unit}</strong>
                       </p>
                       <p className="text-xs text-slate-500">
-                        Harga Satuan: {formatIDR(material.harga_ecer)}
+                        Harga Satuan: <strong>{formatIDR(material.harga_ecer)}</strong>
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Catatan: <strong>{material.notes ?? '-'}</strong>
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
