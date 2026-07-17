@@ -116,7 +116,7 @@ class ProductController extends Controller
                 'material_id' => $pm->material_id,
                 'material_name' => $pm->material->name,
                 'material_category' => $pm->material->category,
-                'defaultSupplier' => $pm->defaultSupplier->toArray(),
+                'defaultSupplier' => $pm->defaultSupplier?->toArray(),
                 'type' => $pm->type,
                 'default_usage' => (float) $pm->default_usage,
                 'default_supplier_id' => $pm->default_supplier_id,
