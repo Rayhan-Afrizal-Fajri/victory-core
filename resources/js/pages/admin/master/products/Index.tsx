@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import type { Product } from '@/types';
+import { formatCurrency } from '@/helpers/format';
 
 type Props = {
   products: Product[];
@@ -159,6 +160,31 @@ export default function Index({ products }: Props) {
             </span>
         </div>
       ),
+    },
+    {
+      header: 'Estimasi HPP',
+      accessor: 'hpp',
+      cell: (row) => {
+        // Kalkulasi Total Estimasi
+        const totalMaterialCost = row.materials
+          .filter(m => m.type === 'bahan')
+          .reduce((acc, curr) => acc + (curr.default_usage * (curr.harga_ecer || 0)), 0);
+
+        const totalAccessoryCost = row.materials
+          .filter(m => m.type === 'aksesoris')
+          .reduce((acc, curr) => acc + (curr.default_usage * (curr.harga_ecer || 0)), 0);
+
+        const totalManufacturingCost = row.manufacturing_works
+          .reduce((acc, curr) => acc + (curr.default_usage * (curr.max_estimate || 0)), 0);
+
+        const grandTotal = totalMaterialCost + totalAccessoryCost + totalManufacturingCost;
+
+        return (
+          <div className="font-semibold text-emerald-600">
+            {formatCurrency(grandTotal)}
+          </div>
+        );
+      },
     },
     {
       header: 'Action',

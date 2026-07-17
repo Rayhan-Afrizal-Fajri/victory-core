@@ -21,12 +21,12 @@ export default function UserFormModal({
 
     const emptyForm = {
         name: "",
-        username: "",
+        // username: "",
         email: "",
         password: "",
-        phone: "",
+        // phone: "",
         role_id: "",
-        status_aktif: true
+        // status_aktif: true
     }
 
     const [form, setForm] = useState(() => emptyForm)
@@ -38,12 +38,12 @@ export default function UserFormModal({
         if (user) {
             setForm({
                 name: user.name,
-                username: user.username,
+                // username: user.username,
                 email: user.email,
                 password: "",
-                phone: user.phone || "",
+                // phone: user.phone || "",
                 role_id: user.roles?.[0]?.id?.toString() || "",
-                status_aktif: user.status_aktif ?? true
+                // status_aktif: user.status_aktif ?? true
             })
         } else {
             setForm(emptyForm)
@@ -59,7 +59,6 @@ export default function UserFormModal({
         if (user) {
             router.put(`/users/${user.id}`, form, {
                 onSuccess: () => {
-                    toast.success(`${form.name} berhasil diperbarui`);
                     onClose();
                 },
                 onError: (errors: Record<string, string>) => {
@@ -69,7 +68,6 @@ export default function UserFormModal({
         } else {
             router.post(`/users`, form, {
                 onSuccess: () => {
-                    toast.success(`${form.name} berhasil diperbarui`);
                     onClose();
                 },
                 onError: (errors: Record<string, string>) => {
@@ -166,29 +164,6 @@ export default function UserFormModal({
                         )}
                     </div>
 
-                    {/* Username */}
-
-                    <div>
-                        <label className="text-sm font-medium">
-                            Username
-                        </label>
-
-                        <input
-                            className="mt-1 w-full rounded-lg border border-sidebar-border px-3 py-2 text-sm"
-                            value={form.username}
-                            onChange={(e) =>
-                                setForm({ ...form, username: e.target.value })
-                            }
-                            placeholder="johndoe24"
-                        />
-
-                        {errors.username && (
-                            <p className="text-xs text-red-500 mt-1">
-                                {errors.username}
-                            </p>
-                        )}
-                    </div>
-
                     {/* Password */}
 
                     {!user && (
@@ -214,23 +189,6 @@ export default function UserFormModal({
                             )}
                         </div>
                     )}
-
-                    {/* Phone */}
-
-                    <div>
-                        <label className="text-sm font-medium">
-                            No. Telepon
-                        </label>
-
-                        <input
-                            className="mt-1 w-full rounded-lg border border-sidebar-border px-3 py-2 text-sm"
-                            value={form.phone}
-                            onChange={(e) =>
-                                setForm({ ...form, phone: e.target.value })
-                            }
-                            placeholder="08123456789"
-                        />
-                    </div>
 
                     {/* Role */}
 
@@ -262,27 +220,6 @@ export default function UserFormModal({
                                 {errors.role_id}
                             </p>
                         )}
-                    </div>
-
-                    {/* Status */}
-
-                    <div className="flex items-center gap-2 pt-2">
-
-                        <input
-                            type="checkbox"
-                            checked={form.status_aktif}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    status_aktif: e.target.checked
-                                })
-                            }
-                        />
-
-                        <span className="text-sm">
-                            Status Aktif
-                        </span>
-
                     </div>
 
                     {/* Actions */}

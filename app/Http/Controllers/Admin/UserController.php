@@ -30,7 +30,6 @@ class UserController extends Controller
                     'name' => $role->name,
                 ])->all(),
                 'role' => $user->roles?->first()->name,
-                'is_active' => $user->is_active,
             ]);
 
         $roles = Role::query()
@@ -78,15 +77,13 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8'], 
-            'role' => ['required', 'exists:roles,name'], 
-            'is_active' => ['required', 'boolean'], 
+            'role' => ['required', 'exists:roles,name'],  
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
-            'is_active' => $validated['is_active'],
         ]);
 
         $user->assignRole($validated['role']);
@@ -121,6 +118,8 @@ class UserController extends Controller
             return back()->with('error', 'User owner tidak dapat diubah.');
         }
 
+        // dd($request->all());
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -128,20 +127,20 @@ class UserController extends Controller
                 'email', 
                 Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'min:8'], 
-            'role' => ['required', 'exists:roles,name'], 
-            'is_active' => ['required', 'boolean'], 
+            'role_id' => ['required', 'exists:roles,id'], 
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'is_active' => $validated['is_active'],
             'password' => $validated['password'] ? bcrypt($validated['password']) : $user->password,
         ]);
 
-        $user->syncRoles([$validated['role']]);
+        $role = Role::findOrFail($validated['role_id']);
 
-        return back()->with('success', 'User berhasil diperbarui');
+        $user->syncRoles([$role->name]);
+
+        return back()->with('success', "User {$user->name} berhasil diperbarui");
     }
 
     /**

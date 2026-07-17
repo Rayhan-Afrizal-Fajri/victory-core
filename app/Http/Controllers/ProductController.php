@@ -27,6 +27,12 @@ class ProductController extends Controller
                 'productMaterials as accessories_count' => fn ($q) => $q->where('type', 'aksesoris'),
                 'productManufacturingWorks as manufacturing_count'
             ])
+            ->with([
+                'productMaterials',
+                'productMaterials.material',
+                'productManufacturingWorks',
+                'productManufacturingWorks.manufacturingWork',
+            ])
             ->latest()->get();
 
         $products = $products->map(fn ($product) => [
@@ -39,6 +45,35 @@ class ProductController extends Controller
             'materials_count' => $product->materials_count,
             'accessories_count' => $product->accessories_count,
             'manufacturing_count' => $product->manufacturing_count,
+            'materials' => $product->productMaterials->map(fn ($pm) => [
+                'id' => $pm->id,
+                'material_id' => $pm->material_id,
+                'material_name' => $pm->material->name,
+                'material_category' => $pm->material->category,
+                'defaultSupplier' => $pm->defaultSupplier?->toArray(),
+                'type' => $pm->type,
+                'default_usage' => (float) $pm->default_usage,
+                'default_supplier_id' => $pm->default_supplier_id,
+                'default_unit' => $pm->default_unit,
+                'harga_ecer' => (float) $pm->harga_ecer, // Tambahan Harga
+                'harga_roll' => (float) $pm->harga_roll, // Tambahan Harga
+                'sort_order' => $pm->sort_order,
+                'is_required' => $pm->is_required,
+                'notes' => $pm->notes,
+            ])->values(),
+            'manufacturing_works' => $product->productManufacturingWorks->map(fn ($pmw) => [
+                'id' => $pmw->id,
+                'manufacturing_work_id' => $pmw->manufacturing_work_id,
+                'work_name' => $pmw->manufacturingWork->name,
+                'default_usage' => (float) $pmw->default_usage,
+                'min_estimate' => (float) $pmw->min_estimate, // Fix mapping
+                'max_estimate' => (float) $pmw->max_estimate, // Fix mapping
+                'default_unit' => $pmw->default_unit,
+                'process_behavior' => $pmw->manufacturingWork->process_behavior,
+                'usage_note' => $pmw->usage_note,
+                'sort_order' => $pmw->sort_order,
+                'is_required' => $pmw->is_required,
+            ])->values(),
         ]);
 
         // Fetch master data untuk Form Create/Edit

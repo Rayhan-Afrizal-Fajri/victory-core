@@ -8,6 +8,8 @@ export interface Product {
   materials_count: number;
   accessories_count: number;
   manufacturing_count: number;
+  materials: ProductMaterial[];
+  manufacturing_works: ProductManufacturingWork[];
 }
 
 export interface CompanyProfile {
