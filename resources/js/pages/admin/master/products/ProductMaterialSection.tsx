@@ -75,7 +75,7 @@ export default function ProductMaterialSection({ productId, materials, available
       type: material.type,
       default_usage: material.default_usage,
       default_unit: material.default_unit || '',
-      default_supplier_id: material.default_supplier_id.toString() || '',
+      default_supplier_id: material.default_supplier_id?.toString() || '',
       harga_ecer: material.harga_ecer || 0,
       harga_roll: material.harga_roll || 0,
       sort_order: material.sort_order,
