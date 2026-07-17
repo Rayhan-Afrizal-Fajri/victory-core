@@ -38,4 +38,12 @@ class ManufacturingWork extends Model
     {
         return $this->hasMany(PesananManufacturingSpecs::class);
     }
+
+    public function canBeDeleted(): bool
+    {
+        return !(
+            $this->productManufacturingWorks()->exists() ||
+            $this->pesananManufacturingSpecs()->exists()
+        );
+    }
 }
