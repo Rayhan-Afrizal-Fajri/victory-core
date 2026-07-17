@@ -57,7 +57,7 @@ export default function UserFormModal({
         e.preventDefault()
 
         if (user) {
-            router.put(`/master/users/${user.id}`, form, {
+            router.put(`/users/${user.id}`, form, {
                 onSuccess: () => {
                     toast.success(`${form.name} berhasil diperbarui`);
                     onClose();
@@ -67,7 +67,7 @@ export default function UserFormModal({
                 },
             })
         } else {
-            router.post(`/master/users`, form, {
+            router.post(`/users`, form, {
                 onSuccess: () => {
                     toast.success(`${form.name} berhasil diperbarui`);
                     onClose();

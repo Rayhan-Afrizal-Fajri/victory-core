@@ -209,7 +209,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                           onClick={toggleCustomUnit}
                           className='flex justify-end w-fit'
                       >
-                          + Warna Custom
+                          + Satuan Custom
                       </Button>
                     </div>
                     </>

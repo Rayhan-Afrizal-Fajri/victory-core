@@ -60,7 +60,7 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
+            'nama' => ['nullable', 'string', 'max:255'],
             'nama_perusahaan' => ['required', 'string', 'max:255'],
             'kategori' => [
                 'required',
@@ -97,7 +97,7 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
+            'nama' => ['nullable', 'string', 'max:255'],
             'nama_perusahaan' => ['required', 'string', 'max:255'],
             'kategori' => [
                 'required',

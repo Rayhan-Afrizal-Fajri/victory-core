@@ -186,7 +186,7 @@ export default function ProductMaterialSection({ productId, materials, available
                           onClick={toggleCustomUnit}
                           className='flex justify-end w-fit'
                       >
-                          + Warna Custom
+                          + Satuan Custom
                       </Button>
                     </div>
                     </>

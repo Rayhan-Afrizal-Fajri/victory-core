@@ -236,6 +236,7 @@ export default function Index({ suppliers }: Props) {
                         value={supplierForm.data.nama_perusahaan}
                         onChange={(event) => supplierForm.setData('nama_perusahaan', event.target.value)}
                         className="w-full"
+                        required={true}
                       />
                       <InputError message={supplierForm.errors.nama_perusahaan as string} />
                     </div>
@@ -245,6 +246,7 @@ export default function Index({ suppliers }: Props) {
                         value={supplierForm.data.nama}
                         onChange={(event) => supplierForm.setData('nama', event.target.value)}
                         className="w-full"
+                        required={false}
                       />
                       <InputError message={supplierForm.errors.nama as string} />
                     </div>
@@ -254,6 +256,7 @@ export default function Index({ suppliers }: Props) {
                     <Select
                       value={supplierForm.data.kategori}
                       onValueChange={(value) => supplierForm.setData('kategori', value as SupplierRow['category'])}
+                      required={true}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Pilih kategori" />
@@ -271,7 +274,9 @@ export default function Index({ suppliers }: Props) {
                     <Input
                       value={supplierForm.data.kontak}
                       onChange={(event) => supplierForm.setData('kontak', event.target.value)}
+                      required={true}
                     />
+                    <InputError message={supplierForm.errors.kontak as string} />
                   </div>
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-slate-700">Alamat</label>
@@ -279,7 +284,9 @@ export default function Index({ suppliers }: Props) {
                       value={supplierForm.data.alamat}
                       onChange={(event) => supplierForm.setData('alamat', event.target.value)}
                       rows={2}
+                      required={true}
                     />
+                    <InputError message={supplierForm.errors.alamat as string} />
                   </div>
                 </div>
                 <DialogFooter>
