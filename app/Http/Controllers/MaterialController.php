@@ -17,8 +17,7 @@ class MaterialController extends Controller
      */
     public function index()
     {
-        $materials = Material::query()
-            ->latest()->get();
+        $materials = Material::orderBy('category', 'desc')->get();
 
         $suppliers = Supplier::query()
             ->select('id', 'nama', 'nama_perusahaan')
