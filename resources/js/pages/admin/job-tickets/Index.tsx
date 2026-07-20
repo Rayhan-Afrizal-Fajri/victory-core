@@ -114,7 +114,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
     },
     {
       header: 'Nama Sales',
-      accessor: 'qty',
+      accessor: 'sales_name',
       className: 'w-[100px]',
       cell: (row) => (
         <span className="font-medium">
