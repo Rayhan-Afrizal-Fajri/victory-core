@@ -8,7 +8,6 @@ use App\Models\Material;
 use App\Models\Supplier;
 use App\Models\DefaultSizeBreakdown;
 use Inertia\Inertia;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 
 class MaterialController extends Controller
@@ -77,7 +76,10 @@ class MaterialController extends Controller
         
         Material::create($validated);
 
-        return back();
+        return back()->with([
+            'success' => 'Material berhasil ditambahkan.',
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     /**
@@ -105,7 +107,10 @@ class MaterialController extends Controller
         
         $material->update($validated);
 
-        return back();
+        return back()->with([
+            'success' => 'Material berhasil diperbarui.',
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     /**
@@ -122,7 +127,10 @@ class MaterialController extends Controller
 
         $material->delete();
 
-        return back()->with('success', 'Material berhasil dihapus.');
+        return back()->with([
+            'success' => 'Material berhasil dihapus.',
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     /**
