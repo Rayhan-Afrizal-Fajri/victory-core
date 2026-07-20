@@ -18,8 +18,7 @@ class ManufacturingWorkController extends Controller
     {
         $works = ManufacturingWork::query()
             ->with('defaultVendor')
-            ->latest()
-            ->paginate(15);
+            ->latest()->get();
 
         $suppliers = Supplier::query()
             ->select('id', 'nama', 'nama_perusahaan')
