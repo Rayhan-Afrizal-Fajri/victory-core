@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             // $table->foreignId('role_id')->constrained('roles')->restrictOnDelete();
             $table->string('name'); // cutting, jahit, qc, sablon
+            $table->string('default_unit')->nullable();
             $table->string('process_behavior')->default('production_process');
 
-            $table->string('default_unit')->nullable();
             $table->foreignId('default_vendor_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->decimal('default_min_estimate', 15, 2)->default(0);
             $table->decimal('default_max_estimate', 15, 2)->default(0);

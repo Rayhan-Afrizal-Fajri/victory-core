@@ -42,12 +42,35 @@ class MaterialSeeder extends Seeder
 
         // Data Aksesoris diekstrak dari seluruh sheet
         $aksesorises = [
-            'Benang Jahit', 'Benang Obras', 'Boor', 'Bordir', 'Cat Sablon', 'Dtf', 
-            'Kain Keras', 'Kain Keras 1', 'Kain Keras 2', 'Kancing', 'Kancing Besi', 
-            'Kancing Kait', 'Kancing Plastik', 'Karet', 'Karung', 'Kragh', 'Label Size', 
-            'List', 'Manset', 'Pcr', 'Plastik Opp 30 Micron', 'Plastik Pp', 
-            'Plastik Pp 50X60Cm', 'Rajangan Spunbond', 'Stopper', 'Sublim', 
-            'Tali', 'Webbing', 'Zipper'
+            // 'Benang Jahit', 
+            // 'Benang Obras', 
+            'Boor', 
+            'Bordir', 
+            'Cat Sablon', 
+            'Dtf', 
+            'Kain Keras', 
+            'Kain Keras 1', 
+            'Kain Keras 2', 
+            'Kancing', 
+            'Kancing Besi', 
+            'Kancing Kait', 
+            'Kancing Plastik', 
+            'Karet', 
+            // 'Karung', 
+            'Kragh', 
+            'Label Size', 
+            'List', 
+            'Manset', 
+            'Pcr', 
+            // 'Plastik Opp 30 Micron', 
+            'Plastik Pp', 
+            // 'Plastik Pp 50X60Cm', 
+            'Rajangan Spunbond', 
+            'Stopper', 
+            'Sublim', 
+            'Tali', 
+            'Webbing', 
+            'Zipper'
         ];
 
         foreach ($aksesorises as $aksesoris) {
