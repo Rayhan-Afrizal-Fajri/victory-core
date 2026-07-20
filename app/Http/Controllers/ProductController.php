@@ -33,6 +33,8 @@ class ProductController extends Controller
                 'productMaterials.material',
                 'productManufacturingWorks',
                 'productManufacturingWorks.manufacturingWork',
+                'category.materials',
+                'category.manufacturingWorks',
             ])
             ->latest()->get();
 
