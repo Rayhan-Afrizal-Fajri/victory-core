@@ -101,7 +101,7 @@ export default function Index({ customers }: Props) {
           setIsDialogOpen(false);
           setEditingCustomer(null);
           customerForm.reset();
-          toast.success('Customer berhasil diperbarui');
+          // toast.success('Customer berhasil diperbarui');
         },
       });
 
@@ -113,7 +113,7 @@ export default function Index({ customers }: Props) {
       onSuccess: () => {
         setIsDialogOpen(false);
         customerForm.reset();
-        toast.success('Customer berhasil dibuat');
+        // toast.success('Customer berhasil dibuat');
       },
     });
   };
@@ -143,7 +143,7 @@ export default function Index({ customers }: Props) {
           router.delete(customerDestroy(customer.id).url, {
             preserveScroll: true,
             onSuccess: () => {
-              toast.success('Customer berhasil dihapus');
+              // toast.success('Customer berhasil dihapus');
             },
           });
         },

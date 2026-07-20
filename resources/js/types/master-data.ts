@@ -1,6 +1,7 @@
 export interface Product {
   id: number;
   name: string;
+  product_category_id: number;
   category?: string;
   description?: string;
   is_active: boolean;
@@ -32,13 +33,15 @@ export interface ProductDetail extends Product {
 export interface Material {
   id: number;
   name: string;
-  category: 'bahan' | 'aksesoris';
+  category: 'bahan' | 'aksesoris' | 'Bahan Baku' | 'Aksesoris'; 
   unit?: string;
   default_color?: string;
-  supplier_id?: number;
-  supplier_name?: string;
-  harga_ecer: number;
-  harga_roll: number;
+  default_vendor_name?: string;
+  default_vendor_id?: number;
+  default_harga_ecer?: number;
+  default_harga_roll?: number;
+  default_price_type?: string; 
+  default_usage?: number;
   roll_qty?: number;
   roll_unit?: string;
   is_active: boolean;

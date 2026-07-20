@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
-
 class CustomerController extends Controller
 {
     /**
@@ -113,7 +112,10 @@ class CustomerController extends Controller
             ]);
         });
 
-        return back();
+        return back()->with([
+            'success' => 'Customer berhasil ditambahkan.',
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     /**
@@ -163,7 +165,10 @@ class CustomerController extends Controller
             'kode_pos' => $validated['kode_pos'],
         ]);
 
-        return back();
+        return back()->with([
+            'success' => "Customer {$customer->nama_perusahaan} berhasil diperbarui.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     /**
@@ -171,6 +176,7 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
+        $customerPerusahaan = $customer?->nama_perusahaan;
         
         DB::transaction(function () use ($customer) {
             // 1. Ambil ID user login miliknya
@@ -186,6 +192,9 @@ class CustomerController extends Controller
             // }
         });
 
-        return back();
+        return back()->with([
+            'success' => "Customer {$customerPerusahaan} berhasil dihapus.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
 }

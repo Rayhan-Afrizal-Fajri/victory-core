@@ -4,16 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
     protected $fillable = [
         'name',
-        'category',
+        'product_category_id',
         'description',
         'is_active',
         'is_pattern_available',
     ];
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class);
+    }
 
     public function productMaterials(): HasMany
     {
@@ -35,7 +41,7 @@ class Product extends Model
         return $this->hasMany(PesananManufacturingSpecs::class);
     }
 
-    public function pesanan()
+    public function pesanan(): HasMany
     {
         return $this->hasMany(Pesanan::class);
     }

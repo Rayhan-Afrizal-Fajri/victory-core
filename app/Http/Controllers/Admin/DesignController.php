@@ -529,8 +529,13 @@ class DesignController extends Controller
             ));
         }
 
+        $message = "BOM berhasil " . $validated['is_lock_bom'] ? 'dikunci' : 'dibuka';
+
         // Pastikan mengembalikan response (misal menggunakan Inertia/redirect)
-        return back()->with('success', 'Status BOM berhasil diubah.');
+        return back()->with([
+            'success' => $message,
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     public function updateOwnerSellingPrice(Request $request, string $pesananId)

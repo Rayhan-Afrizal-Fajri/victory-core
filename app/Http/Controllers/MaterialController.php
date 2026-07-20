@@ -23,7 +23,7 @@ class MaterialController extends Controller
             ->paginate(15);
 
         $suppliers = Supplier::query()
-            ->select('id', 'nama')
+            ->select('id', 'nama', 'nama_perusahaan')
             ->get();
 
         $colors = DefaultSizeBreakdown::query()
@@ -42,8 +42,16 @@ class MaterialController extends Controller
             'category' => $material->category,
             'unit' => $material->unit,
             'default_color' => $material->default_color,
+            'default_vendor_id' => $material->default_vendor_id,
+            'default_vendor_name' => $material->defaultVendor?->nama_perusahaan,
+            'default_harga_ecer' => $material->default_harga_ecer,
+            'default_harga_roll' => $material->default_harga_roll,
+            'default_price_type' => $material->default_price_type, //ecer or roll
+            'default_usage' => $material->default_usage, //usage per item product/article
             'is_active' => $material->is_active,
         ]);
+
+        // dd($materials);
 
         return Inertia::render('admin/master/materials/Index', [
             'materials' => $materials,

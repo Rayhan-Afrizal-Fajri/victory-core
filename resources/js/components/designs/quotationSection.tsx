@@ -117,7 +117,6 @@ function QuotationSection({
         e.preventDefault();
         quotationForm.post(`/job-tickets/${job.id}/quotations/generate`, {
             preserveScroll: true,
-            onSuccess: () => toast.success('Surat penawaran berhasil dibuat.'),
         });
     };
 
@@ -126,7 +125,6 @@ function QuotationSection({
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success('Quotation approved dan workflow dilanjutkan.');
                 approveForm.reset();
             },
         });
@@ -137,7 +135,6 @@ function QuotationSection({
         undoForm.patch(`/quotations/${quotationId}/undo-approve`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success('Persetujuan Quotation berhasil dibatalkan. BOM kini terbuka.');
                 setUndoQuotationId(null);
                 undoForm.reset();
             },

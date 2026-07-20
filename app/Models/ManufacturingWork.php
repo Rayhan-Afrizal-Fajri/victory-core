@@ -11,11 +11,13 @@ class ManufacturingWork extends Model
     protected $fillable = [
         'name',
         // 'role_id',
-        'default_unit',
         'process_behavior',
+        
+        'default_unit',
         'default_vendor_id',
         'default_min_estimate',
         'default_max_estimate',
+
         'is_active',
     ];
 
@@ -45,5 +47,10 @@ class ManufacturingWork extends Model
             $this->productManufacturingWorks()->exists() ||
             $this->pesananManufacturingSpecs()->exists()
         );
+    }
+
+    public function productCategoryManufacturingWorks(): HasMany
+    {
+        return $this->hasMany(ProductCategoryManufacturingWork::class);
     }
 }

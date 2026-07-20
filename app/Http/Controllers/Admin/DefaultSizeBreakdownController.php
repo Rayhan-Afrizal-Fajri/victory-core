@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDefaultSizeBreakdownRequest;
 use App\Http\Requests\UpdateDefaultSizeBreakdownRequest;
 use App\Models\DefaultSizeBreakdown;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class DefaultSizeBreakdownController extends Controller
 {
@@ -32,14 +33,20 @@ class DefaultSizeBreakdownController extends Controller
     {
         DefaultSizeBreakdown::create($request->validated());
 
-        return back();
+        return back()->with([
+            'success' => "Size breakdown berhasil dibuat.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     public function update(UpdateDefaultSizeBreakdownRequest $request, DefaultSizeBreakdown $sizeBreakdown)
     {
         $sizeBreakdown->update($request->validated());
 
-        return back();
+        return back()->with([
+            'success' => "Size breakdown {$sizeBreakdown->type} berhasil diperbarui.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
     
     /**
@@ -59,13 +66,21 @@ class DefaultSizeBreakdownController extends Controller
             ]);
         }
 
-        return back(); // Inertia akan me-reload props otomatis
+        return back()->with([
+            'success' => "Size breakdown berhasil dibuat.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
 
     public function destroy(DefaultSizeBreakdown $sizeBreakdown)
     {
+        $type = $sizeBreakdown->type;
+        $label = $sizeBreakdown->label;
         $sizeBreakdown->delete();
 
-        return back();
+        return back()->with([
+            'success' => "Size breakdown {$type} {$label} berhasil dibuat.",
+            'flash_id' => Str::uuid(),
+        ]);
     }
 }

@@ -13,7 +13,13 @@ class Material extends Model
         'category',
         'unit',
         'default_color',
+        
         'default_vendor_id',
+        'default_harga_ecer',
+        'default_harga_roll',
+        'default_price_type', //ecer or roll
+        'default_usage', //usage per item product/article
+
         'description',
         'is_active',
     ];
@@ -39,5 +45,10 @@ class Material extends Model
             $this->productMaterials()->exists() ||
             $this->pesananMaterialSpecs()->exists()
         );
+    }
+
+    public function productCategoryMaterials(): HasMany
+    {
+        return $this->hasMany(ProductCategoryMaterial::class);
     }
 }

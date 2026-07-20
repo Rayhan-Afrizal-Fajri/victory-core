@@ -49,7 +49,7 @@ function DesignSpecsPreview({
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(`BOM berhasil ${!isBomLocked ? 'dikunci' : 'dibuka'}!`);
+                // toast.success(`BOM berhasil ${!isBomLocked ? 'dikunci' : 'dibuka'}!`);
             },
             onFinish: () => setIsLoading(false),
         });

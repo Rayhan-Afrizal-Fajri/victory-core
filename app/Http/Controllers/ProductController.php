@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\Material;
 use App\Models\DefaultSizeBreakdown;
 use App\Models\ManufacturingWork;
+use App\Models\ProductCategory;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class ProductController extends Controller
         $products = $products->map(fn ($product) => [
             'id' => $product->id,
             'name' => $product->name,
+            'product_category_id' => $product->product_category_id,
             'category' => $product->category,
             'description' => $product->description,
             'is_active' => $product->is_active,
@@ -80,10 +82,13 @@ class ProductController extends Controller
         $materials = Material::where('is_active', true)->get();
         $works = ManufacturingWork::where('is_active', true)->get();
 
-        return Inertia::render('admin/master/products/Index', [
+        $categories = ProductCategory::all();
+
+        return Inertia::render('admin/master/products-categories/Product', [
             'products' => $products,
             'materials' => $materials,
             'works' => $works,
+            'categories' => $categories,
         ]);
     }
 
@@ -102,6 +107,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'product_category_id' => 'required|exists:product_categories,id',
             'category' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -113,6 +119,7 @@ class ProductController extends Controller
         DB::transaction(function () use ($validated, $request) {
             $product = Product::create([
                 'name' => $validated['name'],
+                'product_category_id' => $validated['product_category_id'],
                 'category' => $validated['category'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
@@ -179,7 +186,7 @@ class ProductController extends Controller
             ])->values(),
         ];        
 
-        return Inertia::render('admin/master/products/Show', [
+        return Inertia::render('admin/master/products-categories/product/Show', [
             'product' => $productMapped,
             'materials' => $materials->map(fn ($m) => [
                 'id' => $m->id,
@@ -226,6 +233,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'product_category_id' => 'required|exists:product_categories,id',
             'category' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -237,6 +245,7 @@ class ProductController extends Controller
         DB::transaction(function () use ($validated, $product, $request) {
             $product->update([
                 'name' => $validated['name'],
+                'product_category_id' => $validated['product_category_id'],
                 'category' => $validated['category'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'],
@@ -258,33 +267,61 @@ class ProductController extends Controller
      */
     private function syncProductRelations(Product $product, Request $request)
     {
-        if ($request->has('materials')) {
-            foreach ($request->materials as $index => $mat) {
-                $product->productMaterials()->create([
-                    'material_id' => $mat['material_id'],
-                    'type' => $mat['type'] ?? 'bahan',
-                    'default_usage' => $mat['default_usage'] ?? 0,
-                    'default_unit' => $mat['default_unit'] ?? null,
-                    'harga_ecer' => $mat['harga_ecer'] ?? 0,
-                    'harga_roll' => $mat['harga_roll'] ?? 0,
-                    'sort_order' => $index + 1,
-                    'is_required' => $mat['is_required'] ?? true,
-                ]);
+        // 1. Ambil kategori beserta relasi material dan manufacturing work-nya
+        $productCategory = ProductCategory::with([
+            'materials.material', 
+            'manufacturingWorks.manufacturingWork'
+        ])->findOrFail($request->product_category_id);
+        
+        // 2. Bersihkan relasi lama (jika ada) untuk mencegah duplikasi saat update
+        // Ini memastikan data selalu tersinkronisasi bersih dengan kategori yang dipilih
+        $product->productMaterials()->delete();
+        $product->productManufacturingWorks()->delete();
+
+        // 3. Sinkronisasi Materials
+        if ($productCategory->materials->isNotEmpty()) {
+            $materialSortOrder = 1;
+            
+            foreach ($productCategory->materials as $categoryMaterial) {
+                $material = $categoryMaterial->material;
+
+                if ($material) {
+                    $product->productMaterials()->create([
+                        'material_id'         => $material->id,
+                        'default_supplier_id' => $material->default_vendor_id,
+                        'harga_ecer'          => $material->default_harga_ecer ?? 0,
+                        'harga_roll'          => $material->default_harga_roll ?? 0,
+                        'type'                => $material->category, // 'bahan' atau 'aksesoris'
+                        'default_usage'       => $material->default_usage ?? 0,
+                        'default_unit'        => $material->unit,
+                        'default_color'       => $material->default_color,
+                        'sort_order'          => $materialSortOrder++,
+                        'is_required'         => true,
+                        'notes'               => null,
+                    ]);
+                }
             }
         }
 
-        if ($request->has('manufacturing_works')) {
-            foreach ($request->manufacturing_works as $index => $work) {
-                $product->productManufacturingWorks()->create([
-                    'manufacturing_work_id' => $work['manufacturing_work_id'],
-                    'default_usage' => $work['default_usage'] ?? 1,
-                    'default_unit' => $work['default_unit'] ?? null,
-                    'usage_note' => $work['usage_note'] ?? null,
-                    'min_estimate' => $work['min_estimate'] ?? null,
-                    'max_estimate' => $work['max_estimate'] ?? null,
-                    'sort_order' => $index + 1,
-                    'is_required' => $work['is_required'] ?? true,
-                ]);
+        // 4. Sinkronisasi Manufacturing Works
+        if ($productCategory->manufacturingWorks->isNotEmpty()) {
+            $workSortOrder = 1;
+
+            foreach ($productCategory->manufacturingWorks as $categoryWork) {
+                $work = $categoryWork->manufacturingWork;
+
+                if ($work) {
+                    $product->productManufacturingWorks()->create([
+                        'manufacturing_work_id' => $work->id,
+                        'default_usage'         => 1, // Default usage untuk proses biasanya 1
+                        'default_unit'          => $work->default_unit,
+                        'min_estimate'          => $work->default_min_estimate,
+                        'max_estimate'          => $work->default_max_estimate,
+                        'usage_note'            => null,
+                        'sort_order'            => $workSortOrder++,
+                        'is_required'           => true,
+                    ]);
+                }
             }
         }
     }

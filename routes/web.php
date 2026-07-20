@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\ManufacturingWorkController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductManufacturingWorkController;
 use App\Http\Controllers\ProductMaterialController;
@@ -53,6 +54,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /**
      * Master Data
      */
+    //Product Category
+    Route::resource('product-categories', ProductCategoryController::class);
+
     // Product/Article Master
     Route::resource('products', ProductController::class);
     // Update status (Aktif / Nonaktif)

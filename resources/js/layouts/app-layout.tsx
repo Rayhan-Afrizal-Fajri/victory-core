@@ -23,7 +23,7 @@ export default function AppLayout({
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
-    }, [flash?.success]);
+    }, [flash?.id]);
 
     useEffect(() => {
         if (flash?.error) {
@@ -33,7 +33,7 @@ export default function AppLayout({
 
     useEffect(() => {
         if (flash?.warning) toast.warning(flash.warning);
-    }, [flash?.warning]);
+    }, [flash?.id]);
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>

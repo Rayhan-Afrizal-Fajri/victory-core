@@ -18,13 +18,15 @@ return new class extends Migration
             $table->string('unit')->nullable();
             $table->string('default_color')->nullable();
 
-            // $table->decimal('harga_ecer', 15, 2)->default(0);
-            // $table->decimal('harga_roll', 15, 2)->default(0);
-            // $table->decimal('roll_qty', 15, 2)->nullable();
-            // $table->string('roll_unit')->nullable();
-            $table->text('description')->nullable();
+            $table->foreignId('default_vendor_id')->nullable()->constrained('suppliers')->nullOnDelete();
+            $table->integer('default_harga_ecer')->nullable();
+            $table->integer('default_harga_roll')->nullable();
+            $table->decimal('default_usage', 15, 4)->default(0);
+            $table->enum('default_price_type', ['ecer', 'roll'])->default('ecer');
 
+            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+
             $table->timestamps();
         });
     }

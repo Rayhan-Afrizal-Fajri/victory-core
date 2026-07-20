@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Material;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Supplier;
 use Illuminate\Database\Seeder;
 
 class MaterialSeeder extends Seeder
@@ -13,90 +13,58 @@ class MaterialSeeder extends Seeder
      */
     public function run(): void
     {
-        // Bahan - Fabrics
-        Material::create([
-            'name' => 'Kain',
-            'category' => 'bahan',
-            'unit' => 'kg',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 122000,
-            // 'harga_roll' => 125000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'Combed',
-            'is_active' => true,
-        ]);
+        // Fallback untuk dummy vendor
+        $vendor = Supplier::first();
+        $dummyVendorId = $vendor ? $vendor->id : 1;
 
-        Material::create([
-            'name' => 'Rib',
-            'category' => 'bahan',
-            'unit' => 'kg',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 122000,
-            // 'harga_roll' => 114000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'Combed',
-            'is_active' => true,
-        ]);
+        // Data Bahan Baku diekstrak dari seluruh sheet
+        $bahans = [
+            'Bahan', 'Bahan Badan', 'Bahan Tali', 'Dryfit', 
+            'Dryfit Poli-Spandex', 'Rib', 'Rib Poli'
+        ];
 
-        Material::create([
-            'name' => 'Benang',
-            'category' => 'aksesoris',
-            'unit' => 'lusin',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 25000,
-            // 'harga_roll' => 114000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'Katun',
-            'is_active' => true,
-        ]);
+        foreach ($bahans as $bahan) {
+            Material::firstOrCreate(
+                ['name' => $bahan, 'category' => 'bahan'],
+                [
+                    'unit' => 'Kg',
+                    'default_color' => 'Hitam',
+                    'default_vendor_id' => $dummyVendorId,
+                    'default_harga_ecer' => 125000,
+                    'default_harga_roll' => 120000,
+                    'default_price_type' => 'ecer',
+                    'default_usage' => 0.5,
+                    'description' => 'Dummy data bahan dari Excel Master Kategori',
+                    'is_active' => true,
+                ]
+            );
+        }
 
-        Material::create([
-            'name' => 'Plastik',
-            'category' => 'aksesoris',
-            'unit' => 'Pcs',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 370,
-            // 'harga_roll' => 10000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'opp 30 mikron ?x?',
-            'is_active' => true,
-        ]);
+        // Data Aksesoris diekstrak dari seluruh sheet
+        $aksesorises = [
+            'Benang Jahit', 'Benang Obras', 'Boor', 'Bordir', 'Cat Sablon', 'Dtf', 
+            'Kain Keras', 'Kain Keras 1', 'Kain Keras 2', 'Kancing', 'Kancing Besi', 
+            'Kancing Kait', 'Kancing Plastik', 'Karet', 'Karung', 'Kragh', 'Label Size', 
+            'List', 'Manset', 'Pcr', 'Plastik Opp 30 Micron', 'Plastik Pp', 
+            'Plastik Pp 50X60Cm', 'Rajangan Spunbond', 'Stopper', 'Sublim', 
+            'Tali', 'Webbing', 'Zipper'
+        ];
 
-        Material::create([
-            'name' => 'Label Size',
-            'category' => 'aksesoris',
-            'unit' => 'Pcs',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 15,
-            // 'harga_roll' => 10000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'Woven',
-            'is_active' => true,
-        ]);
-
-        Material::create([
-            'name' => 'Sablon',
-            'category' => 'aksesoris',
-            'unit' => 'Pcs',
-            'default_color' => 'Hitam',
-            // 'default_supplier_id' => random_int(Supplier::first()->id, Supplier::latest()->first()->id), // Assuming you have 5 suppliers seeded
-            // 'harga_ecer' => 15,
-            // 'harga_roll' => 10000,
-            // 'roll_qty' => 100,
-            // 'roll_unit' => 'kg',
-            'description' => 'Woven',
-            'is_active' => true,
-        ]);
+        foreach ($aksesorises as $aksesoris) {
+            Material::firstOrCreate(
+                ['name' => $aksesoris, 'category' => 'aksesoris'],
+                [
+                    'unit' => 'Pcs', // Mayoritas aksesoris menggunakan Pcs
+                    'default_color' => 'Hitam',
+                    'default_vendor_id' => $dummyVendorId,
+                    'default_harga_ecer' => 5000,
+                    'default_harga_roll' => 4500,
+                    'default_price_type' => 'ecer',
+                    'default_usage' => 1,
+                    'description' => 'Dummy data aksesoris dari Excel Master Kategori',
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }
-
