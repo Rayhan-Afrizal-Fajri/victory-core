@@ -129,6 +129,7 @@ export default function Index({ works, suppliers }: Props) {
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>

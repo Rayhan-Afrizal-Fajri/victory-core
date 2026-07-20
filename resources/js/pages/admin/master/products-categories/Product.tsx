@@ -142,6 +142,7 @@ export default function Product({ products, categories }: Props) {
     {
       header: 'Status',
       accessor: 'is_active',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
             <Switch

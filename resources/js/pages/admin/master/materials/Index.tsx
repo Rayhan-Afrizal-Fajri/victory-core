@@ -156,6 +156,7 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>
@@ -389,7 +390,7 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200">
-          <DataTable columns={columns} data={filteredMaterials} />
+          <DataTable columns={columns} data={filteredMaterials} searchKeys={['name', 'category']} />
         </div>
       </div>
     </>

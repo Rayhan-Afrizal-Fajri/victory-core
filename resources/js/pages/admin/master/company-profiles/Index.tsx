@@ -116,11 +116,13 @@ export default function Index({ companyProfiles }: Props) {
     {
       header: 'Account',
       accessor: 'account_number',
+      sortable: false,
       cell: (row) => <span className="text-slate-700">{row.account_number}</span>,
     },
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>

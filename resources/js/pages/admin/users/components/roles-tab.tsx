@@ -85,6 +85,7 @@ export default function RolesTab({
         {
             header: 'Action',
             accessor: 'id',
+            sortable: false,
             cell: (row) => (
                 <div className="flex items-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => openEdit(row)}>

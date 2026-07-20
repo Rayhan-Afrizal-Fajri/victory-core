@@ -133,11 +133,13 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
     {
       header: 'Label',
       accessor: 'label',
+      sortable: false,
       cell: (row) => <span className="font-medium text-slate-900">{row.label}</span>,
     },
     {
       header: 'Type',
       accessor: 'type',
+      sortable: false,
       cell: (row) => (
         <Badge variant={row.type === 'size' ? 'default' : 'secondary'}>
           {row.type}
@@ -147,6 +149,7 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>

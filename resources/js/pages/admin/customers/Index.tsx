@@ -170,10 +170,12 @@ export default function Index({ customers }: Props) {
     {
       header: 'Kontak',
       accessor: 'contact',
+      sortable: false,
     },
     {
       header: 'Alamat',
       accessor: 'address',
+      sortable: false,
       cell: (row) => (
         <span className="text-slate-700">
           {row.detail_address}
@@ -193,6 +195,7 @@ export default function Index({ customers }: Props) {
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openCustomerDetail(row)}>

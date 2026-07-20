@@ -393,6 +393,7 @@ export default function Index({
       {
           header: 'Actions',
           accessor: 'id',
+          sortable: false,
           cell: (row) => (
               <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => openDetail(row)}>

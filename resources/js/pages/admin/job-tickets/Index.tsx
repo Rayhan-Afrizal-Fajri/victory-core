@@ -141,6 +141,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
       header: 'Avg Progress',
       accessor: 'progress',
       className: 'w-[240px]',
+      sortable: false,
       cell: (row) => (
         <div className="space-y-1">
           <ProgressBar value={row.progress} showPercentage={true} />
@@ -160,6 +161,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
       header: 'Aksi',
       accessor: 'id',
       className: 'w-[180px]',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           {/* {row.can_edit && (

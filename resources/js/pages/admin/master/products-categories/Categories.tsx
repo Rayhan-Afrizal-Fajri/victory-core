@@ -182,20 +182,22 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
     },
     {
     header: 'Default Material',
-      accessor: 'materials',
-      cell: (row) => {
-        // Ambil nama material saja
-        const materialsList = (row.materials || [])
-          .map((item) => item.material?.name)
-          .filter(Boolean);
+    accessor: 'materials',
+    sortable: false,
+    cell: (row) => {
+      // Ambil nama material saja
+      const materialsList = (row.materials || [])
+        .map((item) => item.material?.name)
+        .filter(Boolean);
 
-        // Gunakan helper component, tampilkan maksimal 3 nama awal
-        return <TruncatedList items={materialsList} limit={3} />;
-      },
+      // Gunakan helper component, tampilkan maksimal 3 nama awal
+      return <TruncatedList items={materialsList} limit={3} />;
+    },
     },
     {
       header: 'Default Work',
       accessor: 'manufacturing_works', 
+      sortable: false,
       cell: (row) => {
         // Ambil nama proses pekerjaan saja
         const worksList = (row.manufacturing_works || [])
@@ -209,6 +211,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => openEditDialog(row)}>

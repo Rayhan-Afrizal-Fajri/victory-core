@@ -143,15 +143,18 @@ export default function Index({ suppliers }: Props) {
     {
       header: 'Contact Number',
       accessor: 'contact',
+      sortable: false,
     },
     {
       header: 'Address',
       accessor: 'address',
+      sortable: false,
       cell: (row) => <span className="text-slate-700">{row.address}</span>,
     },
     {
       header: 'Action',
       accessor: 'id',
+      sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Button
