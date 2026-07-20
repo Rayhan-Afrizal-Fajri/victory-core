@@ -42,7 +42,7 @@ class ProductController extends Controller
             'id' => $product->id,
             'name' => $product->name,
             'product_category_id' => $product->product_category_id,
-            'category' => $product->category?->name ?? $product->category ?? '',
+            'category' => ProductCategory::find($product->product_category_id)->name ?? $product->category ?? '',
             'description' => $product->description,
             'is_active' => $product->is_active,
             'is_pattern_available' => $product->is_pattern_available,
