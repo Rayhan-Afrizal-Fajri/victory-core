@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProfitLoss extends Model
 {
+    protected $table = 'profit_loss';
     protected $fillable = [
         'pesanan_id',
         'total_pendapatan',
