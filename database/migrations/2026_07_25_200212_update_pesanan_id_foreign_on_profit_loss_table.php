@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchasings', function (Blueprint $table) {
+        Schema::table('profit_loss', function (Blueprint $table) {
             
             // 1. Drop foreign constraint lama
             $table->dropForeign(['pesanan_id']);
@@ -31,7 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('purchasings', function (Blueprint $table) {
+        Schema::table('profit_loss', function (Blueprint $table) {
             
             // 1. Drop foreign constraint lama
             $table->dropForeign(['pesanan_id']);
