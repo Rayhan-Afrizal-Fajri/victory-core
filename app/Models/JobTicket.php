@@ -50,11 +50,6 @@ class JobTicket extends Model
         return $this->hasMany(Quotation::class);
     }
 
-    public function productionRuns()
-    {
-        return $this->hasMany(ProductionRun::class);
-    }
-
     public function defectHistories()
     {
         return $this->hasMany(ProductionDefectHistory::class);
