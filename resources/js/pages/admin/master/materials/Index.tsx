@@ -71,6 +71,16 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
     setIsDialogOpen(true);
   };
 
+  //membatasi suppliers sesuai kategori yang dipilih
+  const filteredSuppliers = useMemo(() => {
+    if (data.category === 'bahan') {
+      return suppliers.filter(supplier => supplier.kategori?.toLowerCase() === 'bahan baku');
+    } else if (data.category === 'aksesoris') {
+      return suppliers.filter(supplier => supplier.kategori?.toLowerCase() === 'aksesoris');
+    }
+    return suppliers;
+  }, [data.category, suppliers]);
+
   const handleSubmitMaterial = () => {
     if (editingMaterial) {
       put(route('materials.update', editingMaterial.id), {
@@ -269,7 +279,7 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
                         <SelectValue placeholder="Pilih supplier..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {suppliers.map((supplier) => (
+                        {filteredSuppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
                             {/* Sesuaikan "supplier.nama" atau "supplier.name" dengan isi modelmu */}
                             {/* @ts-ignore */}

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Supplier } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
+import productMaterials from '@/routes/product-materials';
 
 interface Props {
   productId: number;
@@ -52,7 +53,7 @@ export default function ProductMaterialSection({ productId, materials, available
 
   const handleSubmit = () => {
     if (editingMaterial) {
-      form.put(route('product-materials.update', editingMaterial.id), {
+      form.put(productMaterials.update(editingMaterial.id).url, {
         onSuccess: () => {
           setIsDialogOpen(false);
           setEditingMaterial(null);
@@ -63,7 +64,7 @@ export default function ProductMaterialSection({ productId, materials, available
       return;
     }
 
-    form.post(route('product-materials.store'), {
+    form.post(productMaterials.store().url, {
       onSuccess: () => {
         setIsDialogOpen(false);
         form.reset();
@@ -71,6 +72,28 @@ export default function ProductMaterialSection({ productId, materials, available
       },
     });
   };
+
+  //buat handleMateialChange agar ketika memilih material, default usage, default unit, harga ecer, harga roll, default supplier id otomatis terisi sesuai material yang dipilih
+  const handleMaterialChange = (materialId: string) => {
+    const selectedMaterial = availableMaterials.find((m) => m.id.toString() === materialId);
+
+    if (selectedMaterial) {
+      // Gunakan callback (prevData) agar terhindar dari stale state
+      form.setData((prevData) => ({
+        ...prevData,
+        material_id: materialId,
+        default_usage: selectedMaterial.default_usage || 0,
+        default_unit: selectedMaterial.unit || '',
+        harga_ecer: selectedMaterial.default_harga_ecer || 0,
+        harga_roll: selectedMaterial.default_harga_roll || 0,
+        default_supplier_id: selectedMaterial.default_vendor_id?.toString() || '',
+        notes: selectedMaterial.description?.toString() || '',
+      }));
+    } else {
+      // Fallback jika material tidak ditemukan
+      form.setData('material_id', materialId);
+    }
+  }
 
   const handleEdit = (material: any) => {
     setEditingMaterial(material);
@@ -92,7 +115,7 @@ export default function ProductMaterialSection({ productId, materials, available
 
   const handleDelete = (material: any) => {
     if (!confirm('Hapus material ini?')) return;
-    form.delete(route('product-materials.destroy', material.id), {
+    form.delete(productMaterials.destroy(material.id).url, {
       onSuccess: () => toast.success('Material berhasil dihapus'),
     });
   };
@@ -120,7 +143,10 @@ export default function ProductMaterialSection({ productId, materials, available
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Material</label>
-                  <Select value={form.data.material_id} onValueChange={(val) => form.setData('material_id', val)}>
+                  <Select value={form.data.material_id} onValueChange={(val) => {
+                    // form.setData('material_id', val);
+                    handleMaterialChange(val);
+                  }}>
                     <SelectTrigger className='w-full'><SelectValue placeholder="Pilih material..." /></SelectTrigger>
                     <SelectContent>
                       {filteredAvailable.map((m) => (<SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>))}
@@ -192,6 +218,8 @@ export default function ProductMaterialSection({ productId, materials, available
                     </>
                   )}
               </div>
+
+              
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">

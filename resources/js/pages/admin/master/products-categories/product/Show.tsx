@@ -43,7 +43,7 @@ export default function Show({ product, materials, works, suppliers, units }: Pr
       <Head title={`${product.name} - Components`} />
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => router.get(route('products.index'))}>
+          <Button variant="outline" size="sm" onClick={() => router.get(products.index().url)}>
             <ArrowLeft className="size-4" />
           </Button>
           <div>

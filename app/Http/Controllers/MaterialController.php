@@ -20,7 +20,7 @@ class MaterialController extends Controller
         $materials = Material::orderBy('category', 'asc')->get();
 
         $suppliers = Supplier::query()
-            ->select('id', 'nama', 'nama_perusahaan')
+            ->select('id', 'nama', 'nama_perusahaan', 'kategori')
             ->get();
 
         $colors = DefaultSizeBreakdown::query()
