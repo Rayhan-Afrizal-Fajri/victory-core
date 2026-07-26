@@ -19,9 +19,10 @@ class SupplierController extends Controller
         $suppliers = Supplier::query()
             ->with('purchasing.pesanan')
             ->withCount('purchasing')
-            ->latest()
-            ->orderBy('kategori', 'asc')
+            ->orderByRaw('CAST(kategori AS CHAR) ASC')
             ->orderBy('nama_perusahaan', 'asc')
+            ->orderBy('created_at', 'desc')
+            // ->latest()
             ->get()
             ->map(fn ($sup) => [
                 'id' => $sup->id,
