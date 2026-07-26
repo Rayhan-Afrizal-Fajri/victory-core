@@ -20,6 +20,8 @@ class SupplierController extends Controller
             ->with('purchasing.pesanan')
             ->withCount('purchasing')
             ->latest()
+            ->orderBy('kategori', 'asc')
+            ->orderBy('nama_perusahaan', 'asc')
             ->get()
             ->map(fn ($sup) => [
                 'id' => $sup->id,

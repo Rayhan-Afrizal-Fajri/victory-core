@@ -310,7 +310,7 @@ export default function Index({ suppliers }: Props) {
             <DataTable
               columns={columns}
               data={filteredSuppliers}
-              searchKeys={['name', 'category', 'contact', 'address']}
+              searchKeys={['company_name','name', 'category', 'contact', 'address']}
               searchPlaceholder="Cari vendor atau kategori"
             />
           </CardContent>
