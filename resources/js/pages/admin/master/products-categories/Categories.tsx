@@ -282,7 +282,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
                         }
                       />
                       <Label htmlFor={`bahan-${bahan.id}`} className="font-normal cursor-pointer">
-                        {bahan.name} - {bahan.default_vendor?.nama_perusahaan || bahan.default_vendor?.nama || '-' }
+                        {bahan.name} {(bahan.default_vendor?.nama_perusahaan || bahan.default_vendor?.nama) && ('-')} {bahan.default_vendor?.nama_perusahaan || bahan.default_vendor?.nama || '' }
                       </Label>
                     </div>
                   )
@@ -305,7 +305,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
                         }
                       />
                       <Label htmlFor={`aks-${aksesoris.id}`} className="font-normal cursor-pointer">
-                        {aksesoris.name} {(aksesoris.default_vendor?.nama_perusahaan || aksesoris.default_vendor?.nama) && ('-')} {aksesoris.default_vendor?.nama_perusahaan || aksesoris.default_vendor?.nama || '-' }
+                        {aksesoris.name} {(aksesoris.default_vendor?.nama_perusahaan || aksesoris.default_vendor?.nama) && ('-')} {aksesoris.default_vendor?.nama_perusahaan || aksesoris.default_vendor?.nama || '' }
                       </Label>
                     </div>
                   ))}
