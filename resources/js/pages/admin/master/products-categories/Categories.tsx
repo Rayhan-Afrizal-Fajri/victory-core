@@ -22,12 +22,14 @@ import {
 import { DataTable, DataTableColumn } from '@/components/data-table';
 import { Pencil, Trash2 } from 'lucide-react';
 import { store as CategoryStore, update as CategoryUpdate, destroy as CategoryDestroy } from '@/routes/product-categories';
+import { Supplier } from '@/types';
 
 // Sesuaikan tipe data dengan struktur tabel aslimu
 interface Material {
   id: number;
   name: string;
   category: string;
+  default_vendor: Supplier;
 }
 
 interface ManufacturingWork {
@@ -267,7 +269,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Box Pilihan Bahan */}
               <div className="space-y-3 p-4 border rounded-md bg-slate-50">
-                <Label className="text-base font-semibold">Pilih Bahan (category: Bahan)</Label>
+                <Label className="text-base font-semibold">Pilih Bahan</Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                   {bahanMaterials.map((bahan) => {
                     return (
@@ -280,7 +282,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
                         }
                       />
                       <Label htmlFor={`bahan-${bahan.id}`} className="font-normal cursor-pointer">
-                        {bahan.name}
+                        {bahan.name} - {bahan.default_vendor.nama_perusahaan || bahan.default_vendor.nama || '-' }
                       </Label>
                     </div>
                   )
@@ -303,7 +305,7 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
                         }
                       />
                       <Label htmlFor={`aks-${aksesoris.id}`} className="font-normal cursor-pointer">
-                        {aksesoris.name}
+                        {aksesoris.name} - {aksesoris.default_vendor.nama_perusahaan || aksesoris.default_vendor.nama || '-' }
                       </Label>
                     </div>
                   ))}

@@ -17,6 +17,7 @@ import productMaterials from '@/routes/product-materials';
 interface Props {
   productId: number;
   materials: any[]; // Sesuaikan tipe dengan schema Anda
+  materialOptions: any[]; // Sesuaikan tipe dengan schema Anda
   suppliers: Supplier[];
   units: any[];
   availableMaterials: any[];
@@ -24,16 +25,60 @@ interface Props {
   title: string;
 }
 
-export default function ProductMaterialSection({ productId, materials, availableMaterials, type, title, suppliers, units }: Props) {
+export default function ProductMaterialSection({ productId, materials, availableMaterials, materialOptions, type, title, suppliers, units }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCustomUnit, setIsCustomUnit] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<any | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
 
   const filteredMaterials = materials.filter((m) => m.type === type);
   const filteredAvailable = availableMaterials.filter((m) => m.category === type);
+  const filteredMaterialOptions = materialOptions.filter((m) => m.category === type);
+
+  const selectedGroup = filteredMaterialOptions.find((m) => m.group_id === selectedGroupId);
 
   const supplierType = type === 'bahan' ? 'Bahan Baku' : 'Aksesoris';
-  const filteredSuppliers = suppliers.filter((m) => m.kategori === supplierType);
+  const availableSuppliers = selectedGroup 
+    ? suppliers.filter(s => selectedGroup.variants.some((v: any) => v.supplier_id === s.id))
+    : [];
+
+  const handleMaterialGroupChange = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    
+    // Reset seluruh form yang bergantung pada pilihan spesifik (karena belum pilih supplier)
+    form.setData((prevData) => ({
+      ...prevData,
+      material_id: '', 
+      default_supplier_id: '',
+      default_usage: 0,
+      default_unit: '',
+      harga_ecer: 0,
+      harga_roll: 0,
+      notes: '',
+    }));
+  };
+
+  const handleSupplierChange = (supplierId: string) => {
+    if (!selectedGroup) return;
+
+    // Cari data variasi (material asli) yang cocok dengan supplier ini
+    const variant = selectedGroup.variants.find((v: any) => v.supplier_id?.toString() === supplierId);
+
+    if (variant) {
+      form.setData((prev) => ({
+        ...prev,
+        material_id: variant.material_id.toString(), // INI ID MATERIAL YANG BENAR!
+        default_supplier_id: supplierId,
+        default_usage: variant.default_usage || 0,
+        default_unit: variant.unit || '',
+        harga_ecer: variant.harga_ecer || 0,
+        harga_roll: variant.harga_roll || 0,
+        notes: variant.notes || '',
+      }));
+    } else {
+      form.setData('default_supplier_id', supplierId);
+    }
+  };
 
   const formatIDR = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
@@ -75,20 +120,22 @@ export default function ProductMaterialSection({ productId, materials, available
 
   //buat handleMateialChange agar ketika memilih material, default usage, default unit, harga ecer, harga roll, default supplier id otomatis terisi sesuai material yang dipilih
   const handleMaterialChange = (materialId: string) => {
-    const selectedMaterial = availableMaterials.find((m) => m.id.toString() === materialId);
+    const selectedMaterial = materialOptions.find((m) => m.id.toString() === materialId);
 
     if (selectedMaterial) {
       // Gunakan callback (prevData) agar terhindar dari stale state
       form.setData((prevData) => ({
         ...prevData,
         material_id: materialId,
-        default_usage: selectedMaterial.default_usage || 0,
-        default_unit: selectedMaterial.unit || '',
-        harga_ecer: selectedMaterial.default_harga_ecer || 0,
-        harga_roll: selectedMaterial.default_harga_roll || 0,
-        default_supplier_id: selectedMaterial.default_vendor_id?.toString() || '',
-        notes: selectedMaterial.description?.toString() || '',
+        // default_usage: selectedMaterial.default_usage || 0,
+        // default_unit: selectedMaterial.unit || '',
+        // harga_ecer: selectedMaterial.default_harga_ecer || 0,
+        // harga_roll: selectedMaterial.default_harga_roll || 0,
+        // default_supplier_id: selectedMaterial.default_vendor_id?.toString() || '',
+        // notes: selectedMaterial.description?.toString() || '',
       }));
+
+      // Filter suppliers based on the selected material's suppliers array's id
     } else {
       // Fallback jika material tidak ditemukan
       form.setData('material_id', materialId);
@@ -97,6 +144,16 @@ export default function ProductMaterialSection({ productId, materials, available
 
   const handleEdit = (material: any) => {
     setEditingMaterial(material);
+
+    // Cari nama group (group_id) dari material yang sedang diedit berdasarkan material_id
+    const group = filteredMaterialOptions.find(g => 
+      g.variants.some((v: any) => v.material_id.toString() === material.material_id.toString())
+    );
+
+    if (group) {
+      setSelectedGroupId(group.group_id);
+    }
+
     form.setData({
       product_id: productId,
       material_id: material.material_id.toString(),
@@ -130,7 +187,12 @@ export default function ProductMaterialSection({ productId, materials, available
         <CardTitle className="text-lg">{title}</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) { setEditingMaterial(null); form.reset(); form.clearErrors(); }
+            if (!open) { 
+                setEditingMaterial(null); 
+                setSelectedGroupId(''); // <--- Tambahkan ini
+                form.reset(); 
+                form.clearErrors(); 
+            }
           }}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2"><Plus className="size-4" /> Tambah</Button>
@@ -143,13 +205,13 @@ export default function ProductMaterialSection({ productId, materials, available
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Material</label>
-                  <Select value={form.data.material_id} onValueChange={(val) => {
+                  <Select value={selectedGroupId} onValueChange={(val) => {
                     // form.setData('material_id', val);
-                    handleMaterialChange(val);
+                    handleMaterialGroupChange(val);
                   }}>
                     <SelectTrigger className='w-full'><SelectValue placeholder="Pilih material..." /></SelectTrigger>
                     <SelectContent>
-                      {filteredAvailable.map((m) => (<SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>))}
+                      {filteredMaterialOptions.map((m) => (<SelectItem key={m.group_id} value={m.group_id.toString()}>{m.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
                   <InputError message={form.errors.material_id as string} />
@@ -157,10 +219,20 @@ export default function ProductMaterialSection({ productId, materials, available
 
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Supplier</label>
-                  <Select value={form.data.default_supplier_id} onValueChange={(val) => form.setData('default_supplier_id', val)}>
-                    <SelectTrigger className='w-full'><SelectValue placeholder="Pilih supplier..." /></SelectTrigger>
+                  <Select 
+                    disabled={!selectedGroupId} // <--- Disabled jika material belum dipilih
+                    value={form.data.default_supplier_id} 
+                    onValueChange={handleSupplierChange}
+                  >
+                    <SelectTrigger className='w-full'>
+                      <SelectValue placeholder={!selectedGroupId ? "Pilih material dulu..." : "Pilih supplier..."} />
+                    </SelectTrigger>
                     <SelectContent>
-                      {filteredSuppliers.map((s) => (<SelectItem key={s.id} value={s.id.toString()}>{s.nama_perusahaan ?? '-'}</SelectItem>))}
+                      {availableSuppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.nama_perusahaan ?? '-'}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <InputError message={form.errors.default_supplier_id as string} />
@@ -170,14 +242,14 @@ export default function ProductMaterialSection({ productId, materials, available
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Penggunaan Default</label>
-                  <FormattedNumberInput value={form.data.default_usage} onValueChange={(val) => form.setData('default_usage', val)} placeholder='cth: 0.9' />
+                  <FormattedNumberInput disabled={!form.data.material_id} value={form.data.default_usage} onValueChange={(val) => form.setData('default_usage', val)} placeholder='cth: 0.9' />
                   <InputError message={form.errors.default_usage as string} />
                 </div>
                 {isCustomUnit ? (
                     <>
                     <div className='grid gap-2'>
                       <label className="text-sm font-medium">Satuan (Unit)</label>
-                      <Input value={form.data.default_unit} onChange={(e) => form.setData('default_unit', e.target.value)} placeholder="kg, pcs, lusin" />
+                      <Input disabled={!form.data.material_id} value={form.data.default_unit} onChange={(e) => form.setData('default_unit', e.target.value)} placeholder="kg, pcs, lusin" />
                       <InputError message={form.errors.default_unit as string} />
                     </div>
                     <div className="w-full col-span-2 flex justify-end">
@@ -196,7 +268,7 @@ export default function ProductMaterialSection({ productId, materials, available
                     <>
                     <div className='grid gap-2'>
                       <label className="text-sm font-medium">Satuan (Unit)</label>
-                      <Select value={form.data.default_unit} onValueChange={(val) => form.setData('default_unit', val)}>
+                      <Select disabled={!form.data.material_id} value={form.data.default_unit} onValueChange={(val) => form.setData('default_unit', val)}>
                         <SelectTrigger className='w-full'><SelectValue placeholder="Pilih satuan..." /></SelectTrigger>
                         <SelectContent>
                           {units.map((s) => (<SelectItem key={s.id} value={s.label}>{s.label ?? '-'}</SelectItem>))}
@@ -224,19 +296,19 @@ export default function ProductMaterialSection({ productId, materials, available
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Harga Ecer</label>
-                  <FormattedNumberInput value={form.data.harga_ecer} onValueChange={(val) => form.setData('harga_ecer', val)} />
+                  <FormattedNumberInput disabled={!form.data.material_id} value={form.data.harga_ecer} onValueChange={(val) => form.setData('harga_ecer', val)} />
                   <InputError message={form.errors.harga_ecer as string} />
                 </div>
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Harga Roll / Grosir</label>
-                  <FormattedNumberInput value={form.data.harga_roll} onValueChange={(val) => form.setData('harga_roll', val)} />
+                  <FormattedNumberInput disabled={!form.data.material_id} value={form.data.harga_roll} onValueChange={(val) => form.setData('harga_roll', val)} />
                   <InputError message={form.errors.harga_roll as string} />
                 </div>
               </div>
 
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Catatan (Opsional)</label>
-                <Textarea value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} rows={3} />
+                <Textarea disabled={!form.data.material_id} value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} rows={3} />
               </div>
             </div>
 

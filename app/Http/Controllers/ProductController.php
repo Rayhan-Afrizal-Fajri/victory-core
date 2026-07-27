@@ -147,6 +147,31 @@ class ProductController extends Controller
         ]);
 
         $materials = Material::where('is_active', true)->get();
+        //grouping material dengan menampilkan hanya 1 material jika ada nama yang sama persis (dicek dengan cara lowercase check) dan mengelompokkan suppliernya
+        $materialOptions = $materials->groupBy(function ($item) {
+            return strtolower(trim($item->name)); // Trim untuk keamanan ekstra
+        })->map(function ($group) {
+            $firstMaterial = $group->first();
+            
+            return [
+                'group_id' => strtolower(trim($firstMaterial->name)),
+                'name' => $firstMaterial->name,
+                'category' => $firstMaterial->category,
+                // Simpan SEMUA material dengan nama ini sebagai variasi
+                'variants' => $group->map(function ($m) {
+                    return [
+                        'material_id' => $m->id,
+                        'supplier_id' => $m->default_vendor_id,
+                        'unit' => $m->unit,
+                        'harga_ecer' => $m->default_harga_ecer,
+                        'harga_roll' => $m->default_harga_roll,
+                        'default_usage' => $m->default_usage,
+                        'notes' => $m->description,
+                    ];
+                })->values()->toArray(),
+            ];
+        })->values();
+
         $works = ManufacturingWork::where('is_active', true)->get();
         $suppliers = Supplier::all();
         $units = DefaultSizeBreakdown::where('type', 'unit')->get();
@@ -202,6 +227,12 @@ class ProductController extends Controller
                 'default_price_type' => $m->default_price_type,
                 'default_usage' => $m->default_usage,
                 'description' => $m->description,
+            ])->values(),
+            'materialOptions' => $materialOptions->map(fn ($m) => [
+                'group_id' => $m['group_id'],
+                'name' => $m['name'],
+                'category' => $m['category'],
+                'variants' => $m['variants'],
             ])->values(),
             'works' => $works->map(fn ($w) => [
                 'id' => $w->id,

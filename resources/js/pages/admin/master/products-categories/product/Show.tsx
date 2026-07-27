@@ -10,15 +10,23 @@ import ProductManufacturingSection from './ProductManufacturingSection';
 import products from '@/routes/products';
 import suppliers from '@/routes/suppliers';
 
+interface MaterialOption {
+  group_id: string;
+  name: string;
+  category: string;
+  variants: any[];
+}
+
 type Props = {
   product: ProductDetail;
   materials: Material[];
+  materialOptions: MaterialOption[];
   works: ManufacturingWork[];
   suppliers: Supplier[];
   units: DefaultSizeBreakdown[];
 };
 
-export default function Show({ product, materials, works, suppliers, units }: Props) {
+export default function Show({ product, materials, materialOptions, works, suppliers, units }: Props) {
   // Fungsi format mata uang
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -123,6 +131,7 @@ export default function Show({ product, materials, works, suppliers, units }: Pr
             suppliers={suppliers}
             units={units}
             availableMaterials={materials}
+            materialOptions={materialOptions}
             type="bahan"
             title="Bahan"
           />
@@ -132,6 +141,7 @@ export default function Show({ product, materials, works, suppliers, units }: Pr
             suppliers={suppliers}
             units={units}
             availableMaterials={materials}
+            materialOptions={materialOptions}
             type="aksesoris"
             title="Aksesoris"
           />

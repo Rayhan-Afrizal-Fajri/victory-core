@@ -15,6 +15,7 @@ import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import AppLayout from '@/layouts/app-layout';
 import type { Material, Supplier } from '@/types';
 import { formatCurrency, formatDecimal } from '@/helpers/format';
+import { update, store, destroy } from '@/routes/materials';
 
 interface Breakdown {
   id: number;
@@ -82,8 +83,32 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
   }, [data.category, suppliers]);
 
   const handleSubmitMaterial = () => {
+    const inputName = data.name.trim().toLowerCase();
+    const inputSupplierId = data.default_vendor_id;
+
+    const isDuplicate = materials.find((m) => {
+      const isNameSame = m.name?.trim().toLowerCase() == inputName;
+      const isSupplierSame = String(m.default_vendor_id) == String(inputSupplierId);
+
+      const isNotCurrentEdit = editingMaterial ? m.id !== editingMaterial.id : true;
+
+      return isNameSame && isSupplierSame && isNotCurrentEdit;
+    });
+
+    if (isDuplicate) {
+      const supplier = suppliers.find(s => String(s.id) === String(inputSupplierId));
+
+      const supplierName = supplier ? (supplier.nama_perusahaan || supplier.nama) : 'tersebut';
+
+      const errorMsg = `Material "${data.name.trim()}" dengan supplier "${supplierName}" sudah ada!`;
+
+      toast.error(errorMsg);
+      // data.setError('name', errorMsg);
+      return;
+    }
+
     if (editingMaterial) {
-      put(route('materials.update', editingMaterial.id), {
+      put(update(editingMaterial.id).url, {
         preserveScroll: true,
         onSuccess: () => {
           setIsDialogOpen(false);
@@ -95,7 +120,7 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
       return;
     }
 
-    post(route('materials.store'), {
+    post(store().url, {
       preserveScroll: true,
       onSuccess: () => {
         setIsDialogOpen(false);
@@ -109,7 +134,7 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
     if (!confirm(`Apakah Anda yakin ingin menghapus material "${material.name}"?`)) {
       return;
     }
-    router.delete(route('materials.destroy', material.id), {
+    router.delete(destroy(material.id).url, {
       preserveScroll: true,
     });
   };

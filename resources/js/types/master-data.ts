@@ -48,6 +48,7 @@ export interface Material {
   description?: string;
 }
 
+
 export interface ManufacturingWork {
   id: number;
   name: string;

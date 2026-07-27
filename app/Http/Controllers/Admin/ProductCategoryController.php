@@ -21,8 +21,8 @@ class ProductCategoryController extends Controller
         ])->latest()->get();
 
         // Ambil data untuk opsi di Form
-        $bahanMaterials = Material::where('category', 'bahan')->get();
-        $aksesorisMaterials = Material::where('category', 'aksesoris')->get();
+        $bahanMaterials = Material::with('defaultVendor')->where('category', 'bahan')->orderBy('name')->get();
+        $aksesorisMaterials = Material::with('defaultVendor')->where('category', 'aksesoris')->orderBy('name')->get();
         $manufacturingWorks = ManufacturingWork::all();
 
         return inertia('admin/master/products-categories/Categories', [
