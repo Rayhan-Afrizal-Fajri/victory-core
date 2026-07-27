@@ -64,6 +64,8 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
     manufacturing_work_ids: [] as number[],
   });
 
+  console.log(aksesorisMaterials);
+
   const openCreateDialog = () => {
     reset();
     setEditingId(null);
