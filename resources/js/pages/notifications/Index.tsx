@@ -72,7 +72,7 @@ export default function Index({ notifications }: Props) {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    const hasUnread = notifications.data.some(n => n.read_at === null);
+    const hasUnread = notifications.data?.some(n => n.read_at === null);
 
     return (
         <div className="space-y-6">
@@ -87,7 +87,7 @@ export default function Index({ notifications }: Props) {
                     <div>
                         <h2 className="text-lg font-semibold text-gray-800">Semua Notifikasi</h2>
                         <p className="text-sm text-gray-500">
-                            Menampilkan {notifications.data.length} dari total {notifications.total} notifikasi
+                            Menampilkan {notifications.data?.length} dari total {notifications.total} notifikasi
                         </p>
                     </div>
                 </div>
@@ -106,7 +106,7 @@ export default function Index({ notifications }: Props) {
 
             {/* Notification List */}
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                {notifications.data.length === 0 ? (
+                {notifications.data?.length === 0 ? (
                     <div className="p-8 text-center flex flex-col items-center justify-center text-gray-500">
                         <Bell className="h-12 w-12 text-gray-300 mb-3" />
                         <p className="text-lg font-medium">Belum ada notifikasi</p>
@@ -114,7 +114,7 @@ export default function Index({ notifications }: Props) {
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-100">
-                        {notifications.data.map((notification) => {
+                        {notifications.data?.map((notification) => {
                             const isUnread = notification.read_at === null;
 
                             return (
