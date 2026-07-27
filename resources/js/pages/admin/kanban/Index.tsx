@@ -244,7 +244,7 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                     ) : (
                         <div className="flex h-28 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/60 text-center">
                             <p className="text-sm text-slate-500">
-                                Tidak ada purchase order
+                                Tidak ada job ticket
                             </p>
                         </div>
                     )}
