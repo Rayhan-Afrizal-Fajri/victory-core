@@ -55,12 +55,10 @@ export default function Index({ notifications }: Props) {
     };
 
     const markAllAsRead = () => {
-        if (confirm('Tandai semua notifikasi sebagai telah dibaca?')) {
-            router.patch(route('notifications.markAllAsRead'), {}, {
-                preserveScroll: true,
-                onSuccess: () => toast.success('Semua notifikasi telah ditandai dibaca')
-            });
-        }
+        router.patch(route('notifications.markAllAsRead'), {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Semua notifikasi telah ditandai dibaca')
+        });
     };
 
     // Helper untuk memformat tanggal
