@@ -10,9 +10,9 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        dd($request->user()->notifications()->get());
+        // Ubah get() menjadi paginate(10) atau angka berapapun per halamannya
         return Inertia::render('notifications/Index', [
-            'notifications' => $request->user()->notifications()->get(),
+            'notifications' => $request->user()->notifications()->paginate(10),
         ]);
     }
 
