@@ -152,7 +152,12 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
     {
       header: 'Material Name',
       accessor: 'name',
-      cell: (row) => <span className="font-medium text-slate-900">{row.name}</span>,
+      cell: (row) => (
+        <div className='flex flex-col'>
+          <span className="font-medium text-slate-900">{row.name}</span>
+          <span className="line-clamp-2 font-light text-slate-600 text-xs">{row.description ?? '-'}</span>
+        </div>
+      ),
     },
     {
       header: 'Vendor',

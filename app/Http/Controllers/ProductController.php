@@ -173,6 +173,31 @@ class ProductController extends Controller
         })->values();
 
         $works = ManufacturingWork::where('is_active', true)->get();
+
+        $workOptions = $works->groupBy(function ($item) {
+            return strtolower(trim($item->name)); // Trim untuk keamanan ekstra
+        })->map(function ($group) {
+            $firstWork = $group->first();
+            
+            return [
+                'group_id' => strtolower(trim($firstWork->name)),
+                'name' => $firstWork->name,
+                // 'category' => $firstWork->category,
+                // Simpan SEMUA material dengan nama ini sebagai variasi
+                'variants' => $group->map(function ($m) {
+                    return [
+                        'work_id' => $m->id,
+                        'supplier_id' => $m->default_vendor_id,
+                        'unit' => $m->default_unit,
+                        'min_estimate' => $m->default_min_estimate,
+                        'max_estimate' => $m->default_max_estimate,
+                        'process_behavior' => $m->process_behavior,
+                        // 'notes' => $m->description,
+                    ];
+                })->values()->toArray(),
+            ];
+        })->values();
+
         $suppliers = Supplier::all();
         $units = DefaultSizeBreakdown::where('type', 'unit')->get();
 
@@ -242,6 +267,11 @@ class ProductController extends Controller
                 'default_vendor_id' => $w->default_vendor_id,
                 'default_min_estimate' => $w->default_min_estimate,
                 'default_max_estimate' => $w->default_max_estimate,
+            ])->values(),
+            'workOptions' => $workOptions->map(fn ($m) => [
+                'group_id' => $m['group_id'],
+                'name' => $m['name'],
+                'variants' => $m['variants'],
             ])->values(),
             'suppliers' => $suppliers->map(fn ($w) => [
                 'id' => $w->id,
@@ -340,7 +370,7 @@ class ProductController extends Controller
                         'default_color'       => $material->default_color,
                         'sort_order'          => $materialSortOrder++,
                         'is_required'         => true,
-                        'notes'               => null,
+                        'notes'               => $material->description,
                     ]);
                 }
             }

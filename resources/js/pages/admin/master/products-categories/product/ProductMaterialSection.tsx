@@ -291,8 +291,6 @@ export default function ProductMaterialSection({ productId, materials, available
                   )}
               </div>
 
-              
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Harga Ecer</label>

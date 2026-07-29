@@ -46,6 +46,7 @@ class MaterialController extends Controller
             'default_price_type' => $material->default_price_type, //ecer or roll
             'default_usage' => $material->default_usage, //usage per item product/article
             'is_active' => $material->is_active,
+            'description' => $material->description,
         ]);
 
         // dd($materials);
