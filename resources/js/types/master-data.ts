@@ -85,6 +85,8 @@ export interface ProductManufacturingWork {
   work_name: string;
   default_usage: number;
   default_unit?: string;
+  defaultSupplier?: Supplier;
+  default_supplier_id?: number;
   process_behavior?: string;
   max_estimate?: number;
   usage_note?: string;

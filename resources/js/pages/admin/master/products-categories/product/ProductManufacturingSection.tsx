@@ -11,18 +11,80 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
+import { Supplier } from '@/types';
 
 interface Props {
   productId: number;
   manufacturingWorks: any[];
+  suppliers: Supplier[];
+  workOptions: any[];
   availableWorks: any[];
   units: any[];
 }
 
-export default function ProductManufacturingSection({ productId, manufacturingWorks, availableWorks, units }: Props) {
+export default function ProductManufacturingSection({ productId, manufacturingWorks, suppliers, workOptions, availableWorks, units }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingWork, setEditingWork] = useState<any | null>(null);
   const [isCustomUnit, setIsCustomUnit] = useState(false);
+  const [editingWork, setEditingWork] = useState<any | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+
+  const selectedGroup = workOptions.find((w) => w.group_id === selectedGroupId);
+
+  // Logic memetakan supplier options
+  const availableSuppliersOptions = selectedGroup ? selectedGroup.variants.map((variant: any) => {
+    if (variant.supplier_id === null) {
+      return {
+        id: 'internal',
+        name: 'Internal (Dikerjakan Sendiri)'
+      };
+    } else {
+      const supplier = suppliers.find(s => s.id === variant.supplier_id);
+      return {
+        id: variant.supplier_id.toString(),
+        name: supplier ? (supplier.nama_perusahaan ?? 'Unknown Vendor') : 'Unknown Vendor'
+      };
+    }
+  }) : [];
+
+  const handleWorkGroupChange = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedSupplierId(''); // Reset pilihan supplier tiap ganti work group
+    
+    // Reset isi form
+    form.setData((prevData) => ({
+      ...prevData,
+      manufacturing_work_id: '',
+      default_supplier_id: '',
+      default_unit: 'pcs',
+      min_estimate: 0,
+      max_estimate: 0,
+      usage_note: '',
+    }));
+  };
+
+  const handleSupplierChange = (supplierVal: string) => {
+    setSelectedSupplierId(supplierVal);
+    if (!selectedGroup) return;
+
+    // Cari varian yang tepat berdasarkan pilihan (Internal = null, selain itu = angka supplier_id)
+    const isInternal = supplierVal === 'internal';
+    const variant = selectedGroup.variants.find((v: any) => 
+      isInternal ? v.supplier_id === null : v.supplier_id?.toString() === supplierVal
+    );
+
+    if (variant) {
+      // LAKUKAN SYNC DATA DI SINI
+      form.setData((prev) => ({
+        ...prev,
+        manufacturing_work_id: variant.work_id.toString(), // Ini ID asli dari tabel works
+        default_supplier_id: isInternal ? '' : supplierVal, // <--- TAMBAHKAN BARIS INI
+        default_unit: variant.unit || 'pcs',
+        min_estimate: Number(variant.min_estimate) || 0,
+        max_estimate: Number(variant.max_estimate) || 0,
+      }));
+    }
+  };
   
   // State dan Ref untuk Drag and Drop
   const [localWorks, setLocalWorks] = useState(manufacturingWorks);
@@ -41,6 +103,7 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
   const form = useForm({
     product_id: productId,
     manufacturing_work_id: '',
+    default_supplier_id: '',
     default_usage: 1,
     default_unit: 'pcs',
     min_estimate: 0,
@@ -74,9 +137,28 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
 
   const handleEdit = (work: any) => {
     setEditingWork(work);
+
+    // Cari Work ini ada di Group mana dan Supplier yang mana
+    let foundGroupId = '';
+    let foundSupplierId = '';
+
+    for (const group of workOptions) {
+      const variant = group.variants.find((v: any) => v.work_id.toString() === work.manufacturing_work_id.toString());
+      if (variant) {
+        foundGroupId = group.group_id;
+        foundSupplierId = variant.supplier_id === null ? 'internal' : variant.supplier_id.toString();
+        break;
+      }
+    }
+
+    setSelectedGroupId(foundGroupId);
+    setSelectedSupplierId(foundSupplierId);
+
     form.setData({
       product_id: productId,
       manufacturing_work_id: work.manufacturing_work_id.toString(),
+      // Gunakan foundSupplierId, bukan selectedSupplierId state
+      default_supplier_id: foundSupplierId === 'internal' ? '' : foundSupplierId, // <--- PERBAIKI BARIS INI
       default_usage: work.default_usage,
       default_unit: work.default_unit || 'pcs',
       min_estimate: work.min_estimate || 0,
@@ -141,7 +223,13 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);
-              if (!open) { setEditingWork(null); form.reset(); form.clearErrors(); }
+              if (!open) { 
+                setEditingWork(null); 
+                setSelectedGroupId(''); 
+                setSelectedSupplierId(''); // <--- Tambahkan reset ini
+                form.reset(); 
+                form.clearErrors(); 
+              }
             }}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2"><Plus className="size-4" /> Tambah Work</Button>
@@ -153,15 +241,41 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
               
               {/* Form Inputs Tetap Sama... */}
               <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Manufacturing Work</label>
-                  <Select value={form.data.manufacturing_work_id} onValueChange={(val) => form.setData('manufacturing_work_id', val)}>
-                    <SelectTrigger className='w-full'><SelectValue placeholder="Pilih work..." /></SelectTrigger>
-                    <SelectContent>
-                      {availableWorks.map((w) => (<SelectItem key={w.id} value={w.id.toString()}>{w.name}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                  <InputError message={form.errors.manufacturing_work_id as string} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium">Manufacturing Work</label>
+                    <Select value={selectedGroupId} onValueChange={handleWorkGroupChange}>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder="Pilih jenis proses..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workOptions.map((w) => (
+                          <SelectItem key={w.group_id} value={w.group_id.toString()}>{w.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium">Pelaksana / Vendor</label>
+                    <Select 
+                      disabled={!selectedGroupId} 
+                      value={selectedSupplierId} 
+                      onValueChange={handleSupplierChange}
+                    >
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder={!selectedGroupId ? "Pilih proses dulu..." : "Pilih pelaksana..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSuppliersOptions.map((opt: any) => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <InputError message={form.errors.manufacturing_work_id as string} />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -272,6 +386,9 @@ export default function ProductManufacturingSection({ productId, manufacturingWo
                           {work.is_required && <Badge variant="default" className="text-[10px] h-4 px-1.5">Req</Badge>}
                           {work.process_behavior && <Badge variant="outline" className="text-[10px] h-4">{work.process_behavior}</Badge>}
                         </div>
+                        <p className="text-xs text-slate-600 mt-1">
+                          Supplier: <strong>{work.defaultSupplier?.nama_perusahaan ?? '-'}</strong>
+                        </p>
                         <p className="text-xs text-slate-600 mt-1">
                           Volume: <strong>{work.default_usage} {work.default_unit}</strong>
                         </p>

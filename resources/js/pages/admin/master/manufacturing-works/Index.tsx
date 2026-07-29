@@ -11,17 +11,23 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import type { ManufacturingWork, Supplier } from '@/types';
+import type { DefaultSizeBreakdown, ManufacturingWork, Supplier } from '@/types';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 
 type Props = {
   works: ManufacturingWork[];
   suppliers: Supplier[];
+  units: DefaultSizeBreakdown[];
 };
 
-export default function Index({ works, suppliers }: Props) {
+export default function Index({ works, suppliers, units }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWork, setEditingWork] = useState<ManufacturingWork | null>(null);
+  const [isCustomUnit, setIsCustomUnit] = useState(false);
+
+  const toggleCustomUnit = () => {
+    setIsCustomUnit((prev) => !(prev));
+  }
 
   const workForm = useForm({
     name: '',
@@ -183,7 +189,7 @@ export default function Index({ works, suppliers }: Props) {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4">
-                <div className="flex w-full gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2 w-full">
                     <label className="text-sm font-medium text-slate-700">Nama Work</label>
                     <Input
@@ -193,15 +199,50 @@ export default function Index({ works, suppliers }: Props) {
                     />
                     <InputError message={workForm.errors.name as string} />
                   </div>
-                  <div className="grid gap-2 w-1/2">
-                    <label className="text-sm font-medium text-slate-700">Default Unit</label>
-                    <Input
-                      value={workForm.data.default_unit}
-                      onChange={(e) => workForm.setData('default_unit', e.target.value)}
-                      placeholder="pcs, set, etc"
-                    />
-                    <InputError message={workForm.errors.default_unit as string} />
-                  </div>
+                  {isCustomUnit ? (
+                    <>
+                    <div className='grid gap-2'>
+                      <label className="text-sm font-medium">Satuan (Unit)</label>
+                      <Input value={workForm.data.default_unit} onChange={(e) => workForm.setData('default_unit', e.target.value)} placeholder="kg, pcs, lusin" />
+                      <InputError message={workForm.errors.default_unit as string} />
+                    </div>
+                    <div className="w-full col-span-2 flex justify-end">
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleCustomUnit}
+                          className='flex justify-end w-fit'
+                      >
+                          + Pilih dari daftar
+                      </Button>
+                    </div>
+                    </>
+                  ) : (
+                    <>
+                    <div className='grid gap-2'>
+                      <label className="text-sm font-medium">Satuan (Unit)</label>
+                      <Select value={workForm.data.default_unit} onValueChange={(val) => workForm.setData('default_unit', val)}>
+                        <SelectTrigger className='w-full'><SelectValue placeholder="Pilih satuan..." /></SelectTrigger>
+                        <SelectContent>
+                          {units.map((s) => (<SelectItem key={s.id} value={s.label}>{s.label ?? '-'}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <InputError message={workForm.errors.default_unit as string} />
+                    </div>
+                    <div className="w-full col-span-2 flex justify-end">
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleCustomUnit}
+                          className='flex justify-end w-fit'
+                      >
+                          + Satuan Custom
+                      </Button>
+                    </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -285,7 +326,7 @@ export default function Index({ works, suppliers }: Props) {
           </Dialog>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200">
+        <div className="bg-white ro ded-lg border border-slate-200">
           <DataTable columns={columns} data={filteredWorks} />
         </div>
       </div>

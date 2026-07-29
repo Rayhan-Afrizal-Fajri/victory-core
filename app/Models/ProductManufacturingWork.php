@@ -10,6 +10,7 @@ class ProductManufacturingWork extends Model
     protected $fillable = [
         'product_id',
         'manufacturing_work_id',
+        'default_supplier_id',
         'default_usage',
         'default_unit',
         'min_estimate',
@@ -19,6 +20,11 @@ class ProductManufacturingWork extends Model
         'is_required',
     ];
 
+    public function defaultSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'default_supplier_id');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -26,6 +32,6 @@ class ProductManufacturingWork extends Model
 
     public function manufacturingWork(): BelongsTo
     {
-        return $this->belongsTo(ManufacturingWork::class);
+    return $this->belongsTo(ManufacturingWork::class);
     }
 }

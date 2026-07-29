@@ -35,6 +35,7 @@ class ProductManufacturingWorkController extends Controller
      */
     public function update(UpdateProductManufacturingWorkRequest $request, ProductManufacturingWork $productManufacturingWork)
     {
+        // dd($request->all());
         $validated = $request->validated();
         
         $productManufacturingWork->update($validated);

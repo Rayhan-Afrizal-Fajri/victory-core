@@ -17,16 +17,24 @@ interface MaterialOption {
   variants: any[];
 }
 
+interface ManufacturingOption {
+  group_id: string;
+  name: string;
+  category: string;
+  variants: any[];
+}
+
 type Props = {
   product: ProductDetail;
   materials: Material[];
   materialOptions: MaterialOption[];
+  workOptions: ManufacturingOption[];
   works: ManufacturingWork[];
   suppliers: Supplier[];
   units: DefaultSizeBreakdown[];
 };
 
-export default function Show({ product, materials, materialOptions, works, suppliers, units }: Props) {
+export default function Show({ product, materials, materialOptions, workOptions, works, suppliers, units }: Props) {
   // Fungsi format mata uang
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -150,7 +158,9 @@ export default function Show({ product, materials, materialOptions, works, suppl
         <ProductManufacturingSection
           productId={product.id}
           units={units}
+          suppliers={suppliers}
           manufacturingWorks={product.manufacturing_works}
+          workOptions={workOptions}
           availableWorks={works}
         />
       </div>

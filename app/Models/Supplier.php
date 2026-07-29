@@ -20,6 +20,11 @@ class Supplier extends Model
         return $this->hasMany(Purchasing::class);
     }
 
+    public function materials()
+    {
+        return $this->hasMany(Material::class, 'default_vendor_id');
+    }
+
     public function manufacturingWork()
     {
         return $this->hasMany(ManufacturingWork::class, 'default_vendor_id');
@@ -30,12 +35,19 @@ class Supplier extends Model
         return $this->hasMany(ProductMaterial::class, 'default_supplier_id');
     }
 
+    public function productManufacturingWorks()
+    {
+        return $this->hasMany(ProductManufacturingWork::class, 'default_supplier_id');
+    }
+
     public function canBeDeleted(): bool
     {
         return !(
             $this->purchasing()->exists() ||
+            $this->materials()->exists() ||
+            $this->manufacturingWork()->exists() ||
             $this->productMaterials()->exists() ||
-            $this->manufacturingWork()->exists()
+            $this->productManufacturingWorks()->exists()
         );
     }
 }

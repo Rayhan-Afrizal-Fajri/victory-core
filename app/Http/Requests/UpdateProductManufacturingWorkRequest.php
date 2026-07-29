@@ -24,6 +24,7 @@ class UpdateProductManufacturingWorkRequest extends FormRequest
         return [
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'manufacturing_work_id' => ['required', 'integer', 'exists:manufacturing_works,id'],
+            'default_supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'default_usage' => ['required', 'numeric', 'min:0'],
             'default_unit' => ['nullable', 'string', 'max:255'],
             'usage_note' => ['nullable', 'string'],

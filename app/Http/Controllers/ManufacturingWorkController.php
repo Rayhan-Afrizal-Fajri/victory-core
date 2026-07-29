@@ -6,6 +6,7 @@ use App\Http\Requests\StoreManufacturingWorkRequest;
 use App\Http\Requests\UpdateManufacturingWorkRequest;
 use App\Models\ManufacturingWork;
 use App\Models\Supplier;
+use App\Models\DefaultSizeBreakdown;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 
@@ -25,6 +26,10 @@ class ManufacturingWorkController extends Controller
             ->where('kategori', 'CMT / Makloon')
             ->get();
 
+        $units = DefaultSizeBreakdown::query()
+            ->where('type', 'unit')
+            ->get();
+
         $works = $works->map(fn ($work) => [
             'id' => $work->id,
             'name' => $work->name,
@@ -41,6 +46,7 @@ class ManufacturingWorkController extends Controller
         return Inertia::render('admin/master/manufacturing-works/Index', [
             'works' => $works,
             'suppliers' => $suppliers,
+            'units' => $units,
         ]);
     }
 

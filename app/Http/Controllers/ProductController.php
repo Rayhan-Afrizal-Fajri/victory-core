@@ -226,8 +226,10 @@ class ProductController extends Controller
             'manufacturing_works' => $product->productManufacturingWorks->map(fn ($pmw) => [
                 'id' => $pmw->id,
                 'manufacturing_work_id' => $pmw->manufacturing_work_id,
+                'defaultSupplier' => $pmw->defaultSupplier?->toArray(),
                 'work_name' => $pmw->manufacturingWork->name,
                 'default_usage' => (float) $pmw->default_usage,
+                'default_supplier_id' => $pmw->default_supplier_id,
                 'min_estimate' => (float) $pmw->min_estimate, // Fix mapping
                 'max_estimate' => (float) $pmw->max_estimate, // Fix mapping
                 'default_unit' => $pmw->default_unit,

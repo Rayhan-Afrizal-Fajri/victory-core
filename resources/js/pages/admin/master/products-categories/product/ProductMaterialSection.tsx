@@ -32,7 +32,7 @@ export default function ProductMaterialSection({ productId, materials, available
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
 
   const filteredMaterials = materials.filter((m) => m.type === type);
-  const filteredAvailable = availableMaterials.filter((m) => m.category === type);
+  // const filteredAvailable = availableMaterials.filter((m) => m.category === type);
   const filteredMaterialOptions = materialOptions.filter((m) => m.category === type);
 
   const selectedGroup = filteredMaterialOptions.find((m) => m.group_id === selectedGroupId);
