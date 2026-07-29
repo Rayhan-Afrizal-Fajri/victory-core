@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('purchasings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pesanan_id')->constrained('pesanan');
-            $table->foreignId('supplier_id')->constrained('suppliers');
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->string('item_bahan');
             $table->string('color')->nullable();
             $table->decimal('qty_bahan', 10, 4);
