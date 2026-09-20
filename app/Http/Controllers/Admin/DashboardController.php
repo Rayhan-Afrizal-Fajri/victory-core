@@ -16,6 +16,7 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $isAdmin = $user->can('dashboard.admin');
+        $isOwner = $user->roles->first()->name == 'Owner';
 
         $ordersQuery = JobTicket::query()
             ->with([
@@ -120,7 +121,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        if ($isAdmin) {
+        if ($isOwner) {
             array_push(
                 $summaryCards,
                 [
@@ -129,6 +130,12 @@ class DashboardController extends Controller
                     'value' => 'Rp ' . number_format($totalRevenue, 0, ',', '.'),
                     'type' => 'money',
                 ],
+            );
+        }
+
+        if ($isAdmin) {
+            array_push(
+                $summaryCards,
                 [
                     'key' => 'deadline_soon',
                     'title' => 'Deadline < 3 hari',
