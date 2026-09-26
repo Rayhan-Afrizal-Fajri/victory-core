@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,14 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Only try to drop the foreign key if it actually exists in the DB
-        if (Schema::hasTable('quotations') && $this->hasForeignIndex('quotations', 'quotations_job_ticket_id_foreign')) {
+        // 1. Drop the foreign key only if it actually exists in MySQL
+        if ($this->hasForeignIndex('quotations', 'quotations_job_ticket_id_foreign')) {
             Schema::table('quotations', function (Blueprint $table) {
                 $table->dropForeign(['job_ticket_id']);
             });
         }
 
-        // 2. Change the column and bind the new key
+        // 2. Safely modify the column type and add the new foreign key constraint
         Schema::table('quotations', function (Blueprint $table) {
             $table->unsignedBigInteger('job_ticket_id')->nullable()->change();
             
@@ -34,7 +35,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (Schema::hasTable('quotations') && $this->hasForeignIndex('quotations', 'quotations_job_ticket_id_foreign')) {
+        if ($this->hasForeignIndex('quotations', 'quotations_job_ticket_id_foreign')) {
             Schema::table('quotations', function (Blueprint $table) {
                 $table->dropForeign(['job_ticket_id']);
             });
@@ -51,12 +52,19 @@ return new class extends Migration
     }
 
     /**
-     * Helper method to check if a foreign key index exists.
+     * A pure MySQL raw query check to see if the foreign key exists.
+     * This avoids using Doctrine entirely.
      */
-    private function hasForeignIndex(string $table, string $foreignKey): bool
+    private function hasForeignIndex(string $table, string $constraintName): bool
     {
-        $conn = Schema::getConnection()->getDoctrineSchemaManager();
-        $keys = array_keys($conn->listTableForeignKeys($table));
-        return in_array($foreignKey, $keys);
+        $result = DB::select("
+            SELECT CONSTRAINT_NAME 
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = ? 
+              AND CONSTRAINT_NAME = ?
+        ", [$table, $constraintName]);
+
+        return !empty($result);
     }
 };
