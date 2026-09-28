@@ -421,6 +421,7 @@ export interface Quotation {
   approved_by_name?: string | null;
   signature_path?: string | null;
   items?: QuotationItem[];
+  source_type: 'manual' | 'job_ticket';
 }
 
 /** * NEW: Pesanan (Order) entity

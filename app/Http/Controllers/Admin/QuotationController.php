@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\PurchasingService;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class QuotationController extends Controller
 {
@@ -24,6 +25,31 @@ class QuotationController extends Controller
         // protected InvoiceService $invoiceService,
         protected PurchasingService $purchasingService,
     ) {}
+
+    public function index()
+    {
+        $quotations = Quotation::with([
+            'jobTicket.customer',
+            'createdBy',
+            'items',
+            'quotationNotes'
+        ])->get();
+
+        return Inertia::render('admin/quotations/index', [
+            'quotations' => $quotations,
+        ]);
+    }
+
+    public function store()
+    {
+
+    }
+
+    public function update(Quotation $quotation)
+    {
+
+    }
+
     // Ubah parameter agar mengambil berdasarkan JobTicket
     public function generate(Request $request, string $jobTicketId)
     {

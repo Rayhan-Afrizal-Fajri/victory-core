@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class QuotationItem extends Model
 {
@@ -17,13 +19,18 @@ class QuotationItem extends Model
         'subtotal',
     ];
 
-    public function quotation()
+    public function quotation(): BelongsTo
     {
         return $this->belongsTo(Quotation::class);
     }
 
-    public function pesanan()
+    public function pesanan(): BelongsTo
     {
         return $this->belongsTo(Pesanan::class);
+    }
+
+    public function quotationItemSize(): HasMany
+    {
+        return $this->hasMany(QuotationItemSize::class);
     }
 }

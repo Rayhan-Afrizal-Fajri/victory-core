@@ -126,7 +126,7 @@ export default function ProductionBoard({ workerTasks, qcTasks }: BoardProps) {
     const groupedQcTasks = useMemo(() => processAndGroupTasks(qcTasks), [qcTasks, searchQuery, typeFilter]);
 
     return (
-        <div className="container mx-auto p-6 max-w-7xl">
+        <div className="space-y-6">
             <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Shop Floor Board</h1>

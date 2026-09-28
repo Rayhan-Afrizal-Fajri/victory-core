@@ -31,7 +31,7 @@ class PesananSeeder extends Seeder
                 'no_job_ticket' => $noJobTicket,
                 'date' => '2026-06-22',
                 'status' => 'Order Entry',
-                'customer_id' => random_int(1, 4),
+                'customer_id' => 1,
                 'company_profile_id' => random_int(1, 3),
                 'sales_name' => $listSales[array_rand($listSales)],
                 'deadline' => '2026-07-30',
