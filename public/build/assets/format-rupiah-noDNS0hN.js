@@ -1,1 +1,0 @@
-var e=e=>new Intl.NumberFormat(`id-ID`,{style:`currency`,currency:`IDR`,maximumFractionDigits:0}).format(Number(e||0));export{e as t};
