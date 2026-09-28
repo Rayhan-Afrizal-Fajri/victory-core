@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
+import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FileText, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -31,6 +31,7 @@ import materials from '@/routes/materials';
 import manufacturingWorks from '@/routes/manufacturing-works';
 import sizeBreakdowns from '@/routes/size-breakdowns';
 import { useCan } from '@/hooks/use-can';
+import quotations from '@/routes/quotations';
 
 
 
@@ -83,11 +84,18 @@ export function AppSidebar() {
         });
     }
     if (can('job_tickets.view')) {
-        operationWorkspace.push({
-            title: 'Purchase Orders',
-            href: jobTickets.index(),
-            icon: ClipboardList,
-        });
+        operationWorkspace.push(
+            {
+                title: 'Purchase Orders',
+                href: jobTickets.index(),
+                icon: ClipboardList,
+            },
+            {
+                title: 'Quotations',
+                href: quotations.index(),
+                icon: FileText,
+            }
+        );
     }
     
     const reportWorkspace: NavItem[] = [

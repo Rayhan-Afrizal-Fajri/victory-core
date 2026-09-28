@@ -26,6 +26,7 @@ class Quotation extends Model
         'signature_path',
         'pdf_path',
         'created_by',
+        'source_type'
     ];
 
     protected $casts = [

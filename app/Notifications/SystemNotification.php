@@ -3,20 +3,19 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
-// 1. Panggil ShouldBroadcastNow
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; 
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Notification;
 
-// 2. Implementasikan ShouldBroadcastNow ke class
-class SystemNotification extends Notification implements ShouldBroadcastNow 
+class SystemNotification extends Notification
 {
     use Queueable;
 
     private $title;
+
     private $message;
+
     private $url;
+
     private $type;
 
     public function __construct($title, $message, $url = '#', $type = 'info')
@@ -24,7 +23,7 @@ class SystemNotification extends Notification implements ShouldBroadcastNow
         $this->title = $title;
         $this->message = $message;
         $this->url = $url;
-        $this->type = $type; 
+        $this->type = $type;
     }
 
     public function via(object $notifiable): array
@@ -45,12 +44,11 @@ class SystemNotification extends Notification implements ShouldBroadcastNow
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage([
-            // Laravel secara otomatis akan membungkus ini dalam property `data` saat diterima di Frontend Echo
+        return (new BroadcastMessage([
             'title' => $this->title,
             'message' => $this->message,
             'url' => $this->url,
-            'type' => $this->type,
-        ]);
+            'level' => $this->type,
+        ]))->onConnection('sync');
     }
 }

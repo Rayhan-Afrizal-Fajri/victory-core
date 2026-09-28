@@ -156,6 +156,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Quotations
      */
 
+    Route::get('/quotations', [QuotationController::class, 'index'])->name('quotations.index');
+
     Route::post('/job-tickets/{job_ticket}/quotations/generate', [QuotationController::class, 'generate'])
         ->name('quotations.generate');
 

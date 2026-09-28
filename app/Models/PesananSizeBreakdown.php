@@ -13,6 +13,7 @@ class PesananSizeBreakdown extends Model
         'fabric_spec',
         'qty',
         'sort_order',
+        'harga_jual_per_pcs'
     ];
 
     public function pesanan()

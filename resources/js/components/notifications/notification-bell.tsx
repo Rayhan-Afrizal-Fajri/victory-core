@@ -1,60 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { usePage, Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+type NotificationItem = {
+    id: string;
+    data: {
+        title: string;
+        message: string;
+        url: string;
+        type: string;
+    };
+    created_at: string;
+};
+
+type BroadcastNotification = {
+    id: string;
+    title: string;
+    message: string;
+    url: string;
+    level: string;
+};
+
+type AuthProps = {
+    user: { id: number };
+    unread_count: number;
+    unread_notifications: NotificationItem[];
+};
+
 export default function NotificationBell() {
-    const { auth } = usePage().props as any;
-    
-    const [unreadCount, setUnreadCount] = useState(auth.unread_count);
-    const [notifications, setNotifications] = useState(auth.unread_notifications);
+    const { auth } = usePage().props as { auth: AuthProps };
 
-    // GUNAKAN USE EFFECT SEBAGAI PENGGANTI HOOK
+    return (
+        <NotificationBellContent
+            key={`${auth.unread_count}:${auth.unread_notifications?.[0]?.id ?? ''}`}
+            auth={auth}
+        />
+    );
+}
+
+function NotificationBellContent({ auth }: { auth: AuthProps }) {
+    const [unreadCount, setUnreadCount] = useState(auth.unread_count ?? 0);
+    const [notifications, setNotifications] = useState<NotificationItem[]>(auth.unread_notifications ?? []);
+    const knownNotificationIds = useRef(new Set((auth.unread_notifications ?? []).map((item) => item.id)));
+
     useEffect(() => {
-        // Pastikan Echo sudah diinisialisasi di resources/js/bootstrap.js atau echo.js
-        if (window.Echo) {
-            const channelName = `App.Models.User.${auth.user.id}`;
-            
-            // Harus pakai .private() dan .notification()
-            window.Echo.private(channelName)
-                .notification((notification: any) => {
-                    console.log('Sinyal notifikasi masuk!', notification); // Cek console browser Anda
-
-                    // 1. Munculkan Toast (akses dari notification.data)
-                    toast[notification.data.type === 'danger' ? 'error' : 'info'](
-                        notification.data.title, { description: notification.data.message }
-                    );
-
-                    // 2. Tambah angka
-                    setUnreadCount((prev: number) => prev + 1);
-
-                    // 3. Masukkan ke state dengan format yang disesuaikan
-                    const formattedNotif = {
-                        id: notification.id,
-                        data: {
-                            title: notification.data.title,
-                            message: notification.data.message,
-                            url: notification.data.url,
-                            type: notification.data.type
-                        },
-                        created_at: new Date().toISOString(),
-                    };
-
-                    setNotifications((prev: any[]) => [formattedNotif, ...prev].slice(0, 5));
-                });
-
-            // Cleanup
-            return () => {
-                window.Echo.leave(channelName);
-            };
-        } else {
-            console.error("window.Echo tidak ditemukan. Pastikan Echo di-import di app.tsx / bootstrap.js");
+        if (!auth.user?.id || !window.Echo) {
+            return;
         }
+
+        const channelName = `App.Models.User.${auth.user.id}`;
+        window.Echo.private(channelName).notification((notification: BroadcastNotification) => {
+            if (!notification.id || knownNotificationIds.current.has(notification.id)) {
+                return;
+            }
+
+            knownNotificationIds.current.add(notification.id);
+            const item: NotificationItem = {
+                id: notification.id,
+                data: {
+                    title: notification.title,
+                    message: notification.message,
+                    url: notification.url,
+                    type: notification.level,
+                },
+                created_at: new Date().toISOString(),
+            };
+
+            toast[notification.level === 'danger' ? 'error' : 'info'](notification.title, {
+                description: notification.message,
+            });
+            setUnreadCount((count) => count + 1);
+            setNotifications((current) => [item, ...current].slice(0, 5));
+        });
+
+        return () => window.Echo.leave(channelName);
     }, [auth.user.id]);
 
     const markAsRead = (id: string, url: string) => {
         router.patch(`/notifications/${id}/read`, {}, {
-            onSuccess: () => router.visit(url)
+            onSuccess: () => {
+                setNotifications((current) => current.filter((item) => item.id !== id));
+                setUnreadCount((count) => Math.max(0, count - 1));
+
+                if (url && url !== '#') {
+                    router.visit(url);
+                }
+            },
         });
     };
 
