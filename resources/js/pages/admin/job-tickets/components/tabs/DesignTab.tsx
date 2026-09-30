@@ -317,7 +317,7 @@ const DesignAndSpecsTab: React.FC<{
                 </div>
             )}
 
-            <OrderRequestSummaryCard activeOrder={activeOrder} />
+            <OrderRequestSummaryCard activeOrder={activeOrder} customerNotes={jobTicket.customer_notes} />
 
             <div className="space-y-6">
                 {/* BAGIAN UPLOAD & RIWAYAT DESAIN */}
