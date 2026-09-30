@@ -178,7 +178,7 @@
                 <img src="{{ public_path('images/logo.png') }}" alt="Victory Labs" style="max-height: 45px;">
             </td>
             <td style="width: 50%; vertical-align: top;" class="text-right">
-                <div class="doc-title">INVOICE</div>
+                <div class="doc-title">{{ $documentTitle ? 'INVOICE - ' . strtoupper($documentTitle) : 'INVOICE' }}</div>
                 <table class="meta-table">
                     <tr>
                         <td class="text-right" style="color: #111827;">No Invoice</td>
@@ -200,7 +200,7 @@
                         <td class="text-right" style="color: #111827;">Status</td>
                         <td class="text-left">
                             <span class="badge">
-                                {{ strtoupper($invoice->status_tagihan) }}
+                                {{ strtoupper($documentStatus) }}
                             </span>
                         </td>
                     </tr>
@@ -210,9 +210,14 @@
     </table>
 
     <div class="title">
-        {{ $invoice->kategori_invoice === 'sample' ? 'SAMPLE' : '' }} <br>
-        {{ $invoice->kategori_invoice === 'sample' ? 'PROFORMA ' : '' }}
-        INVOICE
+        @if($documentTitle)
+            {{ strtoupper($documentTitle) }}<br>
+            INVOICE
+        @else
+            {{ $invoice->kategori_invoice === 'sample' ? 'SAMPLE' : '' }} <br>
+            {{ $invoice->kategori_invoice === 'sample' ? 'PROFORMA ' : '' }}
+            INVOICE
+        @endif
     </div>
 
     <table class="address-container">
@@ -345,11 +350,8 @@
     </table>
 
     @php
-        $totalPaid = $payments
-            ->where('status', 'verified')
-            ->sum('jumlah_bayar');
-
-        $remaining = max(($invoice->total_tagihan ?? $invoice->amount ?? 0) - $totalPaid, 0);
+        $totalPaid = $documentPaid;
+        $remaining = $documentRemaining;
     @endphp
 
     <table class="bottom-container">
@@ -369,12 +371,12 @@
             <td style="width: 40%; vertical-align: top;">
                 <table class="summary-table">
                     <tr>
-                        <td class="summary-label text-right">Subtotal</td>
+                        <td class="summary-label text-right">{{ $documentTitle ? 'Nilai Produksi' : 'Subtotal' }}</td>
                         <td class="text-right font-bold">Rp {{ number_format($grandSubtotal, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td class="summary-label text-right">Total Amount</td>
-                        <td class="text-right font-bold">Rp{{ number_format($invoice->total_tagihan ?? $invoice->amount ?? 0, 0, ',', '.') }}</td>
+                        <td class="summary-label text-right">{{ $documentTotalLabel }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($documentTotal, 0, ',', '.') }}</td>
                     </tr>
                     <tr class="summary-label text-right">
                         <td class="summary-label text-right">Paid</td>

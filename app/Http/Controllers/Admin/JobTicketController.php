@@ -237,6 +237,11 @@ class JobTicketController extends Controller
             // INVOICES - Level Global di Job Ticket
             'invoices' => $jobTicket->invoices->map(fn ($inv) => [
                 'id' => $inv->id,
+                'no_invoice' => $inv->no_invoice,
+                'kategori_invoice' => $inv->kategori_invoice,
+                'total_tagihan' => (float) $inv->total_tagihan,
+                'status_tagihan' => $inv->status_tagihan ?? 'unpaid',
+                'tgl_jatuh_tempo' => $inv->tgl_jatuh_tempo,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
                 'amount' => (float) $inv->total_tagihan,
                 'status' => $inv->status_tagihan ?? 'unpaid',

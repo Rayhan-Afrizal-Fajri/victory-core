@@ -75,7 +75,15 @@ export function hasVerifiedPayment(invoice: any) {
 export function getInvoiceCategory(invoice: any) {
     const category = invoice?.kategori_invoice;
 
-    if (category) return category;
+    if (category) {
+        const normalizedCategory = String(category).toLowerCase();
+
+        if (['production', 'produksi', 'dp_produksi'].includes(normalizedCategory)) {
+            return 'production';
+        }
+
+        return category;
+    }
 
     const text = `${invoice?.title || ''} ${invoice?.no_invoice || ''}`.toLowerCase();
 
@@ -84,6 +92,10 @@ export function getInvoiceCategory(invoice: any) {
     if (text.includes('final')) return 'final_billing';
 
     return 'other';
+}
+
+export function isProductionInvoice(invoice: any) {
+    return getInvoiceCategory(invoice) === 'production';
 }
 
 export function getInvoiceCategoryLabel(invoice: any) {

@@ -30,6 +30,7 @@ import {
     getRemainingPayment,
     getVerifiedPaid,
     invoiceStatusClass,
+    isProductionInvoice,
 } from './invoice-utils';
 import { useCan } from '@/hooks/use-can';
 
@@ -192,16 +193,20 @@ const InvoiceDetailSheet = ({
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() =>
-                                        window.open(`/invoices/${invoice.id}/print`, '_blank')
-                                    }
-                                >
-                                    <Printer className="size-4" />
-                                    Cetak
-                                </Button>
+                                {isProductionInvoice(invoice) ? (
+                                    <>
+                                        <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=dp`, '_blank')}>
+                                            <Printer className="size-4" /> Cetak DP
+                                        </Button>
+                                        <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=settlement`, '_blank')}>
+                                            <Printer className="size-4" /> Cetak Pelunasan
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
+                                        <Printer className="size-4" /> Cetak
+                                    </Button>
+                                )}
 
                                 {canEdit && (
                                     <Button

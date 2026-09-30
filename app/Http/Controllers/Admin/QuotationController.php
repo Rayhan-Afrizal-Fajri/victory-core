@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\PurchasingService;
+use App\Support\DocumentFilename;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -693,12 +694,17 @@ class QuotationController extends Controller
 
         $pdf = $this->generateQuotationPdf($quotation);
 
-        $search = array('/', '\\');
-        // Perform the replacement
-        $quo_number = str_replace($search, '-', $quotation->quotation_number);
-        return $pdf->stream(
-            "quotation-{$quo_number}.pdf"
-        );
+        $jobTicket = $quotation->jobTicket;
+        $company = $jobTicket->customer_perusahaan_snapshot
+            ?? $jobTicket->customer?->nama_perusahaan
+            ?? $jobTicket->customer?->nama;
+        $articles = $quotation->items->pluck('item_name')->all();
+
+        return $pdf->stream(DocumentFilename::make(
+            $quotation->quotation_number,
+            $company,
+            $articles
+        ));
     }
 
     public function destroy(string $quotationId)

@@ -21,9 +21,11 @@ import {
     invoiceStatusClass,
     isInvoiceCancelled,
     isInvoicePaid,
+    isProductionInvoice,
 } from './invoice-utils';
 import { useCan } from '@/hooks/use-can';
 import { Payment } from '@/pages/admin/job-tickets/types';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 
 const InvoiceCard = ({
     invoice,
@@ -128,15 +130,56 @@ const InvoiceCard = ({
                     )}
                 </Button>
 
-                <Button
-                    type="button"
-                    variant="secondary"
-                    className="min-w-27.5 flex-1"
-                    onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}
-                >
-                    <Printer className="size-4" />
-                    Cetak
-                </Button>
+                {isProductionInvoice(invoice) ? (
+                    <>
+                        {/* <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print?document=dp`, '_blank')}>
+                            <Printer className="size-4" /> Cetak DP
+                        </Button>
+                        <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print?document=settlement`, '_blank')}>
+                            <Printer className="size-4" /> Cetak Pelunasan
+                        </Button> */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="min-w-27.5 flex-1"
+                                >
+                                    <Printer className="size-4" />
+                                    Cetak
+                                </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        window.open(
+                                            `/invoices/${invoice.id}/print?document=dp`,
+                                            '_blank'
+                                        )
+                                    }
+                                >
+                                    Cetak DP
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        window.open(
+                                            `/invoices/${invoice.id}/print?document=settlement`,
+                                            '_blank'
+                                        )
+                                    }
+                                >
+                                    Cetak Pelunasan
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </>
+                ) : (
+                    <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
+                        <Printer className="size-4" /> Cetak
+                    </Button>
+                )}
 
                 {canEdit && can('payment.verify') && onEdit && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (
                     <Button

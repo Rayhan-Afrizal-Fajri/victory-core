@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Pesanan;
 use App\Services\InvoiceService;
+use App\Support\DocumentFilename;
+use App\Support\ProductionInvoiceDocumentAmounts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -441,7 +443,7 @@ class InvoiceController extends Controller
         return back()->with('success', 'Invoice berhasil dibatalkan.');
     }
 
-    public function print(string $invoiceId)
+    public function print(Request $request, string $invoiceId)
     {
         $invoice = Invoice::with([
             'jobTicket.customer',
@@ -451,12 +453,66 @@ class InvoiceController extends Controller
             'items.pesanan',
         ])->findOrFail($invoiceId);
 
-        // OPTIMASI: Filter langsung dari data yang sudah di-load, 
-        // tidak perlu query ulang ke database.
-        $pesanans = $invoice->jobTicket->pesanans->filter(function ($pesanan) {
-            // Tampilkan jika Qty > 0 (Harga 0 / gratis akan tetap ikut tampil)
-            return $pesanan->sample_qty > 0;
-        })->values(); // values() berguna untuk merapikan ulang index array
+        $documentType = $request->query('document');
+        if (! in_array($documentType, ['dp', 'settlement'], true)) {
+            $documentType = null;
+        }
+
+        $isProductionInvoice = in_array(
+            strtolower((string) $invoice->kategori_invoice),
+            ['production', 'produksi', 'dp_produksi'],
+            true
+        );
+
+        if ($documentType && ! $isProductionInvoice) {
+            abort(422, 'Dokumen DP dan pelunasan hanya tersedia untuk invoice produksi.');
+        }
+
+        $verifiedPaid = (float) $invoice->payments
+            ->where('status', 'verified')
+            ->sum('jumlah_bayar');
+        $documentAmounts = $documentType
+            ? ProductionInvoiceDocumentAmounts::calculate((float) $invoice->total_tagihan, $verifiedPaid)
+            : null;
+
+        $documentTotal = $documentType === 'dp'
+            ? $documentAmounts['dp_total']
+            : ($documentType === 'settlement'
+                ? $documentAmounts['settlement_total']
+                : (float) $invoice->total_tagihan);
+        $documentPaid = $documentType === 'dp'
+            ? $documentAmounts['dp_paid']
+            : ($documentType === 'settlement'
+                ? $documentAmounts['settlement_paid']
+                : $verifiedPaid);
+        $documentRemaining = $documentType === 'dp'
+            ? $documentAmounts['dp_remaining']
+            : ($documentType === 'settlement'
+                ? $documentAmounts['settlement_remaining']
+                : max((float) $invoice->total_tagihan - $verifiedPaid, 0));
+        $documentStatus = $invoice->status_tagihan;
+        if ($documentType) {
+            $documentStatus = in_array(strtolower((string) $invoice->status_tagihan), ['cancelled'], true)
+                ? $invoice->status_tagihan
+                : ($documentRemaining <= 0
+                    ? 'paid'
+                    : ($documentPaid > 0 ? 'partially_paid' : 'unpaid'));
+        }
+        $documentTitle = match ($documentType) {
+            'dp' => 'DP Produksi',
+            'settlement' => 'Pelunasan Produksi',
+            default => null,
+        };
+
+        $company = $invoice->jobTicket->customer_perusahaan_snapshot
+            ?? $invoice->jobTicket->customer?->nama_perusahaan
+            ?? $invoice->jobTicket->customer?->nama;
+        $articles = $invoice->items->pluck('item_name')->all();
+        if (! $articles) {
+            $articles = $invoice->jobTicket->pesanans
+                ->map(fn ($pesanan) => $pesanan->requested_product_name ?: $pesanan->produk)
+                ->all();
+        }
 
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
@@ -464,12 +520,21 @@ class InvoiceController extends Controller
             'items' => $invoice->items,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
+            'documentTitle' => $documentTitle,
+            'documentTotal' => $documentTotal,
+            'documentPaid' => $documentPaid,
+            'documentRemaining' => $documentRemaining,
+            'documentStatus' => $documentStatus,
+            'documentTotalLabel' => $documentType === 'dp'
+                ? 'Tagihan DP (50%)'
+                : ($documentType === 'settlement' ? 'Tagihan Pelunasan (50%)' : 'Total Amount'),
         ])->setPaper('a4', 'portrait');
 
-        // Sanitasi nama file: ubah garis miring menjadi strip
-        $rawFilename = $invoice->no_invoice ?? 'invoice';
-        $safeFilename = str_replace(['/', '\\'], '-', $rawFilename) . '.pdf';
-
-        return $pdf->stream($safeFilename);
+        return $pdf->stream(DocumentFilename::make(
+            $invoice->no_invoice ?? 'invoice',
+            $company,
+            $articles,
+            $documentTitle
+        ));
     }
 }
