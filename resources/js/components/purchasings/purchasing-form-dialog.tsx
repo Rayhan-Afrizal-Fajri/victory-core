@@ -11,7 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Supplier } from '@/pages/admin/job-tickets/types';
+import { Supplier } from '@/pages/admin/purchase-orders/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormattedNumberInput from '../ui/formatted-number-input';
 

@@ -3,7 +3,7 @@ import { router, useForm } from '@inertiajs/react';
 import { AlertTriangle, CheckCircle2, PackageCheck, Play, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 
-import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
+import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
 import EmptyState from '@/components/sample/empty-state';
 import Field from '@/components/sample/field';
 import Badge from '@/components/sample/badge';
@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import FormattedNumberInput from '../ui/formatted-number-input';
-import { Pesanan } from '@/pages/admin/job-tickets/types';
-import WorkflowGate from '@/pages/admin/job-tickets/components/WorkflowGate';
+import { Pesanan } from '@/pages/admin/purchase-orders/types';
+import WorkflowGate from '@/pages/admin/purchase-orders/components/WorkflowGate';
 import { useCan } from '@/hooks/use-can';
 import productionRuns from '@/routes/production-runs';
 

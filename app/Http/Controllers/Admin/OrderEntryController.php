@@ -236,7 +236,7 @@ class OrderEntryController extends Controller
             return $jobTicket;
         });
 
-        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Purchase Order berhasil dibuat.');
+        return redirect()->route('purchase-orders.show', $jobTicket->id)->with('success', 'Purchase Order berhasil dibuat.');
     }
 
     /**
@@ -363,7 +363,7 @@ class OrderEntryController extends Controller
             }
         });
 
-        return redirect()->route('job-tickets.show', $jobTicket->id)->with('success', 'Purchase Order berhasil diperbarui.');
+        return redirect()->route('purchase-orders.show', $jobTicket->id)->with('success', 'Purchase Order berhasil diperbarui.');
     }
 
     public function destroy(JobTicket $jobTicket)
@@ -371,6 +371,6 @@ class OrderEntryController extends Controller
 
         $jobTicket->delete();
 
-        return redirect()->route('job-tickets.index')->with('success', 'Purchase Order berhasil dihapus.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order berhasil dihapus.');
     }
 }

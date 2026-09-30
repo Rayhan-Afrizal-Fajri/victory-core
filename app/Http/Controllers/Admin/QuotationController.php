@@ -194,7 +194,7 @@ class QuotationController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Setujui Surat Penawaran',
                 "Surat Penawaran '{$pesanan->jobTicket->no_job_ticket}' telah dibuat, menunggu approval.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
                 'info'
             ));
         }
@@ -367,7 +367,7 @@ class QuotationController extends Controller
                     Notification::send($usersToNotify, new SystemNotification(
                         'Invoice Sample telah dibuat',
                         "Invoice Sample untuk produk telah dibuat. Lakukan penagihan.",
-                        "/job-tickets/{$jobTicket->id}?tab=invoices",
+                        "/purchase-orders/{$jobTicket->id}?tab=invoices",
                         'info'
                     ));
                 }
@@ -391,7 +391,7 @@ class QuotationController extends Controller
                         Notification::send($usersToNotify, new SystemNotification(
                             'Purchasing BOM Otomatis Dibuat',
                             "Penawaran disetujui tanpa biaya sample. Purchasing otomatis terbuat. Silakan lakukan pemesanan.",
-                            "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                            "/purchase-orders/{$jobTicket->id}?tab=purchasing",
                             'info'
                         ));
                     }
@@ -523,7 +523,7 @@ class QuotationController extends Controller
                 Notification::send($usersToNotify, new SystemNotification(
                     'Quotation Dibatalkan (Undo)',
                     "Persetujuan Quotation untuk {$jobTicket->no_job_ticket} dibatalkan. BOM dan Desain kembali terbuka untuk direvisi. Alasan: {$request->reason}",
-                    "/job-tickets/{$jobTicket->id}",
+                    "/purchase-orders/{$jobTicket->id}",
                     'warning'
                 ));
             }

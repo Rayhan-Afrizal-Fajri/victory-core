@@ -178,7 +178,7 @@ class InvoiceService
             Notification::send($usersToNotify, new SystemNotification(
                 'Invoice Produksi telah dibuat',
                 "Invoice Poduksi telah dibuat, lakukan pembayaran.",
-                "/job-tickets/{$jobTicket->id}?tab=invoices",
+                "/purchase-orders/{$jobTicket->id}?tab=invoices",
                 'info'
             ));
         }

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DeadlineBadge from "@/components/ui/deadline-badge";
 import AppLayout from "@/layouts/app-layout";
-import jobTickets from "@/routes/job-tickets";
+import jobTickets from "@/routes/purchase-orders";
 import orderEntry from "@/routes/order-entry";
 import { toast } from "sonner";
 

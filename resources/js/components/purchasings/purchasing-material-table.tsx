@@ -9,7 +9,7 @@ import {
     FileSpreadsheet
 } from 'lucide-react';
 
-import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
+import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
 import Badge from '@/components/sample/badge';
 import { Button } from '@/components/ui/button';
 

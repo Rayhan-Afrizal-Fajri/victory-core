@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes';
 import customers from '@/routes/customers';
 import invoices from '@/routes/invoices';
-import jobTickets from '@/routes/job-tickets';
+import jobTickets from '@/routes/purchase-orders';
 import kanbanBoard from '@/routes/kanban-board';
 import orderEntry from '@/routes/order-entry';
 import profitLossReport from '@/routes/profit-loss-report';

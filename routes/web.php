@@ -98,11 +98,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::resource('purchasings', PurchasingController::class);
     Route::resource('production-progress', ProductionProgressController::class);
 
-    Route::resource('job-tickets', JobTicketController::class);
+    Route::resource('purchase-orders', JobTicketController::class);
 
 
     /**
-     * For detail job-tickets
+     * For detail purchase-orders
      */
     Route::patch(
         '/pesanan/{id}/update-status',
@@ -158,7 +158,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/quotations', [QuotationController::class, 'index'])->name('quotations.index');
 
-    Route::post('/job-tickets/{job_ticket}/quotations/generate', [QuotationController::class, 'generate'])
+    Route::post('/purchase-orders/{job_ticket}/quotations/generate', [QuotationController::class, 'generate'])
         ->name('quotations.generate');
 
     Route::patch('/quotations/{quotation}', [QuotationController::class, 'update'])
@@ -305,11 +305,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Production Run
      */
 
-    Route::post('/job-tickets/{job_ticket}/production/sample-run', [ProductionRunController::class, 'ensureSampleRun'])
-        ->name('job-tickets.sample-run');
+    Route::post('/purchase-orders/{job_ticket}/production/sample-run', [ProductionRunController::class, 'ensureSampleRun'])
+        ->name('purchase-orders.sample-run');
 
-    Route::post('/job-tickets/{job_ticket}/production/mass-run', [ProductionRunController::class, 'ensureProductionRun'])
-        ->name('job-tickets.mass-run');
+    Route::post('/purchase-orders/{job_ticket}/production/mass-run', [ProductionRunController::class, 'ensureProductionRun'])
+        ->name('purchase-orders.mass-run');
 
     // Update status proses (in_progress, completed)
     Route::patch('/production-processes/{process}', [ProductionRunController::class, 'updateProcess'])

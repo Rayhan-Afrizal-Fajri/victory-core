@@ -87,7 +87,7 @@ class PaymentController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Verifikasi Pembayaran',
                 "Invoice {$invoice->no_invoice} telah dibayar, lakukan verifikasi.",
-                "/job-tickets/{$invoice->job_ticket_id}?tab=invoices",
+                "/purchase-orders/{$invoice->job_ticket_id}?tab=invoices",
                 'info'
             ));
         }
@@ -338,7 +338,7 @@ class PaymentController extends Controller
                 Notification::send($usersToNotify, new SystemNotification(
                     'Purchasing BOM Otomatis Dibuat',
                     "Invoice {$invoice->no_invoice} telah lunas. Purchasing untuk pesanan {$jobTicket->no_job_ticket} telah otomatis terbuat. Silakan lakukan pemesanan.",
-                    "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                    "/purchase-orders/{$jobTicket->id}?tab=purchasing",
                     'info'
                 ));
             }
@@ -348,7 +348,7 @@ class PaymentController extends Controller
                 Notification::send($usersToNotify, new SystemNotification(
                     'Buat kebutuhan Pesanan',
                     "Invoice {$invoice->no_invoice} telah dibayar, lakukan purchasing.",
-                    "/job-tickets/{$jobTicket->id}?tab=purchasing",
+                    "/purchase-orders/{$jobTicket->id}?tab=purchasing",
                     'info'
                 ));
             }

@@ -361,7 +361,7 @@ class PurchasingController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Purchasing BOM Digenerate',
                 "Purchasing untuk pesanan {$pesanan->jobTicket->no_job_ticket} telah dibuat. Silakan lakukan pemesanan.",
-                "/job-tickets/{$pesanan->jobTicket->id}?tab=purchasing",
+                "/purchase-orders/{$pesanan->jobTicket->id}?tab=purchasing",
                 'info'
             ));
         }
@@ -716,7 +716,7 @@ class PurchasingController extends Controller
                 Notification::send($usersToNotify, new SystemNotification(
                     'Penerimaan Barang Cacat / Expired',
                     "Material {$purchasing->item_bahan} diterima dengan kondisi {$request->item_condition} pada Job Ticket {$purchasing->pesanan->jobTicket->no_job_ticket}.",
-                    "/job-tickets/{$purchasing->pesanan->jobTicket->id}?tab=purchasing",
+                    "/purchase-orders/{$purchasing->pesanan->jobTicket->id}?tab=purchasing",
                     'warning'
                 ));
             }
@@ -1011,7 +1011,7 @@ class PurchasingController extends Controller
                 Notification::send($usersToNotify, new SystemNotification(
                     'Material Sample Siap',
                     "Semua material sample untuk Job Ticket {$pesanan->jobTicket->no_job_ticket} telah siap. Silakan mulai proses pembuatan sample.",
-                    "/job-tickets/{$pesanan->jobTicket->id}?tab=sample",
+                    "/purchase-orders/{$pesanan->jobTicket->id}?tab=sample",
                     'success'
                 ));
             }

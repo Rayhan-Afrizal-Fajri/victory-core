@@ -20,8 +20,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-import { Payment } from '@/pages/admin/job-tickets/types';
-import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
+import { Payment } from '@/pages/admin/purchase-orders/types';
+import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
 import Badge from './badge';
 import InfoItem from './info-item';
 import EmptyState from './empty-state';

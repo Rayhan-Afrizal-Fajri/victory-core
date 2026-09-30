@@ -36,7 +36,7 @@ class JobTicketController extends Controller
             $jobTicketsQuery->where('customer_id', $user->customer?->id);
         }
 
-        $jobTickets = $jobTicketsQuery->get()->map(function ($ticket) use ($role) {
+        $jobTickets = $jobTicketsQuery->get()->map(function ($ticket) use ($user) {
             $pesanans = $ticket->pesanans;
             
             // Hitung agregasi progress dari semua pesanan di dalam job ticket
@@ -65,7 +65,7 @@ class JobTicketController extends Controller
 
             $avgProgress = $pesanans->count() > 0 ? round($totalProgress / $pesanans->count()) : 0;
             // $canModify = !$hasStartedProduction;
-            $canModify = !$hasApproved || $role == 'Owner';
+            $canModify = $user->can('job_tickets.delete') || $user->can('job_tickets.edit');
 
             return [
                 'id' => $ticket->id,

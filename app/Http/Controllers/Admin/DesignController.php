@@ -91,7 +91,7 @@ class DesignController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Desain menunggu approval',
                 "Desain untuk produk '{$pesanan->produk}' telah diunggah dan menunggu persetujuan Anda.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=design",
                 'info'
             ));
         }
@@ -206,7 +206,7 @@ class DesignController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Buat Spesifikasi Desain',
                 "Desain untuk produk '{$pesanan->produk}' telah disetujui, sinkronkan spesifikasi desain.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=design",
                 'info'
             ));
         }
@@ -266,7 +266,7 @@ class DesignController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Desain direvisi',
                 "Desain untuk produk '{$pesanan->produk}' direvisi, upload ulang desain Anda.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=design",
                 'info'
             ));
         }
@@ -524,7 +524,7 @@ class DesignController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Tentukan Harga Jual Pesanan',
                 "Spesifikasi desain untuk pesanan '{$pesanan->produk}' telah selesai, Tentukan harga jual pesanan.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
                 'info'
             ));
         }
@@ -583,7 +583,7 @@ class DesignController extends Controller
             Notification::send($usersToNotify, new SystemNotification(
                 'Buat Surat Penawaran',
                 "Harga jual '{$pesanan->produk}' telah ditentukan, buat surat penawaran.",
-                "/job-tickets/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                "/purchase-orders/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
                 'info'
             ));
         }

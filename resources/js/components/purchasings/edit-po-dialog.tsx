@@ -22,7 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-import type { Supplier } from '@/pages/admin/job-tickets/types';
+import type { Supplier } from '@/pages/admin/purchase-orders/types';
 import { formatDecimal } from '@/helpers/format';
 import FormattedNumberInput from '../ui/formatted-number-input';
 

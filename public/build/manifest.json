@@ -938,17 +938,17 @@
     "dynamicImports": [
       "resources/js/pages/admin/customers/Index.tsx",
       "resources/js/pages/admin/invoices/Index.tsx",
-      "resources/js/pages/admin/job-tickets/Index.tsx",
-      "resources/js/pages/admin/job-tickets/Show.tsx",
-      "resources/js/pages/admin/job-tickets/components/JobTicketHeader.tsx",
+      "resources/js/pages/admin/purchase-orders/Index.tsx",
+      "resources/js/pages/admin/purchase-orders/Show.tsx",
+      "resources/js/pages/admin/purchase-orders/components/JobTicketHeader.tsx",
       "_SectionCard-C8oGq1EW.js",
-      "resources/js/pages/admin/job-tickets/components/StatusBadge.tsx",
+      "resources/js/pages/admin/purchase-orders/components/StatusBadge.tsx",
       "_WorkflowGate--Kh9fvar.js",
-      "resources/js/pages/admin/job-tickets/components/WorkflowTabs.tsx",
-      "resources/js/pages/admin/job-tickets/components/WorkflowTimeline.tsx",
+      "resources/js/pages/admin/purchase-orders/components/WorkflowTabs.tsx",
+      "resources/js/pages/admin/purchase-orders/components/WorkflowTimeline.tsx",
       "_ActivityTab-DZgpjcst.js",
       "_CostingTab-DU4iOHA-.js",
-      "resources/js/pages/admin/job-tickets/components/tabs/DeliveryTab.tsx",
+      "resources/js/pages/admin/purchase-orders/components/tabs/DeliveryTab.tsx",
       "_DesignSpecsPreview-ZnQWyUql.js",
       "_DesignTab-DEyNwPR6.js",
       "_FinanceTab-C6Vi4E0G.js",
@@ -958,13 +958,13 @@
       "_MaterialSpecEditDialog-DpD-R7iC.js",
       "_OrderRequestSummaryCard-8OcbdCYw.js",
       "_OverviewTab-BfBm2EU9.js",
-      "resources/js/pages/admin/job-tickets/components/tabs/PackingTab.tsx",
+      "resources/js/pages/admin/purchase-orders/components/tabs/PackingTab.tsx",
       "_ProductionTab-CdFVuVzA.js",
-      "resources/js/pages/admin/job-tickets/components/tabs/ProductionTab2.tsx",
+      "resources/js/pages/admin/purchase-orders/components/tabs/ProductionTab2.tsx",
       "_PurchasingTab-C9Hzw2dm.js",
-      "resources/js/pages/admin/job-tickets/components/tabs/QCTab.tsx",
+      "resources/js/pages/admin/purchase-orders/components/tabs/QCTab.tsx",
       "_SampleTab-CKVVG8Bl.js",
-      "resources/js/pages/admin/job-tickets/components/tabs/SampleTab1.tsx",
+      "resources/js/pages/admin/purchase-orders/components/tabs/SampleTab1.tsx",
       "_SpecSection-BGT9Hkol.js",
       "resources/js/pages/admin/kanban/Index.tsx",
       "resources/js/pages/admin/master/company-profiles/Index.tsx",
@@ -1050,10 +1050,10 @@
       "_card-BxiDDeOf.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/Index.tsx": {
+  "resources/js/pages/admin/purchase-orders/Index.tsx": {
     "file": "assets/Index-3BNfY5lh.js",
     "name": "Index",
-    "src": "resources/js/pages/admin/job-tickets/Index.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/Index.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1068,44 +1068,44 @@
       "_badge-BbhhlzL7.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/Show.tsx": {
+  "resources/js/pages/admin/purchase-orders/Show.tsx": {
     "file": "assets/Show-BbFLx0VG.js",
     "name": "Show",
-    "src": "resources/js/pages/admin/job-tickets/Show.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/Show.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
       "_dist-CxG3YgGQ.js",
       "resources/js/app.tsx",
       "_OverviewTab-BfBm2EU9.js",
-      "resources/js/pages/admin/job-tickets/components/StatusBadge.tsx",
-      "resources/js/pages/admin/job-tickets/components/WorkflowTabs.tsx",
-      "resources/js/pages/admin/job-tickets/components/WorkflowTimeline.tsx"
+      "resources/js/pages/admin/purchase-orders/components/StatusBadge.tsx",
+      "resources/js/pages/admin/purchase-orders/components/WorkflowTabs.tsx",
+      "resources/js/pages/admin/purchase-orders/components/WorkflowTimeline.tsx"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/JobTicketHeader.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/JobTicketHeader.tsx": {
     "file": "assets/JobTicketHeader-DO2aj64F.js",
     "name": "JobTicketHeader",
-    "src": "resources/js/pages/admin/job-tickets/components/JobTicketHeader.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/JobTicketHeader.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
-      "resources/js/pages/admin/job-tickets/components/StatusBadge.tsx"
+      "resources/js/pages/admin/purchase-orders/components/StatusBadge.tsx"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/StatusBadge.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/StatusBadge.tsx": {
     "file": "assets/StatusBadge-SW_68Rbq.js",
     "name": "StatusBadge",
-    "src": "resources/js/pages/admin/job-tickets/components/StatusBadge.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/StatusBadge.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/WorkflowTabs.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/WorkflowTabs.tsx": {
     "file": "assets/WorkflowTabs-C60qd5v2.js",
     "name": "WorkflowTabs",
-    "src": "resources/js/pages/admin/job-tickets/components/WorkflowTabs.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/WorkflowTabs.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1123,10 +1123,10 @@
       "_ActivityTab-DZgpjcst.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/WorkflowTimeline.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/WorkflowTimeline.tsx": {
     "file": "assets/WorkflowTimeline-DH7u5GLh.js",
     "name": "WorkflowTimeline",
-    "src": "resources/js/pages/admin/job-tickets/components/WorkflowTimeline.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/WorkflowTimeline.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1134,10 +1134,10 @@
       "_card-BxiDDeOf.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/tabs/DeliveryTab.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/tabs/DeliveryTab.tsx": {
     "file": "assets/DeliveryTab-x7aNXvHj.js",
     "name": "DeliveryTab",
-    "src": "resources/js/pages/admin/job-tickets/components/tabs/DeliveryTab.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/tabs/DeliveryTab.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1146,10 +1146,10 @@
       "_WorkflowGate--Kh9fvar.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/tabs/PackingTab.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/tabs/PackingTab.tsx": {
     "file": "assets/PackingTab-rzT83JJO.js",
     "name": "PackingTab",
-    "src": "resources/js/pages/admin/job-tickets/components/tabs/PackingTab.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/tabs/PackingTab.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1157,10 +1157,10 @@
       "_WorkflowGate--Kh9fvar.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/tabs/ProductionTab2.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/tabs/ProductionTab2.tsx": {
     "file": "assets/ProductionTab2-C5AzcrFK.js",
     "name": "ProductionTab2",
-    "src": "resources/js/pages/admin/job-tickets/components/tabs/ProductionTab2.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/tabs/ProductionTab2.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1168,10 +1168,10 @@
       "_WorkflowGate--Kh9fvar.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/tabs/QCTab.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/tabs/QCTab.tsx": {
     "file": "assets/QCTab-CHbcPRRo.js",
     "name": "QCTab",
-    "src": "resources/js/pages/admin/job-tickets/components/tabs/QCTab.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/tabs/QCTab.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",
@@ -1179,10 +1179,10 @@
       "_WorkflowGate--Kh9fvar.js"
     ]
   },
-  "resources/js/pages/admin/job-tickets/components/tabs/SampleTab1.tsx": {
+  "resources/js/pages/admin/purchase-orders/components/tabs/SampleTab1.tsx": {
     "file": "assets/SampleTab1-BcuAj_nT.js",
     "name": "SampleTab1",
-    "src": "resources/js/pages/admin/job-tickets/components/tabs/SampleTab1.tsx",
+    "src": "resources/js/pages/admin/purchase-orders/components/tabs/SampleTab1.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_jsx-runtime-BCV00E_w.js",

@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
+import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
 import { AlertCircle, CheckCircle, PackageCheck, Truck, Scissors, FileImage } from "lucide-react";
 
 const SampleProgressStepper = ({

@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
+import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
 import Field from "./field";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";

@@ -131,7 +131,7 @@ class KanbanBoardController extends Controller
                 'jobNo' => $pesanan->jobTicket?->no_job_ticket ?? '-',
                 'customer' => $pesanan->jobTicket?->customer?->nama_perusahaan ?? '-',
                 'product' => $pesanan->produk ?? '-',
-                'showUrl' => '/job-tickets/' . ($pesanan->jobTicket?->id ?? 0) . '?tab=purchasing',
+                'showUrl' => '/purchase-orders/' . ($pesanan->jobTicket?->id ?? 0) . '?tab=purchasing',
                 'issues' => array_merge($purchasingIssues, $productionIssues),
             ];
         })->values()->toArray();
@@ -179,7 +179,7 @@ class KanbanBoardController extends Controller
                         'blocker' => 'Menunggu Pembayaran DP Produksi',
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab1),
+                        'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab1),
                     ];
 
                     // CARD 2: Melaju ke Purchasing Production atau Production (mengikuti kondisi riil pabrik)
@@ -199,7 +199,7 @@ class KanbanBoardController extends Controller
                         'blocker' => $blocker,
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab2),
+                        'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab2),
                     ];
                 } else {
                     // JIKA NORMAL: Hanya 1 Card
@@ -219,7 +219,7 @@ class KanbanBoardController extends Controller
                         'blocker' => $blocker,
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
-                        'showUrl' => '/job-tickets/' . $jobId . '?tab=' . urlencode($tab),
+                        'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab),
                     ];
                 }
 

@@ -5,9 +5,9 @@ import WorkflowTabs from './components/WorkflowTabs';
 import { DefaultSizeBreakdown, JobTicket, Pesanan, ProductOption, Supplier } from './types';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import jobTickets from '@/routes/job-tickets';
+import jobTickets from '@/routes/purchase-orders';
 import StatusBadge from './components/StatusBadge';
-import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/job-tickets/utils';
+import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/purchase-orders/utils';
 
 type Props = { 
     jobTicket: JobTicket; // Prop dirubah ke jobTicket dari controller

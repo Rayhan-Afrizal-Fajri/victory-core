@@ -29,7 +29,7 @@ class NotificationService
             'designs.approve',
             'Desain menunggu approval',
             "Desain untuk produk '{$pesanan->produk}' telah diunggah dan menunggu persetujuan Anda.",
-            "/job-tickets/{$pesanan->job_ticket_id}?tab=design",
+            "/purchase-orders/{$pesanan->job_ticket_id}?tab=design",
             'info'
         );
     }

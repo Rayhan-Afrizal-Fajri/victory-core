@@ -1,4 +1,4 @@
-import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
+import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
 import formatRupiah from '@/components/ui/format-rupiah';
 import {
     getReceivedQty,
@@ -10,8 +10,8 @@ import {
     getProgressPercentage,
     roundQty,
 } from './purchasing-utils';
-import { JobTicket } from '@/pages/admin/job-tickets/types';
-import InfoBox from '@/pages/admin/job-tickets/components/tabs/InfoBox';
+import { JobTicket } from '@/pages/admin/purchase-orders/types';
+import InfoBox from '@/pages/admin/purchase-orders/components/tabs/InfoBox';
 
 const PurchasingSummaryCard = ({ purchasings, job }: { purchasings: any[]; job: any }) => {
     const totalItems = purchasings.length;

@@ -1,4 +1,4 @@
-import { WorkflowStatus } from '../job-tickets/types';
+import { WorkflowStatus } from '../purchase-orders/types';
 
 export type Customer = { id: number; name: string; company_name: string };
 export type CompanyProfile = { id: number; name: string; type: string; };
