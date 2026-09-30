@@ -30,7 +30,7 @@ import InvoiceDetailSheet from '@/components/invoice/invoice-detail-sheet';
 import PaymentDialog from '@/components/sample/payment-dialog';
 import InvoiceEditDialog from '@/components/invoice/invoice-edit-dialog';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
-import { Invoice } from '../purchase-orders/types';
+import { Invoice } from '../job-tickets/types';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('id-ID', {

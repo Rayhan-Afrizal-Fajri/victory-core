@@ -1,4 +1,4 @@
-import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
+import SectionCard from '@/pages/admin/job-tickes/components/SectionCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import FormattedNumberInput from '../ui/formatted-number-input';

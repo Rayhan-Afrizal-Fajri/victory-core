@@ -7,7 +7,7 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import jobTickets from '@/routes/purchase-orders';
 import StatusBadge from './components/StatusBadge';
-import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/purchase-orders/utils';
+import { getJobStatusFromWorkflow, getWorkflowProgress } from '@/components/job-tickets/utils';
 
 type Props = { 
     jobTicket: JobTicket; // Prop dirubah ke jobTicket dari controller

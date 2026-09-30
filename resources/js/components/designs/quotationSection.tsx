@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import { router, useForm } from "@inertiajs/react";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 import formatRupiah from "../ui/format-rupiah";
 import { useCan } from "@/hooks/use-can";
 import FormattedNumberInput from "../ui/formatted-number-input";
-import { Pesanan } from "@/pages/admin/purchase-orders/types";
+import { Pesanan } from "@/pages/admin/job-tickets/types";
 import { Info, Plus, Trash2, Undo2 } from "lucide-react";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';

@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import Badge from "./badge";
 import formatRupiah from "../ui/format-rupiah";
 import { Button } from "../ui/button";

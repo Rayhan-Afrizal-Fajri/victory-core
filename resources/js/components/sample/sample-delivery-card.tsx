@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import EmptyState from "./empty-state";
 import { Edit, PackageCheck, Trash2, Truck } from "lucide-react";
 import Field from "./field";

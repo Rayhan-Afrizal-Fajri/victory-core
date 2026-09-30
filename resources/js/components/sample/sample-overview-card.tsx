@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import { Button } from "../ui/button";
 import { PlayCircle, CheckCircle2 } from "lucide-react";
 import formatRupiah from "../ui/format-rupiah";

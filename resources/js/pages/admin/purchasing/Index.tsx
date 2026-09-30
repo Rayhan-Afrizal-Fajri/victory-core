@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { update as updatePurchasing } from '@/routes/purchasings';
 import PurchasingFormDialog from '@/components/purchasings/purchasing-form-dialog';
-import { Supplier } from '../purchase-orders/types';
+import { Supplier } from '../job-tickets/types';
 import EditPoDialog from '@/components/purchasings/edit-po-dialog';
 import ReceivingDialog from '@/components/purchasings/receiving-dialog';
 

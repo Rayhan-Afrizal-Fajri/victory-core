@@ -1,4 +1,4 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import EmptyState from "./empty-state";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";

@@ -18,7 +18,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
-import { Quotation } from '../purchase-orders/types';
+import { Quotation } from '../job-tickets/types';
 
 type QuotationRow = Quotation & {
   job_ticket_id?: number | null;

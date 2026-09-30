@@ -1,4 +1,4 @@
-import type { WorkflowStatus } from '../../pages/admin/purchase-orders/types';
+import type { WorkflowStatus } from '../../pages/admin/job-tickets/types';
 
 const workflowProgressSteps = [
     {

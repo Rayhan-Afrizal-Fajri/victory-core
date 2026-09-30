@@ -23,7 +23,7 @@ import {
     isInvoicePaid,
 } from './invoice-utils';
 import { useCan } from '@/hooks/use-can';
-import { Payment } from '@/pages/admin/purchase-orders/types';
+import { Payment } from '@/pages/admin/job-tickets/types';
 
 const InvoiceCard = ({
     invoice,

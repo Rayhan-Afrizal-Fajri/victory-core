@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { JobTicket, Pesanan, WorkflowStatus } from '../../types';
 import SectionCard from '../SectionCard';
-import { getWorkflowProgress } from '@/components/purchase-orders/utils';
+import { getWorkflowProgress } from '@/components/job-tickets/utils';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertCircle, 

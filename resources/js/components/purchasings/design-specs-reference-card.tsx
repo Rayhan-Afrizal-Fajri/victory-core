@@ -5,7 +5,7 @@ import { DataTable } from '@/components/data-table';
 import type { DataTableColumn } from '@/components/data-table';
 
 import EmptyState from '@/components/sample/empty-state';
-import SectionCard from '@/pages/admin/purchase-orders/components/SectionCard';
+import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
 
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDecimal } from '@/helpers/format';

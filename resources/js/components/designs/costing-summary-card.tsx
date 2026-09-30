@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import { formatCurrency } from "@/helpers/format";
 import { useCan } from "@/hooks/use-can";
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import FormattedNumberInput from "../ui/formatted-number-input";
 import { Button } from "../ui/button";
-import { Pesanan } from "@/pages/admin/purchase-orders/types";
+import { Pesanan } from "@/pages/admin/job-tickets/types";
 
 function CostingSummaryCard({
     form,

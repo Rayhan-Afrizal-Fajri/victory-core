@@ -1,11 +1,11 @@
-import SectionCard from "@/pages/admin/purchase-orders/components/SectionCard";
+import SectionCard from "@/pages/admin/job-tickets/components/SectionCard";
 import { useForm, router } from "@inertiajs/react";
 import { toast } from "sonner";
 import EmptyState from "./empty-state";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
 import FormImageUpload from "../ui/form-image";
 import { Button } from "../ui/button";
-import { SampleMedia } from "@/pages/admin/purchase-orders/types";
+import { SampleMedia } from "@/pages/admin/job-tickets/types";
 
 const SampleGalleryCard = ({
     media,
