@@ -198,11 +198,11 @@
                 <div class="address-title">Informasi Perusahaan</div>
                 <div class="address-content">
                     <div class="company-name">
-                        {{ $jobTicket->companyProfile->company_name ?? 'PT. Victorylab Global Industries' }}
+                        {{ $companyProfile?->company_name ?? 'PT. Victorylab Global Industries' }}
                     </div>
-                    Headquarters : {!! nl2br(e($jobTicket->companyProfile->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
-                    Telp: {{ $jobTicket->companyProfile->phone ?? '081212228900' }}<br>
-                    Email: {{ $jobTicket->companyProfile->email ?? 'marketing@victorylabs.id' }}
+                    Headquarters : {!! nl2br(e($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
+                    Telp: {{ $companyProfile?->phone ?? '081212228900' }}<br>
+                    Email: {{ $companyProfile?->email ?? 'marketing@victorylabs.id' }}
                 </div>
             </td>
 
@@ -211,16 +211,12 @@
                 <div class="address-title">Penawaran Kepada</div>
                 <div class="address-content">
                     <div class="company-name">
-                        {{ $jobTicket->customer_perusahaan_snapshot ?? $jobTicket->customer->nama_perusahaan ?? $jobTicket->customer->nama }}
+                        {{ $customerCompany ?: $customerName ?: 'Customer' }}
                     </div>
-                    {{ $jobTicket->customer->alamat_detail ?? '' }},
-                    {{ $jobTicket->customer->kelurahan ?? '' }},
-                    {{ $jobTicket->customer->kecamatan ?? '' }},
-                    {{ $jobTicket->customer->kota ?? '' }},
-                    {{ $jobTicket->customer->provinsi ?? '' }}
+                    {{ $customer?->alamat_detail ?? $customerAddress ?? '-' }}
                     <br>
-                    Telp: {{ $jobTicket->customer->kontak ?? $jobTicket->customer->no_hp ?? '-' }}<br>
-                    Up: {{ $jobTicket->customer_nama_snapshot ?? $jobTicket->customer->nama }}
+                    Telp: {{ $customerPhone ?? $customer?->kontak ?? '-' }}<br>
+                    Up: {{ $customerName ?: $customerCompany ?: 'Customer' }}
                 </div>
             </td>
         </tr>
@@ -240,7 +236,7 @@
         <tbody>
             @foreach($quotation->items as $index => $item)
                 @php
-                    $pesanan = $jobTicket->pesanans->get($index);
+                    $pesanan = $item->pesanan;
                 @endphp
                 <tr>
                     <td>
@@ -294,10 +290,13 @@
                             <li>{!! $note->notes !!}</li>                        
                         @endforeach
                     @endif
+                    @if($quotation->notes)
+                        <li>{!! $quotation->notes !!}</li>
+                    @endif
                     <li>Untuk pembayaran mohon untuk ditransfer ke 
-                        {{ $jobTicket->companyProfile->bank_type ?? 'BCA' }}, no acc 
-                        <b>{{ $jobTicket->companyProfile->account_number ?? '453.12.06660' }}</b>, 
-                        Atas nama <b>{{ strtoupper($jobTicket->companyProfile->account_name) ?? 'VICTOR HARLIM.MBA' }}</b>.
+                        {{ $companyProfile?->bank_type ?? 'BCA' }}, no acc
+                        <b>{{ $companyProfile?->account_number ?? '453.12.06660' }}</b>,
+                        Atas nama <b>{{ strtoupper($companyProfile?->account_name ?? 'VICTOR HARLIM.MBA') }}</b>.
                     </li>
                 </ul>
             </td>
@@ -312,8 +311,8 @@
                     <tr>
                         <td class="summary-label text-right">
                             Pajak PPN
-                            @if($jobTicket->companyProfile && $jobTicket->companyProfile->company_type === 'pkp')
-                                ({{ $jobTicket->companyProfile->tax_percentage }}%)
+                            @if($companyProfile && $companyProfile->company_type === 'pkp')
+                                ({{ $companyProfile->tax_percentage }}%)
                             @endif
                         </td>
                         <td class="text-right font-bold">Rp {{ number_format($quotation->tax, 0, ',', '.') }}</td>
@@ -332,7 +331,7 @@
     </table>
 
     @php
-        $signature = storage_path('app/public/' . $owner->signature);
+        $signature = $owner?->signature ? storage_path('app/public/' . $owner->signature) : null;
     @endphp
     <!-- Signature (Tanya Direktur Saja) -->
     <table class="signature-container">
@@ -341,9 +340,11 @@
             <td class="signature-cell">
                 <p style="color: #111827;">Dengan Hormat,</p>
                 <div class="signature-space">
-                   <img src={{ $signature }} alt="" style="max-height: 50px;">
+                   @if($signature)
+                       <img src="{{ $signature }}" alt="" style="max-height: 50px;">
+                   @endif
                 </div>
-                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner->name ?? 'Nama Direktur' }}</p>
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner?->name ?? 'Nama Direktur' }}</p>
                 <p style="margin-top: 0; color: #111827;">Direktur</p>
             </td>
         </tr>

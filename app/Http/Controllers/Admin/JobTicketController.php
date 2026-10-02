@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\JobTicket;
+use App\Models\Quotation;
 // use App\Models\Pesanan;
 use App\Models\Supplier;
 use App\Models\Product;
@@ -162,6 +163,47 @@ class JobTicketController extends Controller
             'pesanans.product',
         ])->findOrFail($id);
 
+        $customerName = $jobTicket->customer_nama_snapshot ?: $jobTicket->customer?->nama;
+        $customerCompany = $jobTicket->customer_perusahaan_snapshot ?: $jobTicket->customer?->nama_perusahaan;
+        $availableDraftQuotations = Quotation::query()
+            ->with('items')
+            ->whereNull('job_ticket_id')
+            ->where('status', 'draft')
+            ->get()
+            ->filter(function ($quotation) use ($jobTicket, $customerName, $customerCompany) {
+                if ($quotation->customer_id && $jobTicket->customer_id) {
+                    return (int) $quotation->customer_id === (int) $jobTicket->customer_id;
+                }
+
+                $quotationCompany = mb_strtolower(trim((string) $quotation->customer_company_snapshot));
+                $jobCompany = mb_strtolower(trim((string) $customerCompany));
+                if ($quotationCompany !== '' && $jobCompany !== '') {
+                    return $quotationCompany === $jobCompany;
+                }
+
+                return mb_strtolower(trim((string) $quotation->customer_name_snapshot))
+                    === mb_strtolower(trim((string) $customerName));
+            })
+            ->map(fn ($quotation) => [
+                'id' => $quotation->id,
+                'quotation_number' => $quotation->quotation_number,
+                'customer_id' => $quotation->customer_id,
+                'customer_name_snapshot' => $quotation->customer_name_snapshot,
+                'customer_company_snapshot' => $quotation->customer_company_snapshot,
+                'grand_total' => (float) $quotation->grand_total,
+                'items' => $quotation->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'pesanan_id' => $item->pesanan_id,
+                    'item_name' => $item->item_name,
+                    'quantity' => (int) $item->quantity,
+                    'sample_quantity' => (int) $item->sample_quantity,
+                    'sample_price_per_pcs' => (float) $item->sample_price_per_pcs,
+                    'price_per_pcs' => (float) $item->price_per_pcs,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+
         // 2. Fungsi Mapper untuk Production Run
         $mapRun = function ($run) {
             if (! $run) return null;
@@ -213,13 +255,18 @@ class JobTicketController extends Controller
         $mapped = [
             'id' => $jobTicket->id,
             'no_job_ticket' => $jobTicket->no_job_ticket,
+            'customer_id' => $jobTicket->customer_id,
+            'company_profile_id' => $jobTicket->company_profile_id,
             'customer' => [
+                'id' => $jobTicket->customer_id,
                 'name' => $jobTicket->customer?->nama ?? $jobTicket->customer_nama_snapshot,
                 'company' => $jobTicket->customer?->nama_perusahaan ?? $jobTicket->customer_perusahaan_snapshot,
                 'email' => $jobTicket->customer?->user?->email,
                 'phone' => $jobTicket->customer?->no_hp,
+                'address' => $jobTicket->customer?->alamat_detail,
             ],
             'company_profile' => [
+                'id' => $jobTicket->company_profile_id,
                 'company_name' => $jobTicket->companyProfile?->company_name,
                 'company_type' => str_replace('_', ' ' , $jobTicket->companyProfile?->company_type),
                 'bank_type' => $jobTicket->companyProfile?->bank_type,
@@ -253,19 +300,47 @@ class JobTicketController extends Controller
             'quotations' => $jobTicket->quotations->sortByDesc('id')->values()->map(fn ($q) => [
                 'id' => $q->id,
                 'quotation_number' => $q->quotation_number,
+                'source_type' => $q->source_type,
+                'created_at' => $q->created_at,
                 'status' => $q->status,
                 'grand_total' => (float) $q->grand_total,
                 'valid_until' => $q->valid_until,
                 'sample_qty' => $q->sample_qty,
+                'job_ticket_id' => $q->job_ticket_id,
+                'customer_id' => $q->customer_id,
+                'company_profile_id' => $q->company_profile_id,
+                'customer_name_snapshot' => $q->customer_name_snapshot,
+                'customer_company_snapshot' => $q->customer_company_snapshot,
+                'customer_phone_snapshot' => $q->customer_phone_snapshot,
+                'customer_address_snapshot' => $q->customer_address_snapshot,
+                'payment_terms' => $q->payment_terms,
+                'delivery_terms' => $q->delivery_terms,
+                'notes' => $q->notes,
+                'subtotal' => (float) $q->subtotal,
+                'tax' => (float) $q->tax,
+                'delivery_cost' => (float) $q->delivery_cost,
                 'items' => $q->items->map(fn ($item) => [
                     'id' => $item->id,
                     'pesanan_id' => $item->pesanan_id,
                     'item_name' => $item->item_name,
                     'quantity' => $item->quantity,
+                    'sample_quantity' => (int) $item->sample_quantity,
+                    'sample_price_per_pcs' => (float) $item->sample_price_per_pcs,
                     'price_per_pcs' => (float) $item->price_per_pcs,
                     'subtotal' => (float) $item->subtotal,
                 ])->toArray(),
             ])->toArray(),
+            'available_draft_quotations' => $availableDraftQuotations,
+            'available_company_profiles' => CompanyProfile::query()
+                ->orderBy('company_name')
+                ->get(['id', 'company_name', 'company_type', 'tax_percentage'])
+                ->map(fn ($profile) => [
+                    'id' => $profile->id,
+                    'name' => $profile->company_name,
+                    'type' => $profile->company_type,
+                    'tax_percentage' => (float) $profile->tax_percentage,
+                ])
+                ->all(),
 
             'workflow_histories' => $jobTicket->workflowHistory
                 ->sortByDesc('created_at')

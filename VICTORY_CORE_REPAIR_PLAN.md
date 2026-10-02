@@ -2,7 +2,7 @@
 
 ## Tujuan
 
-Dokumen ini merencanakan perbaikan lima catatan pada alur order, BOM, dokumen penawaran/tagihan, sinkronisasi artikel, dan purchasing. Dokumen ini belum mengubah implementasi aplikasi.
+Dokumen ini mencatat rencana dan status implementasi untuk perbaikan alur order, BOM, dokumen penawaran/tagihan, sinkronisasi artikel, dan purchasing.
 
 ## Temuan Kondisi Saat Ini
 
@@ -12,6 +12,7 @@ Dokumen ini merencanakan perbaikan lima catatan pada alur order, BOM, dokumen pe
 - PDF quotation dan invoice sudah mempunyai nama file pada saat print. Quotation memakai nomor quotation saja; invoice memakai nomor invoice saja.
 - Invoice produksi saat ini mempunyai beberapa bentuk kategori dan alur: invoice manual mengenal `production`, sedangkan proses otomatis memakai `produksi`; workflow juga mencatat status pembayaran DP dan pelunasan.
 - Purchasing BOM membuat baris dengan status `draft`. Endpoint dan aksi UI `Pesan`/batalkan sudah ada dan secara kode dapat dipakai pada baris purchasing BOM. Karena itu catatan kelima perlu diverifikasi pada data produksi nyata, gate tampilan, dan permission sebelum menambah mekanisme baru.
+- Pembuatan quotation saat ini terikat ke `JobTicket` dan menunggu spesifikasi/harga final. Kolom `quotations.job_ticket_id` dan `quotation_items.pesanan_id` saat ini wajib, sehingga belum dapat menyimpan draft quotation mandiri sebelum ada PO.
 
 ## Rencana Per Butir
 
@@ -152,6 +153,49 @@ Contoh: `INV001 - Victory Labs - T-Shirt Oversize Hitam.pdf`.
 - Tanpa permission, aksi tidak terlihat dan endpoint tetap terlindungi.
 - Uji baris BOM `production`, `sample_and_production`, dan purchasing manual sesuai scope yang memang didukung.
 
+### 6. Quotation Manual, Draft Global, dan Tampilan Detail PO
+
+**Kebutuhan client**
+
+- Quotation dapat dibuat manual tanpa menunggu desain, BOM, atau penetapan harga di workflow PO.
+- Quotation baru berstatus `draft` dan dapat ditautkan ke PO kemudian melalui tab Costing & Quotation.
+- Pada detail PO tersedia aksi untuk membuat quotation baru atau memilih quotation draft yang sudah ada.
+- Riwayat quotation pada detail PO diubah dari kumpulan card menjadi tabel interaktif yang konsisten dengan gaya sistem; form panjang dipindahkan ke modal.
+
+**Rekomendasi alur**
+
+- Jadikan halaman `/quotations` sebagai tempat melihat dan membuat draft quotation mandiri. Form manual dapat diakses dari tombol **Buat Quotation** dan berisi customer/perusahaan, masa berlaku, syarat, catatan, serta daftar item (nama artikel, qty, harga per unit, subtotal, pajak/ongkir bila berlaku). Sumber data boleh berupa input manual; BOM dan workflow pricing tidak menjadi prasyarat.
+- Pada detail PO, tampilkan tabel quotation yang sudah terhubung dengan kolom nomor, tanggal, customer, jumlah item, total, status, dan aksi. Gunakan pencarian, sorting, pagination, serta aksi yang sesuai status dan permission.
+- Letakkan dua aksi terpisah di atas tabel: **Buat Quotation** membuka modal form yang sama dan mem-prefill customer serta item dari PO bila tersedia; **Pilih Draft** membuka modal pemilih draft yang belum terhubung dan customer-nya cocok dengan PO.
+- Setelah memilih draft, tampilkan konfirmasi ringkas termasuk customer, item, total, dan PO tujuan sebelum attach. Jika item belum memiliki relasi pesanan, minta pemetaan item quotation ke pesanan di PO; jangan mengaitkan otomatis hanya berdasarkan nama tanpa konfirmasi.
+- Pertahankan satu sumber komponen/form untuk halaman Quotations dan modal di detail PO agar validasi, kalkulasi, dan tampilan PDF tidak bercabang.
+
+**Perubahan data yang diperkirakan**
+
+- Jadikan `quotations.job_ticket_id` nullable untuk draft yang belum dihubungkan ke PO; tambahkan customer/company reference atau snapshot yang diperlukan agar draft mandiri tetap dapat dicetak dan difilter.
+- Jadikan `quotation_items.pesanan_id` nullable untuk item draft mandiri. Simpan nama artikel, qty, harga, dan subtotal sebagai snapshot agar data quotation tidak bergantung pada BOM.
+- Saat attach, dalam satu transaksi validasi status masih `draft`, belum terhubung ke PO lain, customer cocok, dan item sudah dipetakan ke pesanan PO. Set `job_ticket_id`, isi `pesanan_id` pada item yang cocok, lalu sinkronkan workflow PO yang diperlukan.
+- Jangan mengubah `draft` menjadi status baru hanya untuk menandai attach. Relasi `job_ticket_id` membedakan draft global dari draft yang telah dipasang ke PO, sedangkan status quotation tetap menggambarkan tahap persetujuan.
+- Batasi penghapusan cascade agar menghapus PO tidak ikut menghapus draft/quotation yang perlu dipertahankan sebagai dokumen komersial; tentukan aturan detach atau restrict sebelum migrasi.
+
+**Area kerja yang diperkirakan**
+
+- `database/migrations/*quotations*` dan `database/migrations/*quotation_items*` untuk nullable FK dan referensi customer/company/snapshot yang diperlukan.
+- `app/Models/Quotation.php`, `app/Models/QuotationItem.php`, `app/Http/Controllers/Admin/QuotationController.php`, serta generator nomor dan PDF.
+- `resources/js/pages/admin/quotations/index.tsx` untuk daftar dan pembuatan draft mandiri.
+- `resources/js/components/designs/quotationSection.tsx` dan tab Costing & Quotation pada detail PO untuk tabel, modal buat, dan modal attach draft.
+- Policies/permissions, notifikasi, workflow status PO, serta approval/rejection agar draft yang di-attach tetap mengikuti alur persetujuan yang benar.
+
+**Kriteria penerimaan**
+
+- Draft dapat dibuat tanpa Job Ticket, BOM, atau harga dari workflow; wajib memiliki customer, minimal satu item valid, dan total hasil kalkulasi server.
+- Draft mandiri muncul pada daftar Quotation dan dapat dicetak dengan customer serta item snapshot yang benar.
+- Pada detail PO tersedia aksi buat baru dan pilih draft. Daftar draft yang dapat dipilih hanya menampilkan draft yang belum terhubung dan customer-nya cocok.
+- Attach gagal secara atomik jika draft sudah dipakai, customer berbeda, item tidak dipetakan, atau status bukan `draft`.
+- Setelah attach, quotation tampil pada tabel PO dan approval tetap memperbarui workflow/quotation items pesanan dengan benar.
+- Tabel mendukung pencarian, sorting, pagination, empty state, serta aksi berdasarkan status dan permission; form/modal nyaman di desktop dan mobile.
+- Penghapusan PO tidak menghilangkan quotation yang seharusnya tetap menjadi dokumen komersial.
+
 ## Urutan Implementasi yang Disarankan
 
 1. Gunakan aturan DP satu ledger di atas dan nama file multi-artikel yang mencakup seluruh artikel.
@@ -160,6 +204,7 @@ Contoh: `INV001 - Victory Labs - T-Shirt Oversize Hitam.pdf`.
 4. Refaktor operasi sync artikel agar reusable, lalu tambahkan opsi sync ke Order Entry dan cakupan tes edit/quantity.
 5. Reproduksi isu tombol purchasing produksi, lalu perbaiki gate atau state yang terbukti menjadi penyebab.
 6. Sediakan mode cetak DP/pelunasan pada invoice produksi yang sama; audit alokasi pembayaran, workflow, print, dan laporan sebagai satu perubahan lintas modul.
+7. Setelah keputusan relasi quotation dan aturan penghapusan PO disetujui, tambahkan draft mandiri, attach draft ke PO, lalu ubah riwayat quotation PO ke tabel dengan modal create/pilih.
 
 ## Strategi Pengujian
 
@@ -175,11 +220,13 @@ Contoh: `INV001 - Victory Labs - T-Shirt Oversize Hitam.pdf`.
 - Quotation dan invoice dapat berisi beberapa artikel; aturan nama file harus ditentukan agar nama tetap informatif dan tidak terlalu panjang.
 - Catatan Job Ticket bersifat tingkat PO, sedangkan BOM bersifat per artikel. UI perlu menandai bahwa catatan berlaku untuk seluruh Job Ticket, bukan hanya satu artikel.
 - Checklist pemesanan produksi dipisahkan dari status receiving; penerimaan baik yang telah memasuki alokasi produksi otomatis mencatat waktu dan pengguna pemesan.
+- Draft quotation mandiri dan redesign tabel/modal quotation pada detail PO: belum diimplementasikan; perubahan nullable FK, mapping item, customer matching, dan aturan penghapusan PO perlu dikerjakan sebagai satu slice.
 
-## Status Implementasi (2 Oktober 2026)
+## Status Implementasi (3 Oktober 2026)
 
 - Catatan PO/detail pesanan pada tab BOM: selesai.
 - Nama file quotation/invoice dengan fallback multi-artikel dan sanitasi: selesai.
 - Sinkronisasi artikel langsung dari Order Entry: selesai. Pilihan artikel master bersifat opsional; checkbox sync default nonaktif dan mengisi BOM saat dicentang. Sync ulang dari edit meminta konfirmasi.
 - Cetak invoice DP dan pelunasan dari satu invoice produksi: selesai.
 - Checklist purchasing produksi: selesai. Tombol tersedia setelah material sample siap dan sample disetujui; penerimaan material baik pada alokasi produksi juga otomatis menandai pemesanan.
+- Quotation manual, attach PO, edit sebelum approval, dan UI: selesai. Draft dapat dibuat mandiri atau dari PO eligible; draft mandiri dapat dipilih dari detail PO, item dipetakan ke pesanan, dan perubahan ditolak setelah status approved.

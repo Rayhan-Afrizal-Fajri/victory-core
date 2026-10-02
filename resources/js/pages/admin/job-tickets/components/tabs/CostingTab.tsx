@@ -3,7 +3,7 @@ import { router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 import type { JobTicket } from '../../types';
-import QuotationSection from '@/components/designs/quotationSection';
+import QuotationManagementSection from '@/components/designs/quotation-management-section';
 import WorkflowGate from '../WorkflowGate';
 import CostingSummaryCard from '@/components/designs/costing-summary-card';
 
@@ -142,10 +142,9 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
             ): (
                 <WorkflowGate reason="Costing belum tersedia. Sync artikel atau lengkapi material/manufacturing specs terlebih dahulu." />
             )}
-            <QuotationSection
-                form={ownerPriceForm}
+            <QuotationManagementSection
                 job={jobTicket as JobTicket}
-                quotations={(jobTicket as any).quotations || []}
+                quotations={jobTicket.quotations || []}
             />
         </div>
     );

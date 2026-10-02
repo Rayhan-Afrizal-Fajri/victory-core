@@ -9,12 +9,15 @@ use App\Models\Invoice;
 use App\Models\JobTicket;
 use App\Models\Pesanan;
 use App\Models\Quotation;
+use App\Models\Customer;
+use App\Models\CompanyProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\PurchasingService;
+use App\Services\QuotationDraftService;
 use App\Support\DocumentFilename;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -31,23 +34,156 @@ class QuotationController extends Controller
     {
         $quotations = Quotation::with([
             'jobTicket.customer',
+            'customer',
+            'companyProfile',
             'createdBy',
             'items',
             'quotationNotes'
-        ])->get();
+        ])->latest()->get();
+
+        $customers = Customer::query()
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nama_perusahaan'])
+            ->map(fn ($customer) => [
+                'id' => $customer->id,
+                'name' => $customer->nama,
+                'company_name' => $customer->nama_perusahaan,
+            ])
+            ->all();
+
+        $companyProfiles = CompanyProfile::query()
+            ->orderBy('company_name')
+            ->get(['id', 'company_name', 'company_type', 'tax_percentage'])
+            ->map(fn ($profile) => [
+                'id' => $profile->id,
+                'name' => $profile->company_name,
+                'type' => $profile->company_type,
+                'tax_percentage' => (float) $profile->tax_percentage,
+            ])
+            ->all();
+
+        $eligibleJobTickets = JobTicket::query()
+            ->with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.materialSpecs', 'pesanans.manufacturingSpecs'])
+            ->whereNotIn('status', ['Quotation', 'Quote'])
+            ->whereDoesntHave('quotations', fn ($query) => $query->whereIn('status', ['draft', 'sent', 'approved']))
+            ->latest()
+            ->get()
+            ->map(fn ($jobTicket) => $this->mapJobTicketSource($jobTicket))
+            ->values()
+            ->all();
 
         return Inertia::render('admin/quotations/index', [
             'quotations' => $quotations,
+            'customers' => $customers,
+            'companyProfiles' => $companyProfiles,
+            'eligibleJobTickets' => $eligibleJobTickets,
         ]);
     }
 
-    public function store()
+    public function store(Request $request, QuotationDraftService $quotationDraftService)
     {
+        abort_unless(Auth::user()?->can('quotation.generate'), 403);
+        $quotation = $quotationDraftService->save($this->validateDraftRequest($request));
+        if ($quotation->job_ticket_id && $quotation->jobTicket) {
+            $this->notifyQuotationApprovers($quotation, $quotation->jobTicket);
+        }
 
+        return back()->with('success', "Quotation {$quotation->quotation_number} berhasil dibuat sebagai draft.");
     }
 
-    public function update(Quotation $quotation)
+    public function update(Request $request, Quotation $quotation, QuotationDraftService $quotationDraftService)
     {
+        abort_unless(Auth::user()?->can('quotation.generate'), 403);
+        if ($quotation->status === 'approved') {
+            abort(422, 'Quotation yang sudah disetujui tidak dapat diedit.');
+        }
+
+        $wasLinked = (bool) $quotation->job_ticket_id;
+        $quotation = $quotationDraftService->save($this->validateDraftRequest($request), $quotation);
+        if (!$wasLinked && $quotation->job_ticket_id && $quotation->jobTicket) {
+            $this->notifyQuotationApprovers($quotation, $quotation->jobTicket);
+        }
+
+        return back()->with('success', 'Quotation draft berhasil diperbarui.');
+    }
+
+    public function attachDraft(Request $request, JobTicket $jobTicket, Quotation $quotation, QuotationDraftService $quotationDraftService)
+    {
+        abort_unless(Auth::user()?->can('quotation.generate'), 403);
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['required', 'integer', 'exists:quotation_items,id'],
+            'items.*.pesanan_id' => ['required', 'integer', 'exists:pesanan,id'],
+        ]);
+
+        $quotationDraftService->attach($quotation, $jobTicket, $validated['items']);
+        $this->notifyQuotationApprovers($quotation->refresh(), $jobTicket);
+
+        return back()->with('success', 'Quotation draft berhasil dihubungkan dengan PO.');
+    }
+
+    private function notifyQuotationApprovers(Quotation $quotation, JobTicket $jobTicket): void
+    {
+        $users = User::permission('quotation.approve')->get();
+        if ($users->isEmpty()) {
+            return;
+        }
+
+        Notification::send($users, new SystemNotification(
+            'Quotation menunggu approval',
+            "Quotation {$quotation->quotation_number} untuk PO {$jobTicket->no_job_ticket} siap ditinjau.",
+            "/purchase-orders/{$jobTicket->id}?tab=costing%20%26%20quotation",
+            'info'
+        ));
+    }
+
+    private function validateDraftRequest(Request $request): array
+    {
+        return $request->validate([
+            'job_ticket_id' => ['nullable', 'integer', 'exists:job_tickets,id'],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'company_profile_id' => ['required', 'integer', 'exists:company_profiles,id'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_company' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:100'],
+            'customer_address' => ['nullable', 'string', 'max:2000'],
+            'valid_until' => ['nullable', 'date'],
+            'payment_terms' => ['nullable', 'string', 'max:5000'],
+            'delivery_terms' => ['nullable', 'string', 'max:5000'],
+            'notes' => ['nullable', 'string', 'max:10000'],
+            'delivery_cost' => ['nullable', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.pesanan_id' => ['nullable', 'integer', 'exists:pesanan,id'],
+            'items.*.item_name' => ['required', 'string', 'max:255'],
+            'items.*.fabric' => ['nullable', 'string', 'max:255'],
+            'items.*.print_method' => ['nullable', 'string', 'max:255'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.sample_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.sample_price_per_pcs' => ['nullable', 'numeric', 'min:0'],
+            'items.*.price_per_pcs' => ['required', 'numeric', 'min:0'],
+        ]);
+    }
+
+    private function mapJobTicketSource(JobTicket $jobTicket): array
+    {
+        return [
+            'id' => $jobTicket->id,
+            'no_job_ticket' => $jobTicket->no_job_ticket,
+            'customer_id' => $jobTicket->customer_id,
+            'customer_name' => $jobTicket->customer_nama_snapshot ?: $jobTicket->customer?->nama,
+            'customer_company' => $jobTicket->customer_perusahaan_snapshot ?: $jobTicket->customer?->nama_perusahaan,
+            'company_profile_id' => $jobTicket->company_profile_id,
+            'orders' => $jobTicket->pesanans->map(fn ($pesanan) => [
+                'id' => $pesanan->id,
+                'item_name' => $pesanan->requested_product_name ?: $pesanan->produk,
+                'quantity' => (int) ($pesanan->q ?? 0),
+                'price_per_pcs' => (float) ($pesanan->harga_jual_per_pcs ?? 0),
+                'sample_quantity' => (int) ($pesanan->sample_qty ?? 0),
+                'sample_price_per_pcs' => (float) ($pesanan->harga_sample_per_pcs ?? 0),
+                'fabric' => $pesanan->materialSpecs->firstWhere('type', 'bahan')?->material_name_snapshot,
+                'print_method' => $pesanan->manufacturingSpecs->first(fn ($spec) => str_contains(mb_strtolower($spec->work_name_snapshot), 'sablon'))?->work_name_snapshot,
+            ])->values()->all(),
+        ];
 
     }
 
@@ -174,6 +310,8 @@ class QuotationController extends Controller
                     'fabric' => $this->guessFabric($pesanan),
                     'print_method' => $this->guessPrintMethod($pesanan),
                     'quantity' => $qty,
+                    'sample_quantity' => $pesananSampleQty,
+                    'sample_price_per_pcs' => $pesananSamplePrice,
                     'price_per_pcs' => $pricePerPcs,
                     'subtotal' => ($pricePerPcs * $qty),
                 ]);
@@ -247,6 +385,10 @@ class QuotationController extends Controller
             'jobTicket.pesanans.workflowStatus',
             'jobTicket.invoices',
         ])->findOrFail($quotationId);
+
+        if (!$quotation->job_ticket_id) {
+            abort(422, 'Hubungkan quotation draft ke PO sebelum meminta persetujuan.');
+        }
 
         if ($quotation->status === 'approved') {
             abort(422, 'Quotation sudah disetujui.');
@@ -642,7 +784,7 @@ class QuotationController extends Controller
         DB::transaction(function () use ($quotation, $request) {
             $quotation->update(['status' => 'rejected']);
 
-            foreach ($quotation->jobTicket->pesanans as $pesanan) {
+            foreach ($quotation->jobTicket?->pesanans ?? [] as $pesanan) {
                 $pesanan->workflowStatus()->updateOrCreate(
                     ['pesanan_id' => $pesanan->id],
                     ['quotation_approved' => false]
@@ -666,9 +808,15 @@ class QuotationController extends Controller
             'jobTicket.customer',
             'jobTicket.companyProfile',
             'jobTicket.pesanans.sizeBreakdowns',
-            'items',
+            'customer',
+            'companyProfile',
+            'items.pesanan.sizeBreakdowns',
             'quotationNotes',
         ]);
+
+        $jobTicket = $quotation->jobTicket;
+        $customer = $jobTicket?->customer ?: $quotation->customer;
+        $companyProfile = $jobTicket?->companyProfile ?: $quotation->companyProfile;
 
         $owner = User::whereHas('roles', function ($query) {
             $query->where('name', 'Owner');
@@ -676,8 +824,13 @@ class QuotationController extends Controller
 
         return Pdf::loadView('pdf.quotations.show', [
             'quotation' => $quotation,
-            'jobTicket' => $quotation->jobTicket,
-            'customer' => $quotation->jobTicket->customer,
+            'jobTicket' => $jobTicket,
+            'customer' => $customer,
+            'companyProfile' => $companyProfile,
+            'customerName' => $jobTicket?->customer_nama_snapshot ?: $quotation->customer_name_snapshot ?: $customer?->nama,
+            'customerCompany' => $jobTicket?->customer_perusahaan_snapshot ?: $quotation->customer_company_snapshot ?: $customer?->nama_perusahaan,
+            'customerPhone' => $quotation->customer_phone_snapshot ?: $customer?->no_hp,
+            'customerAddress' => $quotation->customer_address_snapshot ?: $customer?->alamat_detail,
             'owner' => $owner,
         ])->setPaper('a4', 'portrait');
     }
@@ -694,16 +847,18 @@ class QuotationController extends Controller
 
         $pdf = $this->generateQuotationPdf($quotation);
 
-        $jobTicket = $quotation->jobTicket;
-        $company = $jobTicket->customer_perusahaan_snapshot
-            ?: $jobTicket->customer?->nama_perusahaan
-            ?: $jobTicket->customer?->nama;
         $articles = $quotation->items->pluck('item_name')->all();
-        if (! $articles) {
-            $articles = $jobTicket->pesanans
+        if (!$articles && $quotation->jobTicket) {
+            $articles = $quotation->jobTicket->pesanans
                 ->map(fn ($pesanan) => $pesanan->requested_product_name ?: $pesanan->produk)
                 ->all();
         }
+
+        $company = $quotation->customer_company_snapshot
+            ?: $quotation->jobTicket?->customer_perusahaan_snapshot
+            ?: $quotation->customer?->nama_perusahaan
+            ?: $quotation->customer_name_snapshot
+            ?: $quotation->jobTicket?->customer?->nama;
 
         return $pdf->stream(DocumentFilename::make(
             $quotation->quotation_number,
@@ -714,6 +869,7 @@ class QuotationController extends Controller
 
     public function destroy(string $quotationId)
     {
+        abort_unless(Auth::user()?->can('quotation.generate'), 403);
         $quotation = Quotation::with('jobTicket.pesanans')->findOrFail($quotationId);
         $jobTicket = $quotation->jobTicket;
 
@@ -724,7 +880,7 @@ class QuotationController extends Controller
         $quotation->delete();
 
         // Rollback semua status pesanan jika tidak ada quotation lagi di job ticket
-        if (!Quotation::where('job_ticket_id', $jobTicket->id)->exists()) {
+        if ($jobTicket && !Quotation::where('job_ticket_id', $jobTicket->id)->exists()) {
             foreach ($jobTicket->pesanans as $pesanan) {
                 $pesanan->workflowStatus()->updateOrCreate(
                     ['pesanan_id' => $pesanan->id],

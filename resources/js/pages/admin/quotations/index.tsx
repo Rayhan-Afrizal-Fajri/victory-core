@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Eye, Printer, Trash2 } from 'lucide-react';
+import { Edit, Eye, Plus, Printer, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import AppLayout from '@/layouts/app-layout';
+import QuotationDraftDialog from '@/components/quotations/quotation-draft-dialog';
+import { useCan } from '@/hooks/use-can';
 import { Quotation } from '../job-tickets/types';
 
 type QuotationRow = Quotation & {
@@ -26,6 +28,9 @@ type QuotationRow = Quotation & {
 
 type Props = {
   quotations: QuotationRow[];
+  customers: any[];
+  companyProfiles: any[];
+  eligibleJobTickets: any[];
 };
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -79,13 +84,28 @@ const getSourceLabel = (sourceType: Quotation['source_type']) => {
   return sourceType === 'manual' ? 'Manual' : 'Job Ticket';
 };
 
-export default function Index({ quotations }: Props) {
+export default function Index({ quotations, customers, companyProfiles, eligibleJobTickets }: Props) {
+  const can = useCan();
   const [selectedQuotation, setSelectedQuotation] = useState<QuotationRow | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [draftDialogOpen, setDraftDialogOpen] = useState(false);
+  const [editingQuotation, setEditingQuotation] = useState<QuotationRow | null>(null);
 
   const openQuotationDetail = (quotation: QuotationRow) => {
     setSelectedQuotation(quotation);
     setIsSheetOpen(true);
+  };
+
+  const openCreate = () => {
+    setEditingQuotation(null);
+    setDraftDialogOpen(true);
+  };
+
+  const openEdit = (quotation: QuotationRow) => {
+    setSelectedQuotation(quotation);
+    setIsSheetOpen(false);
+    setEditingQuotation(quotation);
+    setDraftDialogOpen(true);
   };
 
   const handlePrint = (quotation: QuotationRow) => {
@@ -119,7 +139,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Quotation',
       accessor: 'quotation_number',
-      sortable: false,
       cell: (row) => (
         <div className="flex flex-col gap-1">
           <span className="font-medium text-slate-900">{row.quotation_number}</span>
@@ -132,7 +151,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Status',
       accessor: 'status',
-      sortable: false,
       cell: (row) => (
         <Badge className={getStatusClass(row.status)}>
           {row.status || '-'}
@@ -142,7 +160,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Berlaku Sampai',
       accessor: 'valid_until',
-      sortable: false,
       cell: (row) => (
         <span className="text-slate-700">{formatDate(row.valid_until)}</span>
       ),
@@ -150,7 +167,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Quantity',
       accessor: 'quantity',
-      sortable: false,
       cell: (row) => (
         <span className="font-medium text-slate-900">
           {formatNumber(row.quantity)} pcs
@@ -160,7 +176,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Subtotal',
       accessor: 'subtotal',
-      sortable: false,
       cell: (row) => (
         <span className="text-slate-700">{formatCurrency(row.subtotal)}</span>
       ),
@@ -168,7 +183,6 @@ export default function Index({ quotations }: Props) {
     {
       header: 'Grand Total',
       accessor: 'grand_total',
-      sortable: false,
       cell: (row) => (
         <span className="font-semibold text-slate-900">
           {formatCurrency(row.grand_total)}
@@ -190,6 +204,12 @@ export default function Index({ quotations }: Props) {
             <Eye className="size-4" />
           </Button>
 
+          {row.status?.toLowerCase() !== 'approved' && can('quotation.generate') && (
+            <Button variant="outline" size="sm" title="Edit draft quotation" onClick={() => openEdit(row)}>
+              <Edit className="size-4" />
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -199,7 +219,7 @@ export default function Index({ quotations }: Props) {
             <Printer className="size-4" />
           </Button>
 
-          {row.status?.toLowerCase() !== 'approved' && (
+          {row.status?.toLowerCase() !== 'approved' && can('quotation.generate') && (
             <Button
               variant="destructive"
               size="sm"
@@ -236,10 +256,17 @@ export default function Index({ quotations }: Props) {
 
         <Card>
           <CardContent>
+            {can('quotation.generate') && (
+              <div className="mb-4 flex justify-end">
+                <Button onClick={openCreate}>
+                  <Plus className="mr-2 size-4" /> Buat Quotation
+                </Button>
+              </div>
+            )}
             <DataTable
               columns={columns}
               data={quotations}
-              // searchKeys={['quotation_number', 'status', 'source_type']}
+              searchKeys={['quotation_number', 'status', 'source_type', 'customer_company_snapshot', 'customer_name_snapshot']}
               searchPlaceholder="Cari nomor quotation atau status"
             />
           </CardContent>
@@ -429,6 +456,18 @@ export default function Index({ quotations }: Props) {
           )}
         </SheetContent>
       </Sheet>
+
+      <QuotationDraftDialog
+        open={draftDialogOpen}
+        onOpenChange={(open) => {
+          setDraftDialogOpen(open);
+          if (!open) setEditingQuotation(null);
+        }}
+        customers={customers}
+        companyProfiles={companyProfiles}
+        eligibleJobTickets={eligibleJobTickets}
+        quotation={editingQuotation}
+      />
     </>
   );
 }

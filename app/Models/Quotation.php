@@ -8,6 +8,12 @@ class Quotation extends Model
 {
     protected $fillable = [
         'job_ticket_id',
+        'customer_id',
+        'company_profile_id',
+        'customer_name_snapshot',
+        'customer_company_snapshot',
+        'customer_phone_snapshot',
+        'customer_address_snapshot',
         'quotation_number',
         'status',
         'valid_until',
@@ -37,6 +43,16 @@ class Quotation extends Model
     public function jobTicket()
     {
         return $this->belongsTo(JobTicket::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function companyProfile()
+    {
+        return $this->belongsTo(CompanyProfile::class);
     }
 
     public function createdBy()

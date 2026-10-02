@@ -15,6 +15,8 @@ class QuotationItem extends Model
         'fabric',
         'print_method',
         'quantity',
+        'sample_quantity',
+        'sample_price_per_pcs',
         'price_per_pcs',
         'subtotal',
     ];

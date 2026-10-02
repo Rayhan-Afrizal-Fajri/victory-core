@@ -157,9 +157,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
      */
 
     Route::get('/quotations', [QuotationController::class, 'index'])->name('quotations.index');
+    Route::post('/quotations', [QuotationController::class, 'store'])->name('quotations.store');
 
     Route::post('/purchase-orders/{job_ticket}/quotations/generate', [QuotationController::class, 'generate'])
         ->name('quotations.generate');
+
+    Route::post('/purchase-orders/{job_ticket}/quotations/{quotation}/attach', [QuotationController::class, 'attachDraft'])
+        ->name('quotations.attach-draft');
 
     Route::patch('/quotations/{quotation}', [QuotationController::class, 'update'])
         ->name('quotations.update');
