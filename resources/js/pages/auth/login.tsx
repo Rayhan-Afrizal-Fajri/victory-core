@@ -98,7 +98,7 @@ export default function Login({
             )}
 
             {/* Akun Testing - Dipindah ke bawah dan dibuat lebih kompak */}
-            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900/50">
+            {/* <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900/50">
                 <div className="mb-4 text-center">
                     <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                         Login Cepat (Fase Testing)
@@ -137,7 +137,7 @@ export default function Login({
                         </button>
                     ))}
                 </div>
-            </div>
+            </div> */}
         </>
     );
 }
