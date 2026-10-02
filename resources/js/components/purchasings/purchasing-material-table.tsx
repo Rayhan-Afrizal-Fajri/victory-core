@@ -46,6 +46,8 @@ const PurchasingMaterialTable = ({
     onDelete,
     onMarkOrdered,
     onUndoMarkOrdered,
+    onMarkProductionOrdered,
+    onUndoMarkProductionOrdered,
     onReceive,
     onDeleteReceiving,
 }: {
@@ -58,6 +60,8 @@ const PurchasingMaterialTable = ({
     onDelete: (purchasing: any) => void;
     onMarkOrdered: (purchasing: any) => void;
     onUndoMarkOrdered: (purchasing: any) => void;
+    onMarkProductionOrdered: (purchasing: any) => void;
+    onUndoMarkProductionOrdered: (purchasing: any) => void;
     onReceive: (purchasing: any) => void;
     onDeleteReceiving: (receiving: any) => void;
 }) => {
@@ -183,6 +187,16 @@ const PurchasingMaterialTable = ({
             className: 'w-[160px] align-top',
             cell: (row) => {
                 const isGeneratedFromBom = Boolean(row.pesanan_material_spec_id);
+                const productionRequiredQty = getRequiredQty(row, order, 'production');
+                const canOrderProduction = Boolean(
+                    productionRequiredQty > 0 &&
+                    workflow?.sample_materials_ready &&
+                    workflow?.sample_approved
+                );
+                const goodReceivedQty = getReceivedQty(row);
+                const sampleRequiredQty = getRequiredQty(row, order, 'sample');
+                const productionReceivedQty = Math.max(goodReceivedQty - sampleRequiredQty, 0);
+
                 return (
                     <div className="flex flex-col items-end gap-2 py-1">
                         <div className="flex gap-2">
@@ -203,6 +217,24 @@ const PurchasingMaterialTable = ({
                                     {row.status === 'draft' ? 'Pesan' : 'Batal'}
                                 </Button>
                             )}
+                            {canOrderProduction && can('purchasings.mark_ordered') && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={row.production_ordered_at ? 'outline' : 'secondary'}
+                                    className={row.production_ordered_at ? 'h-8 border-emerald-200 text-xs text-emerald-700' : 'h-8 text-xs'}
+                                    disabled={Boolean(row.production_ordered_at && productionReceivedQty > 0)}
+                                    onClick={() => row.production_ordered_at
+                                        ? onUndoMarkProductionOrdered(row)
+                                        : onMarkProductionOrdered(row)}
+                                    title={row.production_ordered_at && productionReceivedQty > 0
+                                        ? 'Tidak dapat membatalkan setelah material produksi diterima'
+                                        : undefined}
+                                >
+                                    <CheckCircle2 className="mr-1 size-3" />
+                                    {row.production_ordered_at ? 'Produksi Dipesan' : 'Pesan Produksi'}
+                                </Button>
+                            )}
                         </div>
                         
                         <div className="flex gap-2">
@@ -221,7 +253,7 @@ const PurchasingMaterialTable = ({
                 );
             }
         },
-    ], [order, can, onReceive, onMarkOrdered, onUndoMarkOrdered, onEditPo, onEditManual, onDelete, onDeleteReceiving, hasSample, workflow]);
+    ], [order, can, onReceive, onMarkOrdered, onUndoMarkOrdered, onMarkProductionOrdered, onUndoMarkProductionOrdered, onEditPo, onEditManual, onDelete, onDeleteReceiving, hasSample, workflow]);
 
     return (
         <SectionCard title="Daftar Material">

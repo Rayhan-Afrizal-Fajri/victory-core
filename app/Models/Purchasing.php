@@ -25,6 +25,8 @@ class Purchasing extends Model
         'received_by',
         'status',
         'purchase_scope',
+        'production_ordered_at',
+        'production_ordered_by',
         'notes',
     ];
 

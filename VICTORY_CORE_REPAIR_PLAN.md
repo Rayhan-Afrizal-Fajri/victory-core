@@ -174,4 +174,12 @@ Contoh: `INV001 - Victory Labs - T-Shirt Oversize Hitam.pdf`.
 - Invoice dan workflow saat ini memakai kategori serta flag DP/pelunasan yang tidak seragam; perubahan DP harus mencakup seluruh pemakai kategori, bukan hanya tombol create.
 - Quotation dan invoice dapat berisi beberapa artikel; aturan nama file harus ditentukan agar nama tetap informatif dan tidak terlalu panjang.
 - Catatan Job Ticket bersifat tingkat PO, sedangkan BOM bersifat per artikel. UI perlu menandai bahwa catatan berlaku untuk seluruh Job Ticket, bukan hanya satu artikel.
-- Tombol purchasing sudah tampak tersedia dalam implementasi; ada kemungkinan catatan berasal dari kondisi data/permission tertentu. Reproduksi sebelum perubahan mencegah duplikasi kontrol yang sudah berfungsi.
+- Checklist pemesanan produksi dipisahkan dari status receiving; penerimaan baik yang telah memasuki alokasi produksi otomatis mencatat waktu dan pengguna pemesan.
+
+## Status Implementasi (2 Oktober 2026)
+
+- Catatan PO/detail pesanan pada tab BOM: selesai.
+- Nama file quotation/invoice dengan fallback multi-artikel dan sanitasi: selesai.
+- Sinkronisasi artikel langsung dari Order Entry: selesai. Pilihan artikel master bersifat opsional; checkbox sync default nonaktif dan mengisi BOM saat dicentang. Sync ulang dari edit meminta konfirmasi.
+- Cetak invoice DP dan pelunasan dari satu invoice produksi: selesai.
+- Checklist purchasing produksi: selesai. Tombol tersedia setelah material sample siap dan sample disetujui; penerimaan material baik pada alokasi produksi juga otomatis menandai pemesanan.

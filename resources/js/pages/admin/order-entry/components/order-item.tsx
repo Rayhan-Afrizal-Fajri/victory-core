@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OrderData, emptySizeRow } from '../types';
+import { ArticleOption, OrderData, emptySizeRow } from '../types';
 
 type OrderItemProps = {
   order: OrderData;
@@ -12,12 +12,13 @@ type OrderItemProps = {
   isRemovable: boolean;
   productNamesInUse: string[];
   defaultSizeBreakdowns?: { color: string[]; fabric: string[]; size: string[] };
+  products: ArticleOption[];
   onChange: (updatedOrder: OrderData) => void;
   onRemove: () => void;
   isApproved: boolean;
 };
 
-export default function OrderItem({ order, oIndex, isRemovable, productNamesInUse, defaultSizeBreakdowns, onChange, onRemove, isApproved }: OrderItemProps) {
+export default function OrderItem({ order, oIndex, isRemovable, productNamesInUse, defaultSizeBreakdowns, products, onChange, onRemove, isApproved }: OrderItemProps) {
   // State UI "Custom Input" dilokalisasi di sini, menggunakan index number (sIndex) saja
   const [customInputs, setCustomInputs] = useState<Record<number, { color?: boolean; fabric_spec?: boolean; size_label?: boolean }>>({});
 
@@ -76,6 +77,51 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
         <div className="space-y-2">
           <Label>Quantity Produksi *</Label>
           <FormattedNumberInput value={order.q} onValueChange={(val) => updateField('q', val)} placeholder="Jumlah" disabled={isApproved} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Artikel Master (Opsional)</Label>
+          <Select
+            value={order.product_id ? String(order.product_id) : 'none'}
+            onValueChange={(value) => onChange({
+              ...order,
+              product_id: value === 'none' ? '' : value,
+              sync_article: value === 'none' ? false : order.sync_article,
+            })}
+            disabled={isApproved}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih artikel master" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Tidak menggunakan artikel master</SelectItem>
+              {products.map((product) => (
+                <SelectItem key={product.id} value={String(product.id)}>
+                  {product.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col justify-end gap-2">
+          <label className="flex min-h-10 items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(order.sync_article)}
+              onChange={(event) => updateField('sync_article', event.target.checked)}
+              disabled={isApproved || !order.product_id}
+              className="size-4 rounded border-slate-300"
+            />
+            Sinkronkan BOM sekarang
+          </label>
+          <p className="text-xs text-slate-500">
+            {order.id
+              ? 'Jika dipilih, spesifikasi BOM pesanan ini akan diganti dari artikel master.'
+              : 'Salin bahan, aksesoris, dan proses dari artikel master saat PO dibuat.'}
+          </p>
         </div>
       </div>
 

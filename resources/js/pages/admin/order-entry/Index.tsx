@@ -14,7 +14,7 @@ import { emptyOrderRow, OrderData, Props } from './types';
 import { store, update } from '@/routes/order-entry';
 import AppLayout from '@/layouts/app-layout';
 
-export default function Index({ nextJobTicket, customers, companyProfiles, editingJobTicket, customer, defaultSizeBreakdowns }: Props) {
+export default function Index({ nextJobTicket, customers, companyProfiles, products, editingJobTicket, customer, defaultSizeBreakdowns }: Props) {
   const isEditing = Boolean(editingJobTicket);
 
   const form = useForm({
@@ -65,6 +65,11 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
     // Logika Validasi (cek nama unik, cek jumlah size) tetap ada di sini
     // ...
 
+    const hasExistingOrderSync = form.data.orders.some((order) => order.id && order.sync_article);
+    if (hasExistingOrderSync && !window.confirm('Sinkronisasi akan mengganti BOM yang sudah ada untuk pesanan yang dipilih. Lanjutkan?')) {
+      return;
+    }
+
     const url = isEditing && editingJobTicket ? update(editingJobTicket.id).url : store().url;
     const action = isEditing ? form.patch : form.post;
 
@@ -112,6 +117,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
                     isApproved={isOrderApproved} // Prop baru untuk disable input tertentu
                     productNamesInUse={productNamesInUse}
                     defaultSizeBreakdowns={defaultSizeBreakdowns}
+                    products={products}
                     onChange={(updated) => handleUpdateOrder(idx, updated)}
                     onRemove={() => handleRemoveOrder(idx)}
                   />

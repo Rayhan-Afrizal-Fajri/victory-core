@@ -293,6 +293,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/purchasings/{purchasing}/undo-mark-ordered', [PurchasingController::class, 'undoMarkOrdered'])
         ->name('purchasings.undo-mark-ordered');
 
+    Route::patch('/purchasings/{purchasing}/mark-production-ordered', [PurchasingController::class, 'markProductionOrdered'])
+        ->name('purchasings.mark-production-ordered');
+
+    Route::patch('/purchasings/{purchasing}/undo-mark-production-ordered', [PurchasingController::class, 'undoMarkProductionOrdered'])
+        ->name('purchasings.undo-mark-production-ordered');
+
     Route::post('/purchasings/{purchasing}/receivings', [PurchasingController::class, 'storeReceiving'])
         ->name('purchasings.receivings.store');
 

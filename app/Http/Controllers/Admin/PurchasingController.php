@@ -210,6 +210,10 @@ class PurchasingController extends Controller
 
             'purchase_scope' => $p->purchase_scope,
 
+            'production_ordered_at' => $p->production_ordered_at,
+
+            'production_ordered_by' => $p->production_ordered_by,
+
             'notes' => $p->notes,
 
             'workflow_status' => $p->pesanan?->workflowStatus,
@@ -648,6 +652,77 @@ class PurchasingController extends Controller
 
     }
 
+    public function markProductionOrdered(Request $request, string $purchasingId)
+    {
+        abort_unless($request->user()?->can('purchasings.mark_ordered'), 403);
+
+        $purchasing = Purchasing::with(['pesanan.workflowStatus', 'materialReceivings'])->findOrFail($purchasingId);
+        $pesanan = $purchasing->pesanan;
+        $workflow = $pesanan->workflowStatus;
+
+        if (! $workflow?->sample_materials_ready || ! $workflow?->sample_approved) {
+            abort(422, 'Pemesanan produksi hanya dapat ditandai setelah material sample siap dan sample disetujui.');
+        }
+
+        if ($this->getPurchasingProductionRequiredQty($purchasing, $pesanan) <= 0) {
+            abort(422, 'Item ini tidak memiliki kebutuhan material produksi.');
+        }
+
+        if ($purchasing->production_ordered_at) {
+            abort(422, 'Material produksi sudah ditandai dipesan.');
+        }
+
+        $purchasing->update([
+            'production_ordered_at' => now(),
+            'production_ordered_by' => Auth::id(),
+        ]);
+
+        $pesanan->jobTicket->workflowHistory()->create([
+            'step' => 'purchasing',
+            'action' => 'production_ordered',
+            'user_id' => Auth::id(),
+            'notes' => "Material produksi {$purchasing->item_bahan} sudah dipesan.",
+        ]);
+
+        return back()->with('success', 'Material produksi ditandai sudah dipesan.');
+    }
+
+    public function undoMarkProductionOrdered(Request $request, string $purchasingId)
+    {
+        abort_unless($request->user()?->can('purchasings.mark_ordered'), 403);
+
+        $purchasing = Purchasing::with(['pesanan.workflowStatus', 'materialReceivings'])->findOrFail($purchasingId);
+        $pesanan = $purchasing->pesanan;
+
+        if (! $purchasing->production_ordered_at) {
+            abort(422, 'Material produksi belum ditandai dipesan.');
+        }
+
+        $goodReceivedQty = (float) $purchasing->materialReceivings()
+            ->where('item_condition', 'good')
+            ->sum('received_qty');
+        $sampleRequiredQty = $this->getPurchasingSampleRequiredQty($purchasing, $pesanan);
+        $productionReceivedQty = max($goodReceivedQty - $sampleRequiredQty, 0);
+
+        if ($productionReceivedQty > 0) {
+            abort(422, 'Penandaan tidak dapat dibatalkan karena material produksi sudah diterima.');
+        }
+
+        $purchasing->update([
+            'production_ordered_at' => null,
+            'production_ordered_by' => null,
+        ]);
+
+        $pesanan->jobTicket->workflowHistory()->create([
+            'step' => 'purchasing',
+            'action' => 'production_ordering_cancelled',
+            'user_id' => Auth::id(),
+            'notes' => "Penandaan pemesanan produksi {$purchasing->item_bahan} dibatalkan.",
+        ]);
+
+        return back()->with('success', 'Penandaan pemesanan produksi dibatalkan.');
+    }
+
     public function storeReceiving(Request $request, string $purchasingId)
     {
         $request->validate([
@@ -689,6 +764,7 @@ class PurchasingController extends Controller
             ]);
 
             $this->syncPurchasingStatus($purchasing);
+            $this->markProductionOrderedFromReceiving($purchasing);
             $this->syncPesananPurchasingWorkflow($purchasing->pesanan);
 
             $purchasing->pesanan->jobTicket->workflowHistory()->create([
@@ -723,6 +799,43 @@ class PurchasingController extends Controller
         }
 
         return back()->with('success', 'Material receiving berhasil disimpan.');
+    }
+
+    private function markProductionOrderedFromReceiving(Purchasing $purchasing): void
+    {
+        $purchasing->refresh();
+        $purchasing->loadMissing('pesanan');
+
+        if ($purchasing->production_ordered_at) {
+            return;
+        }
+
+        $pesanan = $purchasing->pesanan;
+        if ($this->getPurchasingProductionRequiredQty($purchasing, $pesanan) <= 0) {
+            return;
+        }
+
+        $goodReceivedQty = (float) $purchasing->materialReceivings()
+            ->where('item_condition', 'good')
+            ->sum('received_qty');
+        $sampleRequiredQty = $this->getPurchasingSampleRequiredQty($purchasing, $pesanan);
+        $productionReceivedQty = max($goodReceivedQty - $sampleRequiredQty, 0);
+
+        if ($productionReceivedQty <= 0) {
+            return;
+        }
+
+        $purchasing->update([
+            'production_ordered_at' => now(),
+            'production_ordered_by' => Auth::id(),
+        ]);
+
+        $pesanan->jobTicket->workflowHistory()->create([
+            'step' => 'purchasing',
+            'action' => 'production_ordered_from_receiving',
+            'user_id' => Auth::id(),
+            'notes' => "Material produksi {$purchasing->item_bahan} otomatis ditandai dipesan saat receiving.",
+        ]);
     }
 
     public function destroyReceiving(string $receivingId)

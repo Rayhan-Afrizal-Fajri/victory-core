@@ -407,6 +407,8 @@ class JobTicketController extends Controller
                             'harga_satuan' => $p->harga_satuan,
                             'total_harga' => $p->total_harga,
                             'purchase_scope' => $p->purchase_scope,
+                            'production_ordered_at' => $p->production_ordered_at,
+                            'production_ordered_by' => $p->production_ordered_by,
                             'remaining_qty' => $p->remaining_qty,
                             'receiving_status' => $p->receiving_status,
                             'material_receivings' => $p->materialReceiving->toArray(),

@@ -250,6 +250,28 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
         );
     };
 
+    const markProductionOrdered = (purchasing: any) => {
+        router.patch(
+            `/purchasings/${purchasing.id}/mark-production-ordered`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Material produksi sudah dipesan.'),
+            }
+        );
+    };
+
+    const undoMarkProductionOrdered = (purchasing: any) => {
+        router.patch(
+            `/purchasings/${purchasing.id}/undo-mark-production-ordered`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Penandaan pesan produksi dibatalkan.'),
+            }
+        );
+    };
+
     const openReceiveMaterial = (purchasing: any) => {
         setSelectedPurchasing(purchasing);
         setOpenReceiving(true);
@@ -334,6 +356,8 @@ const PurchasingTab: React.FC<{ job: JobTicket, suppliers: Supplier[] }> = ({ jo
                             onDelete={deletePurchasing}
                             onMarkOrdered={markOrdered}
                             onUndoMarkOrdered={undoMarkOrdered}
+                            onMarkProductionOrdered={markProductionOrdered}
+                            onUndoMarkProductionOrdered={undoMarkProductionOrdered}
                             onReceive={openReceiveMaterial}
                             onDeleteReceiving={deleteReceiving}
                         />

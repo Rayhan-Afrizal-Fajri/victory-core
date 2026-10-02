@@ -9,11 +9,13 @@ use App\Models\JobTicket;
 use App\Models\Pesanan;
 use App\Models\User;
 use App\Models\CompanyProfile;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class OrderEntryController extends Controller
 {
@@ -40,6 +42,12 @@ class OrderEntryController extends Controller
             'orders.*.id' => ['nullable', 'exists:pesanan,id'],
             'orders.*.requested_product_name' => ['required', 'string', 'max:255'],
             'orders.*.q' => ['required', 'integer', 'min:1'],
+            'orders.*.product_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('products', 'id')->where('is_active', true)->where('is_pattern_available', true),
+            ],
+            'orders.*.sync_article' => ['nullable', 'boolean'],
             
             // Validasi Size Breakdown per Order
             'orders.*.size_breakdowns' => ['nullable', 'array'],
@@ -64,6 +72,12 @@ class OrderEntryController extends Controller
         $seenProductNames = [];
 
         foreach ($validated['orders'] as $index => $order) {
+            if (!empty($order['sync_article']) && empty($order['product_id'])) {
+                throw ValidationException::withMessages([
+                    "orders.{$index}.product_id" => 'Pilih artikel master untuk sinkronisasi BOM.',
+                ]);
+            }
+
             $normalizedProductName = mb_strtolower(trim((string) ($order['requested_product_name'] ?? '')));
 
             if ($normalizedProductName !== '' && isset($seenProductNames[$normalizedProductName])) {
@@ -106,6 +120,59 @@ class OrderEntryController extends Controller
             'fabric' => $grouped->get('fabric', collect())->pluck('label')->values()->all(),
             'size' => $grouped->get('size', collect())->pluck('label')->values()->all(),
         ];
+    }
+
+    private function articleOptions(): array
+    {
+        return Product::query()
+            ->where('is_active', true)
+            ->where('is_pattern_available', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+            ])
+            ->all();
+    }
+
+    private function applyArticleSelection(Pesanan $pesanan, array $orderData): void
+    {
+        $productId = array_key_exists('product_id', $orderData)
+            ? ($orderData['product_id'] ? (int) $orderData['product_id'] : null)
+            : $pesanan->product_id;
+        $productChanged = (int) ($pesanan->product_id ?? 0) !== (int) ($productId ?? 0);
+
+        if (empty($orderData['sync_article'])) {
+            if ($productChanged) {
+                $pesanan->update([
+                    'product_id' => $productId,
+                    'article_synced_at' => null,
+                    'article_synced_by' => null,
+                ]);
+
+                $pesanan->workflowStatus()->updateOrCreate(
+                    ['pesanan_id' => $pesanan->id],
+                    ['article_synced' => false]
+                );
+            }
+
+            return;
+        }
+
+        $product = Product::query()
+            ->where('is_active', true)
+            ->where('is_pattern_available', true)
+            ->findOrFail($productId);
+
+        app(\App\Services\ArticleSyncService::class)->sync($pesanan, $product);
+
+        $pesanan->jobTicket->workflowHistory()->create([
+            'step' => 'design',
+            'action' => 'sync_article_from_order_entry',
+            'user_id' => Auth::id(),
+            'notes' => "Artikel master {$product->name} disinkronkan ke BOM pesanan {$pesanan->produk} dari Order Entry.",
+        ]);
     }
 
     private function resolveCustomer(array $validated): Customer
@@ -156,6 +223,7 @@ class OrderEntryController extends Controller
             'nextJobTicket' => $nextJobTicket,
             'customers' => $customers,
             'companyProfiles' => $companyProfiles,
+            'products' => $this->articleOptions(),
             'customer' => Auth::user()->customer,
             'defaultSizeBreakdowns' => $this->defaultSizeBreakdownOptions(),
         ]);
@@ -225,6 +293,7 @@ class OrderEntryController extends Controller
                     'design_approved' => false,
                 ]);
                 $pesanan->productionProgress()->create([]);
+                $this->applyArticleSelection($pesanan, $orderData);
                 $pesanan->jobTicket->workflowHistory()->create([
                     'step' => 'order_entry',
                     'action' => 'created',
@@ -244,7 +313,7 @@ class OrderEntryController extends Controller
      */
     public function edit(string $id)
     {
-        $jobTicket = JobTicket::with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.workflowStatus', 'companyProfile'])->findOrFail($id);
+        $jobTicket = JobTicket::with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.workflowStatus', 'pesanans.product', 'companyProfile'])->findOrFail($id);
 
         $customers = Customer::orderBy('nama')->get()->map(fn ($customer) => [
             'id' => $customer->id,
@@ -261,6 +330,8 @@ class OrderEntryController extends Controller
             'id' => $pesanan->id,
             'workflowStatus' => $pesanan->workflowStatus->toArray(),
             'requested_product_name' => $pesanan->requested_product_name ?: $pesanan->produk,
+            'product_id' => $pesanan->product_id ? (string) $pesanan->product_id : '',
+            'sync_article' => false,
             'q' => (int) $pesanan->q,
             'size_breakdowns' => $pesanan->sizeBreakdowns->isEmpty() 
                 ? [['color' => '', 'size_label' => '', 'qty' => 1]] 
@@ -276,6 +347,7 @@ class OrderEntryController extends Controller
             'nextJobTicket' => null,
             'customers' => $customers,
             'companyProfiles' => $companyProfiles,
+            'products' => $this->articleOptions(),
             'defaultSizeBreakdowns' => $this->defaultSizeBreakdownOptions(),
             'editingJobTicket' => [
                 'id' => $jobTicket->id,
@@ -360,6 +432,8 @@ class OrderEntryController extends Controller
                         }
                     }
                 }
+
+                $this->applyArticleSelection($pesanan, $orderData);
             }
         });
 
