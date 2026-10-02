@@ -505,8 +505,8 @@ class InvoiceController extends Controller
         };
 
         $company = $invoice->jobTicket->customer_perusahaan_snapshot
-            ?? $invoice->jobTicket->customer?->nama_perusahaan
-            ?? $invoice->jobTicket->customer?->nama;
+            ?: $invoice->jobTicket->customer?->nama_perusahaan
+            ?: $invoice->jobTicket->customer?->nama;
         $articles = $invoice->items->pluck('item_name')->all();
         if (! $articles) {
             $articles = $invoice->jobTicket->pesanans

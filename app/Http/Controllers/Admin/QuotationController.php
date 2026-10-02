@@ -696,9 +696,14 @@ class QuotationController extends Controller
 
         $jobTicket = $quotation->jobTicket;
         $company = $jobTicket->customer_perusahaan_snapshot
-            ?? $jobTicket->customer?->nama_perusahaan
-            ?? $jobTicket->customer?->nama;
+            ?: $jobTicket->customer?->nama_perusahaan
+            ?: $jobTicket->customer?->nama;
         $articles = $quotation->items->pluck('item_name')->all();
+        if (! $articles) {
+            $articles = $jobTicket->pesanans
+                ->map(fn ($pesanan) => $pesanan->requested_product_name ?: $pesanan->produk)
+                ->all();
+        }
 
         return $pdf->stream(DocumentFilename::make(
             $quotation->quotation_number,

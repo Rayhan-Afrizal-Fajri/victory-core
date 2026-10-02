@@ -31,4 +31,22 @@ class DocumentFilenameTest extends TestCase
             $filename
         );
     }
+
+    public function test_it_uses_a_multi_article_label_when_article_names_exceed_the_filename_limit(): void
+    {
+        $filename = DocumentFilename::make(
+            'QUO-001',
+            'Victory Labs',
+            [str_repeat('Artikel Satu ', 8), str_repeat('Artikel Dua ', 8)]
+        );
+
+        $this->assertSame('QUO-001 - Victory Labs - Multi-Artikel (2).pdf', $filename);
+    }
+
+    public function test_it_uses_clear_placeholders_when_company_and_articles_are_blank(): void
+    {
+        $filename = DocumentFilename::make('  ', '   ', ['', '  ']);
+
+        $this->assertSame('Dokumen - Customer - Tanpa Artikel.pdf', $filename);
+    }
 }
