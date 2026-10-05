@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArticleOption, OrderData, emptySizeRow } from '../types';
+import Select2 from 'react-select';
 
 type OrderItemProps = {
   order: OrderData;
@@ -21,6 +22,10 @@ type OrderItemProps = {
 export default function OrderItem({ order, oIndex, isRemovable, productNamesInUse, defaultSizeBreakdowns, products, onChange, onRemove, isApproved }: OrderItemProps) {
   // State UI "Custom Input" dilokalisasi di sini, menggunakan index number (sIndex) saja
   const [customInputs, setCustomInputs] = useState<Record<number, { color?: boolean; fabric_spec?: boolean; size_label?: boolean }>>({});
+  const productOptions = products?.map((p)=>({
+        value: p.id.toString(),
+        label: p.name,
+    }))
 
   const updateField = (field: keyof OrderData, value: any) => {
     onChange({ ...order, [field]: value });
@@ -83,7 +88,7 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Artikel Master (Opsional)</Label>
-          <Select
+          {/* <Select
             value={order.product_id ? String(order.product_id) : 'none'}
             onValueChange={(value) => onChange({
               ...order,
@@ -103,7 +108,30 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </Select> */}
+          <Select2 
+            className="text-sm"
+            classNamePrefix="select"
+            options={productOptions}
+            value={
+                productOptions?.find(
+                    (x) => x.value === String(order.product_id)
+                ) || null
+            }
+            onChange={(option) => {
+                const val = option?.value || "";
+                onChange({
+                    ...order,
+                    product_id: val,
+                    // Jika artikel dihapus/kosong, matikan toggle sinkronisasi
+                    sync_article: val === "" ? false : order.sync_article,
+                });
+            }}
+            placeholder="Pilih artikel master..."
+            isDisabled={isApproved}
+            isSearchable={true}
+            isClearable={true}
+          />
         </div>
 
         <div className="flex flex-col justify-end gap-2">
