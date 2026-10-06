@@ -227,13 +227,13 @@
                 <div class="address-title">Informasi Perusahaan</div>
                 <div class="address-content">
                     <div class="company-name">
-                        {{ $invoice->jobTicket->companyProfile->company_name ?? 'PT. Victorylab Global Industries' }}
+                        {{ $companyProfile?->company_name ?? 'PT. Victorylab Global Industries' }}
                     </div>
-                    Headquarters : {!! nl2br(e($invoice->jobTicket->companyProfile->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
-                    Telp: {{ $invoice->jobTicket->companyProfile->phone ?? '081212228900' }}<br>
-                    Email: {{ $invoice->jobTicket->companyProfile->email ?? 'marketing@victorylabs.id' }} <br>
-                    Rek: {{ $invoice->jobTicket->companyProfile->bank_type ?? 'Rekening' }} <br>
-                    No Rek: {{ $invoice->jobTicket->companyProfile->account_number ?? 'Rekening' }}
+                        Headquarters : {!! nl2br(e($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
+                        Telp: {{ $companyProfile?->phone ?? '081212228900' }}<br>
+                        Email: {{ $companyProfile?->email ?? 'marketing@victorylabs.id' }} <br>
+                        Rek: {{ $companyProfile?->bank_type ?? 'Rekening' }} <br>
+                        No Rek: {{ $companyProfile?->account_number ?? 'Rekening' }}
                 </div>
             </td>
 
@@ -361,9 +361,9 @@
                 <div class="address-title">Pesan</div>
                 <ul class="pesan-list">
                     <li>Untuk pembayaran mohon untuk ditransfer ke 
-                        <b>{{ $invoice->jobTicket->companyProfile->bank_type ?? 'BCA' }}</b>, no acc 
-                        <b>{{ $invoice->jobTicket->companyProfile->account_number ?? '453.12.06660' }}</b>, 
-                        Atas nama <b>{{ strtoupper($invoice->jobTicket->companyProfile->account_name) ?? 'VICTOR HARLIM.MBA' }}</b>.
+                        <b>{{ $companyProfile?->bank_type ?? 'BCA' }}</b>, no acc
+                        <b>{{ $companyProfile?->account_number ?? '453.12.06660' }}</b>,
+                        Atas nama <b>{{ strtoupper($companyProfile?->account_name ?? 'VICTOR HARLIM.MBA') }}</b>.
                     </li>
                 </ul>
             </td>
@@ -374,6 +374,12 @@
                         <td class="summary-label text-right">{{ $documentTitle ? 'Nilai Produksi' : 'Subtotal' }}</td>
                         <td class="text-right font-bold">Rp {{ number_format($grandSubtotal, 0, ',', '.') }}</td>
                     </tr>
+                    @if($documentDeliveryCost > 0)
+                        <tr>
+                            <td class="summary-label text-right">Biaya Pengiriman</td>
+                            <td class="text-right font-bold">Rp {{ number_format($documentDeliveryCost, 0, ',', '.') }}</td>
+                        </tr>
+                    @endif
                     <tr>
                         <td class="summary-label text-right">{{ $documentTotalLabel }}</td>
                         <td class="text-right font-bold">Rp {{ number_format($documentTotal, 0, ',', '.') }}</td>

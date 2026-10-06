@@ -500,7 +500,7 @@ class QuotationController extends Controller
                 ]);
             }
 
-            if ($totalSampleInvoiceAmount > 0) {
+            if ($totalSampleInvoiceAmount + (float) $quotation->delivery_cost > 0) {
                 $this->generateSampleInvoiceIfNotExists($jobTicket, $quotation, $pesanansCalculated);
                 
                 $jobTicket->update(['status' => 'Sample Payment']);
@@ -677,10 +677,13 @@ class QuotationController extends Controller
 
     private function generateSampleInvoiceIfNotExists(JobTicket $jobTicket, Quotation $quotation, array $pesanansCalculated): void
     {
+        $deliveryCost = (float) ($quotation->delivery_cost ?? 0);
+        $itemSubtotal = array_sum(array_column($pesanansCalculated, 'subtotal'));
+
         // 1. Cari invoice sample yang masih bisa ditambah (unpaid/partial)
         $unpaidInvoice = $jobTicket->invoices()
             ->where('kategori_invoice', 'sample')
-            ->whereIn('status_tagihan', ['unpaid', 'partial_paid'])
+            ->whereIn('status_tagihan', ['unpaid', 'partially_paid'])
             ->first();
 
         if ($unpaidInvoice) {
@@ -697,9 +700,10 @@ class QuotationController extends Controller
                 }
             }
             
-            // Update total tagihan berdasarkan jumlah subtotal item
-            $newTotal = $unpaidInvoice->items()->sum('subtotal');
-            $unpaidInvoice->update(['total_tagihan' => $newTotal]);
+            $unpaidInvoice->update([
+                'delivery_cost' => $deliveryCost,
+                'total_tagihan' => $unpaidInvoice->items()->sum('subtotal') + $deliveryCost,
+            ]);
             
             return;
         }
@@ -708,7 +712,8 @@ class QuotationController extends Controller
         $invoice = $jobTicket->invoices()->create([
             'no_invoice' => $this->generateInvoiceNumber('SAMPLE'),
             'kategori_invoice' => 'sample',
-            'total_tagihan' => array_sum(array_column($pesanansCalculated, 'subtotal')),
+            'total_tagihan' => $itemSubtotal + $deliveryCost,
+            'delivery_cost' => $deliveryCost,
             'status_tagihan' => 'unpaid',
             'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);
@@ -816,7 +821,7 @@ class QuotationController extends Controller
 
         $jobTicket = $quotation->jobTicket;
         $customer = $jobTicket?->customer ?: $quotation->customer;
-        $companyProfile = $jobTicket?->companyProfile ?: $quotation->companyProfile;
+        $companyProfile = $quotation->companyProfile ?: $jobTicket?->companyProfile;
 
         $owner = User::whereHas('roles', function ($query) {
             $query->where('name', 'Owner');

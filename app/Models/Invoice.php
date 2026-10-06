@@ -11,6 +11,7 @@ class Invoice extends Model
         'no_invoice',
         'kategori_invoice',
         'total_tagihan',
+        'delivery_cost',
         'status_tagihan',
         'tgl_jatuh_tempo',
     ];

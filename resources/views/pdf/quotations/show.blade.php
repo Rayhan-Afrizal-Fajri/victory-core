@@ -285,13 +285,19 @@
             <td style="width: 60%; padding-right: 15px;">
                 <div class="address-title">Pesan</div>
                 <ul class="pesan-list">
+                    @if($quotation->payment_terms)
+                        <li>{!! nl2br(e($quotation->payment_terms)) !!}</li>
+                    @endif
+                    @if($quotation->delivery_terms)
+                        <li>{!! nl2br(e($quotation->delivery_terms)) !!}</li>
+                    @endif
                     @if ($quotation->quotationNotes)
                         @foreach ($quotation->quotationNotes as $note)
-                            <li>{!! $note->notes !!}</li>                        
+                            <li>{!! nl2br(e($note->notes)) !!}</li>
                         @endforeach
                     @endif
                     @if($quotation->notes)
-                        <li>{!! $quotation->notes !!}</li>
+                        <li>{!! nl2br(e($quotation->notes)) !!}</li>
                     @endif
                     <li>Untuk pembayaran mohon untuk ditransfer ke 
                         {{ $companyProfile?->bank_type ?? 'BCA' }}, no acc

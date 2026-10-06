@@ -448,6 +448,7 @@ class InvoiceController extends Controller
         $invoice = Invoice::with([
             'jobTicket.customer',
             'jobTicket.companyProfile',
+            'jobTicket.quotations.companyProfile',
             'jobTicket.pesanans.sizeBreakdowns',
             'payments',
             'items.pesanan',
@@ -480,6 +481,9 @@ class InvoiceController extends Controller
             : ($documentType === 'settlement'
                 ? $documentAmounts['settlement_total']
                 : (float) $invoice->total_tagihan);
+        $documentDeliveryCost = $documentType
+            ? (float) $invoice->delivery_cost / 2
+            : (float) $invoice->delivery_cost;
         $documentPaid = $documentType === 'dp'
             ? $documentAmounts['dp_paid']
             : ($documentType === 'settlement'
@@ -507,6 +511,12 @@ class InvoiceController extends Controller
         $company = $invoice->jobTicket->customer_perusahaan_snapshot
             ?: $invoice->jobTicket->customer?->nama_perusahaan
             ?: $invoice->jobTicket->customer?->nama;
+        $approvedQuotation = $invoice->jobTicket->quotations
+            ->where('status', 'approved')
+            ->sortByDesc('id')
+            ->first();
+        $companyProfile = $approvedQuotation?->companyProfile
+            ?: $invoice->jobTicket->companyProfile;
         $articles = $invoice->items->pluck('item_name')->all();
         if (! $articles) {
             $articles = $invoice->jobTicket->pesanans
@@ -516,12 +526,14 @@ class InvoiceController extends Controller
 
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
-            'company' => $invoice->jobTicket->companyProfile,
+            'company' => $companyProfile,
+            'companyProfile' => $companyProfile,
             'items' => $invoice->items,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,
             'documentTitle' => $documentTitle,
             'documentTotal' => $documentTotal,
+            'documentDeliveryCost' => $documentDeliveryCost,
             'documentPaid' => $documentPaid,
             'documentRemaining' => $documentRemaining,
             'documentStatus' => $documentStatus,

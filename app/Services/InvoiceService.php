@@ -99,8 +99,12 @@ class InvoiceService
 
         DB::transaction(function () use ($jobTicket) {
             // 1. Ambil data grand total dan persiapkan data item
-            $approvedQuotation = $jobTicket->quotations()->where('status', 'approved')->first();
+            $approvedQuotation = $jobTicket->quotations()
+                ->where('status', 'approved')
+                ->latest('id')
+                ->first();
             $grandTotal = 0;
+            $deliveryCost = (float) ($approvedQuotation?->delivery_cost ?? 0);
             $invoiceItems = [];
 
             // dd($jobTicket->pesanans, $approvedQuotation);
@@ -152,6 +156,7 @@ class InvoiceService
                 'no_invoice' => $this->generate('INV-PROD'),
                 'kategori_invoice' => 'produksi',
                 'total_tagihan' => $grandTotal,
+                'delivery_cost' => $deliveryCost,
                 'status_tagihan' => 'unpaid',
                 'tgl_jatuh_tempo' => now()->addDays(7)->toDateString(),
             ]);

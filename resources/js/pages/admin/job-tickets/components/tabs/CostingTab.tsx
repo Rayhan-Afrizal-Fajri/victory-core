@@ -74,7 +74,11 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
             estimasi_hpp_per_pcs:
                 activeOrder.estimated_hpp_per_piece ?? 0,
         });
-    }, [activeOrder?.id]);
+    }, [
+        activeOrder?.id,
+        activeOrder?.price_per_piece,
+        activeOrder?.estimated_hpp_per_piece,
+    ]);
 
     // useEffect(() => {
     //     ownerPriceForm.setData({

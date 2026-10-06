@@ -1,16 +1,17 @@
-import { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import formatRupiah from '@/components/ui/format-rupiah';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import FormattedNumberInput from '../ui/formatted-number-input';
 
 type DraftItem = {
     pesanan_id: number | null;
@@ -44,6 +45,12 @@ const emptyItem = (): DraftItem => ({
     sample_price_per_pcs: 0,
 });
 
+const DEFAULT_PAYMENT_TERMS =
+    'Setelah sample approve, customer melakukan down payment sebesar 50% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.';
+const DEFAULT_DELIVERY_TERMS = 'Estimasi delivery 10–14 hari kerja dari DP dan ACC sample.';
+const DEFAULT_NOTES =
+    'Harga sudah termasuk bahan, proses produksi, dan packaging. Harga belum termasuk delivery dan pajak.';
+
 function mapJobTicketItems(jobTicket: any): DraftItem[] {
     return (jobTicket?.orders || []).map((order: any) => ({
         pesanan_id: order.id,
@@ -75,9 +82,9 @@ export default function QuotationDraftDialog({
         customer_phone: '',
         customer_address: '',
         valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-        payment_terms: '',
-        delivery_terms: '',
-        notes: '',
+        payment_terms: DEFAULT_PAYMENT_TERMS,
+        delivery_terms: DEFAULT_DELIVERY_TERMS,
+        notes: DEFAULT_NOTES,
         delivery_cost: 0,
         items: [emptyItem()] as DraftItem[],
     });
@@ -96,9 +103,9 @@ export default function QuotationDraftDialog({
                 customer_phone: quotation.customer_phone_snapshot || quotation.customer?.no_hp || '',
                 customer_address: quotation.customer_address_snapshot || quotation.customer?.alamat_detail || '',
                 valid_until: quotation.valid_until ? String(quotation.valid_until).slice(0, 10) : '',
-                payment_terms: quotation.payment_terms || '',
-                delivery_terms: quotation.delivery_terms || '',
-                notes: quotation.notes || quotation.quotation_notes?.map((note: any) => note.notes).join('\n') || '',
+                payment_terms: quotation.payment_terms || DEFAULT_PAYMENT_TERMS,
+                delivery_terms: quotation.delivery_terms || DEFAULT_DELIVERY_TERMS,
+                notes: quotation.notes || quotation.quotation_notes?.map((note: any) => note.notes).join('\n') || DEFAULT_NOTES,
                 delivery_cost: Number(quotation.delivery_cost || 0),
                 items: (quotation.items || []).map((item: any) => ({
                     pesanan_id: item.pesanan_id || null,
@@ -124,9 +131,9 @@ export default function QuotationDraftDialog({
             customer_phone: jobTicket?.customer?.phone || '',
             customer_address: jobTicket?.customer?.address || '',
             valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-            payment_terms: '',
-            delivery_terms: '',
-            notes: '',
+            payment_terms: DEFAULT_PAYMENT_TERMS,
+            delivery_terms: DEFAULT_DELIVERY_TERMS,
+            notes: DEFAULT_NOTES,
             delivery_cost: 0,
             items: jobTicket ? mapJobTicketItems(jobTicket) : [emptyItem()],
         });
@@ -187,17 +194,19 @@ export default function QuotationDraftDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{quotation ? 'Edit Quotation Draft' : 'Buat Quotation'}</DialogTitle>
-                    <DialogDescription>
-                        {quotation?.job_ticket_id
-                            ? 'Perubahan dapat dilakukan sampai quotation disetujui.'
-                            : 'Buat draft manual atau isi item dari PO yang belum memiliki quotation aktif.'}
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-2rem)] max-w-4xl flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+                <div className="shrink-0 border-b px-6 py-5">
+                    <DialogHeader>
+                        <DialogTitle>{quotation ? 'Edit Quotation Draft' : 'Buat Quotation'}</DialogTitle>
+                        <DialogDescription>
+                            {quotation?.job_ticket_id
+                                ? 'Perubahan dapat dilakukan sampai quotation disetujui.'
+                                : 'Buat draft manual atau isi item dari PO yang belum memiliki quotation aktif.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
-                <form onSubmit={submit} className="space-y-5">
+                <form onSubmit={submit} className="min-h-0 space-y-5 overflow-y-auto px-6 py-5">
                     {!initialJobTicket && !quotation?.job_ticket_id && (
                         <div className="space-y-2">
                             <Label>Sumber Data</Label>
@@ -278,27 +287,68 @@ export default function QuotationDraftDialog({
                                 <Plus className="mr-2 size-4" /> Tambah Item
                             </Button>
                         </div>
-                        {form.data.items.map((item, index) => (
-                            <div key={`${index}-${item.pesanan_id ?? 'manual'}`} className="space-y-3 rounded-md border p-4">
+                        {form
+                            .data
+                            .items
+                            .map((item, index) => (<div key={`${index}-${item.pesanan_id ?? 'manual'}`} className="space-y-3 rounded-md border p-4">
                                 <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr_auto]">
-                                    <div className="space-y-1"><Label>Artikel</Label><Input value={item.item_name} onChange={(event) => updateItem(index, 'item_name', event.target.value)} required /></div>
-                                    <div className="space-y-1"><Label>Qty Produksi</Label><Input type="number" min="1" value={item.quantity} onChange={(event) => updateItem(index, 'quantity', Number(event.target.value))} required /></div>
-                                    <div className="space-y-1"><Label>Harga / pcs</Label><Input type="number" min="0" value={item.price_per_pcs} onChange={(event) => updateItem(index, 'price_per_pcs', Number(event.target.value))} required /></div>
-                                    <div className="flex items-end"><Button type="button" variant="ghost" size="icon" title="Hapus item" disabled={form.data.items.length <= 1} onClick={() => form.setData('items', form.data.items.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="size-4" /></Button></div>
-                                    <div className="space-y-1"><Label>Qty Sample</Label><Input type="number" min="0" value={item.sample_quantity} onChange={(event) => updateItem(index, 'sample_quantity', Number(event.target.value))} /></div>
-                                    <div className="space-y-1"><Label>Harga Sample / pcs</Label><Input type="number" min="0" value={item.sample_price_per_pcs} onChange={(event) => updateItem(index, 'sample_price_per_pcs', Number(event.target.value))} /></div>
-                                    <div className="space-y-1"><Label>Bahan / Fabric</Label><Input value={item.fabric} onChange={(event) => updateItem(index, 'fabric', event.target.value)} /></div>
-                                    <div className="space-y-1"><Label>Metode Print</Label><Input value={item.print_method} onChange={(event) => updateItem(index, 'print_method', event.target.value)} /></div>
+                                    <div className="space-y-1">
+                                        <Label>Artikel</Label><Input value={item.item_name} onChange={(event) => updateItem(index, 'item_name', event.target.value)} required/></div>
+                                    <div className="space-y-1">
+                                        <Label>Qty Produksi</Label><Input type="number" min="1" value={item.quantity} onChange={(event) => updateItem(index, 'quantity', Number(event.target.value))} required/></div>
+                                    <div className="space-y-1">
+                                        <Label>Harga / pcs</Label>
+                                        <FormattedNumberInput
+                                            value={item.price_per_pcs}
+                                            onValueChange={(val) => updateItem(index, 'price_per_pcs', val)}
+                                            allowDecimal={false}
+                                            min={0}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex items-end">
+                                        <Button type="button" variant="ghost" size="icon" title="Hapus item" disabled={form.data.items.length <= 1} onClick={() => form.setData('items', form.data.items.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="size-4"/></Button>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label>Qty Sample</Label>
+                                        <Input type="number" min="0" value={item.sample_quantity} onChange={(event) => updateItem(index, 'sample_quantity', Number(event.target.value))}/>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label>Harga Sample / pcs</Label>
+                                        <FormattedNumberInput
+                                            value={item.sample_price_per_pcs}
+                                            onValueChange={(val) => updateItem(index, 'sample_price_per_pcs', val)}
+                                            allowDecimal={false}
+                                            min={0}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label>Bahan / Fabric</Label><Input value={item.fabric} onChange={(event) => updateItem(index, 'fabric', event.target.value)}/></div>
+                                    <div className="space-y-1">
+                                        <Label>Metode Print</Label><Input value={item.print_method} onChange={(event) => updateItem(index, 'print_method', event.target.value)}/></div>
                                 </div>
-                            </div>
-                        ))}
+                            </div>))
+                    }
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2"><Label>Payment Terms</Label><Textarea value={form.data.payment_terms} onChange={(event) => form.setData('payment_terms', event.target.value)} /></div>
                         <div className="space-y-2"><Label>Delivery Terms</Label><Textarea value={form.data.delivery_terms} onChange={(event) => form.setData('delivery_terms', event.target.value)} /></div>
                         <div className="space-y-2"><Label>Notes</Label><Textarea value={form.data.notes} onChange={(event) => form.setData('notes', event.target.value)} /></div>
-                        <div className="space-y-2"><Label>Delivery Cost</Label><Input type="number" min="0" value={form.data.delivery_cost} onChange={(event) => form.setData('delivery_cost', Number(event.target.value))} /></div>
+                        <div className="space-y-2">
+                            <Label>Delivery Cost</Label>
+                            {/* <Input
+                                type="number"
+                                min="0"
+                                value={form.data.delivery_cost}
+                                onChange={(event) => form.setData('delivery_cost', Number(event.target.value))}/> */}
+                            <FormattedNumberInput
+                                        value={form.data.delivery_cost}
+                                        onValueChange={(val) => form.setData('delivery_cost', val)}
+                                        allowDecimal={false}
+                                        min={0}
+                                    />
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
