@@ -57,6 +57,21 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const formData = new FormData();
+      formData.append('file', e.target.files[0]);
+      // Assuming route helper is available globally or we just use raw path, but it's better to use route() if available.
+      // Wait, let's use raw path to be safe, because route() might not be imported.
+      router.post('/product-categories/import', formData as any, {
+        preserveScroll: true,
+        onSuccess: () => {
+          e.target.value = '';
+        }
+      });
+    }
+  };
+
   const { data, setData, post, put, delete: destroy, processing, reset } = useForm({
     name: '',
     bahan_ids: [] as number[],
@@ -240,7 +255,21 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
               Kelola kategori produk dan atur default bahan, aksesoris, & proses pengerjaan.
             </p>
           </div>
-          <Button onClick={openCreateDialog}>+ Tambah Kategori</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <a href="/product-categories/export-template">Download Template</a>
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleImport}
+              />
+              <Button variant="outline">Import Data</Button>
+            </div>
+            <Button onClick={openCreateDialog}>+ Tambah Kategori</Button>
+          </div>
         </div>
 
         <DataTable columns={columns} data={categories} searchKeys={['name']} />

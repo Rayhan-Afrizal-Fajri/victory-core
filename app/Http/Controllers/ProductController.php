@@ -13,7 +13,10 @@ use App\Models\ProductCategory;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ProductImport;
+use App\Exports\ProductTemplateExport;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -441,5 +444,24 @@ class ProductController extends Controller
         $product->update(['is_active' => !$product->is_active]);
 
         return back();
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+        ]);
+
+        Excel::import(new ProductImport, $request->file('file'));
+
+        return back()->with([
+            'success' => 'Data Produk berhasil diimport.',
+            'flash_id' => Str::uuid()
+        ]);
+    }
+
+    public function exportTemplate()
+    {
+        return Excel::download(new ProductTemplateExport, 'Template_Master_Produk.xlsx');
     }
 }

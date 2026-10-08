@@ -29,6 +29,19 @@ export default function Product({ products, categories }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const formData = new FormData();
+      formData.append('file', e.target.files[0]);
+      router.post('/products/import', formData as any, {
+        preserveScroll: true,
+        onSuccess: () => {
+          e.target.value = '';
+        }
+      });
+    }
+  };
+
   const categoryOptions = categories?.map((p)=>({
         value: p.id.toString(),
         label: p.name,
@@ -248,11 +261,25 @@ export default function Product({ products, categories }: Props) {
               }
             }}
           >
-            <DialogTrigger asChild>
-              <Button variant="default" className="inline-flex items-center gap-2">
-                <Plus className="size-4" /> Tambah Produk
+            <div className="flex items-center gap-2">
+              <Button variant="outline" asChild>
+                <a href="/products/export-template">Download Template</a>
               </Button>
-            </DialogTrigger>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleImport}
+                />
+                <Button variant="outline">Import Data</Button>
+              </div>
+              <DialogTrigger asChild>
+                <Button variant="default" className="inline-flex items-center gap-2">
+                  <Plus className="size-4" /> Tambah Produk
+                </Button>
+              </DialogTrigger>
+            </div>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>

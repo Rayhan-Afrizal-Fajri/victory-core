@@ -55,9 +55,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Master Data
      */
     //Product Category
+    Route::post('product-categories/import', [ProductCategoryController::class, 'import'])->name('product-categories.import');
+    Route::get('product-categories/export-template', [ProductCategoryController::class, 'exportTemplate'])->name('product-categories.export-template');
     Route::resource('product-categories', ProductCategoryController::class);
 
     // Product/Article Master
+    Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
+    Route::get('products/export-template', [ProductController::class, 'exportTemplate'])->name('products.export-template');
     Route::resource('products', ProductController::class);
     // Update status (Aktif / Nonaktif)
     Route::patch('/products/{product}/toggle-status', [ProductController::class, 'updateStatus'])

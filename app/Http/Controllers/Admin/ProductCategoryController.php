@@ -9,6 +9,9 @@ use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ProductCategoryImport;
+use App\Exports\ProductCategoryTemplateExport;
 
 class ProductCategoryController extends Controller
 {
@@ -119,5 +122,24 @@ class ProductCategoryController extends Controller
             'success' => 'Kategori produk berhasil dihapus.',
             'flash_id' => Str::uuid()
         ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+        ]);
+
+        Excel::import(new ProductCategoryImport, $request->file('file'));
+
+        return back()->with([
+            'success' => 'Data Kategori berhasil diimport.',
+            'flash_id' => Str::uuid()
+        ]);
+    }
+
+    public function exportTemplate()
+    {
+        return Excel::download(new ProductCategoryTemplateExport, 'Template_Kategori_Produk.xlsx');
     }
 }
