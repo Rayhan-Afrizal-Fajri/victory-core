@@ -10,8 +10,18 @@ class ProductCategoryTemplateExport implements FromArray, WithHeadings
     public function array(): array
     {
         return [
-            ['T-Shirt'],
-            ['Tote Bag']
+            [
+                'Test',
+                'American Drill - Intan Textile, Bahan - Karuniatex',
+                'Benang Jahit - Toko 1001, Boor - Karuniatex, Bordir - Karuniatex, Cat Sablon - Max Print, Dtf - Karuniatex, Kain Keras - Karuni',
+                'Setting, Cutting, Jahit, QC, Packing, Sablon, Finishing'
+            ],
+            [
+                'T-Shirt',
+                'Kain Combed 24s, Kain Rib',
+                'Benang Jahit - Toko 1001, Label Woven, Plastik OPP',
+                'Setting, Cutting, Sablon, Jahit, QC, Finishing, Packing'
+            ]
         ];
     }
 
@@ -19,6 +29,9 @@ class ProductCategoryTemplateExport implements FromArray, WithHeadings
     {
         return [
             'Name',
+            'Bahan',
+            'Aksesoris',
+            'Manufaktur',
         ];
     }
 }
