@@ -48,27 +48,28 @@ function MaterialSpecEditDialog({
     const [isCustomColor, setIsCustomColor] = useState(false);
     const [isCustomUnit, setIsCustomUnit] = useState(false);
 
+    // Inisialisasi status custom saat dialog dibuka atau spec berubah
     useEffect(() => {
-        if (!form.data.color) return;
+        if (!open) return;
 
-        const exists = colors.some(
-            (c) =>
-                c.label.toLowerCase() === form.data.color.toLowerCase()
-        );
+        if (form.data.color) {
+            const colorExists = colors.some(
+                (c) => c.label.toLowerCase() === form.data.color.toLowerCase()
+            );
+            setIsCustomColor(!colorExists);
+        } else {
+            setIsCustomColor(false);
+        }
 
-        setIsCustomColor(!exists);
-    }, [colors, form.data.color]);
-
-    useEffect(() => {
-        if (!form.data.unit) return;
-
-        const exists = units.some(
-            (c) =>
-                c.label.toLowerCase() === form.data.unit.toLowerCase()
-        );
-
-        setIsCustomColor(!exists);
-    }, [colors, form.data.color]);
+        if (form.data.unit) {
+            const unitExists = units.some(
+                (u) => u.label.toLowerCase() === form.data.unit.toLowerCase()
+            );
+            setIsCustomUnit(!unitExists);
+        } else {
+            setIsCustomUnit(false);
+        }
+    }, [open, spec]);
 
     const toggleCustomColor = () => {
         setIsCustomColor((prev) => !prev);
@@ -218,12 +219,12 @@ function MaterialSpecEditDialog({
                             />
                         </Field>
 
-                        <Field label="Warna" error={form.errors.unit}>
+                        <Field label="Unit" error={form.errors.unit}>
                             {isCustomUnit ? (
                                 <div className="space-y-2">
                                     <Input
                                         value={form.data.unit || ''}
-                                        placeholder="Masukkan warna..."
+                                        placeholder="Masukkan unit..."
                                         onChange={(e) =>
                                             form.setData('unit', e.target.value)
                                         }
