@@ -65,27 +65,17 @@ class InvoiceService
         // Sudah pernah dibuat?
         if (
             $jobTicket->invoices()
-                ->where('kategori_invoice', 'produksi')
-                ->whereNotIn('status_tagihan', ['cancelled'])
+                ->whereIn('kategori_invoice', ['dp_produksi', 'production', 'produksi'])
+                ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled'])
                 ->exists()
         ) {
-            return;
-        }
-
-        $sampleApproved =
-            $jobTicket->pesanans
-                ->every(fn($p) =>
-                    optional($p->workflowStatus)->sample_approved
-                );
-
-        if (! $sampleApproved) {
             return;
         }
 
         $this->createProductionInvoice($jobTicket);
     }
 
-    private function createProductionInvoice(JobTicket $jobTicket): void
+    public function createProductionInvoice(JobTicket $jobTicket): ?Invoice
     {
         // Cek apakah invoice produksi sudah dibuat sebelumnya
         $exists = $jobTicket->invoices()
@@ -94,10 +84,10 @@ class InvoiceService
             ->exists();
 
         if ($exists) {
-            return;
+            return null;
         }
 
-        DB::transaction(function () use ($jobTicket) {
+        $invoice = DB::transaction(function () use ($jobTicket) {
             // 1. Ambil data grand total dan persiapkan data item
             $approvedQuotation = $jobTicket->quotations()
                 ->where('status', 'approved')
@@ -176,16 +166,20 @@ class InvoiceService
                     ]
                 );
             }
+
+            return $invoice;
         });
 
         $usersToNotify = User::permission('invoices.pay')->get();
         if ($usersToNotify->isNotEmpty()) {
             Notification::send($usersToNotify, new SystemNotification(
                 'Invoice Produksi telah dibuat',
-                "Invoice Poduksi telah dibuat, lakukan pembayaran.",
+                "Invoice Produksi telah dibuat, lakukan pembayaran.",
                 "/purchase-orders/{$jobTicket->id}?tab=invoices",
                 'info'
             ));
         }
+
+        return $invoice;
     }
 }

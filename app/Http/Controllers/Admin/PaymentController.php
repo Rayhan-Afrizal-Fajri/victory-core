@@ -429,7 +429,7 @@ class PaymentController extends Controller
             'catatan_finance' => ['nullable', 'string'],
         ]);
 
-        $payment = Payment::with('invoice.sample.pesanan.workflowStatus')->findOrFail($paymentId);
+        $payment = Payment::with(['invoice.sample.pesanan.workflowStatus', 'invoice.jobTicket'])->findOrFail($paymentId);
 
         if (! in_array($payment->status, ['pending', 'rejected'])) {
             abort(422, 'Payment yang sudah terverifikasi tidak bisa diedit.');
@@ -461,6 +461,7 @@ class PaymentController extends Controller
             $invoice = $invoiceService->recalculateStatus($payment->invoice);
 
             $sample = $invoice->sample;
+            $jobTicket = $invoice->jobTicket ?? $sample?->pesanan?->jobTicket;
 
             if ($sample && ! in_array($invoice->status_tagihan, ['paid', 'Paid']) ) {
                 $sample->update([
@@ -468,17 +469,21 @@ class PaymentController extends Controller
                     'paid_at' => null,
                 ]);
 
-                $sample->pesanan->workflowStatus()->update([
+                $sample->pesanan?->workflowStatus()?->update([
                     'sample_paid' => false,
                 ]);
             }
 
-            $sample?->pesanan->workflowHistory()->create([
-                'step' => 'sample',
-                'action' => 'payment_updated',
-                'user_id' => Auth::user()->id,
-                'notes' => 'Payment sample diperbarui dan kembali menjadi pending.',
-            ]);
+            if ($jobTicket) {
+                $jobTicket->workflowHistory()->create([
+                    'step' => $sample ? 'sample' : 'finance',
+                    'action' => 'payment_updated',
+                    'user_id' => Auth::id(),
+                    'notes' => $sample
+                        ? 'Payment sample diperbarui dan kembali menjadi pending.'
+                        : 'Payment invoice ' . ($invoice->no_invoice ?? '') . ' diperbarui dan kembali menjadi pending.',
+                ]);
+            }
         });
 
         return back()->with('success', 'Payment berhasil diperbarui.');
@@ -489,7 +494,7 @@ class PaymentController extends Controller
      */
     public function destroy(string $paymentId, InvoiceService $invoiceService)
     {
-        $payment = Payment::with('invoice.sample.pesanan.workflowStatus')->findOrFail($paymentId);
+        $payment = Payment::with(['invoice.sample.pesanan.workflowStatus', 'invoice.jobTicket'])->findOrFail($paymentId);
 
         if (! in_array($payment->status, ['pending', 'rejected'])) {
             abort(422, 'Payment yang sudah terverifikasi tidak bisa dihapus.');
@@ -498,6 +503,7 @@ class PaymentController extends Controller
         DB::transaction(function () use ($payment, $invoiceService) {
             $invoice = $payment->invoice;
             $sample = $invoice->sample;
+            $jobTicket = $invoice->jobTicket ?? $sample?->pesanan?->jobTicket;
 
             if ($payment->bukti_transfer_path) {
                 Storage::disk('public')->delete($payment->bukti_transfer_path);
@@ -513,17 +519,21 @@ class PaymentController extends Controller
                     'paid_at' => null,
                 ]);
 
-                $sample->pesanan->workflowStatus()->update([
+                $sample->pesanan?->workflowStatus()?->update([
                     'sample_paid' => false,
                 ]);
             }
 
-            $sample?->pesanan->workflowHistory()->create([
-                'step' => 'sample',
-                'action' => 'payment_deleted',
-                'user_id' => Auth::user()->id,
-                'notes' => 'Payment sample dihapus.',
-            ]);
+            if ($jobTicket) {
+                $jobTicket->workflowHistory()->create([
+                    'step' => $sample ? 'sample' : 'finance',
+                    'action' => 'payment_deleted',
+                    'user_id' => Auth::id(),
+                    'notes' => $sample
+                        ? 'Payment sample dihapus.'
+                        : 'Payment invoice ' . ($invoice->no_invoice ?? '') . ' dihapus.',
+                ]);
+            }
         });
 
         return back()->with('success', 'Payment berhasil dihapus.');

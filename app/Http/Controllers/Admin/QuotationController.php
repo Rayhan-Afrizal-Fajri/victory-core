@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\InvoiceService;
 use App\Services\PurchasingService;
 use App\Services\QuotationDraftService;
 use App\Support\DocumentFilename;
@@ -25,8 +26,7 @@ use Inertia\Inertia;
 class QuotationController extends Controller
 {
     public function __construct(
-        // protected ProductionRunService $productionRunService,
-        // protected InvoiceService $invoiceService,
+        protected InvoiceService $invoiceService,
         protected PurchasingService $purchasingService,
     ) {}
 
@@ -500,11 +500,13 @@ class QuotationController extends Controller
                 ]);
             }
 
-            if ($totalSampleInvoiceAmount + (float) $quotation->delivery_cost > 0) {
+            // Cek apakah ada kebutuhan sample di dalam Job Ticket
+            $hasSample = $pesanans->contains(fn ($p) => ((int) ($p->sample_qty ?? 0)) > 0);
+
+            // 3. PROSES A: Jika ada sample dan biaya sample > 0, buat Invoice Sample
+            if ($hasSample && $totalSampleInvoiceAmount > 0) {
                 $this->generateSampleInvoiceIfNotExists($jobTicket, $quotation, $pesanansCalculated);
-                
-                $jobTicket->update(['status' => 'Sample Payment']);
-                
+
                 $usersToNotify = User::permission('invoices.pay')->get();
                 if ($usersToNotify->isNotEmpty()) {
                     Notification::send($usersToNotify, new SystemNotification(
@@ -514,17 +516,23 @@ class QuotationController extends Controller
                         'info'
                     ));
                 }
-            } else {
+            }
+
+            // 4. ATURAN BARU (KASUS A, B, C): INVOICE PRODUKSI PASTI DIBUAT SETELAH QUOTATION DISETUJUI
+            $this->invoiceService->createProductionInvoice($jobTicket);
+
+            // 5. UPDATE STATUS JOB TICKET & PENANGANAN PURCHASING / PRODUKSI
+            if ($hasSample && $totalSampleInvoiceAmount > 0) {
+                // KASUS A: Sample ada & berbayar -> Menunggu pembayaran invoice sample
+                $jobTicket->update(['status' => 'Sample Payment']);
+            } elseif ($hasSample && $totalSampleInvoiceAmount <= 0) {
+                // KASUS B: Sample ada & biaya 0 -> Langsung purchasing sample
                 $jobTicket->update(['status' => 'Purchasing Sample']);
 
                 $isPurchasingGenerated = false;
-
-                // Jika total tagihan sample 0, maka langsung generate purchasing
-                foreach($pesanans as $pesanan) {
-                    $pesanan->refresh(); // Pastikan data terbaru, termasuk sample_paid yang baru saja diset True
-                    
-                    // Gunakan Service Purchasing
-                    $generated = app(\App\Services\PurchasingService::class)->generateFromBom($pesanan);
+                foreach ($pesanans as $pesanan) {
+                    $pesanan->refresh();
+                    $generated = $this->purchasingService->generateFromBom($pesanan);
                     $isPurchasingGenerated = $isPurchasingGenerated || $generated;
                 }
 
@@ -532,8 +540,33 @@ class QuotationController extends Controller
                     $usersToNotify = User::permission('purchasings.mark_ordered')->get();
                     if ($usersToNotify->isNotEmpty()) {
                         Notification::send($usersToNotify, new SystemNotification(
-                            'Purchasing BOM Otomatis Dibuat',
+                            'Purchasing BOM Sample Otomatis Dibuat',
                             "Penawaran disetujui tanpa biaya sample. Purchasing otomatis terbuat. Silakan lakukan pemesanan.",
+                            "/purchase-orders/{$jobTicket->id}?tab=purchasing",
+                            'info'
+                        ));
+                    }
+                }
+            } else {
+                // KASUS C: Tanpa sample -> Langsung purchasing produksi & siapkan draft produksi
+                $jobTicket->update(['status' => 'Purchasing']);
+
+                $isPurchasingGenerated = false;
+                foreach ($pesanans as $pesanan) {
+                    $pesanan->refresh();
+                    $generated = $this->purchasingService->generateFromBom($pesanan);
+                    $isPurchasingGenerated = $isPurchasingGenerated || $generated;
+
+                    // Siapkan Mass Production Run draft agar proses produksi bisa langsung diakses
+                    app(\App\Services\ProductionRunService::class)->ensureProductionRun($pesanan);
+                }
+
+                if ($isPurchasingGenerated) {
+                    $usersToNotify = User::permission('purchasings.mark_ordered')->get();
+                    if ($usersToNotify->isNotEmpty()) {
+                        Notification::send($usersToNotify, new SystemNotification(
+                            'Purchasing BOM Produksi Otomatis Dibuat',
+                            "Penawaran disetujui tanpa sample. Purchasing material otomatis terbuat. Silakan lakukan pemesanan.",
                             "/purchase-orders/{$jobTicket->id}?tab=purchasing",
                             'info'
                         ));
@@ -580,15 +613,19 @@ class QuotationController extends Controller
             }
         }
 
-        // 3. GUARD: Cek status Invoice Sample
-        // $hasPaidInvoice = $jobTicket->invoices()
-        //     ->where('kategori_invoice', 'sample')
-        //     ->where('status', 'verified') // Sesuaikan dengan status lunas di sistem Anda
-        //     ->exists();
+        // 3. GUARD: Cek status Invoice Sample & Produksi
+        $hasPaidInvoice = $jobTicket->invoices()
+            ->whereIn('kategori_invoice', ['sample', 'produksi', 'production', 'dp_produksi'])
+            ->whereHas('payments', function ($q) {
+                $q->whereIn('status', ['verified', 'Verified']);
+            })
+            ->exists();
 
-        // if ($hasPaidInvoice) {
-        //     abort(422, 'Undo gagal: Invoice Sample sudah dibayar. Hubungi pihak Finance.');
-        // }
+        if ($hasPaidInvoice) {
+            throw ValidationException::withMessages([
+                'undo' => 'Undo gagal: Sudah ada pembayaran invoice (Sample / Produksi) yang telah diverifikasi oleh Finance. Hubungi pihak Finance terlebih dahulu.'
+            ]);
+        }
 
         // 4. JALANKAN TRANSAKSI UNDO
         DB::transaction(function () use ($quotation, $jobTicket, $request) {
@@ -602,9 +639,9 @@ class QuotationController extends Controller
                 // 'signature_path' => null, 
             ]);
 
-            // B. Hapus Invoice Sample yang belum dibayar
+            // B. Hapus Invoice Sample & Invoice Produksi yang belum dibayar
             $jobTicket->invoices()
-                ->where('kategori_invoice', 'sample')
+                ->whereIn('kategori_invoice', ['sample', 'produksi', 'production', 'dp_produksi'])
                 ->whereIn('status_tagihan', ['unpaid', 'partially_paid'])
                 ->delete();
 
@@ -612,6 +649,9 @@ class QuotationController extends Controller
             foreach ($jobTicket->pesanans as $pesanan) {
                 // Hapus data purchasing yang masih draft agar nanti bisa digenerate ulang dari BOM yang baru
                 $pesanan->purchasing()->delete();
+
+                // Hapus production run yang masih draft jika ada
+                $pesanan->productionRuns()->where('status', 'draft')->delete();
 
                 // Reset Workflow Status
                 $pesanan->workflowStatus()->updateOrCreate(
@@ -639,6 +679,11 @@ class QuotationController extends Controller
                         'sample_completed' => false,
                         'sample_uploaded' => false,
                         'sample_delivered' => false,
+
+                        // Reset status Produksi & Invoice Produksi
+                        'production_invoice_created' => false,
+                        'production_dp_paid' => false,
+                        'production_created' => false,
                     ]
                 );
             }
@@ -701,8 +746,8 @@ class QuotationController extends Controller
             }
             
             $unpaidInvoice->update([
-                'delivery_cost' => $deliveryCost,
-                'total_tagihan' => $unpaidInvoice->items()->sum('subtotal') + $deliveryCost,
+                'delivery_cost' => 0,
+                'total_tagihan' => $unpaidInvoice->items()->sum('subtotal'),
             ]);
             
             return;
@@ -712,8 +757,8 @@ class QuotationController extends Controller
         $invoice = $jobTicket->invoices()->create([
             'no_invoice' => $this->generateInvoiceNumber('SAMPLE'),
             'kategori_invoice' => 'sample',
-            'total_tagihan' => $itemSubtotal + $deliveryCost,
-            'delivery_cost' => $deliveryCost,
+            'total_tagihan' => $itemSubtotal,
+            'delivery_cost' => 0,
             'status_tagihan' => 'unpaid',
             'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
         ]);

@@ -42,6 +42,15 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
     const [paymentOpen, setPaymentOpen] = useState(false);
     const [editInvoiceOpen, setEditInvoiceOpen] = useState(false);
 
+    useEffect(() => {
+        if (selectedInvoice) {
+            const updated = invoices.find((inv) => inv.id === selectedInvoice.id);
+            if (updated) {
+                setSelectedInvoice(updated);
+            }
+        }
+    }, [invoices]);
+
     const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
     const [paymentDialogMode, setPaymentDialogMode] = useState<'create' | 'edit'>('create');
     const [rejectPaymentId, setRejectPaymentId] = useState<number | null>(null);
@@ -238,18 +247,19 @@ const FinanceTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
     };
 
     const deletePayment = (payment: any) => {
-        toast.error('Hapus data pembayaran ini?', {
-            action: {
-                label: 'Hapus',
-                onClick: () => {
-                    router.delete(`/payments/${payment.id}`, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            toast.success('Pembayaran berhasil dihapus');
-                            setDetailOpen(false);
-                        },
-                    });
-                },
+        if (!confirm('Apakah Anda yakin ingin menghapus data pembayaran ini?')) {
+            return;
+        }
+
+        router.delete(`/payments/${payment.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Pembayaran berhasil dihapus');
+                setDetailOpen(false);
+            },
+            onError: (errors) => {
+                const message = (Object.values(errors)[0] as string) || 'Gagal menghapus pembayaran.';
+                toast.error(message);
             },
         });
     };

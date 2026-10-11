@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode} from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { DataTable  } from '@/components/data-table';
 import type {DataTableColumn} from '@/components/data-table';
 import InputError from '@/components/input-error';
@@ -252,8 +253,19 @@ export default function Index({
   };
 
   const deletePayment = (payment: any) => {
+      if (!confirm('Apakah Anda yakin ingin menghapus data pembayaran ini?')) {
+          return;
+      }
+
       router.delete(`/payments/${payment.id}`, {
           preserveScroll: true,
+          onSuccess: () => {
+              toast.success('Pembayaran berhasil dihapus');
+          },
+          onError: (errors) => {
+              const message = (Object.values(errors)[0] as string) || 'Gagal menghapus pembayaran.';
+              toast.error(message);
+          },
       });
   };
 

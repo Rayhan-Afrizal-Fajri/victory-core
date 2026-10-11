@@ -96,7 +96,7 @@ class ProductCategoryImport implements ToCollection, WithHeadingRow
     /**
      * Parse comma/semicolon/newline separated string into an array of trimmed items.
      */
-    protected function parseItems($str): array
+    protected function parseItems(?string $str): array
     {
         if (empty($str)) {
             return [];

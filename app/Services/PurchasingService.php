@@ -104,8 +104,9 @@ class PurchasingService
         ]);
 
         // 6. Update Status Job Ticket
+        $hasSamplePending = ((int) ($pesanan->sample_qty ?? 0)) > 0 && ! (bool) ($pesanan->workflowStatus?->sample_approved ?? false);
         $pesanan->jobTicket()->update([
-            'status' => 'Purchasing'
+            'status' => $hasSamplePending ? 'Purchasing Sample' : 'Purchasing'
         ]);
 
         return true;

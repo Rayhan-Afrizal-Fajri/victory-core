@@ -250,7 +250,7 @@ export default function QuotationDraftDialog({
                         <div className="space-y-2">
                             <Label>Perusahaan Penerbit</Label>
                             <Select value={form.data.company_profile_id ? String(form.data.company_profile_id) : ''} onValueChange={(value) => form.setData('company_profile_id', Number(value))}>
-                                <SelectTrigger><SelectValue placeholder="Pilih perusahaan" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Pilih perusahaan" /></SelectTrigger>
                                 <SelectContent>
                                     {companyProfiles.map((profile) => (
                                         <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
