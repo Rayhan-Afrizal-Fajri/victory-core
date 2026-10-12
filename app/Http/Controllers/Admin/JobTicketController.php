@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\CompanyProfile;
 use App\Models\DefaultSizeBreakdown;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class JobTicketController extends Controller
@@ -37,7 +38,11 @@ class JobTicketController extends Controller
             $jobTicketsQuery->where('customer_id', $user->customer?->id);
         }
 
-        $jobTickets = $jobTicketsQuery->get()->map(function ($ticket) use ($user) {
+        $isOwner = $user->hasRole(['Owner', 'owner']);
+        $canEdit = $user->can('job_tickets.edit') || $isOwner;
+        $canDelete = $isOwner;
+
+        $jobTickets = $jobTicketsQuery->get()->map(function ($ticket) use ($user, $canEdit, $canDelete) {
             $pesanans = $ticket->pesanans;
             
             // Hitung agregasi progress dari semua pesanan di dalam job ticket
@@ -65,8 +70,6 @@ class JobTicketController extends Controller
             }
 
             $avgProgress = $pesanans->count() > 0 ? round($totalProgress / $pesanans->count()) : 0;
-            // $canModify = !$hasStartedProduction;
-            $canModify = $user->can('job_tickets.delete') || $user->can('job_tickets.edit');
 
             return [
                 'id' => $ticket->id,
@@ -83,8 +86,8 @@ class JobTicketController extends Controller
                 'sales_name' => $ticket->sales_name ?? '-',
                 'progress' => $avgProgress,
                 'current_step' => $ticket->status ?? 'Menunggu Proses',
-                'can_edit' => $canModify,
-                'can_delete' => $canModify,
+                'can_edit' => $canEdit,
+                'can_delete' => $canDelete,
             ];
         });
 
@@ -588,11 +591,24 @@ class JobTicketController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(JobTicket $jobTicket)
+    public function destroy(string $id)
     {
-        // Pastikan relasi model di setting cascadeOnDelete pada DB / Eloquent
-        $jobTicket->delete();
+        $user = Auth::user();
+
+        if (! $user || ! $user->hasRole(['Owner', 'owner'])) {
+            abort(403, 'Hanya Owner yang memiliki izin untuk menghapus Purchase Order.');
+        }
+
+        $jobTicket = JobTicket::findOrFail($id);
+
+        DB::transaction(function () use ($jobTicket) {
+            // Hapus quotation yang terhubung dengan Job Ticket ini
+            $jobTicket->quotations()->delete();
+
+            // Hapus Job Ticket (beserta seluruh relasi child-nya di DB via cascade)
+            $jobTicket->delete();
+        });
         
-        return back()->with('success', 'Job Ticket beserta pesanannya berhasil dihapus.');
+        return back()->with('success', 'Job Ticket beserta seluruh datanya berhasil dihapus.');
     }
 }

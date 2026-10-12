@@ -440,10 +440,20 @@ class OrderEntryController extends Controller
         return redirect()->route('purchase-orders.show', $jobTicket->id)->with('success', 'Purchase Order berhasil diperbarui.');
     }
 
-    public function destroy(JobTicket $jobTicket)
+    public function destroy(string $id)
     {
+        $user = Auth::user();
 
-        $jobTicket->delete();
+        if (! $user || ! $user->hasRole(['Owner', 'owner'])) {
+            abort(403, 'Hanya Owner yang memiliki izin untuk menghapus Purchase Order.');
+        }
+
+        $jobTicket = JobTicket::findOrFail($id);
+
+        DB::transaction(function () use ($jobTicket) {
+            $jobTicket->quotations()->delete();
+            $jobTicket->delete();
+        });
 
         return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order berhasil dihapus.');
     }

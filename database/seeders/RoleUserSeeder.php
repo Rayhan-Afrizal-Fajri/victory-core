@@ -267,7 +267,6 @@ class RoleUserSeeder extends Seeder
             'purchasings.view',
             'job_tickets.view',
             'job_tickets.edit',
-            'job_tickets.delete',
             'job_tickets.show',
 
             'designs.approve',
