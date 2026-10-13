@@ -244,7 +244,7 @@
                     <div class="company-name">
                         {{ $invoice->jobTicket->customer_perusahaan_snapshot ?? $invoice->jobTicket->customer->nama_perusahaan ?? $invoice->jobTicket->customer->nama }}
                     </div>
-                    {{ $invoice->jobTicket->customer->alamat ?? '' }}<br>
+                    {{ $invoice->jobTicket->customer->alamat_detail ?? '' }}<br>
                     Telp: {{ $invoice->jobTicket->customer->kontak ?? $invoice->jobTicket->customer->no_hp ?? '-' }}<br>
                     Up: {{ $invoice->jobTicket->customer_nama_snapshot ?? $invoice->jobTicket->customer->nama }}
                 </div>
