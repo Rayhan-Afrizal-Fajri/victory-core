@@ -112,7 +112,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'product_category_id' => 'required|exists:product_categories,id',
+            'product_category_id' => 'nullable|exists:product_categories,id',
             'category' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -124,14 +124,16 @@ class ProductController extends Controller
         DB::transaction(function () use ($validated, $request) {
             $product = Product::create([
                 'name' => $validated['name'],
-                'product_category_id' => $validated['product_category_id'],
+                'product_category_id' => $validated['product_category_id'] ?? null,
                 'category' => $validated['category'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
                 'is_pattern_available' => $validated['is_pattern_available'] ?? false,
             ]);
 
-            $this->syncProductRelations($product, $request);
+            if (!empty($validated['product_category_id'])) {
+                $this->syncProductRelations($product, $request);
+            }
         });
 
         return back();
@@ -311,7 +313,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'product_category_id' => 'required|exists:product_categories,id',
+            'product_category_id' => 'nullable|exists:product_categories,id',
             'category' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -323,18 +325,20 @@ class ProductController extends Controller
         DB::transaction(function () use ($validated, $product, $request) {
             $product->update([
                 'name' => $validated['name'],
-                'product_category_id' => $validated['product_category_id'],
+                'product_category_id' => $validated['product_category_id'] ?? null,
                 'category' => $validated['category'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'is_active' => $validated['is_active'],
                 'is_pattern_available' => $validated['is_pattern_available'],
             ]);
 
-            // Hapus relasi lama untuk di-replace yang baru (mudah untuk re-ordering)
-            $product->productMaterials()->delete();
-            $product->productManufacturingWorks()->delete();
+            if (!empty($validated['product_category_id'])) {
+                // Hapus relasi lama untuk di-replace yang baru jika kategori dipilih
+                $product->productMaterials()->delete();
+                $product->productManufacturingWorks()->delete();
 
-            $this->syncProductRelations($product, $request);
+                $this->syncProductRelations($product, $request);
+            }
         });
 
         return back();
@@ -452,10 +456,16 @@ class ProductController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv',
         ]);
 
-        Excel::import(new ProductImport, $request->file('file'));
+        $importer = new ProductImport();
+        $stats = $importer->import($request->file('file'));
+
+        $message = "Import berhasil: {$stats['created']} produk baru ditambahkan, {$stats['updated']} produk diperbarui.";
+        if (!empty($stats['skipped']) && $stats['skipped'] > 0) {
+            $message .= " ({$stats['skipped']} sheet kosong dilewati).";
+        }
 
         return back()->with([
-            'success' => 'Data Produk berhasil diimport.',
+            'success' => $message,
             'flash_id' => Str::uuid()
         ]);
     }

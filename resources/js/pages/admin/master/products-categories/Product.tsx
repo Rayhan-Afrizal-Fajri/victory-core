@@ -61,7 +61,7 @@ export default function Product({ products, categories }: Props) {
     setEditingProduct(product);
     productForm.setData({
       name: product.name,
-      product_category_id: product.product_category_id.toString() || undefined,
+      product_category_id: product.product_category_id ? product.product_category_id.toString() : '',
       description: product.description || '',
       is_active: product.is_active,
       is_pattern_available: product.is_pattern_available,
@@ -299,14 +299,15 @@ export default function Product({ products, categories }: Props) {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium text-slate-700">Kategori</label>
+                  <label className="text-sm font-medium text-slate-700">Kategori (Opsional)</label>
                   <Select
                       className="text-sm"
                       classNamePrefix="select"
                       options={categoryOptions}
+                      isClearable={true}
                       value={
                           categoryOptions?.find(
-                              x => x.value === productForm.data.product_category_id)
+                              x => x.value === productForm.data.product_category_id) || null
                       }
                       onChange={(option) => {
                           productForm.setData(
@@ -314,7 +315,7 @@ export default function Product({ products, categories }: Props) {
                               option?.value ?? ""
                           )
                       }}
-                      placeholder="Pilih produk..."
+                      placeholder="Pilih kategori (opsional)..."
                       // isDisabled={Boolean(workflow.quotation_created)}
                       isSearchable={true}
                   />
