@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Loader2 } from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -28,6 +28,7 @@ type Props = {
 export default function Product({ products, categories }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -35,9 +36,18 @@ export default function Product({ products, categories }: Props) {
       formData.append('file', e.target.files[0]);
       router.post('/products/import', formData as any, {
         preserveScroll: true,
-        onSuccess: () => {
-          e.target.value = '';
-        }
+        onStart: () => {
+          setIsImporting(true);
+        },
+        onFinish: () => {
+          setIsImporting(false);
+          if (e.target) {
+            e.target.value = '';
+          }
+        },
+        onError: () => {
+          toast.error('Gagal mengimport data produk.');
+        },
       });
     }
   };
@@ -269,10 +279,20 @@ export default function Product({ products, categories }: Props) {
                 <input
                   type="file"
                   accept=".xlsx,.xls,.csv"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isImporting}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                   onChange={handleImport}
                 />
-                <Button variant="outline">Import Data</Button>
+                <Button variant="outline" disabled={isImporting} className="inline-flex items-center gap-2">
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-slate-600" />
+                      <span>Mengimport...</span>
+                    </>
+                  ) : (
+                    <span>Import Data</span>
+                  )}
+                </Button>
               </div>
               <DialogTrigger asChild>
                 <Button variant="default" className="inline-flex items-center gap-2">
@@ -370,6 +390,20 @@ export default function Product({ products, categories }: Props) {
             </DialogContent>
           </Dialog>
         </div>
+
+        {isImporting && (
+          <div className="flex items-center gap-3.5 p-4 bg-blue-50/80 border border-blue-200 text-blue-900 rounded-lg shadow-xs animate-in fade-in duration-200">
+            <Loader2 className="size-5 animate-spin text-blue-600 shrink-0" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-blue-900">
+                Sedang memproses import data produk...
+              </p>
+              <p className="text-xs text-blue-700">
+                Mohon tunggu beberapa saat. Sistem sedang membaca seluruh sheet Excel, memproses BOM (bahan baku, aksesoris, & manufaktur), serta menyinkronkan vendor.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-lg border border-slate-200">
           <DataTable 
