@@ -126,7 +126,7 @@ class OrderEntryController extends Controller
     {
         return Product::query()
             ->where('is_active', true)
-            ->where('is_pattern_available', true)
+            // ->where('is_pattern_available', true)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn ($product) => [
