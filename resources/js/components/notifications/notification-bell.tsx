@@ -20,6 +20,7 @@ type BroadcastNotification = {
     message: string;
     url: string;
     level: string;
+    actor_id?: number | null;
 };
 
 type AuthProps = {
@@ -67,9 +68,14 @@ function NotificationBellContent({ auth }: { auth: AuthProps }) {
                 created_at: new Date().toISOString(),
             };
 
-            toast[notification.level === 'danger' ? 'error' : 'info'](notification.title, {
-                description: notification.message,
-            });
+            // Cegah dobel toast jika notifikasi berasal dari aksi user sendiri
+            const isSelfAction = notification.actor_id && Number(notification.actor_id) === Number(auth.user.id);
+            if (!isSelfAction) {
+                toast[notification.level === 'danger' ? 'error' : 'info'](notification.title, {
+                    description: notification.message,
+                });
+            }
+
             setUnreadCount((count) => count + 1);
             setNotifications((current) => [item, ...current].slice(0, 5));
         });

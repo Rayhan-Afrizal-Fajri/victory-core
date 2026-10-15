@@ -228,6 +228,11 @@
                 <div class="address-content">
                     <div class="company-name">
                         {{ $companyProfile?->company_name ?? 'PT. Victorylab Global Industries' }}
+                        @if(!empty($isPkp) && $isPkp)
+                            <span style="font-size: 8px; font-weight: normal; color: #1e40af; background: #dbeafe; padding: 1px 5px; border-radius: 3px; display: inline-block; margin-left: 5px;">
+                                PKP (PPN {{ $taxPercentage }}%)
+                            </span>
+                        @endif
                     </div>
                         Headquarters : {!! nl2br(e($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
                         Telp: {{ $companyProfile?->phone ?? '081212228900' }}<br>
@@ -372,8 +377,14 @@
                 <table class="summary-table">
                     <tr>
                         <td class="summary-label text-right">{{ $documentTitle ? 'Nilai Produksi' : 'Subtotal' }}</td>
-                        <td class="text-right font-bold">Rp {{ number_format($grandSubtotal, 0, ',', '.') }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($documentSubtotal ?? $grandSubtotal, 0, ',', '.') }}</td>
                     </tr>
+                    @if(!empty($isPkp) && $isPkp && ($documentTax ?? 0) > 0)
+                        <tr>
+                            <td class="summary-label text-right">Pajak PPN ({{ $taxPercentage }}%)</td>
+                            <td class="text-right font-bold">Rp {{ number_format($documentTax, 0, ',', '.') }}</td>
+                        </tr>
+                    @endif
                     @if($documentDeliveryCost > 0)
                         <tr>
                             <td class="summary-label text-right">Biaya Pengiriman</td>

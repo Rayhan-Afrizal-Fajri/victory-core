@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ProductImport;
 use App\Exports\ProductTemplateExport;
+use App\Models\ProductImportConflict;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -89,11 +90,17 @@ class ProductController extends Controller
 
         $categories = ProductCategory::all();
 
+        $importConflicts = ProductImportConflict::where('status', 'updated')
+            ->with(['existingProduct'])
+            ->latest()
+            ->get();
+
         return Inertia::render('admin/master/products-categories/Product', [
             'products' => $products,
             'materials' => $materials,
             'works' => $works,
             'categories' => $categories,
+            'importConflicts' => $importConflicts,
         ]);
     }
 
@@ -463,11 +470,173 @@ class ProductController extends Controller
         if (!empty($stats['skipped']) && $stats['skipped'] > 0) {
             $message .= " ({$stats['skipped']} sheet kosong dilewati).";
         }
+        if ($stats['updated'] > 0) {
+            $message .= " Terdapat {$stats['updated']} produk yang memiliki nama sama dan diperbarui. Anda dapat meninjau perubahannya dan memilih untuk tetap memperbarui atau memisahkannya menjadi produk tersendiri.";
+        }
 
         return back()->with([
-            'success' => $message,
-            'flash_id' => Str::uuid()
+            'success'              => $message,
+            'flash_id'             => Str::uuid(),
+            'import_batch_id'      => $stats['batch_id'] ?? null,
+            'import_updated_count' => $stats['updated'] ?? 0,
         ]);
+    }
+
+    /**
+     * Keep imported changes for the conflict product.
+     */
+    public function keepImportConflict(ProductImportConflict $conflict)
+    {
+        $conflict->update(['status' => 'kept']);
+
+        return back()->with([
+            'success'  => "Perubahan pada produk '{$conflict->product_name}' berhasil dipertahankan.",
+            'flash_id' => Str::uuid(),
+        ]);
+    }
+
+    /**
+     * Separate imported conflict into an independent product and restore the original product's BOM.
+     */
+    public function separateImportConflict(Request $request, ProductImportConflict $conflict)
+    {
+        $validated = $request->validate([
+            'new_product_name' => 'nullable|string|max:255',
+        ]);
+
+        $defaultName = !empty($conflict->sheet_title)
+            ? $conflict->sheet_title
+            : $conflict->product_name . ' (Sheet ' . $conflict->sheet_index . ')';
+
+        $newName = trim($validated['new_product_name'] ?? '') ?: $defaultName;
+
+        if (strtolower($newName) === strtolower($conflict->product_name)) {
+            $newName .= ' (Sheet ' . $conflict->sheet_index . ')';
+        }
+
+        DB::transaction(function () use ($conflict, $newName) {
+            $importer = new ProductImport();
+
+            // 1. Restore previous BOM back to existing product
+            if ($conflict->existingProduct && !empty($conflict->previous_data)) {
+                $importer->restoreBomFromSnapshot(
+                    $conflict->existingProduct,
+                    $conflict->previous_data['materials'] ?? [],
+                    $conflict->previous_data['works'] ?? []
+                );
+            }
+
+            // 2. Create new separate Product
+            $newProduct = Product::create([
+                'name'                 => $newName,
+                'product_category_id'  => $conflict->existingProduct?->product_category_id,
+                'category'             => $conflict->existingProduct?->category,
+                'description'          => 'Dipisahkan dari Sheet ' . ($conflict->sheet_index ?? '') . ' (' . ($conflict->sheet_title ?? '') . ')',
+                'is_active'            => true,
+                'is_pattern_available' => false,
+            ]);
+
+            // 3. Attach imported BOM to new product
+            $importedMaterials = $conflict->imported_data['materials'] ?? [];
+            $importedWorks = $conflict->imported_data['works'] ?? [];
+            $importer->attachBomToProduct($newProduct, $importedMaterials, $importedWorks);
+
+            // 4. Update conflict status
+            $conflict->update([
+                'status'               => 'separated',
+                'separated_product_id' => $newProduct->id,
+            ]);
+        });
+
+        return back()->with([
+            'success'  => "Produk berhasil dipisahkan menjadi '{$newName}'. Data produk asli telah dikembalikan ke kondisi semula.",
+            'flash_id' => Str::uuid(),
+        ]);
+    }
+
+    /**
+     * Bulk action for import conflicts (keep all or separate all).
+     */
+    public function bulkImportConflictAction(Request $request)
+    {
+        $validated = $request->validate([
+            'action'         => 'required|in:keep_all,separate_all',
+            'conflict_ids'   => 'nullable|array',
+            'conflict_ids.*' => 'exists:product_import_conflicts,id',
+        ]);
+
+        $query = ProductImportConflict::where('status', 'updated');
+        if (!empty($validated['conflict_ids'])) {
+            $query->whereIn('id', $validated['conflict_ids']);
+        }
+        $conflicts = $query->with('existingProduct')->get();
+
+        if ($conflicts->isEmpty()) {
+            return back()->with(['info' => 'Tidak ada data produk import yang perlu ditindaklanjuti.']);
+        }
+
+        if ($validated['action'] === 'keep_all') {
+            ProductImportConflict::whereIn('id', $conflicts->pluck('id'))->update(['status' => 'kept']);
+            return back()->with([
+                'success'  => "Sebanyak {$conflicts->count()} produk dikonfirmasi tetap diperbarui.",
+                'flash_id' => Str::uuid(),
+            ]);
+        }
+
+        if ($validated['action'] === 'separate_all') {
+            $separatedCount = 0;
+            DB::transaction(function () use ($conflicts, &$separatedCount) {
+                $importer = new ProductImport();
+                foreach ($conflicts as $conflict) {
+                    $newName = !empty($conflict->sheet_title)
+                        ? $conflict->sheet_title
+                        : $conflict->product_name . ' (Sheet ' . $conflict->sheet_index . ')';
+
+                    if (strtolower($newName) === strtolower($conflict->product_name)) {
+                        $newName .= ' (Sheet ' . $conflict->sheet_index . ')';
+                    }
+
+                    // Restore previous BOM
+                    if ($conflict->existingProduct && !empty($conflict->previous_data)) {
+                        $importer->restoreBomFromSnapshot(
+                            $conflict->existingProduct,
+                            $conflict->previous_data['materials'] ?? [],
+                            $conflict->previous_data['works'] ?? []
+                        );
+                    }
+
+                    // Create new separate product
+                    $newProduct = Product::create([
+                        'name'                 => $newName,
+                        'product_category_id'  => $conflict->existingProduct?->product_category_id,
+                        'category'             => $conflict->existingProduct?->category,
+                        'description'          => 'Dipisahkan dari Sheet ' . ($conflict->sheet_index ?? '') . ' (' . ($conflict->sheet_title ?? '') . ')',
+                        'is_active'            => true,
+                        'is_pattern_available' => false,
+                    ]);
+
+                    $importer->attachBomToProduct(
+                        $newProduct,
+                        $conflict->imported_data['materials'] ?? [],
+                        $conflict->imported_data['works'] ?? []
+                    );
+
+                    $conflict->update([
+                        'status'               => 'separated',
+                        'separated_product_id' => $newProduct->id,
+                    ]);
+
+                    $separatedCount++;
+                }
+            });
+
+            return back()->with([
+                'success'  => "Sebanyak {$separatedCount} produk berhasil dipisahkan menjadi produk tersendiri. Data produk asli telah dikembalikan ke kondisi semula.",
+                'flash_id' => Str::uuid(),
+            ]);
+        }
+
+        return back();
     }
 
     public function exportTemplate()

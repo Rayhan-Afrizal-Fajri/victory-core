@@ -62,6 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Product/Article Master
     Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
     Route::get('products/export-template', [ProductController::class, 'exportTemplate'])->name('products.export-template');
+    Route::post('products/import-conflicts/{conflict}/keep', [ProductController::class, 'keepImportConflict'])->name('products.import-conflicts.keep');
+    Route::post('products/import-conflicts/{conflict}/separate', [ProductController::class, 'separateImportConflict'])->name('products.import-conflicts.separate');
+    Route::post('products/import-conflicts/bulk', [ProductController::class, 'bulkImportConflictAction'])->name('products.import-conflicts.bulk');
     Route::resource('products', ProductController::class);
     // Update status (Aktif / Nonaktif)
     Route::patch('/products/{product}/toggle-status', [ProductController::class, 'updateStatus'])

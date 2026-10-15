@@ -531,10 +531,35 @@ class InvoiceController extends Controller
         $dpLabelPct = round($dpPercentage, 2);
         $settlementLabelPct = round(100 - $dpPercentage, 2);
 
+        $isPkp = $companyProfile && $companyProfile->company_type === 'pkp';
+        $taxPercentage = $isPkp ? (float) ($companyProfile->tax_percentage ?? 0) : 0;
+        $fullTax = (float) ($approvedQuotation?->tax ?? 0);
+        if ($fullTax <= 0 && $isPkp && $taxPercentage > 0) {
+            $baseAmount = max(0, (float) $invoice->total_tagihan - (float) $invoice->delivery_cost);
+            $fullTax = round($baseAmount * ($taxPercentage / (100 + $taxPercentage)), 2);
+        }
+
+        $documentTax = $documentType === 'dp'
+            ? round($fullTax * ($dpPercentage / 100), 2)
+            : ($documentType === 'settlement'
+                ? round($fullTax * ((100 - $dpPercentage) / 100), 2)
+                : $fullTax);
+
+        $fullSubtotal = (float) ($approvedQuotation?->subtotal ?? max(0, (float) $invoice->total_tagihan - $fullTax - (float) $invoice->delivery_cost));
+        $documentSubtotal = $documentType === 'dp'
+            ? round($fullSubtotal * ($dpPercentage / 100), 2)
+            : ($documentType === 'settlement'
+                ? round($fullSubtotal * ((100 - $dpPercentage) / 100), 2)
+                : $fullSubtotal);
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $companyProfile,
             'companyProfile' => $companyProfile,
+            'isPkp' => $isPkp,
+            'taxPercentage' => $taxPercentage,
+            'documentTax' => $documentTax,
+            'documentSubtotal' => $documentSubtotal,
             'items' => $invoice->items,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,

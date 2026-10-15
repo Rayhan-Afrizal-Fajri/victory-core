@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Loader2, AlertTriangle } from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -19,16 +19,20 @@ import Select from 'react-select';
 
 import ProductLayout from './layout';
 import { ProductCategory } from './Categories';
+import ImportConflictDialog, { ProductImportConflict } from './ImportConflictDialog';
 
 type Props = {
   products: Product[];
   categories: ProductCategory[] | null;
+  importConflicts?: ProductImportConflict[];
 };
 
-export default function Product({ products, categories }: Props) {
+export default function Product({ products, categories, importConflicts = [] }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isConflictDialogOpen, setIsConflictDialogOpen] = useState(false);
+  const [selectedConflictId, setSelectedConflictId] = useState<number | null>(null);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -136,11 +140,40 @@ export default function Product({ products, categories }: Props) {
     });
   };
 
+  const conflictMap = useMemo(() => {
+    const map = new Map<number, ProductImportConflict>();
+    importConflicts.forEach((c) => {
+      map.set(c.existing_product_id, c);
+    });
+    return map;
+  }, [importConflicts]);
+
   const columns: DataTableColumn<Product>[] = [
     {
       header: 'Product Name',
       accessor: 'name',
-      cell: (row) => <span className="font-medium text-slate-900">{row.name}</span>,
+      cell: (row) => {
+        const conflict = conflictMap.get(row.id);
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <span className="font-medium text-slate-900">{row.name}</span>
+            {conflict && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedConflictId(conflict.id);
+                  setIsConflictDialogOpen(true);
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                title="Produk ini memiliki pembaruan dari import Excel yang dapat ditinjau"
+              >
+                <AlertTriangle className="size-3 text-amber-600" />
+                Diperbarui (Sheet #{conflict.sheet_index})
+              </button>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: 'Category',
@@ -405,6 +438,36 @@ export default function Product({ products, categories }: Props) {
           </div>
         )}
 
+        {importConflicts.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-amber-50/90 border border-amber-200 text-amber-950 rounded-lg shadow-xs animate-in fade-in duration-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-md bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-amber-900">
+                  Perhatian: Terdapat {importConflicts.length} Data Produk Diperbarui dari Import Excel
+                </h4>
+                <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
+                  Sheet produk pada file Excel memiliki nama yang sama dengan produk yang sudah ada di database sehingga data bahan & manufaktur diperbarui. Anda dapat meninjau perbedaannya dan memilih apakah data tersebut <strong>tetap diperbarui</strong> atau <strong>dipisahkan menjadi produk baru tersendiri</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSelectedConflictId(null);
+                  setIsConflictDialogOpen(true);
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white shadow-xs text-xs h-9 px-4"
+              >
+                Tinjau {importConflicts.length} Produk Diperbarui
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg border border-slate-200">
           <DataTable 
             columns={columns}
@@ -413,6 +476,13 @@ export default function Product({ products, categories }: Props) {
             searchPlaceholder="Cari nama produk atau kategori..."
           />
         </div>
+
+        <ImportConflictDialog
+          open={isConflictDialogOpen}
+          onOpenChange={setIsConflictDialogOpen}
+          conflicts={importConflicts}
+          selectedConflictId={selectedConflictId}
+        />
       </div>
     </>
   );

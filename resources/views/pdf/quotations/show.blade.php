@@ -199,6 +199,11 @@
                 <div class="address-content">
                     <div class="company-name">
                         {{ $companyProfile?->company_name ?? 'PT. Victorylab Global Industries' }}
+                        @if($companyProfile && $companyProfile->company_type === 'pkp')
+                            <span style="font-size: 8px; font-weight: normal; color: #1e40af; background: #dbeafe; padding: 1px 5px; border-radius: 3px; display: inline-block; margin-left: 5px;">
+                                PKP (PPN {{ $companyProfile->tax_percentage }}%)
+                            </span>
+                        @endif
                     </div>
                     Headquarters : {!! nl2br(e($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
                     Telp: {{ $companyProfile?->phone ?? '081212228900' }}<br>

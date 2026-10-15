@@ -16,6 +16,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
+use App\Models\ProductImportConflict;
+use Illuminate\Support\Str;
+
 class ProductImport implements ToCollection
 {
     /**
@@ -41,16 +44,22 @@ class ProductImport implements ToCollection
         $reader->setReadDataOnly(true);
         $spreadsheet = $reader->load($filePath);
 
+        $batchId = (string) Str::uuid();
+
         $results = [
-            'created'  => 0,
-            'updated'  => 0,
-            'skipped'  => 0,
-            'products' => [],
+            'created'   => 0,
+            'updated'   => 0,
+            'skipped'   => 0,
+            'batch_id'  => $batchId,
+            'conflicts' => [],
+            'products'  => [],
         ];
 
-        DB::transaction(function () use ($spreadsheet, &$results) {
+        DB::transaction(function () use ($spreadsheet, &$results, $batchId) {
+            $sheetIndex = 0;
             foreach ($spreadsheet->getAllSheets() as $worksheet) {
-                $this->processWorksheet($worksheet, $results);
+                $sheetIndex++;
+                $this->processWorksheet($worksheet, $results, $batchId, $sheetIndex);
             }
         });
 
@@ -72,7 +81,7 @@ class ProductImport implements ToCollection
     /**
      * Process an individual worksheet representing a Product and its BOM.
      */
-    protected function processWorksheet(Worksheet $worksheet, array &$results): void
+    protected function processWorksheet(Worksheet $worksheet, array &$results, string $batchId, int $sheetIndex): void
     {
         $highestRow = $worksheet->getHighestRow();
         if ($highestRow < 2) {
@@ -233,6 +242,90 @@ class ProductImport implements ToCollection
             $product->update([
                 'is_active' => true,
             ]);
+
+            // Snapshot existing BOM data before clearing
+            $oldMaterials = $product->productMaterials()->with('material', 'defaultSupplier')->get()->map(function ($pm) {
+                return [
+                    'id'                  => $pm->id,
+                    'material_id'         => $pm->material_id,
+                    'material_name'       => $pm->material?->name ?? '',
+                    'type'                => $pm->type,
+                    'default_supplier_id' => $pm->default_supplier_id,
+                    'vendor_name'         => $pm->defaultSupplier?->nama ?? '',
+                    'harga_ecer'          => (float) $pm->harga_ecer,
+                    'harga_roll'          => (float) $pm->harga_roll,
+                    'default_usage'       => (float) $pm->default_usage,
+                    'default_unit'        => $pm->default_unit,
+                    'default_color'       => $pm->default_color,
+                    'sort_order'          => $pm->sort_order,
+                    'is_required'         => $pm->is_required,
+                    'notes'               => $pm->notes,
+                ];
+            })->values()->toArray();
+
+            $oldWorks = $product->productManufacturingWorks()->with('manufacturingWork', 'defaultSupplier')->get()->map(function ($pw) {
+                return [
+                    'id'                    => $pw->id,
+                    'manufacturing_work_id' => $pw->manufacturing_work_id,
+                    'work_name'             => $pw->manufacturingWork?->name ?? '',
+                    'default_supplier_id'   => $pw->default_supplier_id,
+                    'vendor_name'           => $pw->defaultSupplier?->nama ?? '',
+                    'default_usage'         => (float) $pw->default_usage,
+                    'default_unit'          => $pw->default_unit,
+                    'min_estimate'          => (float) $pw->min_estimate,
+                    'max_estimate'          => (float) $pw->max_estimate,
+                    'usage_note'            => $pw->usage_note,
+                    'sort_order'            => $pw->sort_order,
+                    'is_required'           => $pw->is_required,
+                ];
+            })->values()->toArray();
+
+            $previousData = [
+                'product' => [
+                    'id'                   => $product->id,
+                    'name'                 => $product->name,
+                    'product_category_id'  => $product->product_category_id,
+                    'category'             => $product->category,
+                    'description'          => $product->description,
+                    'is_active'            => $product->is_active,
+                    'is_pattern_available' => $product->is_pattern_available,
+                ],
+                'materials' => $oldMaterials,
+                'works'     => $oldWorks,
+            ];
+
+            $importedData = [
+                'product_name' => $productName,
+                'sheet_title'  => $sheetTitle,
+                'sheet_index'  => $sheetIndex,
+                'materials'    => $materials,
+                'works'        => $works,
+            ];
+
+            // Build changes summary
+            $changesSummary = $this->generateChangesSummary($oldMaterials, $materials, $oldWorks, $works);
+
+            // Save conflict record
+            $conflict = ProductImportConflict::create([
+                'batch_id'            => $batchId,
+                'sheet_index'         => $sheetIndex,
+                'sheet_title'         => $sheetTitle,
+                'product_name'        => $productName,
+                'existing_product_id' => $product->id,
+                'status'              => 'updated',
+                'matched_fields'      => [
+                    'field'       => 'name',
+                    'value'       => $productName,
+                    'sheet_title' => $sheetTitle,
+                    'sheet_index' => $sheetIndex,
+                ],
+                'previous_data'       => $previousData,
+                'imported_data'       => $importedData,
+                'changes_summary'     => $changesSummary,
+            ]);
+
+            $results['conflicts'][] = $conflict->id;
+
             // Clear old BOM relations to replace with fresh data from sheet
             $product->productMaterials()->delete();
             $product->productManufacturingWorks()->delete();
@@ -251,30 +344,68 @@ class ProductImport implements ToCollection
 
         $results['products'][] = $product->name;
 
-        // 4. Save Product Materials (Bahan Utama & Aksesoris)
+        // 4. Save Product Materials & Manufacturing Works
+        $this->attachBomToProduct($product, $materials, $works);
+    }
+
+    /**
+     * Generate structured comparison summary of changes between previous BOM and newly imported BOM.
+     */
+    protected function generateChangesSummary(array $oldMaterials, array $newMaterials, array $oldWorks, array $newWorks): array
+    {
+        $oldMatNames = array_map(fn($m) => strtolower(trim($m['material_name'] ?? '')), $oldMaterials);
+        $newMatNames = array_map(fn($m) => strtolower(trim($m['name'] ?? '')), $newMaterials);
+
+        $addedMaterials = array_filter($newMaterials, fn($m) => !in_array(strtolower(trim($m['name'] ?? '')), $oldMatNames));
+        $removedMaterials = array_filter($oldMaterials, fn($m) => !in_array(strtolower(trim($m['material_name'] ?? '')), $newMatNames));
+
+        $oldWorkNames = array_map(fn($w) => strtolower(trim($w['work_name'] ?? '')), $oldWorks);
+        $newWorkNames = array_map(fn($w) => strtolower(trim($w['name'] ?? '')), $newWorks);
+
+        $addedWorks = array_filter($newWorks, fn($w) => !in_array(strtolower(trim($w['name'] ?? '')), $oldWorkNames));
+        $removedWorks = array_filter($oldWorks, fn($w) => !in_array(strtolower(trim($w['work_name'] ?? '')), $newWorkNames));
+
+        return [
+            'old_materials_count' => count($oldMaterials),
+            'new_materials_count' => count($newMaterials),
+            'old_works_count'     => count($oldWorks),
+            'new_works_count'     => count($newWorks),
+            'added_materials'     => array_values(array_map(fn($m) => $m['name'], $addedMaterials)),
+            'removed_materials'   => array_values(array_map(fn($m) => $m['material_name'], $removedMaterials)),
+            'added_works'         => array_values(array_map(fn($w) => $w['name'], $addedWorks)),
+            'removed_works'       => array_values(array_map(fn($w) => $w['work_name'], $removedWorks)),
+        ];
+    }
+
+    /**
+     * Attach BOM (Materials and Manufacturing Works) to a product.
+     */
+    public function attachBomToProduct(Product $product, array $materials, array $works): void
+    {
+        // 1. Save Product Materials (Bahan Utama & Aksesoris)
         $materialSort = 1;
         foreach ($materials as $item) {
-            $supplierId = $this->resolveSupplier($item['vendor'], $item['section']);
-            $unit = $this->resolveUnit($item['unit']);
+            $supplierId = $this->resolveSupplier($item['vendor'] ?? null, $item['section'] ?? 'bahan');
+            $unit = $this->resolveUnit($item['unit'] ?? null);
             $material = $this->resolveMaterial(
                 $item['name'],
-                $item['section'],
+                $item['section'] ?? 'bahan',
                 $unit,
-                $item['color'],
+                $item['color'] ?? null,
                 $supplierId,
-                $item['harga_ecer'],
-                $item['harga_roll'],
-                $item['usage'],
-                $item['notes']
+                $item['harga_ecer'] ?? 0,
+                $item['harga_roll'] ?? 0,
+                $item['usage'] ?? 0,
+                $item['notes'] ?? null
             );
 
             $product->productMaterials()->create([
                 'material_id'         => $material->id,
                 'default_supplier_id' => $supplierId,
-                'harga_ecer'          => $item['harga_ecer'],
-                'harga_roll'          => $item['harga_roll'],
-                'type'                => $item['section'],
-                'default_usage'       => $item['usage'],
+                'harga_ecer'          => $item['harga_ecer'] ?? 0,
+                'harga_roll'          => $item['harga_roll'] ?? 0,
+                'type'                => $item['section'] ?? 'bahan',
+                'default_usage'       => $item['usage'] ?? 0,
                 'default_unit'        => $unit ?: $material->unit,
                 'default_color'       => !empty($item['color']) ? $item['color'] : $material->default_color,
                 'sort_order'          => $materialSort++,
@@ -283,29 +414,70 @@ class ProductImport implements ToCollection
             ]);
         }
 
-        // 5. Save Product Manufacturing Works
+        // 2. Save Product Manufacturing Works
         $workSort = 1;
         foreach ($works as $item) {
-            $supplierId = $this->resolveSupplier($item['vendor'], 'manufaktur');
-            $unit = $this->resolveUnit($item['unit']);
+            $supplierId = $this->resolveSupplier($item['vendor'] ?? null, 'manufaktur');
+            $unit = $this->resolveUnit($item['unit'] ?? null);
             $work = $this->resolveWork(
                 $item['name'],
                 $unit,
                 $supplierId,
-                $item['min_estimate'],
-                $item['max_estimate']
+                $item['min_estimate'] ?? 0,
+                $item['max_estimate'] ?? 0
             );
 
             $product->productManufacturingWorks()->create([
                 'manufacturing_work_id' => $work->id,
                 'default_supplier_id'   => $supplierId,
-                'default_usage'         => $item['usage'],
+                'default_usage'         => $item['usage'] ?? 1,
                 'default_unit'          => $unit ?: $work->default_unit,
-                'min_estimate'          => $item['min_estimate'],
-                'max_estimate'          => $item['max_estimate'],
+                'min_estimate'          => $item['min_estimate'] ?? 0,
+                'max_estimate'          => $item['max_estimate'] ?? 0,
                 'usage_note'            => !empty($item['notes']) ? $item['notes'] : null,
                 'sort_order'            => $workSort++,
                 'is_required'           => true,
+            ]);
+        }
+    }
+
+    /**
+     * Restore previous BOM snapshot back to a Product.
+     */
+    public function restoreBomFromSnapshot(Product $product, array $previousMaterials, array $previousWorks): void
+    {
+        $product->productMaterials()->delete();
+        $product->productManufacturingWorks()->delete();
+
+        $matSort = 1;
+        foreach ($previousMaterials as $item) {
+            $product->productMaterials()->create([
+                'material_id'         => $item['material_id'],
+                'default_supplier_id' => $item['default_supplier_id'] ?? null,
+                'harga_ecer'          => $item['harga_ecer'] ?? 0,
+                'harga_roll'          => $item['harga_roll'] ?? 0,
+                'type'                => $item['type'] ?? 'bahan',
+                'default_usage'       => $item['default_usage'] ?? 0,
+                'default_unit'        => $item['default_unit'] ?? null,
+                'default_color'       => $item['default_color'] ?? null,
+                'sort_order'          => $item['sort_order'] ?? $matSort++,
+                'is_required'         => $item['is_required'] ?? true,
+                'notes'               => $item['notes'] ?? null,
+            ]);
+        }
+
+        $workSort = 1;
+        foreach ($previousWorks as $item) {
+            $product->productManufacturingWorks()->create([
+                'manufacturing_work_id' => $item['manufacturing_work_id'],
+                'default_supplier_id'   => $item['default_supplier_id'] ?? null,
+                'default_usage'         => $item['default_usage'] ?? 1,
+                'default_unit'          => $item['default_unit'] ?? 'Pcs',
+                'min_estimate'          => $item['min_estimate'] ?? 0,
+                'max_estimate'          => $item['max_estimate'] ?? 0,
+                'usage_note'            => $item['usage_note'] ?? null,
+                'sort_order'            => $item['sort_order'] ?? $workSort++,
+                'is_required'           => $item['is_required'] ?? true,
             ]);
         }
     }
