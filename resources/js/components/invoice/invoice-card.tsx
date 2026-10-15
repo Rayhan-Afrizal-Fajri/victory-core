@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 
 import {
     getInvoiceCategoryLabel,
+    getInvoiceDpPercentage,
+    getInvoiceDpRemaining,
+    getInvoiceDpTotal,
     getInvoiceNumber,
     getPaymentProgress,
     getInvoiceStatusLabel,
@@ -20,6 +23,7 @@ import {
     getVerifiedPaid,
     invoiceStatusClass,
     isInvoiceCancelled,
+    isInvoiceDpPaid,
     isInvoicePaid,
     isProductionInvoice,
 } from './invoice-utils';
@@ -55,6 +59,13 @@ const InvoiceCard = ({
     const status = invoice.status_tagihan || invoice.status;
 
     const unverifiedPayment = invoice.payments?.filter((payment: Payment) => payment.status === 'pending') || [];
+
+    const isProd = isProductionInvoice(invoice);
+    const dpPercentage = isProd ? getInvoiceDpPercentage(invoice) : 50;
+    const settlementPercentage = 100 - dpPercentage;
+    const dpTotal = isProd ? getInvoiceDpTotal(invoice) : 0;
+    const dpRemaining = isProd ? getInvoiceDpRemaining(invoice) : 0;
+    const dpFulfilled = isProd ? isInvoiceDpPaid(invoice) : false;
 
     return (
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -105,13 +116,35 @@ const InvoiceCard = ({
                     />
                 </div>
 
-                <p
-                    className={`mt-2 text-xs font-semibold ${
-                        remaining <= 0 ? 'text-green-600' : 'text-red-500'
-                    }`}
-                >
-                    Sisa: {formatRupiah(remaining)}
-                </p>
+                <div className="mt-2 flex items-center justify-between text-xs">
+                    <p
+                        className={`font-semibold ${
+                            remaining <= 0 ? 'text-green-600' : 'text-red-500'
+                        }`}
+                    >
+                        Sisa: {formatRupiah(remaining)}
+                    </p>
+                    {isProd && (
+                        <span className="text-[11px] text-slate-500">
+                            DP {dpPercentage}%: {formatRupiah(dpTotal)}
+                        </span>
+                    )}
+                </div>
+
+                {isProd && (
+                    <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2 text-xs">
+                        <div className="flex items-center justify-between">
+                            <span className="text-slate-600">Syarat DP ({dpPercentage}%)</span>
+                            <span
+                                className={`font-medium ${
+                                    dpFulfilled ? 'text-emerald-600' : 'text-amber-700'
+                                }`}
+                            >
+                                {dpFulfilled ? '✓ Terpenuhi' : `Kurang ${formatRupiah(dpRemaining)}`}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -130,14 +163,8 @@ const InvoiceCard = ({
                     )}
                 </Button>
 
-                {isProductionInvoice(invoice) ? (
+                {isProd ? (
                     <>
-                        {/* <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print?document=dp`, '_blank')}>
-                            <Printer className="size-4" /> Cetak DP
-                        </Button>
-                        <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print?document=settlement`, '_blank')}>
-                            <Printer className="size-4" /> Cetak Pelunasan
-                        </Button> */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -159,7 +186,7 @@ const InvoiceCard = ({
                                         )
                                     }
                                 >
-                                    Cetak DP
+                                    Cetak DP ({dpPercentage}%)
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem
@@ -170,7 +197,7 @@ const InvoiceCard = ({
                                         )
                                     }
                                 >
-                                    Cetak Pelunasan
+                                    Cetak Pelunasan ({settlementPercentage}%)
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

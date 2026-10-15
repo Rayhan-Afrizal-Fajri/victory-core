@@ -93,6 +93,7 @@ class InvoiceController extends Controller
             'kategori_invoice' => $invoice->kategori_invoice,
 
             'total_tagihan' => (float) $invoice->total_tagihan,
+            'dp_percentage' => (float) ($invoice->dp_percentage ?? 50.00),
 
             'status_tagihan' => $invoice->status_tagihan,
 
@@ -472,8 +473,9 @@ class InvoiceController extends Controller
         $verifiedPaid = (float) $invoice->payments
             ->where('status', 'verified')
             ->sum('jumlah_bayar');
+        $dpPercentage = (float) ($invoice->dp_percentage ?? 50.00);
         $documentAmounts = $documentType
-            ? ProductionInvoiceDocumentAmounts::calculate((float) $invoice->total_tagihan, $verifiedPaid)
+            ? ProductionInvoiceDocumentAmounts::calculate((float) $invoice->total_tagihan, $verifiedPaid, $dpPercentage)
             : null;
 
         $documentTotal = $documentType === 'dp'
@@ -481,9 +483,11 @@ class InvoiceController extends Controller
             : ($documentType === 'settlement'
                 ? $documentAmounts['settlement_total']
                 : (float) $invoice->total_tagihan);
-        $documentDeliveryCost = $documentType
-            ? (float) $invoice->delivery_cost / 2
-            : (float) $invoice->delivery_cost;
+        $documentDeliveryCost = $documentType === 'dp'
+            ? (float) $invoice->delivery_cost * ($dpPercentage / 100)
+            : ($documentType === 'settlement'
+                ? (float) $invoice->delivery_cost * ((100 - $dpPercentage) / 100)
+                : (float) $invoice->delivery_cost);
         $documentPaid = $documentType === 'dp'
             ? $documentAmounts['dp_paid']
             : ($documentType === 'settlement'
@@ -524,6 +528,9 @@ class InvoiceController extends Controller
                 ->all();
         }
 
+        $dpLabelPct = round($dpPercentage, 2);
+        $settlementLabelPct = round(100 - $dpPercentage, 2);
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $companyProfile,
@@ -538,8 +545,8 @@ class InvoiceController extends Controller
             'documentRemaining' => $documentRemaining,
             'documentStatus' => $documentStatus,
             'documentTotalLabel' => $documentType === 'dp'
-                ? 'Tagihan DP (50%)'
-                : ($documentType === 'settlement' ? 'Tagihan Pelunasan (50%)' : 'Total Amount'),
+                ? "Tagihan DP ({$dpLabelPct}%)"
+                : ($documentType === 'settlement' ? "Tagihan Pelunasan ({$settlementLabelPct}%)" : 'Total Amount'),
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream(DocumentFilename::make(

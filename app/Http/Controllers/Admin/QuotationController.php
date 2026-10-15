@@ -152,6 +152,7 @@ class QuotationController extends Controller
             'delivery_terms' => ['nullable', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:10000'],
             'delivery_cost' => ['nullable', 'numeric', 'min:0'],
+            'dp_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.pesanan_id' => ['nullable', 'integer', 'exists:pesanan,id'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
@@ -201,6 +202,7 @@ class QuotationController extends Controller
             'notes' => ['required', 'array', 'min:1'],
             'notes.*' => ['nullable', 'string'],
             'delivery_cost' => ['nullable', 'numeric', 'min:0'],
+            'dp_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
         ]);
 
         // Ambil Job Ticket beserta Company Profile pendukungnya
@@ -279,6 +281,7 @@ class QuotationController extends Controller
                 'tax' => $taxAmount, 
                 'delivery_cost' => $deliveryCost,
                 'grand_total' => $grandTotal,
+                'dp_percentage' => isset($validated['dp_percentage']) && $validated['dp_percentage'] !== null && $validated['dp_percentage'] !== '' ? (float) $validated['dp_percentage'] : 50.00,
                 'created_by' => Auth::id(),
             ]);
 

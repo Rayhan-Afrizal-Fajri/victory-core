@@ -11,9 +11,16 @@ class Invoice extends Model
         'no_invoice',
         'kategori_invoice',
         'total_tagihan',
+        'dp_percentage',
         'delivery_cost',
         'status_tagihan',
         'tgl_jatuh_tempo',
+    ];
+
+    protected $casts = [
+        'dp_percentage' => 'float',
+        'total_tagihan' => 'float',
+        'delivery_cost' => 'float',
     ];
 
 

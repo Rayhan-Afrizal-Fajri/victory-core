@@ -107,3 +107,29 @@ export function getInvoiceCategoryLabel(invoice: any) {
 
     return 'Other';
 }
+
+export function getInvoiceDpPercentage(invoice: any): number {
+    const val = Number(invoice?.dp_percentage);
+    return !isNaN(val) && val > 0 ? val : 50;
+}
+
+export function getInvoiceDpTotal(invoice: any): number {
+    return Math.round(getInvoiceTotal(invoice) * (getInvoiceDpPercentage(invoice) / 100));
+}
+
+export function getInvoiceSettlementTotal(invoice: any): number {
+    return Math.max(0, getInvoiceTotal(invoice) - getInvoiceDpTotal(invoice));
+}
+
+export function getInvoiceDpPaid(invoice: any): number {
+    return Math.min(getVerifiedPaid(invoice), getInvoiceDpTotal(invoice));
+}
+
+export function getInvoiceDpRemaining(invoice: any): number {
+    return Math.max(0, getInvoiceDpTotal(invoice) - getVerifiedPaid(invoice));
+}
+
+export function isInvoiceDpPaid(invoice: any): boolean {
+    const total = getInvoiceTotal(invoice);
+    return total > 0 && getVerifiedPaid(invoice) >= getInvoiceDpTotal(invoice);
+}

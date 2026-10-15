@@ -145,9 +145,22 @@ function QuotationManagementSection({ job, quotations }: Props) {
             cell: (row) => row.valid_until ? String(row.valid_until).slice(0, 10) : '-',
         },
         {
-            header: 'Total',
+            header: 'Total & DP',
             accessor: 'grand_total',
-            cell: (row) => <span className="font-semibold">{formatRupiah(row.grand_total || 0)}</span>,
+            cell: (row) => {
+                const total = Number(row.grand_total || 0);
+                const dpPct = row.dp_percentage ? Number(row.dp_percentage) : 50;
+                const dpNominal = Math.round(total * (dpPct / 100));
+
+                return (
+                    <div>
+                        <span className="font-semibold text-slate-900">{formatRupiah(total)}</span>
+                        <p className="text-[11px] font-medium text-blue-700">
+                            DP ({dpPct}%): {formatRupiah(dpNominal)}
+                        </p>
+                    </div>
+                );
+            },
         },
         {
             header: 'Status',
@@ -245,7 +258,7 @@ function QuotationManagementSection({ job, quotations }: Props) {
                             <SelectContent>
                                 {job.available_draft_quotations.map((draft: any) => (
                                     <SelectItem key={draft.id} value={String(draft.id)}>
-                                        {draft.quotation_number} · {formatRupiah(draft.grand_total || 0)}
+                                        {draft.quotation_number} · {formatRupiah(draft.grand_total || 0)} (DP {draft.dp_percentage || 50}%)
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -255,7 +268,9 @@ function QuotationManagementSection({ job, quotations }: Props) {
                         <form onSubmit={submitAttach} className="space-y-4">
                             <div className="rounded-md border bg-slate-50 p-3">
                                 <p className="font-semibold">{selectedDraft.quotation_number}</p>
-                                <p className="text-sm text-slate-600">{formatRupiah(selectedDraft.grand_total || 0)}</p>
+                                <p className="text-sm text-slate-600">
+                                    Total: {formatRupiah(selectedDraft.grand_total || 0)} · DP ({selectedDraft.dp_percentage || 50}%): {formatRupiah(Math.round(Number(selectedDraft.grand_total || 0) * (Number(selectedDraft.dp_percentage || 50) / 100)))}
+                                </p>
                             </div>
                             {selectedDraft.items.map((item: any, index: number) => (
                                 <div key={item.id} className="grid gap-3 sm:grid-cols-2 sm:items-center">

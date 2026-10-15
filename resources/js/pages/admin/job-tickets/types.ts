@@ -110,6 +110,7 @@ export interface Invoice {
   no_invoice?: string;
   kategori_invoice?: string;
   total_tagihan?: number;
+  dp_percentage?: number | null;
   status_tagihan?: InvoiceStatus;
   tgl_jatuh_tempo?: string;
   payments?: Payment[];
@@ -417,6 +418,7 @@ export interface Quotation {
   tax?: number | null;
   delivery_cost?: number | null;
   grand_total?: number | null;
+  dp_percentage?: number | null;
   approved_at?: string | null;
   approved_by_name?: string | null;
   signature_path?: string | null;

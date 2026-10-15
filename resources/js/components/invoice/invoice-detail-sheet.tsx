@@ -22,14 +22,20 @@ import {
 import InvoicePaymentList from './invoice-payment-list';
 
 import {
+    getInvoiceDpPaid,
+    getInvoiceDpPercentage,
+    getInvoiceDpRemaining,
+    getInvoiceDpTotal,
     getInvoiceNumber,
     getInvoicePayments,
+    getInvoiceSettlementTotal,
     getPaymentProgress,
     getInvoiceStatusLabel,
     getInvoiceTotal,
     getRemainingPayment,
     getVerifiedPaid,
     invoiceStatusClass,
+    isInvoiceDpPaid,
     isProductionInvoice,
 } from './invoice-utils';
 import { useCan } from '@/hooks/use-can';
@@ -80,6 +86,15 @@ const InvoiceDetailSheet = ({
     const paid = getVerifiedPaid(invoice);
     const remaining = getRemainingPayment(invoice);
     const progress = getPaymentProgress(invoice);
+
+    const isProd = isProductionInvoice(invoice);
+    const dpPercentage = isProd ? getInvoiceDpPercentage(invoice) : 50;
+    const settlementPercentage = 100 - dpPercentage;
+    const dpTotal = isProd ? getInvoiceDpTotal(invoice) : 0;
+    const settlementTotal = isProd ? getInvoiceSettlementTotal(invoice) : 0;
+    const dpPaid = isProd ? getInvoiceDpPaid(invoice) : 0;
+    const dpRemaining = isProd ? getInvoiceDpRemaining(invoice) : 0;
+    const dpFulfilled = isProd ? isInvoiceDpPaid(invoice) : false;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -148,6 +163,62 @@ const InvoiceDetailSheet = ({
                                 />
                             </div>
                         </div>
+
+                        {isProd && (
+                            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-blue-950">
+                                        Ketentuan DP Produksi ({dpPercentage}%)
+                                    </span>
+                                    <Badge
+                                        className={
+                                            dpFulfilled
+                                                ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
+                                                : 'border-amber-200 bg-amber-100 text-amber-800'
+                                        }
+                                    >
+                                        {dpFulfilled ? 'DP Terpenuhi' : 'Belum Memenuhi DP'}
+                                    </Badge>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    <div>
+                                        <p className="text-slate-500">Minimal DP ({dpPercentage}%)</p>
+                                        <p className="mt-0.5 font-semibold text-slate-900">
+                                            {formatRupiah(dpTotal)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500">Pelunasan ({settlementPercentage}%)</p>
+                                        <p className="mt-0.5 font-semibold text-slate-900">
+                                            {formatRupiah(settlementTotal)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500">DP Terbayar</p>
+                                        <p className="mt-0.5 font-semibold text-emerald-700">
+                                            {formatRupiah(dpPaid)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500">Kekurangan DP</p>
+                                        <p
+                                            className={`mt-0.5 font-semibold ${
+                                                dpRemaining > 0 ? 'text-amber-700' : 'text-slate-500'
+                                            }`}
+                                        >
+                                            {dpRemaining > 0 ? formatRupiah(dpRemaining) : 'Rp 0'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {!dpFulfilled && (
+                                    <p className="mt-2.5 border-t border-blue-100 pt-2 text-[11px] text-amber-800">
+                                        * Produksi massal baru dapat dimulai setelah pembayaran minimal DP sejumlah {formatRupiah(dpTotal)} diverifikasi.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="rounded-2xl border bg-white p-4">
@@ -193,13 +264,13 @@ const InvoiceDetailSheet = ({
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                {isProductionInvoice(invoice) ? (
+                                {isProd ? (
                                     <>
                                         <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=dp`, '_blank')}>
-                                            <Printer className="size-4" /> Cetak DP
+                                            <Printer className="size-4" /> Cetak DP ({dpPercentage}%)
                                         </Button>
                                         <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=settlement`, '_blank')}>
-                                            <Printer className="size-4" /> Cetak Pelunasan
+                                            <Printer className="size-4" /> Cetak Pelunasan ({settlementPercentage}%)
                                         </Button>
                                     </>
                                 ) : (

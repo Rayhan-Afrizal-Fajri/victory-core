@@ -201,7 +201,8 @@ class PaymentController extends Controller
             ->where('status', 'verified')
             ->sum('jumlah_bayar');
 
-        $dpLimit = $totalInvoice * 0.5;
+        $dpPercentage = (float) ($invoice->dp_percentage ?? 50.00);
+        $dpLimit = round($totalInvoice * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP);
 
         $productionDpPaid =
             $totalInvoice > 0 &&
@@ -255,12 +256,12 @@ class PaymentController extends Controller
         }
 
         if ($dpJustVerified) {
-
+            $formattedPct = round($dpPercentage, 2);
             $jobTicket->workflowHistory()->create([
                 'step' => 'finance',
                 'action' => 'production_dp_verified',
                 'user_id' => Auth::id(),
-                'notes' => 'DP produksi minimal 50% telah terpenuhi.',
+                'notes' => "DP produksi minimal {$formattedPct}% telah terpenuhi.",
             ]);
         }
 

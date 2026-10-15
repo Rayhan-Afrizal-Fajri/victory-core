@@ -14,7 +14,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { getInvoiceCategoryLabel } from '../invoice/invoice-utils';
+import {
+    getInvoiceCategoryLabel,
+    getInvoiceDpPercentage,
+    getInvoiceDpTotal,
+    getVerifiedPaid,
+} from '../invoice/invoice-utils';
 import FormattedNumberInput from '../ui/formatted-number-input';
 import { formatCurrency } from '@/helpers/format';
 
@@ -61,11 +66,35 @@ const PaymentDialog = ({
                                 </>
                             )}
                     </DialogDescription>
-                    {categoryLabel === 'Production' && (
-                        <p className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-700 border border-yellow-200">
-                            Untuk pembayaran produksi, minimal jumlah bayar adalah 50% dari sisa tagihan ({formatCurrency(remainingPayment * 0.5)}).
-                        </p>
-                    )}
+                    {categoryLabel === 'Production' && (() => {
+                        const dpPct = getInvoiceDpPercentage(invoice);
+                        const dpTotal = getInvoiceDpTotal(invoice);
+                        const verifiedPaid = getVerifiedPaid(invoice);
+                        const isDpDone = verifiedPaid >= dpTotal;
+                        const remainingDp = Math.max(0, dpTotal - verifiedPaid);
+
+                        return (
+                            <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-xs text-blue-900 space-y-1">
+                                <div className="flex items-center justify-between font-semibold">
+                                    <span>Ketentuan DP Produksi: {dpPct}% ({formatCurrency(dpTotal)})</span>
+                                    {isDpDone ? (
+                                        <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                                            DP Terpenuhi
+                                        </span>
+                                    ) : (
+                                        <span className="rounded bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
+                                            Menunggu DP
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-slate-600">
+                                    {isDpDone
+                                        ? `Pembayaran DP minimal ${dpPct}% sudah terpenuhi. Pembayaran saat ini dialokasikan untuk sisa pelunasan.`
+                                        : `Untuk memulai produksi massal, minimal DP yang harus dibayar adalah ${formatCurrency(dpTotal)} (Kekurangan saat ini: ${formatCurrency(remainingDp)}).`}
+                                </p>
+                            </div>
+                        );
+                    })()}
                 </DialogHeader>
 
                 <form onSubmit={onSubmitPayment} className="space-y-4">

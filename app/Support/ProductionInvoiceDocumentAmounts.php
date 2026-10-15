@@ -4,17 +4,20 @@ namespace App\Support;
 
 class ProductionInvoiceDocumentAmounts
 {
-    public static function calculate(float $total, float $verifiedPaid): array
+    public static function calculate(float $total, float $verifiedPaid, float $dpPercentage = 50.0): array
     {
         $total = max($total, 0);
         $verifiedPaid = min(max($verifiedPaid, 0), $total);
-        $dpTotal = round($total / 2, 0, PHP_ROUND_HALF_UP);
+        $dpPercentage = max(min($dpPercentage, 100), 0);
+        $dpTotal = round($total * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP);
         $settlementTotal = $total - $dpTotal;
         $dpPaid = min($verifiedPaid, $dpTotal);
         $settlementPaid = min(max($verifiedPaid - $dpTotal, 0), $settlementTotal);
 
         return [
             'production_total' => $total,
+            'dp_percentage' => $dpPercentage,
+            'settlement_percentage' => 100 - $dpPercentage,
             'dp_total' => $dpTotal,
             'dp_paid' => $dpPaid,
             'dp_remaining' => $dpTotal - $dpPaid,

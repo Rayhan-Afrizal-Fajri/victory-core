@@ -27,6 +27,7 @@ class Quotation extends Model
         'tax',
         'delivery_cost',
         'grand_total',
+        'dp_percentage',
         'approved_at',
         'approved_by_name',
         'signature_path',
@@ -38,6 +39,7 @@ class Quotation extends Model
     protected $casts = [
         'valid_until' => 'date',
         'approved_at' => 'datetime',
+        'dp_percentage' => 'float',
     ];
 
     public function jobTicket()

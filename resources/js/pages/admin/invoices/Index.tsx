@@ -386,11 +386,25 @@ export default function Index({
       {
           header: 'Total',
           accessor: 'total_tagihan',
-          cell: (row) => (
-              <span className="font-semibold">
-                  {formatCurrency(Number(row.total_tagihan || 0))}
-              </span>
-          ),
+          cell: (row) => {
+              const isProd = row.kategori_invoice === 'production';
+              const dpPct = isProd ? (row.dp_percentage ? Number(row.dp_percentage) : 50) : null;
+              const total = Number(row.total_tagihan || 0);
+              const dpNominal = dpPct !== null ? Math.round(total * (dpPct / 100)) : null;
+
+              return (
+                  <div>
+                      <span className="font-semibold text-slate-900">
+                          {formatCurrency(total)}
+                      </span>
+                      {isProd && dpPct !== null && (
+                          <p className="text-[11px] font-medium text-blue-700">
+                              DP ({dpPct}%): {formatCurrency(dpNominal!)}
+                          </p>
+                      )}
+                  </div>
+              );
+          },
       },
       {
           header: 'Status',

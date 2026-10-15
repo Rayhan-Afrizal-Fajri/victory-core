@@ -72,12 +72,42 @@ function QuotationSection({
 
     const quotationForm = useForm({
         valid_until: defaultValidUntil,
+        dp_percentage: 50,
         sample_qtys: initialSampleQtys,
         sample_prices: initialSamplePrices,
         notes: defaultNotes,
         tax: 0,
         delivery_cost: 0,
     });
+
+    const estimatedSubtotal = orders.reduce((sum, order) => {
+        const price = Number(order.price_per_piece ?? order.harga_jual_per_pcs ?? 0);
+        const qty = Number(order.quantity ?? order.q ?? 0);
+        return sum + price * qty;
+    }, 0);
+
+    const taxPercentage = job?.company_profile?.company_type === 'pkp'
+        ? Number(job.company_profile?.tax_percentage ?? 0)
+        : 0;
+    const estimatedTax = (taxPercentage / 100) * estimatedSubtotal;
+    const estimatedGrandTotal = estimatedSubtotal + estimatedTax + Number(quotationForm.data.delivery_cost || 0);
+
+    const dpPercentage = Number(quotationForm.data.dp_percentage ?? 50);
+    const estimatedDpAmount = Math.round(estimatedGrandTotal * (dpPercentage / 100));
+    const estimatedSettlementAmount = Math.max(0, estimatedGrandTotal - estimatedDpAmount);
+
+    const handleDpPercentageChange = (value: number) => {
+        const newPct = Math.min(100, Math.max(1, value || 0));
+        const currentNotes = [...quotationForm.data.notes];
+        if (currentNotes.length > 0 && currentNotes[0].includes('down payment sebesar')) {
+            currentNotes[0] = `Setelah sample approve, customer melakukan down payment sebesar ${newPct}% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.`;
+        }
+        quotationForm.setData({
+            ...quotationForm.data,
+            dp_percentage: newPct,
+            notes: currentNotes,
+        });
+    };
 
     // Form khusus untuk Undo Approval
     const undoForm = useForm({
@@ -186,7 +216,7 @@ function QuotationSection({
                         </p>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                         <Field label="Valid Until" error={quotationForm.errors.valid_until}>
                             <Input
                                 type="date"
@@ -204,6 +234,59 @@ function QuotationSection({
                                 placeholder='cth: 35.000'
                             />
                         </Field>
+
+                        <Field label="Persentase DP Produksi (%)" error={quotationForm.errors.dp_percentage}>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={100}
+                                step="any"
+                                value={quotationForm.data.dp_percentage}
+                                onChange={(e) => handleDpPercentageChange(Number(e.target.value))}
+                                placeholder="50"
+                            />
+                        </Field>
+
+                        <div className="md:col-span-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-blue-800">
+                                        Ketentuan DP Produksi: {dpPercentage}%
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-600">
+                                        Invoice produksi yang otomatis terbit akan mewajibkan pembayaran DP minimal sesuai nominal ini sebelum produksi dimulai.
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <div className="rounded-lg bg-white px-3 py-2 border border-blue-200 shadow-xs">
+                                        <p className="text-[10px] uppercase font-semibold text-blue-600">Estimasi DP ({dpPercentage}%)</p>
+                                        <p className="text-sm font-bold text-blue-700">{formatRupiah(estimatedDpAmount)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white px-3 py-2 border border-slate-200 shadow-xs">
+                                        <p className="text-[10px] uppercase font-semibold text-slate-500">Estimasi Pelunasan ({100 - dpPercentage}%)</p>
+                                        <p className="text-sm font-bold text-slate-800">{formatRupiah(estimatedSettlementAmount)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white px-3 py-2 border border-slate-200 shadow-xs">
+                                        <p className="text-[10px] uppercase font-semibold text-slate-500">Estimasi Grand Total</p>
+                                        <p className="text-sm font-bold text-slate-800">{formatRupiah(estimatedGrandTotal)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-blue-200/60 pt-2 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-600">
+                                <span>Subtotal Pesanan: <strong className="text-slate-800">{formatRupiah(estimatedSubtotal)}</strong></span>
+                                <span>
+                                    Pajak PPN ({taxPercentage}%{job?.company_profile?.company_name ? ` - ${job.company_profile.company_name}` : ''}):{' '}
+                                    <strong className={estimatedTax > 0 ? 'text-amber-800' : 'text-slate-800'}>
+                                        {formatRupiah(estimatedTax)}
+                                    </strong>
+                                </span>
+                                {Number(quotationForm.data.delivery_cost || 0) > 0 && (
+                                    <span>Ongkir: <strong className="text-slate-800">{formatRupiah(Number(quotationForm.data.delivery_cost || 0))}</strong></span>
+                                )}
+                                <span className="font-semibold text-blue-950">Grand Total: {formatRupiah(estimatedGrandTotal)}</span>
+                            </div>
+                        </div>
                         
                         <div className="col-span-2">
                             <div className="rounded-lg border border-sky-100 bg-sky-50 p-4 shadow-sm">
@@ -396,6 +479,24 @@ function QuotationSection({
                                         <p className="mt-2 text-sm font-bold text-slate-900">
                                             {formatRupiah(quotation.grand_total || 0)}
                                         </p>
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                                            {(() => {
+                                                const qDpPct = Number(quotation.dp_percentage || 50);
+                                                const qGrandTotal = Number(quotation.grand_total || 0);
+                                                const qDpAmount = Math.round(qGrandTotal * (qDpPct / 100));
+                                                const qSettlementAmount = Math.max(0, qGrandTotal - qDpAmount);
+                                                return (
+                                                    <>
+                                                        <span className="rounded bg-blue-50 px-2 py-0.5 font-medium text-blue-700 border border-blue-200">
+                                                            DP ({qDpPct}%): {formatRupiah(qDpAmount)}
+                                                        </span>
+                                                        <span className="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-700 border border-slate-200">
+                                                            Pelunasan ({100 - qDpPct}%): {formatRupiah(qSettlementAmount)}
+                                                        </span>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
 
                                     <div className="flex flex-wrap gap-2">

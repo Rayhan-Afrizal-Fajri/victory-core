@@ -86,6 +86,7 @@ export default function QuotationDraftDialog({
         delivery_terms: DEFAULT_DELIVERY_TERMS,
         notes: DEFAULT_NOTES,
         delivery_cost: 0,
+        dp_percentage: 50,
         items: [emptyItem()] as DraftItem[],
     });
 
@@ -107,6 +108,7 @@ export default function QuotationDraftDialog({
                 delivery_terms: quotation.delivery_terms || DEFAULT_DELIVERY_TERMS,
                 notes: quotation.notes || quotation.quotation_notes?.map((note: any) => note.notes).join('\n') || DEFAULT_NOTES,
                 delivery_cost: Number(quotation.delivery_cost || 0),
+                dp_percentage: Number(quotation.dp_percentage || 50),
                 items: (quotation.items || []).map((item: any) => ({
                     pesanan_id: item.pesanan_id || null,
                     item_name: item.item_name || '',
@@ -135,6 +137,7 @@ export default function QuotationDraftDialog({
             delivery_terms: DEFAULT_DELIVERY_TERMS,
             notes: DEFAULT_NOTES,
             delivery_cost: 0,
+            dp_percentage: 50,
             items: jobTicket ? mapJobTicketItems(jobTicket) : [emptyItem()],
         });
     }, [open, quotation?.id, initialJobTicket?.id]);
@@ -191,6 +194,28 @@ export default function QuotationDraftDialog({
         (sum, item) => sum + Number(item.quantity || 0) * Number(item.price_per_pcs || 0),
         0,
     );
+
+    const activeCompanyProfile = companyProfiles.find((p) => p.id === form.data.company_profile_id);
+    const taxRate = activeCompanyProfile?.type === 'pkp' ? Number(activeCompanyProfile.tax_percentage || 0) : 0;
+    const taxAmount = (taxRate / 100) * subtotal;
+    const grandTotal = subtotal + taxAmount + Number(form.data.delivery_cost || 0);
+
+    const dpPercentage = Number(form.data.dp_percentage ?? 50);
+    const estimatedDpAmount = Math.round(grandTotal * (dpPercentage / 100));
+    const estimatedSettlementAmount = Math.max(0, grandTotal - estimatedDpAmount);
+
+    const handleDpPercentageChange = (value: number) => {
+        const newPct = Math.min(100, Math.max(1, value || 0));
+        let updatedPaymentTerms = form.data.payment_terms;
+        if (updatedPaymentTerms && updatedPaymentTerms.includes('down payment sebesar')) {
+            updatedPaymentTerms = `Setelah sample approve, customer melakukan down payment sebesar ${newPct}% dari nilai order. Sisa pembayaran dilakukan sebelum pengiriman.`;
+        }
+        form.setData({
+            ...form.data,
+            dp_percentage: newPct,
+            payment_terms: updatedPaymentTerms,
+        });
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -253,7 +278,9 @@ export default function QuotationDraftDialog({
                                 <SelectTrigger className="w-full"><SelectValue placeholder="Pilih perusahaan" /></SelectTrigger>
                                 <SelectContent>
                                     {companyProfiles.map((profile) => (
-                                        <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
+                                        <SelectItem key={profile.id} value={String(profile.id)}>
+                                            {profile.name} {profile.type === 'pkp' ? `(PKP - PPN ${profile.tax_percentage || 0}%)` : '(Non-PKP)'}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -337,17 +364,58 @@ export default function QuotationDraftDialog({
                         <div className="space-y-2"><Label>Notes</Label><Textarea value={form.data.notes} onChange={(event) => form.setData('notes', event.target.value)} /></div>
                         <div className="space-y-2">
                             <Label>Delivery Cost</Label>
-                            {/* <Input
-                                type="number"
-                                min="0"
-                                value={form.data.delivery_cost}
-                                onChange={(event) => form.setData('delivery_cost', Number(event.target.value))}/> */}
                             <FormattedNumberInput
-                                        value={form.data.delivery_cost}
-                                        onValueChange={(val) => form.setData('delivery_cost', val)}
-                                        allowDecimal={false}
-                                        min={0}
-                                    />
+                                value={form.data.delivery_cost}
+                                onValueChange={(val) => form.setData('delivery_cost', val)}
+                                allowDecimal={false}
+                                min={0}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Persentase DP Produksi (%)</Label>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={100}
+                                step="any"
+                                value={form.data.dp_percentage}
+                                onChange={(event) => handleDpPercentageChange(Number(event.target.value))}
+                                placeholder="50"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div>
+                                <span className="font-semibold text-blue-900">Ketentuan DP Produksi: {dpPercentage}%</span>
+                                <p className="text-slate-600">Invoice produksi akan mewajibkan pembayaran DP minimal sesuai nominal ini.</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-right">
+                                <span className="rounded bg-white px-2.5 py-1 border border-blue-200 font-medium text-blue-700">
+                                    DP ({dpPercentage}%): {formatRupiah(estimatedDpAmount)}
+                                </span>
+                                <span className="rounded bg-white px-2.5 py-1 border border-slate-200 font-medium text-slate-700">
+                                    Pelunasan ({100 - dpPercentage}%): {formatRupiah(estimatedSettlementAmount)}
+                                </span>
+                                <span className="rounded bg-white px-2.5 py-1 border border-slate-200 font-bold text-slate-900">
+                                    Grand Total: {formatRupiah(grandTotal)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-blue-200/60 pt-2 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-600">
+                            <span>Subtotal Item: <strong className="text-slate-800">{formatRupiah(subtotal)}</strong></span>
+                            <span>
+                                Pajak PPN ({taxRate}%{activeCompanyProfile ? ` - ${activeCompanyProfile.name}` : ''}):{' '}
+                                <strong className={taxAmount > 0 ? 'text-amber-800' : 'text-slate-800'}>
+                                    {formatRupiah(taxAmount)}
+                                </strong>
+                            </span>
+                            {Number(form.data.delivery_cost || 0) > 0 && (
+                                <span>Ongkir: <strong className="text-slate-800">{formatRupiah(Number(form.data.delivery_cost || 0))}</strong></span>
+                            )}
+                            <span className="font-semibold text-blue-950">Grand Total: {formatRupiah(grandTotal)}</span>
                         </div>
                     </div>
 

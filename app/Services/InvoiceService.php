@@ -95,6 +95,7 @@ class InvoiceService
                 ->first();
             $grandTotal = 0;
             $deliveryCost = (float) ($approvedQuotation?->delivery_cost ?? 0);
+            $dpPercentage = (float) ($approvedQuotation?->dp_percentage ?? 50.00);
             $invoiceItems = [];
 
             // dd($jobTicket->pesanans, $approvedQuotation);
@@ -146,6 +147,7 @@ class InvoiceService
                 'no_invoice' => $this->generate('INV-PROD'),
                 'kategori_invoice' => 'produksi',
                 'total_tagihan' => $grandTotal,
+                'dp_percentage' => $dpPercentage,
                 'delivery_cost' => $deliveryCost,
                 'status_tagihan' => 'unpaid',
                 'tgl_jatuh_tempo' => now()->addDays(7)->toDateString(),

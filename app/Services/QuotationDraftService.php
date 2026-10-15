@@ -84,6 +84,7 @@ class QuotationDraftService
                 'tax' => $tax,
                 'delivery_cost' => $deliveryCost,
                 'grand_total' => $subtotal + $tax + $deliveryCost,
+                'dp_percentage' => isset($data['dp_percentage']) && $data['dp_percentage'] !== null && $data['dp_percentage'] !== '' ? (float) $data['dp_percentage'] : (float) ($quotation?->dp_percentage ?? 50.00),
             ];
 
             if (!$quotation) {

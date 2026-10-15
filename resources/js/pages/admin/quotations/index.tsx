@@ -181,13 +181,22 @@ export default function Index({ quotations, customers, companyProfiles, eligible
       ),
     },
     {
-      header: 'Grand Total',
+      header: 'Grand Total & DP',
       accessor: 'grand_total',
-      cell: (row) => (
-        <span className="font-semibold text-slate-900">
-          {formatCurrency(row.grand_total)}
-        </span>
-      ),
+      cell: (row) => {
+        const dpPct = Number(row.dp_percentage || 50);
+        const dpAmount = Math.round(Number(row.grand_total || 0) * (dpPct / 100));
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-slate-900">
+              {formatCurrency(row.grand_total)}
+            </span>
+            <span className="text-[11px] font-medium text-blue-700">
+              DP ({dpPct}%): {formatCurrency(dpAmount)}
+            </span>
+          </div>
+        );
+      },
     },
     {
       header: 'Action',
@@ -363,6 +372,36 @@ export default function Index({ quotations, customers, companyProfiles, eligible
                         <td className="px-4 py-4 font-semibold text-slate-900">Grand Total</td>
                         <td className="px-4 py-4 text-right text-lg font-semibold text-slate-900">
                           {formatCurrency(selectedQuotation.grand_total)}
+                        </td>
+                      </tr>
+                      <tr className="border-t border-slate-200 bg-blue-50/50">
+                        <td className="px-4 py-3 font-medium text-blue-900">
+                          DP Produksi ({selectedQuotation.dp_percentage ?? 50}%)
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-blue-700">
+                          {formatCurrency(
+                            Math.round(
+                              Number(selectedQuotation.grand_total || 0) *
+                                (Number(selectedQuotation.dp_percentage ?? 50) / 100)
+                            )
+                          )}
+                        </td>
+                      </tr>
+                      <tr className="border-t border-slate-100 bg-slate-50/50">
+                        <td className="px-4 py-3 font-medium text-slate-700">
+                          Pelunasan Produksi ({100 - Number(selectedQuotation.dp_percentage ?? 50)}%)
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-slate-800">
+                          {formatCurrency(
+                            Math.max(
+                              0,
+                              Number(selectedQuotation.grand_total || 0) -
+                                Math.round(
+                                  Number(selectedQuotation.grand_total || 0) *
+                                    (Number(selectedQuotation.dp_percentage ?? 50) / 100)
+                                )
+                            )
+                          )}
                         </td>
                       </tr>
                     </tbody>

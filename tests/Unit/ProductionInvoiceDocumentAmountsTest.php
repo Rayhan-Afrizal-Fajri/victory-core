@@ -38,4 +38,19 @@ class ProductionInvoiceDocumentAmountsTest extends TestCase
         $this->assertSame(101.0, $amounts['dp_paid'] + $amounts['settlement_paid']);
         $this->assertSame(0.0, $amounts['settlement_remaining']);
     }
+
+    public function test_custom_dp_percentage_calculates_correctly(): void
+    {
+        // 30% DP of 50,000,000 is 15,000,000
+        $amounts = ProductionInvoiceDocumentAmounts::calculate(50_000_000, 15_000_000, 30.0);
+
+        $this->assertSame(30.0, $amounts['dp_percentage']);
+        $this->assertSame(70.0, $amounts['settlement_percentage']);
+        $this->assertSame(15_000_000.0, $amounts['dp_total']);
+        $this->assertSame(15_000_000.0, $amounts['dp_paid']);
+        $this->assertSame(0.0, $amounts['dp_remaining']);
+        $this->assertSame(35_000_000.0, $amounts['settlement_total']);
+        $this->assertSame(0.0, $amounts['settlement_paid']);
+        $this->assertSame(35_000_000.0, $amounts['settlement_remaining']);
+    }
 }

@@ -194,6 +194,7 @@ class JobTicketController extends Controller
                 'customer_name_snapshot' => $quotation->customer_name_snapshot,
                 'customer_company_snapshot' => $quotation->customer_company_snapshot,
                 'grand_total' => (float) $quotation->grand_total,
+                'dp_percentage' => (float) ($quotation->dp_percentage ?? 50.00),
                 'items' => $quotation->items->map(fn ($item) => [
                     'id' => $item->id,
                     'pesanan_id' => $item->pesanan_id,
@@ -290,6 +291,7 @@ class JobTicketController extends Controller
                 'no_invoice' => $inv->no_invoice,
                 'kategori_invoice' => $inv->kategori_invoice,
                 'total_tagihan' => (float) $inv->total_tagihan,
+                'dp_percentage' => (float) ($inv->dp_percentage ?? 50.00),
                 'status_tagihan' => $inv->status_tagihan ?? 'unpaid',
                 'tgl_jatuh_tempo' => $inv->tgl_jatuh_tempo,
                 'title' => $inv->no_invoice ?? $inv->kategori_invoice,
@@ -307,6 +309,7 @@ class JobTicketController extends Controller
                 'created_at' => $q->created_at,
                 'status' => $q->status,
                 'grand_total' => (float) $q->grand_total,
+                'dp_percentage' => (float) ($q->dp_percentage ?? 50.00),
                 'valid_until' => $q->valid_until,
                 'sample_qty' => $q->sample_qty,
                 'job_ticket_id' => $q->job_ticket_id,
