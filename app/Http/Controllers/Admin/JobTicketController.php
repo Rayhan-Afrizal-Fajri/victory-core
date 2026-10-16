@@ -532,7 +532,7 @@ class JobTicketController extends Controller
             })->toArray(),
         ];
 
-        $productOption = Product::where('is_active', true)->where('is_pattern_available', true)->get()->map(fn ($p) => [
+        $productOption = Product::where('is_active', true)->get()->map(fn ($p) => [
             'id' => $p->id,
             'name' => $p->name,
             'category' => $p->category,
