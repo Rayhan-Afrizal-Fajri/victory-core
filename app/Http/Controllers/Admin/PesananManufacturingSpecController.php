@@ -8,6 +8,7 @@ use App\Models\PesananManufacturingSpecs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PesananManufacturingSpecController extends Controller
 {
@@ -113,7 +114,9 @@ class PesananManufacturingSpecController extends Controller
         $spec->load('pesanan');
 
         if ($spec->pesanan?->workflowStatus?->sample_created) {
-            abort(422, 'Spec tidak bisa dihapus karena sample sudah dibuat.');
+            throw ValidationException::withMessages([
+                'error' => 'Spec tidak bisa dihapus karena sample sudah dibuat.'
+            ]);
         }
 
         DB::transaction(function () use ($spec) {
@@ -144,7 +147,9 @@ class PesananManufacturingSpecController extends Controller
     private function validateEstimate(array $validated): void
     {
         if ((float) $validated['max_estimate'] < (float) $validated['min_estimate']) {
-            abort(422, 'Estimasi maksimal tidak boleh lebih kecil dari estimasi minimal.');
+            throw ValidationException::withMessages([
+                'max_estimate' => 'Estimasi maksimal tidak boleh lebih kecil dari estimasi minimal.'
+            ]);
         }
     }
 }

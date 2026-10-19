@@ -103,6 +103,7 @@ function QuotationManagementSection({ job, quotations }: Props) {
         }, {
             preserveScroll: true,
             onSuccess: () => toast.success('Quotation disetujui.'),
+            onError: (err) => toast.error(Object.values(err)[0] as string || 'Gagal menyetujui quotation. Pastikan seluruh data lengkap.'),
         });
     };
 

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceService;
 use App\Services\ProductionRunService;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class ProductionRunController extends Controller
@@ -35,10 +36,14 @@ class ProductionRunController extends Controller
         // Pengecekan keamanan: Pastikan setidaknya 1 pesanan siap bahan sample
         $ready = $jobTicket->pesanans->contains(fn($p) => $p->workflowStatus?->sample_materials_ready);
         if (!$ready) {
-            abort(422, 'Material sample belum siap untuk diproduksi.');
+            throw ValidationException::withMessages([
+                'error' => 'Material sample belum siap untuk diproduksi.'
+            ]);
         }
 
-        $this->productionRunService->ensureSampleRun($jobTicket);
+        foreach ($jobTicket->pesanans as $pesanan) {
+            $this->productionRunService->ensureSampleRun($pesanan);
+        }
 
         return back()->with('success', 'Sample production run berhasil disiapkan.');
     }
@@ -47,7 +52,9 @@ class ProductionRunController extends Controller
     {
         $jobTicket = JobTicket::with(['pesanans.workflowStatus'])->findOrFail($jobTicketId);
 
-        $this->productionRunService->ensureProductionRun($jobTicket);
+        foreach ($jobTicket->pesanans as $pesanan) {
+            $this->productionRunService->ensureProductionRun($pesanan);
+        }
 
         return back()->with('success', 'Mass production run berhasil disiapkan.');
     }
@@ -62,7 +69,9 @@ class ProductionRunController extends Controller
             ->findOrFail($processId);
 
         if ($process->status !== 'pending') {
-            abort(422, 'Process tidak bisa dimulai.');
+            throw ValidationException::withMessages([
+                'error' => 'Process tidak bisa dimulai.'
+            ]);
         }
 
         DB::transaction(function () use ($process, $request) {
@@ -132,7 +141,9 @@ class ProductionRunController extends Controller
         $process = ProductionRunProcess::with('productionRun')->findOrFail($processId);
 
         if ($process->status !== 'in_progress') {
-            abort(422, 'Process belum berjalan.');
+            throw ValidationException::withMessages([
+                'error' => 'Process belum berjalan.'
+            ]);
         }
 
         DB::transaction(function() use ($process) {
@@ -174,7 +185,9 @@ class ProductionRunController extends Controller
         ]);
 
         if (($validated['passed_qty'] + $validated['defect_qty']) !== $validated['checked_qty']) {
-            abort(422, 'Total passed + defect harus sama dengan checked qty.');
+            throw ValidationException::withMessages([
+                'passed_qty' => 'Total passed + defect harus sama dengan checked qty.'
+            ]);
         }
 
         $process = ProductionRunProcess::with('productionRun.pesanan.jobTicket')->findOrFail($processId);
@@ -407,7 +420,9 @@ class ProductionRunController extends Controller
         $run = ProductionRun::with('processes', 'pesanan.workflowStatus', 'pesanan.jobTicket.workflowHistory')->findOrFail($runId);
 
         if (! $this->allProcessesQcPassed($run)) {
-            abort(422, 'Semua process harus QC passed sebelum packing.');
+            throw ValidationException::withMessages([
+                'error' => 'Semua process harus QC passed sebelum packing.'
+            ]);
         }
 
         DB::transaction(function () use ($run, $validated) {
@@ -446,7 +461,9 @@ class ProductionRunController extends Controller
         ])->findOrFail($runId);
 
         if (! $run->packing_completed) {
-            abort(422, 'Packing belum selesai.');
+            throw ValidationException::withMessages([
+                'error' => 'Packing belum selesai.'
+            ]);
         }
 
         DB::transaction(function () use ($run, $validated) {
@@ -508,7 +525,9 @@ class ProductionRunController extends Controller
         ])->findOrFail($runId);
 
         if ($run->status !== 'in_delivery') {
-            abort(422, 'Run belum dalam proses delivery.');
+            throw ValidationException::withMessages([
+                'error' => 'Run belum dalam proses delivery.'
+            ]);
         }
 
         DB::transaction(function () use ($run) {
@@ -640,7 +659,9 @@ class ProductionRunController extends Controller
         $run = ProductionRun::findOrFail($runId);
 
         if ($run->status !== 'delivered') {
-            abort(422, 'Sample harus delivered sebelum revisi.');
+            throw ValidationException::withMessages([
+                'error' => 'Sample harus delivered sebelum revisi.'
+            ]);
         }
 
         $run->update([
@@ -660,7 +681,9 @@ class ProductionRunController extends Controller
         $run = ProductionRun::findOrFail($runId);
 
         if ($run->status !== 'delivered') {
-            abort(422, 'Sample harus delivered sebelum ditolak.');
+            throw ValidationException::withMessages([
+                'error' => 'Sample harus delivered sebelum ditolak.'
+            ]);
         }
 
         $run->update([

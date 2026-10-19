@@ -249,7 +249,7 @@ class JobTicketController extends Controller
                         'defect_reason' => $log->defect_reason,
                         'corrective_action' => $log->corrective_action,
                         'qc_type' => $log->qc_type,
-                        'checked_by' => User::find($log->checked_by)->toArray(),
+                        'checked_by' => $log->checked_by ? User::find($log->checked_by)?->toArray() : null,
                     ])
                 ])->toArray(),
             ];
@@ -492,7 +492,7 @@ class JobTicketController extends Controller
                             'production_ordered_by' => $p->production_ordered_by,
                             'remaining_qty' => $p->remaining_qty,
                             'receiving_status' => $p->receiving_status,
-                            'material_receivings' => $p->materialReceiving->toArray(),
+                            'material_receivings' => $p->materialReceiving?->toArray() ?? [],
                         ];
                     })->toArray(),
 
@@ -527,7 +527,7 @@ class JobTicketController extends Controller
                         'cost_per_pcs' => $spec->cost_per_pcs,
                     ])->toArray(),
 
-                    'attachments' => $pesanan->attachment->toArray(),
+                    'attachments' => $pesanan->attachment?->toArray() ?? [],
                 ];
             })->toArray(),
         ];

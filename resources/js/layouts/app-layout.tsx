@@ -19,7 +19,7 @@ export default function AppLayout({
     information: string;
     actions?: React.ReactNode;
 }) {
-    const { flash } = usePage().props as any;
+    const { flash, errors } = usePage().props as any;
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -34,6 +34,15 @@ export default function AppLayout({
     useEffect(() => {
         if (flash?.warning) toast.warning(flash.warning);
     }, [flash?.id]);
+
+    useEffect(() => {
+        if (errors && typeof errors === 'object') {
+            const generalError = errors.error || errors.undo || errors.bom;
+            if (generalError) {
+                toast.error(generalError);
+            }
+        }
+    }, [errors]);
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>

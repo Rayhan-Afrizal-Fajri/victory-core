@@ -95,7 +95,9 @@ class QuotationController extends Controller
     {
         abort_unless(Auth::user()?->can('quotation.generate'), 403);
         if ($quotation->status === 'approved') {
-            abort(422, 'Quotation yang sudah disetujui tidak dapat diedit.');
+            throw ValidationException::withMessages([
+                'error' => 'Quotation yang sudah disetujui tidak dapat diedit.'
+            ]);
         }
 
         $wasLinked = (bool) $quotation->job_ticket_id;
@@ -217,7 +219,9 @@ class QuotationController extends Controller
         $pesanans = $jobTicket->pesanans;
 
         if ($pesanans->isEmpty()) {
-            abort(422, 'Tidak ada pesanan dalam Job Ticket ini.');
+            throw ValidationException::withMessages([
+                'error' => 'Tidak ada pesanan dalam Job Ticket ini.'
+            ]);
         }
 
         $subtotal = 0;
@@ -231,7 +235,9 @@ class QuotationController extends Controller
             // VALIDASI RULE: Harga sample tidak boleh diisi jika quantity pesanan (sample) 0
             if ($pesananSampleQty === 0 && $pesananSamplePrice > 0) {
                 $namaProduk = $pesanan->requested_product_name ?: $pesanan->produk ?: $pesanan->product_name;
-                abort(422, "Harga sample untuk produk [{$namaProduk}] harus Rp 0 karena Quantity Sample adalah 0.");
+                throw ValidationException::withMessages([
+                    "sample_prices.{$pesanan->id}" => "Harga sample untuk produk [{$namaProduk}] harus Rp 0 karena Quantity Sample adalah 0."
+                ]);
             }
 
             $pricePerPcs = (float) ($pesanan->harga_jual_per_pcs ?? $pesanan->price_per_piece ?? 0);
@@ -335,8 +341,8 @@ class QuotationController extends Controller
         if ($usersToNotify->isNotEmpty()) {
             Notification::send($usersToNotify, new SystemNotification(
                 'Setujui Surat Penawaran',
-                "Surat Penawaran '{$pesanan->jobTicket->no_job_ticket}' telah dibuat, menunggu approval.",
-                "/purchase-orders/{$pesanan->job_ticket_id}?tab=costing%20%26%20quotation",
+                "Surat Penawaran '{$jobTicket->no_job_ticket}' telah dibuat, menunggu approval.",
+                "/purchase-orders/{$jobTicket->id}?tab=costing%20%26%20quotation",
                 'info'
             ));
         }
@@ -386,15 +392,34 @@ class QuotationController extends Controller
 
         $quotation = Quotation::with([
             'jobTicket.pesanans.workflowStatus',
+            'jobTicket.pesanans.materialSpecs.material',
             'jobTicket.invoices',
         ])->findOrFail($quotationId);
 
         if (!$quotation->job_ticket_id) {
-            abort(422, 'Hubungkan quotation draft ke PO sebelum meminta persetujuan.');
+            throw ValidationException::withMessages([
+                'error' => 'Hubungkan quotation draft ke PO sebelum meminta persetujuan.'
+            ]);
         }
 
         if ($quotation->status === 'approved') {
-            abort(422, 'Quotation sudah disetujui.');
+            throw ValidationException::withMessages([
+                'error' => 'Quotation sudah disetujui.'
+            ]);
+        }
+
+        // Pre-validation: Pastikan semua bahan pada pesanan memiliki satuan (unit) valid
+        foreach ($quotation->jobTicket->pesanans as $order) {
+            foreach ($order->materialSpecs as $spec) {
+                $unit = trim((string) ($spec->unit ?? '')) ?: trim((string) ($spec->material?->unit ?? ''));
+                if (empty($unit)) {
+                    $matName = $spec->material_name_snapshot ?: 'Bahan';
+                    $prodName = $order->requested_product_name ?: ($order->produk ?: 'Pesanan');
+                    throw ValidationException::withMessages([
+                        'error' => "Bahan '{$matName}' pada pesanan '{$prodName}' belum memiliki satuan (unit). Harap lengkapi satuan bahan di tab Desain sebelum menyetujui penawaran."
+                    ]);
+                }
+            }
         }
 
         DB::transaction(function () use ($quotation, $validated, $request) {
@@ -597,7 +622,9 @@ class QuotationController extends Controller
 
         // 1. GUARD: Cek apakah sudah disetujui
         if ($quotation->status !== 'approved') {
-            abort(422, 'Quotation belum disetujui atau sudah dibatalkan.');
+            throw ValidationException::withMessages([
+                'undo' => 'Quotation belum disetujui atau sudah dibatalkan.'
+            ]);
         }
 
         $jobTicket = $quotation->jobTicket;
@@ -831,7 +858,9 @@ class QuotationController extends Controller
         $quotation = Quotation::with('jobTicket.pesanans.workflowStatus')->findOrFail($quotationId);
 
         if ($quotation->status === 'approved') {
-            abort(422, 'Quotation yang sudah approved tidak bisa ditolak.');
+            throw ValidationException::withMessages([
+                'error' => 'Quotation yang sudah approved tidak bisa ditolak.'
+            ]);
         }
 
         DB::transaction(function () use ($quotation, $request) {
@@ -927,7 +956,9 @@ class QuotationController extends Controller
         $jobTicket = $quotation->jobTicket;
 
         if ($quotation->status === 'approved') {
-            abort(422, 'Quotation yang sudah disetujui tidak bisa dihapus.');
+            throw ValidationException::withMessages([
+                'error' => 'Quotation yang sudah disetujui tidak bisa dihapus.'
+            ]);
         }
 
         $quotation->delete();

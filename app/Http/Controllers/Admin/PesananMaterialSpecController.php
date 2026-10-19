@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PesananMaterialSpecController extends Controller
 {
@@ -147,7 +148,9 @@ class PesananMaterialSpecController extends Controller
         $spec->load('pesanan');
 
         if ($spec->pesanan?->workflowStatus?->sample_created) {
-            abort(422, 'Spec tidak bisa dihapus karena sample sudah dibuat.');
+            throw ValidationException::withMessages([
+                'error' => 'Spec tidak bisa dihapus karena sample sudah dibuat.'
+            ]);
         }
 
         DB::transaction(function () use ($spec) {
@@ -172,7 +175,9 @@ class PesananMaterialSpecController extends Controller
         $orderQty = (float) ($pesanan->quantity ?: $pesanan->q ?: 0);
 
         if ($orderQty <= 0) {
-            abort(422, 'Quantity order belum valid.');
+            throw ValidationException::withMessages([
+                'error' => 'Quantity order belum valid.'
+            ]);
         }
 
         $usage = (float) $validated['usage'];

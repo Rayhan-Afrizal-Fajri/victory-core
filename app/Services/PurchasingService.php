@@ -42,7 +42,7 @@ class PurchasingService
         // 3. Proses Generate PO (Tidak perlu DB::transaction baru jika dipanggil dari dalam transaksi payment)
         foreach ($pesanan->materialSpecs as $spec) {
             $usage = (float) $spec->usage;
-            $usagePerSet = (float) ($spec->usage_per_set ?: 1);
+            $usagePerSet = max((float) ($spec->usage_per_set ?: 1), 0.0001);
 
             $usagePerPcs = $usage / $usagePerSet;
             $requiredQty = $usagePerPcs * $totalPlannedQty;
@@ -57,17 +57,20 @@ class PurchasingService
 
             $totalHarga = $purchaseQty * $hargaSatuan;
 
+            $satuan = trim((string) ($spec->unit ?? '')) ?: (trim((string) ($spec->material?->unit ?? '')) ?: 'pcs');
+            $itemBahan = trim((string) ($spec->material_name_snapshot ?? '')) ?: (trim((string) ($spec->material?->name ?? '')) ?: 'Item Bahan');
+
             $pesanan->purchasing()->create([
                 'pesanan_material_spec_id' => $spec->id,
                 'supplier_id' => $spec->supplier_id,
-                'item_bahan' => $spec->material_name_snapshot,
+                'item_bahan' => $itemBahan,
                 'color' => $spec->color,
                 'qty_bahan' => $requiredQty,
                 'required_qty' => $requiredQty,
                 'purchase_qty' => $purchaseQty,
                 'stock_qty' => $stockQty,
                 'leftover_qty' => $leftoverQty,
-                'satuan' => $spec->unit,
+                'satuan' => $satuan,
                 'harga_satuan' => $hargaSatuan,
                 'total_harga' => $totalHarga,
                 'is_received' => false,

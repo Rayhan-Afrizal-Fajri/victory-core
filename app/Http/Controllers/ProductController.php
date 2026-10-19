@@ -382,7 +382,7 @@ class ProductController extends Controller
                         'harga_roll'          => $material->default_harga_roll ?? 0,
                         'type'                => $material->category, // 'bahan' atau 'aksesoris'
                         'default_usage'       => $material->default_usage ?? 0,
-                        'default_unit'        => $material->unit,
+                        'default_unit'        => trim((string) ($material->unit ?? '')) ?: 'pcs',
                         'default_color'       => $material->default_color,
                         'sort_order'          => $materialSortOrder++,
                         'is_required'         => true,
@@ -403,7 +403,7 @@ class ProductController extends Controller
                     $product->productManufacturingWorks()->create([
                         'manufacturing_work_id' => $work->id,
                         'default_usage'         => 1, // Default usage untuk proses biasanya 1
-                        'default_unit'          => $work->default_unit,
+                        'default_unit'          => trim((string) ($work->default_unit ?? '')) ?: 'pcs',
                         'min_estimate'          => $work->default_min_estimate,
                         'max_estimate'          => $work->default_max_estimate,
                         'usage_note'            => null,

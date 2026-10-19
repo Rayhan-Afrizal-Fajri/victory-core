@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Services\ProductionRunService;
 use App\Services\InvoiceService;
+use Illuminate\Validation\ValidationException;
 
 class PurchasingController extends Controller
 {
@@ -260,12 +261,16 @@ class PurchasingController extends Controller
 
         // Pastikan invoice sample sudah dibayar/verifikasi sebelum generate PO.
         if (! $pesanan->workflowStatus?->sample_paid) {
-            abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum lunas.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing belum bisa dibuat karena invoice sample belum lunas.'
+            ]);
         }
 
         // Cegah duplikasi jika purchasing sudah pernah dibuat untuk pesanan.
         if ($pesanan->purchasing()->exists() && $pesanan->workflowStatus->sample_revision == false) {
-            abort(422, 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing sudah pernah digenerate. Edit PO yang sudah ada jika perlu.'
+            ]);
         }
 
         $quotation = Quotation::where('job_ticket_id', $pesanan->jobTicket->id)->latest()->first();
@@ -282,14 +287,16 @@ class PurchasingController extends Controller
         ]);
 
         if ($totalPlannedQty <= 0) {
-            abort(422, 'Total quantity belum valid.');
+            throw ValidationException::withMessages([
+                'error' => 'Total quantity belum valid.'
+            ]);
         }
 
         // Buat PO untuk setiap material spec dalam satu transaksi.
         DB::transaction(function () use ($pesanan, $totalPlannedQty) {
             foreach ($pesanan->materialSpecs as $spec) {
                 $usage = (float) $spec->usage;
-                $usagePerSet = (float) ($spec->usage_per_set ?: 1);
+                $usagePerSet = max((float) ($spec->usage_per_set ?: 1), 0.0001);
 
                 $usagePerPcs = $usage / $usagePerSet;
                 $requiredQty = $usagePerPcs * $totalPlannedQty;
@@ -304,12 +311,15 @@ class PurchasingController extends Controller
 
                 $totalHarga = $purchaseQty * $hargaSatuan;
 
+                $satuan = trim((string) ($spec->unit ?? '')) ?: (trim((string) ($spec->material?->unit ?? '')) ?: 'pcs');
+                $itemBahan = trim((string) ($spec->material_name_snapshot ?? '')) ?: (trim((string) ($spec->material?->name ?? '')) ?: 'Item Bahan');
+
                 // Simpan baris purchasing berdasarkan spec.
                 $pesanan->purchasing()->create([
                     'pesanan_material_spec_id' => $spec->id,
                     'supplier_id' => $spec->supplier_id,
 
-                    'item_bahan' => $spec->material_name_snapshot,
+                    'item_bahan' => $itemBahan,
                     'color' => $spec->color,
                     'qty_bahan' => $requiredQty,
                     'required_qty' => $requiredQty,
@@ -317,7 +327,7 @@ class PurchasingController extends Controller
                     'stock_qty' => $stockQty,
                     'leftover_qty' => $leftoverQty,
 
-                    'satuan' => $spec->unit,
+                    'satuan' => $satuan,
                     'harga_satuan' => $hargaSatuan,
                     'total_harga' => $totalHarga,
 
@@ -452,7 +462,9 @@ class PurchasingController extends Controller
         $pesanan = Pesanan::with('workflowStatus')->findOrFail($pesananId);
 
         if (! $pesanan->workflowStatus?->sample_paid) {
-            abort(422, 'Purchasing belum bisa dibuat karena invoice sample belum diverifikasi.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing belum bisa dibuat karena invoice sample belum diverifikasi.'
+            ]);
         }
 
         // Simpan purchasing manual dalam transaksi.
@@ -540,13 +552,17 @@ class PurchasingController extends Controller
 
         // PO final tidak boleh diedit.
         if (in_array($purchasing->status, ['received', 'cancelled'])) {
-            abort(422, 'Purchasing yang sudah received/cancelled tidak bisa diedit.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing yang sudah received/cancelled tidak bisa diedit.'
+            ]);
         }
 
         $receivedQty = (float) $purchasing->materialReceivings()->sum('received_qty');
 
         if ((float) $request->qty_bahan < $receivedQty) {
-            abort(422, 'Qty bahan tidak boleh lebih kecil dari qty yang sudah diterima.');
+            throw ValidationException::withMessages([
+                'qty_bahan' => 'Qty bahan tidak boleh lebih kecil dari qty yang sudah diterima.'
+            ]);
         }
 
         // Lakukan update dalam transaksi dan sinkronkan status.
@@ -587,11 +603,15 @@ class PurchasingController extends Controller
         $purchasing = Purchasing::with(['materialReceivings', 'pesanan.workflowStatus'])->findOrFail($purchasingId);
 
         if ($purchasing->materialReceivings()->exists()) {
-            abort(422, 'Purchasing tidak bisa dihapus karena sudah memiliki riwayat receiving.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing tidak bisa dihapus karena sudah memiliki riwayat receiving.'
+            ]);
         }
 
         if (in_array($purchasing->status, ['received'])) {
-            abort(422, 'Purchasing yang sudah received tidak bisa dihapus.');
+            throw ValidationException::withMessages([
+                'error' => 'Purchasing yang sudah received tidak bisa dihapus.'
+            ]);
         }
 
         DB::transaction(function () use ($purchasing) {
@@ -618,7 +638,9 @@ class PurchasingController extends Controller
         $purchasing = Purchasing::with('pesanan')->findOrFail($purchasingId);
 
         if ($purchasing->status !== 'draft') {
-            abort(422, 'Hanya item draft yang bisa ditandai ordered.');
+            throw ValidationException::withMessages([
+                'error' => 'Hanya item draft yang bisa ditandai ordered.'
+            ]);
         }
 
         $purchasing->update([
@@ -650,6 +672,7 @@ class PurchasingController extends Controller
             'notes' => 'Item ' .$purchasing->item_bahan. ' batal dipesan',
         ]);
 
+        return back()->with('success', 'Status pemesanan berhasil dikembalikan ke draft.');
     }
 
     public function markProductionOrdered(Request $request, string $purchasingId)
@@ -661,15 +684,21 @@ class PurchasingController extends Controller
         $workflow = $pesanan->workflowStatus;
 
         if (! $workflow?->sample_materials_ready || ! $workflow?->sample_approved) {
-            abort(422, 'Pemesanan produksi hanya dapat ditandai setelah material sample siap dan sample disetujui.');
+            throw ValidationException::withMessages([
+                'error' => 'Pemesanan produksi hanya dapat ditandai setelah material sample siap dan sample disetujui.'
+            ]);
         }
 
         if ($this->getPurchasingProductionRequiredQty($purchasing, $pesanan) <= 0) {
-            abort(422, 'Item ini tidak memiliki kebutuhan material produksi.');
+            throw ValidationException::withMessages([
+                'error' => 'Item ini tidak memiliki kebutuhan material produksi.'
+            ]);
         }
 
         if ($purchasing->production_ordered_at) {
-            abort(422, 'Material produksi sudah ditandai dipesan.');
+            throw ValidationException::withMessages([
+                'error' => 'Material produksi sudah ditandai dipesan.'
+            ]);
         }
 
         $purchasing->update([
@@ -695,7 +724,9 @@ class PurchasingController extends Controller
         $pesanan = $purchasing->pesanan;
 
         if (! $purchasing->production_ordered_at) {
-            abort(422, 'Material produksi belum ditandai dipesan.');
+            throw ValidationException::withMessages([
+                'error' => 'Material produksi belum ditandai dipesan.'
+            ]);
         }
 
         $goodReceivedQty = (float) $purchasing->materialReceivings()
@@ -705,7 +736,9 @@ class PurchasingController extends Controller
         $productionReceivedQty = max($goodReceivedQty - $sampleRequiredQty, 0);
 
         if ($productionReceivedQty > 0) {
-            abort(422, 'Penandaan tidak dapat dibatalkan karena material produksi sudah diterima.');
+            throw ValidationException::withMessages([
+                'error' => 'Penandaan tidak dapat dibatalkan karena material produksi sudah diterima.'
+            ]);
         }
 
         $purchasing->update([
@@ -739,7 +772,9 @@ class PurchasingController extends Controller
         ])->findOrFail($purchasingId);
 
         if (in_array($purchasing->status, ['received', 'cancelled'])) {
-            abort(422, 'Item ini sudah final dan tidak bisa menerima receiving baru.');
+            throw ValidationException::withMessages([
+                'error' => 'Item ini sudah final dan tidak bisa menerima receiving baru.'
+            ]);
         }
 
         $receivedQty = (float) $purchasing->materialReceivings()->sum('received_qty');
@@ -1149,13 +1184,13 @@ class PurchasingController extends Controller
             'productionRuns',
         ]);
 
-        $existsingRun = $pesanan->productionRuns()
+        $existingRun = $pesanan->productionRuns()
             ->where('type', 'sample')
             ->whereNotIn('status', ['rejected'])
             ->latest()
             ->first();
 
-        if ($existsingRun) {
+        if ($existingRun) {
             return;
         }
 

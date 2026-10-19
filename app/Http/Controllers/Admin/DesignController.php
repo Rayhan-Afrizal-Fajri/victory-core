@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DesignController extends Controller
 {
@@ -166,7 +167,9 @@ class DesignController extends Controller
         DB::transaction(function () use ($design, $pesanan) {
             // Hanya design yang sedang menunggu approval yang boleh diapprove
             if ($design->status !== 'waiting_approval') {
-                abort(422, 'Desain ini tidak sedang menunggu approval.');
+                throw ValidationException::withMessages([
+                    'error' => 'Desain ini tidak sedang menunggu approval.'
+                ]);
             }
 
             // Pastikan hanya 1 desain yang approved
@@ -229,11 +232,15 @@ class DesignController extends Controller
 
         DB::transaction(function () use ($request, $design, $pesanan) {
             if (! in_array($design->status, ['waiting_approval', 'approved'])) {
-                abort(422, 'Desain ini tidak bisa direvisi.');
+                throw ValidationException::withMessages([
+                    'error' => 'Desain ini tidak bisa direvisi.'
+                ]);
             }
 
             if ($pesanan->workflowStatus?->sample_created) {
-                abort(422, 'Desain tidak bisa direvisi karena sample sudah dibuat');
+                throw ValidationException::withMessages([
+                    'error' => 'Desain tidak bisa direvisi karena sample sudah dibuat.'
+                ]);
             }
 
             $wasApproved = $design->status === 'approved';
@@ -396,7 +403,9 @@ class DesignController extends Controller
         ]);
 
         if ((float) $validated['max_estimate'] < (float) $validated['min_estimate']) {
-            abort(422, 'Estimasi maksimal tidak boleh lebih kecil dari estimasi minimal.');
+            throw ValidationException::withMessages([
+                'max_estimate' => 'Estimasi maksimal tidak boleh lebih kecil dari estimasi minimal.'
+            ]);
         }
 
         $spec = PesananManufacturingSpecs::with('pesanan')->findOrFail($id);
@@ -433,6 +442,18 @@ class DesignController extends Controller
         $validated = $request->validate([
             'is_lock_bom' => ['required', 'boolean'],
         ]);
+
+        if ($validated['is_lock_bom']) {
+            $pesanan->loadMissing('materialSpecs');
+            foreach ($pesanan->materialSpecs as $spec) {
+                if (empty(trim((string) ($spec->unit ?? '')))) {
+                    $matName = $spec->material_name_snapshot ?: 'Bahan';
+                    throw ValidationException::withMessages([
+                        'error' => "Bahan '{$matName}' belum memiliki satuan (unit). Harap lengkapi satuan bahan sebelum mengunci BOM."
+                    ]);
+                }
+            }
+        }
 
         // Langsung gunakan nilai boolean dari request
         $pesanan->workflowStatus()->updateOrCreate(

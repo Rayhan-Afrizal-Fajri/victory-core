@@ -55,7 +55,7 @@ class StoreMaterialRequest extends FormRequest
                 }
             ],
             'category' => ['required', Rule::in(['bahan', 'aksesoris'])],
-            'unit' => ['nullable', 'string', 'max:255'],
+            'unit' => ['required', 'string', 'max:50'],
             'default_color' => ['nullable', 'string', 'max:255'],
             'default_vendor_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'default_harga_ecer' => ['nullable', 'numeric', 'min:0'],

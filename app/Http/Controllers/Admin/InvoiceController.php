@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller
 {
@@ -248,15 +249,21 @@ class InvoiceController extends Controller
             ->exists();
 
         if ($exists) {
-            abort(422, 'Job ticket ini sudah memiliki invoice aktif untuk kategori tersebut.');
+            throw ValidationException::withMessages([
+                'error' => 'Job ticket ini sudah memiliki invoice aktif untuk kategori tersebut.'
+            ]);
         }
 
         if ($validated['kategori_invoice'] === 'sample' && ! $pesanan->workflowStatus?->quotation_approved) {
-            abort(422, 'Invoice sample hanya bisa dibuat setelah quotation approved.');
+            throw ValidationException::withMessages([
+                'error' => 'Invoice sample hanya bisa dibuat setelah quotation approved.'
+            ]);
         }
 
         if ($validated['kategori_invoice'] === 'production' && ! $pesanan->workflowStatus?->sample_approved) {
-            abort(422, 'Invoice production hanya bisa dibuat setelah sample approved.');
+            throw ValidationException::withMessages([
+                'error' => 'Invoice production hanya bisa dibuat setelah sample approved.'
+            ]);
         }
 
         DB::transaction(function () use ($pesanan, $validated, $invoiceService) {
@@ -340,15 +347,21 @@ class InvoiceController extends Controller
             ->exists();
 
         if ($hasVerifiedPayment) {
-            abort('422', 'Invoice tidak dapat diedit karena sudah memiliki payment terverifikasi');
+            throw ValidationException::withMessages([
+                'error' => 'Invoice tidak dapat diedit karena sudah memiliki payment terverifikasi.'
+            ]);
         }
 
         if (in_array($invoice->status_tagihan, ['paid', 'Paid'])) {
-            abort(422, 'Invoice lunas tidak bisa diedit.');
+            throw ValidationException::withMessages([
+                'error' => 'Invoice lunas tidak bisa diedit.'
+            ]);
         }
 
         if (in_array($invoice->status_tagihan, ['cancelled', 'Cancelled'])) {
-            abort(422, 'Invoice yang sudah dibatalkan tidak bisa diedit.');
+            throw ValidationException::withMessages([
+                'error' => 'Invoice yang sudah dibatalkan tidak bisa diedit.'
+            ]);
         }
 
         DB::transaction(function () use ($request, $invoice, $invoiceService){

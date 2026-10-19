@@ -157,6 +157,10 @@ function QuotationSection({
             onSuccess: () => {
                 approveForm.reset();
             },
+            onError: (err) => {
+                const message = (Object.values(err)[0] as string) || 'Gagal menyetujui surat penawaran. Pastikan seluruh data lengkap.';
+                toast.error(message);
+            },
         });
     };
 

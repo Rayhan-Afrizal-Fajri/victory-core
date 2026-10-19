@@ -21,7 +21,9 @@ class QuotationDraftService
                 : $quotation?->jobTicket;
 
             if ($quotation?->job_ticket_id && $jobTicket?->id !== $quotation->job_ticket_id) {
-                abort(422, 'Quotation yang sudah terhubung ke PO tidak dapat dipindahkan ke PO lain.');
+                throw ValidationException::withMessages([
+                    'job_ticket_id' => 'Quotation yang sudah terhubung ke PO tidak dapat dipindahkan ke PO lain.'
+                ]);
             }
 
             $customer = $jobTicket?->customer
@@ -133,7 +135,9 @@ class QuotationDraftService
     public function attach(Quotation $quotation, JobTicket $jobTicket, array $mappings): void
     {
         if ($quotation->status !== 'draft' || $quotation->job_ticket_id) {
-            abort(422, 'Hanya quotation draft yang belum terhubung ke PO yang dapat dipilih.');
+            throw ValidationException::withMessages([
+                'error' => 'Hanya quotation draft yang belum terhubung ke PO yang dapat dipilih.'
+            ]);
         }
 
         $jobTicket->loadMissing('customer', 'companyProfile', 'pesanans');
@@ -144,7 +148,9 @@ class QuotationDraftService
             : mb_strtolower(trim((string) $quotation->customer_company_snapshot)) === mb_strtolower(trim((string) ($jobTicket->customer_perusahaan_snapshot ?: $jobTicket->customer?->nama_perusahaan)));
 
         if (!$sameCustomer) {
-            abort(422, 'Quotation draft hanya dapat dihubungkan ke PO dengan customer yang sama.');
+            throw ValidationException::withMessages([
+                'error' => 'Quotation draft hanya dapat dihubungkan ke PO dengan customer yang sama.'
+            ]);
         }
 
         $orderIds = $jobTicket->pesanans->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -157,13 +163,17 @@ class QuotationDraftService
                 ]);
             }
             if (in_array((int) $mapping['id'], $mappedIds, true)) {
-                abort(422, 'Item quotation tidak boleh dipetakan lebih dari sekali.');
+                throw ValidationException::withMessages([
+                    'items' => 'Item quotation tidak boleh dipetakan lebih dari sekali.'
+                ]);
             }
             $mappedIds[] = (int) $mapping['id'];
         }
 
         if (count($mappedIds) !== count($itemIds)) {
-            abort(422, 'Semua item quotation harus dipetakan ke pesanan pada PO.');
+            throw ValidationException::withMessages([
+                'items' => 'Semua item quotation harus dipetakan ke pesanan pada PO.'
+            ]);
         }
 
         DB::transaction(function () use ($quotation, $jobTicket, $mappings) {

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Services\ProductionRunService;
 use App\Services\InvoiceService;
 use App\Services\PurchasingService;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -45,10 +46,23 @@ class PaymentController extends Controller
     public function store(Request $request, string $invoiceId)
     {
         $invoice = Invoice::findOrFail($invoiceId);
-        // $workflowStatus = $invoice->pesanan->workflowStatus;
+
+        $remainingPayment = (float) $invoice->total_tagihan - $this->getVerifiedTotal($invoice);
+
+        if (in_array($invoice->status_tagihan, ['paid', 'Paid']) || $remainingPayment <= 0) {
+            throw ValidationException::withMessages([
+                'error' => 'Invoice sudah lunas.'
+            ]);
+        }
+
+        if (in_array($invoice->status_tagihan, ['cancelled', 'Cancelled'])) {
+            throw ValidationException::withMessages([
+                'error' => 'Invoice sudah dibatalkan.'
+            ]);
+        }
 
         $minimumPayment = 1;
-        $maximumPayment = $invoice->total_tagihan - $this->getVerifiedTotal($invoice);
+        $maximumPayment = max($remainingPayment, 1);
 
         $request->validate([
             'tgl_bayar' => ['required', 'date'],
@@ -57,15 +71,6 @@ class PaymentController extends Controller
             'bukti_transfer' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
             'catatan_finance' => ['nullable', 'string'],
         ]);
-
-
-        if (in_array($invoice->status_tagihan, ['paid', 'Paid'])) {
-            abort(422, 'Invoice sudah lunas.');
-        }
-
-        if (in_array($invoice->status_tagihan, ['cancelled', 'Cancelled'])) {
-            abort(422, 'Invoice sudah dibatalkan.');
-        }
 
         $path = null;
 
@@ -363,7 +368,9 @@ class PaymentController extends Controller
         ])->findOrFail($paymentId);
 
         if ($payment->status === 'verified') {
-            abort(422, 'Payment sudah diverifikasi sebelumnya.');
+            throw ValidationException::withMessages([
+                'error' => 'Payment sudah diverifikasi sebelumnya.'
+            ]);
         }
 
         DB::transaction(function () use ($payment) {
@@ -433,7 +440,9 @@ class PaymentController extends Controller
         $payment = Payment::with(['invoice.sample.pesanan.workflowStatus', 'invoice.jobTicket'])->findOrFail($paymentId);
 
         if (! in_array($payment->status, ['pending', 'rejected'])) {
-            abort(422, 'Payment yang sudah terverifikasi tidak bisa diedit.');
+            throw ValidationException::withMessages([
+                'error' => 'Payment yang sudah terverifikasi tidak bisa diedit.'
+            ]);
         }
 
         DB::transaction(function () use ($request, $payment, $invoiceService) {
@@ -498,7 +507,9 @@ class PaymentController extends Controller
         $payment = Payment::with(['invoice.sample.pesanan.workflowStatus', 'invoice.jobTicket'])->findOrFail($paymentId);
 
         if (! in_array($payment->status, ['pending', 'rejected'])) {
-            abort(422, 'Payment yang sudah terverifikasi tidak bisa dihapus.');
+            throw ValidationException::withMessages([
+                'error' => 'Payment yang sudah terverifikasi tidak bisa dihapus.'
+            ]);
         }
 
         DB::transaction(function () use ($payment, $invoiceService) {

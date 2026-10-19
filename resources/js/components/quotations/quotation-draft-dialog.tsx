@@ -187,6 +187,9 @@ export default function QuotationDraftDialog({
                 onOpenChange(false);
                 form.reset();
             },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Gagal menyimpan draft quotation.');
+            },
         });
     };
 

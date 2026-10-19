@@ -28,7 +28,7 @@ class UpdateProductMaterialRequest extends FormRequest
             'default_supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'type' => ['required', Rule::in(['bahan', 'aksesoris'])],
             'default_usage' => ['required', 'numeric', 'min:0'],
-            'default_unit' => ['nullable', 'string', 'max:255'],
+            'default_unit' => ['required', 'string', 'max:50'],
             'harga_ecer' => ['nullable', 'integer'],
             'harga_roll' => ['nullable', 'integer'],
             'sort_order' => ['nullable', 'integer'],
