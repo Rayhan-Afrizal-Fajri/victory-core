@@ -123,6 +123,8 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
                 onChange({
                     ...order,
                     product_id: val,
+                    product_is_invalid: false,
+                    product_invalid_reason: null,
                     // Jika artikel dihapus/kosong, matikan toggle sinkronisasi
                     sync_article: val === "" ? false : order.sync_article,
                 });
@@ -132,6 +134,19 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
             isSearchable={true}
             isClearable={true}
           />
+          {order.product_is_invalid && (
+            <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+              <span className="shrink-0 text-amber-600 font-bold">⚠️</span>
+              <div>
+                <p className="font-semibold text-amber-900">
+                  {order.product_invalid_reason || 'Master produk yang tersimpan tidak ditemukan/tidak valid.'}
+                </p>
+                <p className="text-amber-700 mt-0.5">
+                  PO tetap dapat diedit & disimpan. Anda dapat memilih artikel master baru dari daftar, atau mengosongkannya jika tidak diperlukan.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col justify-end gap-2">
@@ -140,13 +155,15 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
               type="checkbox"
               checked={Boolean(order.sync_article)}
               onChange={(event) => updateField('sync_article', event.target.checked)}
-              disabled={isApproved || !order.product_id}
+              disabled={isApproved || !order.product_id || Boolean(order.product_is_invalid)}
               className="size-4 rounded border-slate-300"
             />
             Sinkronkan BOM sekarang
           </label>
           <p className="text-xs text-slate-500">
-            {order.id
+            {order.product_is_invalid
+              ? 'BOM tidak dapat disinkronkan karena artikel master tidak valid atau telah dihapus dari database.'
+              : order.id
               ? 'Jika dipilih, spesifikasi BOM pesanan ini akan diganti dari artikel master.'
               : 'Salin bahan, aksesoris, dan proses dari artikel master saat PO dibuat.'}
           </p>

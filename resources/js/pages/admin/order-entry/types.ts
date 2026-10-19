@@ -7,6 +7,8 @@ export type OrderData = {
   id?: number | null;
   requested_product_name: string;
   product_id?: string | number | null;
+  product_is_invalid?: boolean;
+  product_invalid_reason?: string | null;
   sync_article?: boolean;
   q: number;
   size_breakdowns: Array<{ color: string; size_label: string; fabric_spec: string; qty: number }>;
@@ -42,6 +44,8 @@ export const emptyOrderRow: OrderData = {
   id: null,
   requested_product_name: '',
   product_id: '',
+  product_is_invalid: false,
+  product_invalid_reason: null,
   sync_article: false,
   q: 0,
   size_breakdowns: [{ ...emptySizeRow }],

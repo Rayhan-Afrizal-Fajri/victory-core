@@ -45,7 +45,6 @@ class OrderEntryController extends Controller
             'orders.*.product_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('products', 'id')->where('is_active', true)->where('is_pattern_available', true),
             ],
             'orders.*.sync_article' => ['nullable', 'boolean'],
             
@@ -72,10 +71,56 @@ class OrderEntryController extends Controller
         $seenProductNames = [];
 
         foreach ($validated['orders'] as $index => $order) {
-            if (!empty($order['sync_article']) && empty($order['product_id'])) {
-                throw ValidationException::withMessages([
-                    "orders.{$index}.product_id" => 'Pilih artikel master untuk sinkronisasi BOM.',
-                ]);
+            $productId = !empty($order['product_id']) ? (int) $order['product_id'] : null;
+
+            if (!empty($order['sync_article'])) {
+                if (empty($productId)) {
+                    throw ValidationException::withMessages([
+                        "orders.{$index}.product_id" => 'Pilih artikel master untuk sinkronisasi BOM.',
+                    ]);
+                }
+
+                $product = Product::find($productId);
+                if (!$product) {
+                    throw ValidationException::withMessages([
+                        "orders.{$index}.product_id" => "Artikel master pada pesanan ke-".($index + 1)." tidak ditemukan di database sehingga tidak dapat disinkronkan.",
+                    ]);
+                }
+
+                if (!$product->is_active) {
+                    throw ValidationException::withMessages([
+                        "orders.{$index}.product_id" => "Artikel master '{$product->name}' sedang nonaktif sehingga BOM tidak dapat disinkronkan.",
+                    ]);
+                }
+
+                if (!$product->is_pattern_available) {
+                    throw ValidationException::withMessages([
+                        "orders.{$index}.product_id" => "Artikel master '{$product->name}' belum memiliki pola (pattern) untuk sinkronisasi BOM.",
+                    ]);
+                }
+            } else {
+                // Jika sync_article TIDAK dicentang:
+                // Izinkan product_id kosong atau produk yang valid.
+                // Jika product_id tidak ditemukan di tabel products (orphan/deleted),
+                // tetap izinkan JIKA ini adalah pesanan lama yang memang sudah memiliki product_id tersebut.
+                if ($productId) {
+                    $product = Product::find($productId);
+                    if (!$product) {
+                        $isExistingLegacy = false;
+                        if (!empty($order['id'])) {
+                            $existingPesanan = Pesanan::find($order['id']);
+                            if ($existingPesanan && (int) $existingPesanan->product_id === $productId) {
+                                $isExistingLegacy = true;
+                            }
+                        }
+
+                        if (!$isExistingLegacy) {
+                            throw ValidationException::withMessages([
+                                "orders.{$index}.product_id" => 'Artikel master yang dipilih tidak ditemukan.',
+                            ]);
+                        }
+                    }
+                }
             }
 
             $normalizedProductName = mb_strtolower(trim((string) ($order['requested_product_name'] ?? '')));
@@ -122,9 +167,9 @@ class OrderEntryController extends Controller
         ];
     }
 
-    private function articleOptions(): array
+    private function articleOptions(?JobTicket $jobTicket = null): array
     {
-        return Product::query()
+        $products = Product::query()
             ->where('is_active', true)
             // ->where('is_pattern_available', true)
             ->orderBy('name')
@@ -132,8 +177,31 @@ class OrderEntryController extends Controller
             ->map(fn ($product) => [
                 'id' => $product->id,
                 'name' => $product->name,
-            ])
-            ->all();
+            ]);
+
+        // Jika sedang edit JobTicket, sertakan juga produk lama yang mungkin sudah nonaktif atau terhapus
+        if ($jobTicket) {
+            $existingProductIds = $products->pluck('id')->all();
+
+            foreach ($jobTicket->pesanans as $pesanan) {
+                if ($pesanan->product_id && !in_array((int) $pesanan->product_id, $existingProductIds, true)) {
+                    if ($pesanan->product) {
+                        $products->push([
+                            'id' => $pesanan->product->id,
+                            'name' => "{$pesanan->product->name} (Nonaktif)",
+                        ]);
+                    } else {
+                        $products->push([
+                            'id' => (int) $pesanan->product_id,
+                            'name' => "ID #{$pesanan->product_id} (Master Produk Terhapus / Tidak Ditemukan)",
+                        ]);
+                    }
+                    $existingProductIds[] = (int) $pesanan->product_id;
+                }
+            }
+        }
+
+        return $products->values()->all();
     }
 
     private function applyArticleSelection(Pesanan $pesanan, array $orderData): void
@@ -326,28 +394,45 @@ class OrderEntryController extends Controller
             'type' => $company->company_type,
         ]);
 
-        $mappedOrders = $jobTicket->pesanans->map(fn($pesanan) => [
-            'id' => $pesanan->id,
-            'workflowStatus' => $pesanan->workflowStatus->toArray(),
-            'requested_product_name' => $pesanan->requested_product_name ?: $pesanan->produk,
-            'product_id' => $pesanan->product_id ? (string) $pesanan->product_id : '',
-            'sync_article' => false,
-            'q' => (int) $pesanan->q,
-            'size_breakdowns' => $pesanan->sizeBreakdowns->isEmpty() 
-                ? [['color' => '', 'size_label' => '', 'qty' => 1]] 
-                : $pesanan->sizeBreakdowns->map(fn($row) => [
-                    'color' => $row->color ?? '',
-                    'fabric_spec' => $row->fabric_spec ?? '',
-                    'size_label' => $row->size_label ?? '',
-                    'qty' => (int) $row->qty,
-                ])->values()
-        ]);
+        $mappedOrders = $jobTicket->pesanans->map(function ($pesanan) {
+            $isInvalidProduct = false;
+            $invalidProductReason = null;
+
+            if ($pesanan->product_id) {
+                if (!$pesanan->product) {
+                    $isInvalidProduct = true;
+                    $invalidProductReason = "Master produk (ID #{$pesanan->product_id}) telah dihapus dari database master.";
+                } elseif (!$pesanan->product->is_active) {
+                    $isInvalidProduct = true;
+                    $invalidProductReason = "Master produk '{$pesanan->product->name}' saat ini berstatus nonaktif.";
+                }
+            }
+
+            return [
+                'id' => $pesanan->id,
+                'workflowStatus' => $pesanan->workflowStatus?->toArray() ?? [],
+                'requested_product_name' => $pesanan->requested_product_name ?: $pesanan->produk,
+                'product_id' => $pesanan->product_id ? (string) $pesanan->product_id : '',
+                'product_is_invalid' => $isInvalidProduct,
+                'product_invalid_reason' => $invalidProductReason,
+                'sync_article' => false,
+                'q' => (int) $pesanan->q,
+                'size_breakdowns' => $pesanan->sizeBreakdowns->isEmpty() 
+                    ? [['color' => '', 'size_label' => '', 'qty' => 1]] 
+                    : $pesanan->sizeBreakdowns->map(fn($row) => [
+                        'color' => $row->color ?? '',
+                        'fabric_spec' => $row->fabric_spec ?? '',
+                        'size_label' => $row->size_label ?? '',
+                        'qty' => (int) $row->qty,
+                    ])->values()
+            ];
+        });
 
         return Inertia::render('admin/order-entry/Index', [
             'nextJobTicket' => null,
             'customers' => $customers,
             'companyProfiles' => $companyProfiles,
-            'products' => $this->articleOptions(),
+            'products' => $this->articleOptions($jobTicket),
             'defaultSizeBreakdowns' => $this->defaultSizeBreakdownOptions(),
             'editingJobTicket' => [
                 'id' => $jobTicket->id,
