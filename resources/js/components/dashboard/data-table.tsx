@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { multiTokenMatch, getNestedValue } from '@/lib/search';
 
 export interface DataTableColumn<T> {
   header: string;
@@ -17,7 +18,7 @@ interface DataTableProps<T> {
   description?: string;
   columns: DataTableColumn<T>[];
   data: T[];
-  searchKeys: Array<keyof T>;
+  searchKeys: Array<keyof T | string>;
   pageSize?: number;
   emptyText?: string;
 }
@@ -35,17 +36,20 @@ export default function DataTable<T extends Record<string, any>>({
   const [page, setPage] = useState(1);
 
   const filteredData = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
+    if (!search.trim() || !searchKeys || searchKeys.length === 0) {
       return data;
     }
 
-    return data.filter((item) =>
-      searchKeys.some((key) =>
-        String(item[key]).toLowerCase().includes(query),
-      ),
-    );
+    return data.filter((item) => {
+      const targets = searchKeys.map((key) => {
+        if (typeof key === 'string' && key.includes('.')) {
+          return getNestedValue(item, key);
+        }
+        return item[key as keyof T];
+      });
+
+      return multiTokenMatch(targets, search);
+    });
   }, [data, search, searchKeys]);
 
   const pageCount = Math.max(1, Math.ceil(filteredData.length / pageSize));

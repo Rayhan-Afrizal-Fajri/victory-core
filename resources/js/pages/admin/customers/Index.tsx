@@ -254,8 +254,8 @@ export default function Index({ customers }: Props) {
             <DataTable
               columns={columns}
               data={filteredCustomers}
-              searchKeys={['name', 'contact', 'detail_address']}
-              searchPlaceholder="Cari customer atau kontak"
+              searchKeys={['name', 'company_name', 'contact', 'detail_address', 'city']}
+              searchPlaceholder="Cari nama customer, company, kontak, kota..."
             />
           </CardContent>
         </Card>

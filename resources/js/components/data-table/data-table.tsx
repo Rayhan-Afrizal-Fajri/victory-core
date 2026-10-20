@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DataTablePagination from './data-table-pagination';
+import { multiTokenMatch, getNestedValue } from '@/lib/search';
 
 // --- TYPES ---
 export interface DataTableColumn<T> {
@@ -18,7 +19,7 @@ export interface DataTableColumn<T> {
 interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
   data: T[];
-  searchKeys?: Array<keyof T>;
+  searchKeys?: Array<keyof T | string>;
   pageSize?: number;
   emptyText?: string;
   searchPlaceholder?: string;
@@ -82,16 +83,18 @@ export default function DataTable<T extends Record<string, any>>({
 
   // 2. Proses Search / Filter
   const filteredData = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query || searchKeys.length === 0) return data;
+    if (!search.trim() || searchKeys.length === 0) return data;
 
-    return data.filter((item) =>
-      searchKeys.some((key) =>
-        String(item[key] ?? '')
-          .toLowerCase()
-          .includes(query),
-      ),
-    );
+    return data.filter((item) => {
+      const targets = searchKeys.map((key) => {
+        if (typeof key === 'string' && key.includes('.')) {
+          return getNestedValue(item, key);
+        }
+        return item[key as keyof T];
+      });
+
+      return multiTokenMatch(targets, search);
+    });
   }, [data, search, searchKeys]);
 
   // 3. Proses Sorting

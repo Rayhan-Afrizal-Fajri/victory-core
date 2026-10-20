@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMemo, useRef, useState, useEffect, FormEvent } from "react";
+import { useMemo, useState } from "react";
 import { CompanyProfile, Customer } from "../types";
 import { useCan } from "@/hooks/use-can";
 import Field from "@/components/sample/field";
@@ -8,28 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "@inertiajs/react";
 import { toast } from "sonner";
 
-// Import komponen form dialog Anda
+// Import komponen form dialog & SearchableSelect universal
 import { FormDialog } from '@/components/crud/form-dialog';
 import { CustomerForm } from '@/components/forms/customer/customer-form';
-import { store as customerStore, update as customerUpdate, destroy as customerDestroy } from '@/routes/customers';
+import { SearchableSelect, SearchableOption } from '@/components/ui/searchable-select';
+import { store as customerStore } from '@/routes/customers';
 
 type Props = {
     form: any;
-    customers: Customer[]
+    customers: Customer[];
     companyProfiles: CompanyProfile[];
     disabled: boolean;
-}
+};
 
 export default function CustomerSelector({ form, customers, companyProfiles, disabled }: Props) {
     const can = useCan();
-
-    const [customerSearch, setCustomerSearch] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    
-    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Form Inertia khusus untuk tambah customer
+    // Form Inertia khusus untuk tambah customer baru
     const customerForm = useForm({
         nama: '',
         jabatan: '',
@@ -42,30 +38,19 @@ export default function CustomerSelector({ form, customers, companyProfiles, dis
         alamat_detail: '',
     });
 
-    // 1. Logika Klik Outside untuk menutup dropdown
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setIsDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    // Transform data customer ke SearchableOption dengan multi-keyword (nama, perusahaan, kontak, dll)
+    const customerOptions = useMemo<SearchableOption[]>(() => {
+        return (customers || []).map((c) => ({
+            value: String(c.id),
+            label: c.name,
+            subLabel: c.company_name || 'Personal',
+            keywords: [c.company_name, c.name, c.contact, (c as any).city, (c as any).province].filter(Boolean) as string[],
+            raw: c,
+        }));
+    }, [customers]);
 
-    const selectedCustomer = useMemo(() => {
-        return customers.find((c) => String(c.id) === String(form.data.customer_id));
-    }, [customers, form.data.customer_id]);
-
-    const filteredCustomers = useMemo(() => {
-        const keyword = customerSearch.toLowerCase().trim();
-        if (!keyword) return customers.slice(0, 20);
-        return customers.filter((c) => c.name.toLowerCase().includes(keyword)).slice(0, 20);
-    }, [customers, customerSearch]);
-
-    // 2. Handler untuk submit customer baru
-    const handleSubmitCustomer = () => {        
-        // Sesuaikan route('customers.store') dengan route name backend Anda
+    // Handler untuk submit customer baru
+    const handleSubmitCustomer = () => {
         customerForm.post(customerStore().url, {
             onSuccess: () => {
                 toast.success('Customer berhasil disimpan.');
@@ -73,8 +58,8 @@ export default function CustomerSelector({ form, customers, companyProfiles, dis
                 customerForm.reset();
             },
             onError: (err) => {
-                toast.error(Object.values(err)[0] as string || 'Gagal menyimpan customer.');
-            }
+                toast.error((Object.values(err)[0] as string) || 'Gagal menyimpan customer.');
+            },
         });
     };
 
@@ -92,63 +77,36 @@ export default function CustomerSelector({ form, customers, companyProfiles, dis
                     value={form.data.deadline}
                     onChange={(e) => form.setData('deadline', e.target.value)}
                     required
+                    disabled={disabled}
                 />
             </div>
 
-            {/* Bagian Dropdown Customer */}
-            <div className="space-y-2" ref={dropdownRef}>
+            {/* Bagian Dropdown Customer dengan Single Source of Truth: SearchableSelect */}
+            <div className="space-y-2">
                 <Label>Customer / Brand *</Label>
-                <div className="relative">
-                    <Input
-                        readOnly={!can('dashboard.admin')}
-                        value={selectedCustomer && !isDropdownOpen ? selectedCustomer.name : customerSearch}
-                        onChange={(e) => { setCustomerSearch(e.target.value); setIsDropdownOpen(true); }}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        placeholder="Cari customer..."
-                        className="w-full"
-                        disabled={disabled}
-                    />
-                    
-                    {isDropdownOpen && (
-                        <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">
-                            {filteredCustomers.length > 0 ? (
-                                filteredCustomers.map((c) => (
-                                    <button
-                                        key={c.id} 
-                                        type="button"
-                                        onClick={() => { 
-                                            form.setData('customer_id', String(c.id)); 
-                                            setCustomerSearch(c.name); 
-                                            setIsDropdownOpen(false); 
-                                        }}
-                                        className="block w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-slate-100"
-                                    >
-                                        {`${c.name} - ${c.company_name}`}
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="px-3 py-2 text-sm text-slate-500 italic">Customer tidak ditemukan</div>
-                            )}
+                <SearchableSelect
+                    options={customerOptions}
+                    value={form.data.customer_id}
+                    onChange={(val) => form.setData('customer_id', val)}
+                    placeholder="Pilih customer / brand..."
+                    searchPlaceholder="Cari nama customer, company, kontak..."
+                    emptyMessage="Customer tidak ditemukan."
+                    disabled={disabled}
+                    readOnly={!can('dashboard.admin')}
+                    actionButton={
+                        can('dashboard.admin')
+                            ? {
+                                  label: '+ Buat Customer Baru',
+                                  onClick: (keyword) => {
+                                      customerForm.setData('nama', keyword);
+                                      setIsDialogOpen(true);
+                                  },
+                              }
+                            : undefined
+                    }
+                />
 
-                            {can('dashboard.admin') && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        // Auto-fill nama dari apa yang sudah diketik user
-                                        customerForm.setData('nama', customerSearch);
-                                        setIsDropdownOpen(false);
-                                        setIsDialogOpen(true);
-                                    }}
-                                    className="w-full px-3 py-2 text-left text-sm font-medium text-blue-600 bg-slate-50 mt-1 border-t border-slate-100 hover:bg-blue-50"
-                                >
-                                    + Buat Customer Baru
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* 3. Modal Add Customer */}
+                {/* Modal Add Customer */}
                 <FormDialog
                     open={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
@@ -163,14 +121,20 @@ export default function CustomerSelector({ form, customers, companyProfiles, dis
                 </FormDialog>
             </div>
 
-            <Field label='Perusahaan *'>
-                <Select value={form.data.company_profile_id || ''} onValueChange={(value) => form.setData('company_profile_id', value)} disabled={disabled}>
+            <Field label="Perusahaan *">
+                <Select
+                    value={form.data.company_profile_id || ''}
+                    onValueChange={(value) => form.setData('company_profile_id', value)}
+                    disabled={disabled}
+                >
                     <SelectTrigger className="h-10 w-full border-slate-200 bg-white shadow-sm">
                         <SelectValue placeholder="Pilih perusahaan" />
                     </SelectTrigger>
                     <SelectContent>
                         {companyProfiles.map((option) => (
-                            <SelectItem key={option.id} value={String(option.id)}>{option.name} - {option.type}</SelectItem>
+                            <SelectItem key={option.id} value={String(option.id)}>
+                                {option.name} - {option.type}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -182,8 +146,9 @@ export default function CustomerSelector({ form, customers, companyProfiles, dis
                     type="text"
                     value={form.data.sales_name}
                     onChange={(e) => form.setData('sales_name', e.target.value)}
+                    disabled={disabled}
                 />
             </div>
         </div>
-    )
+    );
 }

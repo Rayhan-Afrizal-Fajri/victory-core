@@ -711,8 +711,8 @@ export default function Index({
                   <DataTable
                       columns={columns}
                       data={filteredInvoices}
-                      searchKeys={['no_invoice', 'no_invoice']}
-                      searchPlaceholder="Cari invoice / Purchase Order"
+                      searchKeys={['no_invoice', 'jobTicket.no_job_ticket', 'jobTicket.customer.nama', 'jobTicket.customer.nama_perusahaan', 'jobTicket.customer.company']}
+                      searchPlaceholder="Cari invoice, PO, customer, company..."
                   />
               </CardContent>
           </Card>

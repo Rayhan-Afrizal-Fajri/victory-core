@@ -6,6 +6,7 @@ import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArticleOption, OrderData, emptySizeRow } from '../types';
 import Select2 from 'react-select';
+import { createMultiTokenFilterOption } from '@/lib/search';
 
 type OrderItemProps = {
   order: OrderData;
@@ -113,6 +114,7 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
             className="text-sm"
             classNamePrefix="select"
             options={productOptions}
+            filterOption={createMultiTokenFilterOption()}
             value={
                 productOptions?.find(
                     (x) => x.value === String(order.product_id)

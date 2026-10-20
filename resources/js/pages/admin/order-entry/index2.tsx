@@ -12,10 +12,12 @@ import { toast } from 'sonner';
 import { useCan } from '@/hooks/use-can';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Field from '@/components/sample/field';
+import { multiTokenMatch } from '@/lib/search';
 
 type Customer = {
   id: number;
   name: string;
+  company_name?: string;
 };
 
 type CompanyProfile = {
@@ -109,9 +111,10 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
   }, []);
 
   const filteredCustomers = useMemo(() => {
-    const keyword = customerSearch.toLowerCase().trim();
-    if (!keyword) return customers.slice(0, 20);
-    return customers.filter((c) => c.name.toLowerCase().includes(keyword)).slice(0, 20);
+    if (!customerSearch.trim()) return customers.slice(0, 20);
+    return customers
+      .filter((c) => multiTokenMatch([c.name, c.company_name], customerSearch))
+      .slice(0, 20);
   }, [customers, customerSearch]);
 
   const productNamesInUse = useMemo(() => {
@@ -270,7 +273,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
                             onClick={() => { form.setData('customer_id', String(c.id)); setCustomerSearch(c.name); setIsDropdownOpen(false); }}
                             className="block w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-slate-100"
                           >
-                            {c.name}
+                            {c.name}{c.company_name ? ` - ${c.company_name}` : ''}
                           </button>
                         ))}
                         {can('dashboard.admin') && (
