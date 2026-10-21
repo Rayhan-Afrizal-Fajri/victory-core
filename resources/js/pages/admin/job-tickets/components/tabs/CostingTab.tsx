@@ -144,7 +144,7 @@ const CostingTab: React.FC<{ jobTicket: JobTicket }> = ({ jobTicket }) => {
                     />
                 </>
             ): (
-                <WorkflowGate reason="Costing belum tersedia. Sync artikel atau lengkapi material/manufacturing specs terlebih dahulu." />
+                <WorkflowGate reason="Costing belum tersedia. Pastikan artikel telah disinkronkan, spesifikasi material/manufaktur telah diisi, dan BOM telah dikunci di tab Desain terlebih dahulu." />
             )}
             <QuotationManagementSection
                 job={jobTicket as JobTicket}

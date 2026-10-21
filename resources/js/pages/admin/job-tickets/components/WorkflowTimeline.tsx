@@ -17,7 +17,7 @@ const workflowGroups = [
   {
     key: 'costing',
     label: 'Costing',
-    steps: ['design_specs_completed'],
+    steps: ['design_specs_completed', 'price_approved'],
   },
   {
     key: 'quotation',

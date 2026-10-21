@@ -178,6 +178,11 @@ export default function QuotationDraftDialog({
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
+        if (form.data.items.some((item) => Number(item.price_per_pcs || 0) <= 0)) {
+            toast.error('Harga jual setiap item penawaran harus lebih besar dari Rp 0.');
+            return;
+        }
+
         const url = quotation ? `/quotations/${quotation.id}` : '/quotations';
         const action = quotation ? form.patch : form.post;
         action(url, {

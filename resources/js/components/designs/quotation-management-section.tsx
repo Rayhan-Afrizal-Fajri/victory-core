@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
-import { Edit, FilePlus2, Link2, Printer, Trash2, Undo2 } from 'lucide-react';
+import { AlertCircle, Edit, FilePlus2, Link2, Printer, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { DataTable } from '@/components/data-table';
@@ -45,7 +45,33 @@ function QuotationManagementSection({ job, quotations }: Props) {
             tax_percentage: job.company_profile.tax_percentage,
         }] : [];
 
+    const orders = (job.orders || []) as any[];
+    const hasOrders = orders.length > 0;
+    const unLockedBomOrders = orders.filter((order: any) => !order.workflow_status?.design_specs_completed);
+    const unPricedOrders = orders.filter(
+        (order: any) => !order.workflow_status?.price_approved || Number(order.price_per_piece ?? order.harga_jual_per_pcs ?? 0) <= 0
+    );
+    const allBomLocked = hasOrders && unLockedBomOrders.length === 0;
+    const allCostingSet = hasOrders && unPricedOrders.length === 0;
+    const canProceedWithQuotation = allBomLocked && allCostingSet;
+
+    const disabledReasons: string[] = [];
+    if (!allBomLocked) {
+        const names = unLockedBomOrders.map((o) => o.requested_product_name || o.product_name || `Pesanan #${o.id}`).join(', ');
+        disabledReasons.push(`BOM belum dikunci pada tab Desain (${names})`);
+    }
+    if (!allCostingSet) {
+        const names = unPricedOrders.map((o) => o.requested_product_name || o.product_name || `Pesanan #${o.id}`).join(', ');
+        disabledReasons.push(`Harga jual belum ditentukan pada tab Costing (${names})`);
+    }
+    const disabledReasonText = disabledReasons.join(' dan ');
+
     const openAttachDraft = (draft: any) => {
+        if (!canProceedWithQuotation) {
+            toast.error(`Tidak dapat menghubungkan quotation draft: ${disabledReasonText}`);
+            return;
+        }
+
         const mappings = (draft.items || []).map((item: any) => {
             const matchingOrders = (job.orders || []).filter((order: any) =>
                 String(order.requested_product_name || order.product_name || '').trim().toLowerCase()
@@ -98,6 +124,11 @@ function QuotationManagementSection({ job, quotations }: Props) {
     };
 
     const approveQuotation = (quotation: any) => {
+        if (!canProceedWithQuotation) {
+            toast.error(`Quotation tidak dapat disetujui: ${disabledReasonText}`);
+            return;
+        }
+
         router.patch(`/quotations/${quotation.id}/approve`, {
             approved_by_name: job.customer?.name || job.customer?.company || '',
         }, {
@@ -166,7 +197,16 @@ function QuotationManagementSection({ job, quotations }: Props) {
         {
             header: 'Status',
             accessor: 'status',
-            cell: (row) => <Badge className={statusClass[row.status] || statusClass.draft}>{row.status || 'draft'}</Badge>,
+            cell: (row) => (
+                <div className="flex flex-col gap-1 items-start">
+                    <Badge className={statusClass[row.status] || statusClass.draft}>{row.status || 'draft'}</Badge>
+                    {row.status === 'draft' && !canProceedWithQuotation && (
+                        <span className="text-[10px] text-amber-700 font-medium">
+                            Approval dinonaktifkan
+                        </span>
+                    )}
+                </div>
+            ),
         },
         {
             header: 'Aksi',
@@ -184,7 +224,16 @@ function QuotationManagementSection({ job, quotations }: Props) {
                         </Button>
                     )}
                     {row.status === 'draft' && can('quotation.approve') && (
-                        <Button type="button" size="sm" onClick={() => approveQuotation(row)}>Approve</Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            disabled={!canProceedWithQuotation}
+                            title={!canProceedWithQuotation ? `Approval belum dapat dilakukan: ${disabledReasonText}` : 'Approve quotation'}
+                            className={!canProceedWithQuotation ? 'opacity-50 cursor-not-allowed' : ''}
+                            onClick={() => approveQuotation(row)}
+                        >
+                            Approve
+                        </Button>
                     )}
                     {row.status === 'approved' && can('quotation.approve') && (
                         <Button type="button" variant="outline" size="icon" title="Undo approval" onClick={() => undoApproval(row)}>
@@ -204,14 +253,59 @@ function QuotationManagementSection({ job, quotations }: Props) {
     return (
         <>
             <SectionCard title="Surat Penawaran / Quotation">
+                {!canProceedWithQuotation && (
+                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-amber-900 shadow-sm">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="font-semibold text-amber-900">
+                                    {quotations.some((q) => q.status === 'draft')
+                                        ? 'Persetujuan (Approval) & Pembuatan Surat Penawaran Dinonaktifkan'
+                                        : 'Pembuatan Surat Penawaran Dinonaktifkan'}
+                                </p>
+                                <p className="text-xs text-amber-800 leading-relaxed">
+                                    Tombol buat surat penawaran dan persetujuan (approval) dinonaktifkan karena persyaratan workflow berikut belum lengkap:
+                                </p>
+                                <ul className="list-disc list-inside text-xs text-amber-800 space-y-0.5 mt-1 font-medium">
+                                    {!allBomLocked && (
+                                        <li>
+                                            BOM belum dikunci pada tab <strong>Desain</strong> ({unLockedBomOrders.map(o => o.requested_product_name || o.product_name || `Pesanan #${o.id}`).join(', ')})
+                                        </li>
+                                    )}
+                                    {!allCostingSet && (
+                                        <li>
+                                            Harga jual belum ditentukan pada tab <strong>Costing</strong> ({unPricedOrders.map(o => o.requested_product_name || o.product_name || `Pesanan #${o.id}`).join(', ')})
+                                        </li>
+                                    )}
+                                </ul>
+                                <p className="text-[11px] text-amber-700 mt-1 italic">
+                                    Kunci BOM di tab Desain dan tentukan harga jual di tab Costing untuk setiap produk agar proses penawaran dapat dilanjutkan.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div className="mb-4 flex flex-wrap justify-end gap-2">
                     {can('quotation.generate') && (
-                        <Button type="button" onClick={() => setCreateOpen(true)}>
+                        <Button
+                            type="button"
+                            onClick={() => setCreateOpen(true)}
+                            disabled={!canProceedWithQuotation}
+                            title={!canProceedWithQuotation ? `Pembuatan penawaran belum tersedia: ${disabledReasonText}` : undefined}
+                            className={!canProceedWithQuotation ? 'opacity-50 cursor-not-allowed' : ''}
+                        >
                             <FilePlus2 className="mr-2 size-4" /> Buat Quotation
                         </Button>
                     )}
                     {can('quotation.generate') && job.available_draft_quotations?.length > 0 && (
-                        <Button type="button" variant="outline" onClick={() => setAttachOpen(true)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setAttachOpen(true)}
+                            disabled={!canProceedWithQuotation}
+                            title={!canProceedWithQuotation ? `Pilih draft belum tersedia: ${disabledReasonText}` : undefined}
+                            className={!canProceedWithQuotation ? 'opacity-50 cursor-not-allowed' : ''}
+                        >
                             <Link2 className="mr-2 size-4" /> Pilih Quotation Draft
                         </Button>
                     )}

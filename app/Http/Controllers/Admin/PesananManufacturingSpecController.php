@@ -28,6 +28,12 @@ class PesananManufacturingSpecController extends Controller
 
         $this->validateEstimate($validated);
 
+        if ($pesanan->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk menambah spesifikasi manufaktur.'
+            ]);
+        }
+
         DB::transaction(function () use ($pesanan, $validated) {
             $costPerPcs = $this->calculateCostPerPcs($validated);
 
@@ -76,7 +82,13 @@ class PesananManufacturingSpecController extends Controller
 
         $this->validateEstimate($validated);
 
-        $spec->load('pesanan');
+        $spec->load('pesanan.workflowStatus');
+
+        if ($spec->pesanan?->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk mengubah spesifikasi manufaktur.'
+            ]);
+        }
 
         DB::transaction(function () use ($spec, $validated) {
             $costPerPcs = $this->calculateCostPerPcs($validated);
@@ -111,7 +123,13 @@ class PesananManufacturingSpecController extends Controller
 
     public function destroy(PesananManufacturingSpecs $spec)
     {
-        $spec->load('pesanan');
+        $spec->load('pesanan.workflowStatus');
+
+        if ($spec->pesanan?->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk menghapus spesifikasi manufaktur.'
+            ]);
+        }
 
         if ($spec->pesanan?->workflowStatus?->sample_created) {
             throw ValidationException::withMessages([

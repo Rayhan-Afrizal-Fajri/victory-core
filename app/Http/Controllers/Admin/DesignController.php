@@ -299,6 +299,17 @@ class DesignController extends Controller
             'productManufacturingWorks.manufacturingWork',
         ])->findOrFail($validated['product_id']);
 
+        if ($pesanan->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk sinkronisasi artikel.'
+            ]);
+        }
+        if ($pesanan->workflowStatus?->quotation_approved) {
+            throw ValidationException::withMessages([
+                'error' => 'Artikel tidak dapat disinkronkan ulang karena surat penawaran sudah disetujui.'
+            ]);
+        }
+
         DB::transaction(function () use ($pesanan, $product) {
             app(ArticleSyncService::class)->sync($pesanan, $product);
 
@@ -453,6 +464,12 @@ class DesignController extends Controller
                     ]);
                 }
             }
+        } else {
+            if ($pesanan->workflowStatus?->quotation_approved) {
+                throw ValidationException::withMessages([
+                    'error' => 'BOM tidak dapat dibuka kuncinya karena surat penawaran sudah disetujui.'
+                ]);
+            }
         }
 
         // Langsung gunakan nilai boolean dari request
@@ -460,6 +477,7 @@ class DesignController extends Controller
             ['pesanan_id' => $pesanan->id],
             [
                 'design_specs_completed' => $validated['is_lock_bom'],
+                ...(!$validated['is_lock_bom'] ? ['price_approved' => false] : []),
             ]
         );
 
@@ -474,7 +492,7 @@ class DesignController extends Controller
             ));
         }
 
-        $message = "BOM berhasil " . $validated['is_lock_bom'] ? 'dikunci' : 'dibuka';
+        $message = "BOM berhasil " . ($validated['is_lock_bom'] ? 'dikunci' : 'dibuka');
 
         // Pastikan mengembalikan response (misal menggunakan Inertia/redirect)
         return back()->with([
@@ -495,6 +513,18 @@ class DesignController extends Controller
             'manufacturingSpecs',
             'workflowStatus',
         ])->findOrFail($pesananId);
+
+        if (!$pesanan->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => "BOM untuk pesanan '{$pesanan->produk}' belum dikunci. Kunci BOM di tab Desain terlebih dahulu sebelum menentukan harga jual.",
+            ]);
+        }
+
+        if ((float) $validated['harga_jual_per_pcs'] <= 0) {
+            throw ValidationException::withMessages([
+                'harga_jual_per_pcs' => "Harga jual final per pcs harus lebih besar dari Rp 0.",
+            ]);
+        }
 
         DB::transaction(function () use ($pesanan, $validated) {
             $pesanan->update([

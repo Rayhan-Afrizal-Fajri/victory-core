@@ -73,8 +73,8 @@ export const WorkflowTabs: React.FC<{
 
             case 'costing & quotation':
                 if (ws.design_specs_completed && !ws.price_approved && can(['costings.input_price'])) count++;
-                if (ws.price_approved && !ws.quotation_created && can(['quotation.generate'])) count++;
-                if (ws.quotation_created && !ws.quotation_approved && can(['quotation.approve'])) count++;
+                if (ws.design_specs_completed && ws.price_approved && !ws.quotation_created && can(['quotation.generate'])) count++;
+                if (ws.design_specs_completed && ws.price_approved && ws.quotation_created && !ws.quotation_approved && can(['quotation.approve'])) count++;
                 break;
 
             case 'invoices':

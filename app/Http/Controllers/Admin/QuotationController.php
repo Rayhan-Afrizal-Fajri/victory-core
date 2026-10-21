@@ -63,11 +63,21 @@ class QuotationController extends Controller
             ->all();
 
         $eligibleJobTickets = JobTicket::query()
-            ->with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.materialSpecs', 'pesanans.manufacturingSpecs'])
+            ->with(['customer', 'pesanans.sizeBreakdowns', 'pesanans.materialSpecs', 'pesanans.manufacturingSpecs', 'pesanans.workflowStatus'])
             ->whereNotIn('status', ['Quotation', 'Quote'])
             ->whereDoesntHave('quotations', fn ($query) => $query->whereIn('status', ['draft', 'sent', 'approved']))
             ->latest()
             ->get()
+            ->filter(function ($jobTicket) {
+                if ($jobTicket->pesanans->isEmpty()) {
+                    return false;
+                }
+                return $jobTicket->pesanans->every(function ($pesanan) {
+                    return (bool) $pesanan->workflowStatus?->design_specs_completed
+                        && (bool) $pesanan->workflowStatus?->price_approved
+                        && (float) ($pesanan->harga_jual_per_pcs ?? 0) > 0;
+                });
+            })
             ->map(fn ($jobTicket) => $this->mapJobTicketSource($jobTicket))
             ->values()
             ->all();
@@ -222,6 +232,20 @@ class QuotationController extends Controller
             throw ValidationException::withMessages([
                 'error' => 'Tidak ada pesanan dalam Job Ticket ini.'
             ]);
+        }
+
+        foreach ($pesanans as $pesanan) {
+            $namaProduk = $pesanan->requested_product_name ?: $pesanan->produk ?: 'Pesanan';
+            if (!$pesanan->workflowStatus?->design_specs_completed) {
+                throw ValidationException::withMessages([
+                    'error' => "BOM untuk produk '{$namaProduk}' belum dikunci. Kunci BOM di tab Desain terlebih dahulu."
+                ]);
+            }
+            if (!$pesanan->workflowStatus?->price_approved || (float) ($pesanan->harga_jual_per_pcs ?? $pesanan->price_per_piece ?? 0) <= 0) {
+                throw ValidationException::withMessages([
+                    'error' => "Harga jual untuk produk '{$namaProduk}' belum ditentukan. Tentukan harga jual di tab Costing terlebih dahulu."
+                ]);
+            }
         }
 
         $subtotal = 0;
@@ -406,6 +430,21 @@ class QuotationController extends Controller
             throw ValidationException::withMessages([
                 'error' => 'Quotation sudah disetujui.'
             ]);
+        }
+
+        // Pre-validation: Pastikan semua pesanan telah mengunci BOM dan menentukan harga jual
+        foreach ($quotation->jobTicket->pesanans as $order) {
+            $prodName = $order->requested_product_name ?: ($order->produk ?: 'Pesanan');
+            if (!$order->workflowStatus?->design_specs_completed) {
+                throw ValidationException::withMessages([
+                    'error' => "Quotation tidak dapat disetujui karena BOM untuk produk '{$prodName}' belum dikunci. Kunci BOM di tab Desain terlebih dahulu."
+                ]);
+            }
+            if (!$order->workflowStatus?->price_approved || (float) ($order->harga_jual_per_pcs ?? 0) <= 0) {
+                throw ValidationException::withMessages([
+                    'error' => "Quotation tidak dapat disetujui karena harga jual untuk produk '{$prodName}' belum ditentukan. Tentukan harga jual di tab Costing terlebih dahulu."
+                ]);
+            }
         }
 
         // Pre-validation: Pastikan semua bahan pada pesanan memiliki satuan (unit) valid

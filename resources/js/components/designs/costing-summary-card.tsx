@@ -88,14 +88,14 @@ function CostingSummaryCard({
                         <button
                             key={marginValue}
                             type="button"
-                            disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
+                            disabled={form.processing || !can('costings.input_price') || Boolean(activeOrder?.workflow_status?.quotation_approved)}
                             onClick={() =>
                                 form.setData(
                                     'harga_jual_per_pcs',
                                     Math.ceil(recommendations[marginValue as keyof typeof recommendations] || 0)
                                 )
                             }
-                            className={`rounded-xl border p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 ${form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`rounded-xl border p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 ${form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_approved ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <p className="text-xs text-slate-500">
                                 Margin {marginValue}%
@@ -125,7 +125,7 @@ function CostingSummaryCard({
                         </label>
                         <FormattedNumberInput
                             value={form.data.harga_jual_per_pcs}
-                            disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created}
+                            disabled={form.processing || !can('costings.input_price') || Boolean(activeOrder?.workflow_status?.quotation_approved)}
                             onValueChange={(value) => form.setData('harga_jual_per_pcs', value)}
                             placeholder='cth: 35.000'
                         />
@@ -162,7 +162,7 @@ function CostingSummaryCard({
                 <div className="flex justify-end border-t pt-4">
                     <Button 
                         type="submit" 
-                        disabled={form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_created || form.data.harga_jual_per_pcs === 0}
+                        disabled={form.processing || !can('costings.input_price') || Boolean(activeOrder?.workflow_status?.quotation_approved) || !form.data.harga_jual_per_pcs || form.data.harga_jual_per_pcs <= 0}
                     >
                         Simpan Harga Jual Final
                     </Button>

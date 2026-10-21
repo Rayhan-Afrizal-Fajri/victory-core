@@ -46,6 +46,21 @@ class QuotationDraftService
             }
 
             if ($jobTicket) {
+                $jobTicket->loadMissing('pesanans.workflowStatus');
+                foreach ($jobTicket->pesanans as $pesanan) {
+                    $prodName = $pesanan->requested_product_name ?: ($pesanan->produk ?: 'Pesanan');
+                    if (!$pesanan->workflowStatus?->design_specs_completed) {
+                        throw ValidationException::withMessages([
+                            'job_ticket_id' => "BOM untuk produk '{$prodName}' pada PO ini belum dikunci. Kunci BOM di tab Desain terlebih dahulu.",
+                        ]);
+                    }
+                    if (!$pesanan->workflowStatus?->price_approved || (float) ($pesanan->harga_jual_per_pcs ?? 0) <= 0) {
+                        throw ValidationException::withMessages([
+                            'job_ticket_id' => "Harga jual untuk produk '{$prodName}' pada PO ini belum ditentukan. Tentukan harga jual di tab Costing terlebih dahulu.",
+                        ]);
+                    }
+                }
+
                 $orderIds = $jobTicket->pesanans->pluck('id')->map(fn ($id) => (int) $id)->all();
                 foreach ($data['items'] as $index => $item) {
                     if (empty($item['pesanan_id']) || !in_array((int) $item['pesanan_id'], $orderIds, true)) {
@@ -140,8 +155,22 @@ class QuotationDraftService
             ]);
         }
 
-        $jobTicket->loadMissing('customer', 'companyProfile', 'pesanans');
+        $jobTicket->loadMissing('customer', 'companyProfile', 'pesanans.workflowStatus');
         $quotation->loadMissing('customer', 'items');
+
+        foreach ($jobTicket->pesanans as $pesanan) {
+            $prodName = $pesanan->requested_product_name ?: ($pesanan->produk ?: 'Pesanan');
+            if (!$pesanan->workflowStatus?->design_specs_completed) {
+                throw ValidationException::withMessages([
+                    'error' => "BOM untuk produk '{$prodName}' pada PO ini belum dikunci. Kunci BOM di tab Desain terlebih dahulu sebelum menghubungkan draft penawaran.",
+                ]);
+            }
+            if (!$pesanan->workflowStatus?->price_approved || (float) ($pesanan->harga_jual_per_pcs ?? 0) <= 0) {
+                throw ValidationException::withMessages([
+                    'error' => "Harga jual untuk produk '{$prodName}' pada PO ini belum ditentukan. Tentukan harga jual di tab Costing terlebih dahulu sebelum menghubungkan draft penawaran.",
+                ]);
+            }
+        }
 
         $sameCustomer = $quotation->customer_id && $jobTicket->customer_id
             ? (int) $quotation->customer_id === (int) $jobTicket->customer_id

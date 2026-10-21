@@ -462,6 +462,19 @@ export default function Index({ quotations, customers, companyProfiles, eligible
                       </p>
                     </div>
                   </div>
+                  {selectedQuotation.status?.toLowerCase() === 'draft' && (
+                    <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+                      {selectedQuotation.job_ticket_id ? (
+                        <span>
+                          Quotation draft terhubung ke PO #{selectedQuotation.job_ticket_id}. Persetujuan (approval) dilakukan pada detail Job Ticket setelah BOM dikunci dan harga jual ditentukan.
+                        </span>
+                      ) : (
+                        <span>
+                          Quotation draft mandiri (belum terhubung ke PO). Hubungkan ke Job Ticket melalui menu PO untuk memproses persetujuan dan produksi.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

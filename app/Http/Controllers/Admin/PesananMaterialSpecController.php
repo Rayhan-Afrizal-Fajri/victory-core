@@ -41,6 +41,12 @@ class PesananMaterialSpecController extends Controller
 
         $this->validateRoll($validated);
 
+        if ($pesanan->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk menambah spesifikasi material.'
+            ]);
+        }
+
         DB::transaction(function () use ($pesanan, $validated) {
             $calculated = $this->calculateCost($pesanan, $validated);
 
@@ -106,8 +112,14 @@ class PesananMaterialSpecController extends Controller
 
         $this->validateRoll($validated);
 
-        $spec->load('pesanan');
+        $spec->load('pesanan.workflowStatus');
         $pesanan = $spec->pesanan;
+
+        if ($pesanan->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk mengubah spesifikasi material.'
+            ]);
+        }
 
         DB::transaction(function () use ($spec, $pesanan, $validated) {
             $calculated = $this->calculateCost($pesanan, $validated);
@@ -145,7 +157,13 @@ class PesananMaterialSpecController extends Controller
 
     public function destroy(PesananMaterialSpecs $spec)
     {
-        $spec->load('pesanan');
+        $spec->load('pesanan.workflowStatus');
+
+        if ($spec->pesanan?->workflowStatus?->design_specs_completed) {
+            throw ValidationException::withMessages([
+                'error' => 'BOM sudah dikunci. Buka kunci BOM terlebih dahulu untuk menghapus spesifikasi material.'
+            ]);
+        }
 
         if ($spec->pesanan?->workflowStatus?->sample_created) {
             throw ValidationException::withMessages([
