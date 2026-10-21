@@ -31,7 +31,6 @@ interface Props {
 
 export default function Index({ users, roles, permissions }: Props) {
     const can = useCan();
-    const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('users');
 
     // State untuk Modal User
@@ -95,7 +94,6 @@ export default function Index({ users, roles, permissions }: Props) {
                 <TabsContent value="users" className="m-0">
                     <UsersTab 
                         users={users} 
-                        search={search}
                         openEdit={openEditUser}
                         onDelete={handleDeleteUser}
                     />
@@ -105,7 +103,6 @@ export default function Index({ users, roles, permissions }: Props) {
                     <RolesTab 
                         role={roles}
                         permissions={permissions}
-                        search={search}
                         isOwner={false} // Sesuaikan logika IsOwner jika ada
                         openEdit={openEditRole}
                         onDelete={handleDeleteRole}

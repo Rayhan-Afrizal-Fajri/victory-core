@@ -10,7 +10,7 @@ import type { DataTableColumn } from "@/components/data-table"
 interface Props {
     role: RoleData[]
     permissions: Permission[]
-    search: string
+    search?: string
     isOwner: boolean
     openEdit: (role: RoleData) => void
     onDelete: (role: RoleData) => void
@@ -21,7 +21,7 @@ interface Props {
 export default function RolesTab({
     role,
     permissions,
-    search,
+    search = '',
     isOwner,
     openEdit,
     onDelete,
@@ -99,16 +99,19 @@ export default function RolesTab({
         },
     ];
 
-    const filteredRole = role.filter(u => 
-        u.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const displayRole = search.trim()
+        ? role.filter(u => 
+            u.name.toLowerCase().includes(search.toLowerCase())
+          )
+        : role;
 
     return (
         <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <DataTable
                 columns={columns}
-                data={filteredRole}
+                data={displayRole}
                 searchKeys={['name']}
+                searchPlaceholder="Cari nama role..."
             />
         </div>
     )

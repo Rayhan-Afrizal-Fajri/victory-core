@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { GripVertical, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { GripVertical, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,7 +25,7 @@ interface DataTableProps<T> {
   searchPlaceholder?: string;
   enableReorder?: boolean;
   onReorder?: (newOrderedData: T[]) => void;
-  storageKey?: string; // Kunci unik untuk menyimpan state di sessionStorage
+  storageKey?: string; // Kunci unik jika ingin menyimpan state tertentu (opsional)
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -37,45 +37,66 @@ export default function DataTable<T extends Record<string, any>>({
   searchPlaceholder,
   enableReorder = false,
   onReorder,
-  storageKey = 'datatable_state',
+  storageKey,
 }: DataTableProps<T>) {
-  // 1. Inisialisasi state dengan membaca sessionStorage agar posisi halaman/search tidak hilang saat refresh
-  const [search, setSearch] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return sessionStorage.getItem(`${storageKey}_search`) || '';
-  });
+  // Bersihkan legacy shared storageKey ('datatable_state_*') agar tidak ada sisa pencarian lama dari sesi sebelumnya
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('datatable_state_search');
+        sessionStorage.removeItem('datatable_state_page');
+        sessionStorage.removeItem('datatable_state_sort');
+      } catch (e) {
+        // Abaikan jika sessionStorage dinonaktifkan di browser
+      }
+    }
+  }, []);
 
+  // 1. Inisialisasi search state secara lokal (tidak menggunakan sessionStorage global agar tidak terbawa ke menu/halaman lain)
+  const [search, setSearch] = useState('');
+
+  // 2. Pagination state (hanya menggunakan sessionStorage jika storageKey eksplisit diberikan)
   const [page, setPage] = useState<number>(() => {
-    if (typeof window === 'undefined') return 1;
-    const savedPage = sessionStorage.getItem(`${storageKey}_page`);
-    return savedPage ? Number(savedPage) : 1;
+    if (!storageKey || typeof window === 'undefined') return 1;
+    try {
+      const savedPage = sessionStorage.getItem(`${storageKey}_page`);
+      return savedPage ? Number(savedPage) : 1;
+    } catch {
+      return 1;
+    }
   });
 
-  // --- State untuk Sorting ---
+  // 3. State untuk Sorting (hanya menggunakan sessionStorage jika storageKey eksplisit diberikan)
   const [sortConfig, setSortConfig] = useState<{
     key: keyof T | string;
     direction: 'asc' | 'desc';
   } | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const savedSort = sessionStorage.getItem(`${storageKey}_sort`);
-    return savedSort ? JSON.parse(savedSort) : null;
+    if (!storageKey || typeof window === 'undefined') return null;
+    try {
+      const savedSort = sessionStorage.getItem(`${storageKey}_sort`);
+      return savedSort ? JSON.parse(savedSort) : null;
+    } catch {
+      return null;
+    }
   });
 
-  // Simpan perubahan page & search ke sessionStorage supaya survive saat refresh/Inertia reload
+  // Simpan perubahan page & sort ke sessionStorage HANYA jika storageKey eksplisit disediakan
   useEffect(() => {
-    sessionStorage.setItem(`${storageKey}_search`, search);
-  }, [search, storageKey]);
-
-  useEffect(() => {
-    sessionStorage.setItem(`${storageKey}_page`, page.toString());
+    if (!storageKey || typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(`${storageKey}_page`, page.toString());
+    } catch (e) {}
   }, [page, storageKey]);
 
   useEffect(() => {
-    if (sortConfig) {
-      sessionStorage.setItem(`${storageKey}_sort`, JSON.stringify(sortConfig));
-    } else {
-      sessionStorage.removeItem(`${storageKey}_sort`);
-    }
+    if (!storageKey || typeof window === 'undefined') return;
+    try {
+      if (sortConfig) {
+        sessionStorage.setItem(`${storageKey}_sort`, JSON.stringify(sortConfig));
+      } else {
+        sessionStorage.removeItem(`${storageKey}_sort`);
+      }
+    } catch (e) {}
   }, [sortConfig, storageKey]);
 
   const dragItem = useRef<number | null>(null);
@@ -175,15 +196,31 @@ export default function DataTable<T extends Record<string, any>>({
     <div className="overflow-hidden rounded-sm border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
       {/* Toolbar / Search */}
       <div className="border-b border-slate-200 p-4 dark:border-slate-700 flex items-center justify-between gap-4">
-        <Input
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1); // Reset ke page 1 saat mengetik pencarian baru
-          }}
-          placeholder={searchPlaceholder || 'Search...'}
-          className="h-9 max-w-sm"
-        />
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1); // Reset ke page 1 saat mengetik pencarian baru
+            }}
+            placeholder={searchPlaceholder || 'Search...'}
+            className="h-9 pl-9 pr-8 w-full"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('');
+                setPage(1);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 rounded cursor-pointer"
+              title="Reset pencarian"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabel */}

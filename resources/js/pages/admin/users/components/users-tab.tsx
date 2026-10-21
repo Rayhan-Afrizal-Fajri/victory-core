@@ -8,12 +8,12 @@ import type { UserData } from "../types" // Sesuaikan path
 
 interface Props {
     users: UserData[]
-    search: string
+    search?: string
     openEdit: (user: UserData) => void
     onDelete: (user: UserData) => void
 }
 
-export default function UsersTab({ users, search, openEdit, onDelete }: Props) {
+export default function UsersTab({ users, search = '', openEdit, onDelete }: Props) {
     
     // Handler Switch Status
     const handleToggleStatus = (user: UserData, checked: boolean) => {
@@ -79,18 +79,20 @@ export default function UsersTab({ users, search, openEdit, onDelete }: Props) {
         },
     ];
 
-    // Menerapkan fitur pencarian (search)
-    const filteredUsers = users.filter(u => 
-        u.name.toLowerCase().includes(search.toLowerCase()) || 
-        u.email.toLowerCase().includes(search.toLowerCase())
-    );
+    const displayUsers = search.trim()
+        ? users.filter(u => 
+            u.name.toLowerCase().includes(search.toLowerCase()) || 
+            u.email.toLowerCase().includes(search.toLowerCase())
+          )
+        : users;
 
     return (
         <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <DataTable
                 columns={columns}
-                data={filteredUsers}
+                data={displayUsers}
                 searchKeys={['name', 'email']}
+                searchPlaceholder="Cari nama atau email pengguna..."
             />
         </div>
     )
