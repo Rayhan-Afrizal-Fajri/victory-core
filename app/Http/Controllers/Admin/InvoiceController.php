@@ -559,11 +559,7 @@ class InvoiceController extends Controller
                 : $fullTax);
 
         $fullSubtotal = (float) ($approvedQuotation?->subtotal ?? max(0, (float) $invoice->total_tagihan - $fullTax - (float) $invoice->delivery_cost));
-        $documentSubtotal = $documentType === 'dp'
-            ? round($fullSubtotal * ($dpPercentage / 100), 2)
-            : ($documentType === 'settlement'
-                ? round($fullSubtotal * ((100 - $dpPercentage) / 100), 2)
-                : $fullSubtotal);
+        $documentSubtotal = $fullSubtotal;
 
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
@@ -573,6 +569,7 @@ class InvoiceController extends Controller
             'taxPercentage' => $taxPercentage,
             'documentTax' => $documentTax,
             'documentSubtotal' => $documentSubtotal,
+            'fullSubtotal' => $fullSubtotal,
             'items' => $invoice->items,
             'customer' => $invoice->jobTicket->customer,
             'payments' => $invoice->payments,

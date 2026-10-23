@@ -377,7 +377,7 @@
                 <table class="summary-table">
                     <tr>
                         <td class="summary-label text-right">{{ $documentTitle ? 'Nilai Produksi' : 'Subtotal' }}</td>
-                        <td class="text-right font-bold">Rp {{ number_format($documentSubtotal ?? $grandSubtotal, 0, ',', '.') }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($grandSubtotal > 0 ? $grandSubtotal : ($fullSubtotal ?? $documentSubtotal ?? 0), 0, ',', '.') }}</td>
                     </tr>
                     @if(!empty($isPkp) && $isPkp && ($documentTax ?? 0) > 0)
                         <tr>
