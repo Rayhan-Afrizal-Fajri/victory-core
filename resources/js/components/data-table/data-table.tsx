@@ -193,11 +193,11 @@ export default function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="overflow-hidden rounded-sm border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
       {/* Toolbar / Search */}
-      <div className="border-b border-slate-200 p-4 dark:border-slate-700 flex items-center justify-between gap-4">
+      <div className="border-b border-border/60 p-4 bg-card/50 flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <Input
             value={search}
             onChange={(event) => {
@@ -214,7 +214,7 @@ export default function DataTable<T extends Record<string, any>>({
                 setSearch('');
                 setPage(1);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 rounded cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded cursor-pointer"
               title="Reset pencarian"
             >
               <X className="size-4" />
@@ -226,7 +226,7 @@ export default function DataTable<T extends Record<string, any>>({
       {/* Tabel */}
       <div className="overflow-x-auto">
         <table className="min-w-full table-fixed text-sm">
-          <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-500">
+          <thead className="bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
             <tr>
               {enableReorder && <th className="w-10 px-4 py-3"></th>}
               {columns.map((column) => {
@@ -240,17 +240,17 @@ export default function DataTable<T extends Record<string, any>>({
                       <button
                         type="button"
                         onClick={() => requestSort(column.accessor!)}
-                        className="flex items-center gap-1.5 uppercase tracking-wide hover:text-slate-800 focus:outline-none text-inherit font-inherit"
+                        className="flex items-center gap-1.5 uppercase tracking-wide hover:text-foreground focus:outline-none text-inherit font-inherit cursor-pointer"
                       >
                         {column.header}
                         {sortConfig?.key === column.accessor ? (
                           sortConfig?.direction === 'asc' ? (
-                            <ArrowUp className="size-3.5" />
+                            <ArrowUp className="size-3.5 text-primary" />
                           ) : (
-                            <ArrowDown className="size-3.5" />
+                            <ArrowDown className="size-3.5 text-primary" />
                           )
                         ) : (
-                          <ArrowUpDown className="size-3.5 text-slate-300" />
+                          <ArrowUpDown className="size-3.5 text-muted-foreground/60" />
                         )}
                       </button>
                     ) : (
@@ -267,7 +267,7 @@ export default function DataTable<T extends Record<string, any>>({
               <tr>
                 <td
                   colSpan={enableReorder ? columns.length + 1 : columns.length}
-                  className="px-6 py-10 text-center text-sm text-slate-500"
+                  className="px-6 py-10 text-center text-sm text-muted-foreground"
                 >
                   {emptyText}
                 </td>
@@ -277,8 +277,8 @@ export default function DataTable<T extends Record<string, any>>({
                 <tr
                   key={rowIndex}
                   className={cn(
-                    "border-t border-slate-200 bg-white",
-                    enableReorder && "cursor-grab active:cursor-grabbing hover:bg-slate-50 transition-colors"
+                    "border-t border-border/60 bg-card hover:bg-muted/30 transition-colors",
+                    enableReorder && "cursor-grab active:cursor-grabbing"
                   )}
                   draggable={enableReorder}
                   onDragStart={() => { if (enableReorder) dragItem.current = rowIndex; }}

@@ -1,4 +1,4 @@
-import type {ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import ProgressBar from '@/components/dashboard/progress-bar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -24,23 +24,23 @@ export default function StatusDistribution({
   extra,
 }: StatusDistributionProps) {
   return (
-    <Card className="rounded-md w-full xl:w-3/5">
-      <CardHeader className="gap-3 px-6">
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs w-full xl:w-3/5">
+      <CardHeader className="gap-2 px-6 pt-6 pb-2">
         <div>
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
+          <CardTitle className="text-base font-bold text-foreground sm:text-lg">{title}</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">{description}</CardDescription>
         </div>
         {extra}
       </CardHeader>
-      <CardContent className="space-y-4 px-6 pb-6">
+      <CardContent className="space-y-4 px-6 pb-6 pt-2">
         {items.map((item) => (
           <div key={item.label} className="space-y-2">
             <div className="flex items-center gap-3">
               <span
                 className={`inline-flex h-2.5 w-2.5 rounded-full ${item.colorClass}`}
               />
-              <span className="text-sm font-medium text-slate-700">{item.label}</span>
-              <span className="ml-auto text-sm font-semibold text-slate-900">{item.count}</span>
+              <span className="text-sm font-medium text-foreground/80">{item.label}</span>
+              <span className="ml-auto text-sm font-bold text-foreground">{item.count}</span>
             </div>
             <ProgressBar value={item.progress} />
           </div>

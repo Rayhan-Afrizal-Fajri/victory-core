@@ -20,12 +20,12 @@ export default function ProgressBar({
     <div className="flex items-center gap-3">
       <div
         className={cn(
-          'h-2.5 w-full overflow-hidden rounded-full bg-slate-100',
+          'h-2 w-full overflow-hidden rounded-full bg-muted/80',
           className,
         )}
       >
         <div
-          className="h-full rounded-full bg-linear-to-r from-sky-500 to-cyan-500 transition-all duration-300"
+          className="h-full rounded-full bg-linear-to-r from-primary to-sky-400 transition-all duration-500 ease-out"
           style={{
             width: `${safeValue}%`,
           }}
@@ -33,7 +33,7 @@ export default function ProgressBar({
       </div>
 
       {showPercentage && (
-        <span className="text-xs font-semibold whitespace-nowrap text-slate-700">
+        <span className="text-xs font-semibold whitespace-nowrap text-muted-foreground">
           {safeValue}%
         </span>
       )}

@@ -2,16 +2,15 @@ import React from 'react';
 
 // Small presentational box used across the Design tab to display a label/value pair.
 function InfoBox({ label, value }: { label: string; value: React.ReactNode }) {
-    // Container with a subtle border and white background to separate info blocks.
     return (
-        <div className="rounded-xl border bg-white p-4 dark:border-slate-700 dark:bg-slate-950">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 text-card-foreground shadow-xs transition-colors">
             {/* Label shown in small uppercase text */}
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {label}
             </p>
 
             {/* Value shown prominently */}
-            <p className="mt-1 font-semibold text-slate-900 dark:text-white">{value}</p>
+            <p className="mt-1 font-bold text-foreground">{value}</p>
         </div>
     );
 }

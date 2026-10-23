@@ -1,22 +1,22 @@
 @import 'tailwindcss';
-
-
 @import 'tw-animate-css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
-@custom-variant dark (&:is(.dark *));
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
     --font-sans:
+        -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+    --radius-xl: var(--radius);
+    --radius-lg: calc(var(--radius) - 2px);
+    --radius-md: calc(var(--radius) - 4px);
+    --radius-sm: calc(var(--radius) - 6px);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -62,276 +62,466 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ==========================================================================
+   iOS DESIGN SYSTEM TOKENS - LIGHT & DARK MODE
+   Apple Human Interface Guidelines (HIG) Compliant
+   ========================================================================== */
+
 :root {
-    --background: oklch(0.985 0.002 247);
-    --foreground: oklch(0.19 0.03 258);
+    /* iOS System Grouped Background (#F2F2F7): subtle neutral warmth */
+    --background: oklch(0.972 0.003 260);
+    /* iOS Primary Label (#1C1C1E): high-contrast, readable ink */
+    --foreground: oklch(0.18 0.02 260);
 
+    /* iOS Secondary System Grouped Background: Pure white cards (#FFFFFF) */
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.19 0.03 258);
+    --card-foreground: oklch(0.18 0.02 260);
 
+    /* iOS Popovers & Sheets: Pure white */
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.19 0.03 258);
+    --popover-foreground: oklch(0.18 0.02 260);
 
-    /* MAIN BRAND BLUE */
-    --primary: oklch(0.47 0.23 264);
-    --primary-foreground: oklch(0.99 0 0);
+    /* Apple Dynamic Blue (#007AFF): Brand anchor */
+    --primary: oklch(0.53 0.22 260);
+    --primary-foreground: oklch(1 0 0);
 
-    /* LIGHT PANELS */
-    --secondary: oklch(0.96 0.004 248);
-    --secondary-foreground: oklch(0.25 0.02 255);
+    /* iOS Secondary System Fill (#E5E5EA): Subdued controls & pills */
+    --secondary: oklch(0.945 0.005 260);
+    --secondary-foreground: oklch(0.22 0.02 260);
 
-    /* MUTED AREA */
-    --muted: oklch(0.965 0.004 248);
-    --muted-foreground: oklch(0.56 0.02 257);
+    /* iOS Tertiary System Fill (#F2F2F7): Inset wells, code blocks */
+    --muted: oklch(0.945 0.005 260);
+    --muted-foreground: oklch(0.52 0.02 260); /* #6C6C70 */
 
-    /* HOVER */
-    --accent: oklch(0.94 0.015 252);
-    --accent-foreground: oklch(0.22 0.03 258);
+    /* iOS Hover Surface (#E8E8ED) */
+    --accent: oklch(0.93 0.01 260);
+    --accent-foreground: oklch(0.18 0.02 260);
 
-    /* ERROR */
-    --destructive: oklch(0.63 0.22 25);
-    --destructive-foreground: oklch(0.99 0 0);
+    /* iOS System Red (#FF3B30) */
+    --destructive: oklch(0.62 0.22 25);
+    --destructive-foreground: oklch(1 0 0);
 
-    /* BORDER */
-    --border: oklch(0.91 0.01 255);
-    --input: oklch(0.91 0.01 255);
+    /* iOS Hairline Separator (#E5E5EA / rgba(60,60,67,0.15)) */
+    --border: oklch(0.90 0.005 260);
+    --input: oklch(0.90 0.005 260);
 
-    /* FOCUS */
-    --ring: oklch(0.55 0.22 264);
+    /* Focus Ring */
+    --ring: oklch(0.53 0.22 260 / 0.5);
 
-    /* CHART COLORS */
-    --chart-1: oklch(0.47 0.23 264);
-    --chart-2: oklch(0.72 0.16 162);
-    --chart-3: oklch(0.72 0.18 70);
-    --chart-4: oklch(0.63 0.24 27);
-    --chart-5: oklch(0.56 0.19 300);
+    /* iOS Charts */
+    --chart-1: oklch(0.53 0.22 260); /* Blue */
+    --chart-2: oklch(0.70 0.17 155); /* Green */
+    --chart-3: oklch(0.72 0.18 70);  /* Amber */
+    --chart-4: oklch(0.63 0.22 25);  /* Red */
+    --chart-5: oklch(0.58 0.20 300); /* Purple */
 
-    --radius: 0.75rem;
+    /* Apple Squircle Radius */
+    --radius: 0.875rem;
 
-    /* SIDEBAR */
-    --sidebar: oklch(0.975 0.003 247);
-    --sidebar-foreground: oklch(0.22 0.03 258);
-
-    --sidebar-primary: oklch(0.47 0.23 264);
-    --sidebar-primary-foreground: oklch(0.99 0 0);
-
-    --sidebar-accent: oklch(0.94 0.015 252);
-    --sidebar-accent-foreground: oklch(0.22 0.03 258);
-
-    --sidebar-border: oklch(0.91 0.01 255);
-    --sidebar-ring: oklch(0.55 0.22 264);
+    /* SIDEBAR (iOS iPadOS Translucent/Off-white #F8F8FA) */
+    --sidebar: oklch(0.985 0.002 260);
+    --sidebar-foreground: oklch(0.25 0.02 260);
+    --sidebar-primary: oklch(0.53 0.22 260);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.94 0.01 260);
+    --sidebar-accent-foreground: oklch(0.18 0.02 260);
+    --sidebar-border: oklch(0.91 0.005 260);
+    --sidebar-ring: oklch(0.53 0.22 260);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
+    /* iOS System Grouped Background: True Deep Black (#000000 / #0B0B0C) */
+    --background: oklch(0.10 0 0);
+    /* iOS Primary Label: Crisp pure white (#FFFFFF) */
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
+
+    /* iOS Secondary System Background: Elevated Cards (#1C1C1E) */
+    --card: oklch(0.20 0.005 260);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
+
+    /* iOS Tertiary System Background: Popovers & Modals (#242426) */
+    --popover: oklch(0.22 0.006 260);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
+
+    /* iOS Luminous Dynamic Blue (#0A84FF) - Vibrant with white text! */
+    --primary: oklch(0.65 0.22 255);
+    --primary-foreground: oklch(1 0 0);
+
+    /* iOS Tertiary System Background: Secondary buttons / wells (#2C2C2E) */
+    --secondary: oklch(0.27 0.008 260);
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
+
+    /* iOS Inset Well / Muted surface (#242426) */
+    --muted: oklch(0.24 0.006 260);
+    --muted-foreground: oklch(0.68 0.01 260); /* Apple Silver Gray #8E8E93, crystal clear */
+
+    /* iOS Hover Surface (#323236) */
+    --accent: oklch(0.29 0.008 260);
     --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
+
+    /* iOS System Red Dark (#FF453A) */
+    --destructive: oklch(0.65 0.22 25);
+    --destructive-foreground: oklch(1 0 0);
+
+    /* iOS Hairline Separator (#38383A / rgba(255, 255, 255, 0.12)) */
+    --border: oklch(0.27 0.006 260);
+    --input: oklch(0.27 0.006 260);
+
+    /* Focus Ring */
+    --ring: oklch(0.65 0.22 255 / 0.5);
+
+    /* Dynamic iOS Charts */
+    --chart-1: oklch(0.65 0.22 255);
+    --chart-2: oklch(0.72 0.17 155);
+    --chart-3: oklch(0.78 0.18 70);
+    --chart-4: oklch(0.65 0.22 25);
+    --chart-5: oklch(0.66 0.22 300);
+
+    /* SIDEBAR (#121214) */
+    --sidebar: oklch(0.14 0.003 260);
+    --sidebar-foreground: oklch(0.92 0.005 260);
+    --sidebar-primary: oklch(0.65 0.22 255);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.23 0.006 260);
     --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar-border: oklch(0.22 0.005 260);
+    --sidebar-ring: oklch(0.65 0.22 255);
 }
+
+/* ==========================================================================
+   iOS SMART ADAPTER LAYER FOR DARK MODE
+   Transforms hardcoded colors & pastels into Apple HIG standard dark surfaces
+   ========================================================================== */
+
 @layer utilities {
+    /* 1. Core Surfaces: Elevated Cards, Insets, and Modals */
     .dark .bg-white,
     .dark [class*="bg-white"] {
         background-color: var(--card) !important;
     }
 
-    .dark .bg-neutral-100,
-    .dark [class*="bg-neutral-100"] {
-        background-color: oklch(0.23 0 0) !important;
-    }
-
-    .dark .bg-neutral-200,
-    .dark [class*="bg-neutral-200"] {
-        background-color: oklch(0.28 0 0) !important;
-    }
-
     .dark .bg-slate-50,
-    .dark [class*="bg-slate-50"] {
-        background-color: oklch(0.21 0 0) !important;
+    .dark .bg-gray-50,
+    .dark .bg-neutral-50,
+    .dark .bg-zinc-50 {
+        background-color: oklch(0.15 0.003 260) !important;
     }
 
     .dark .bg-slate-100,
-    .dark [class*="bg-slate-100"] {
-        background-color: oklch(0.25 0 0) !important;
+    .dark .bg-gray-100,
+    .dark .bg-neutral-100,
+    .dark .bg-zinc-100 {
+        background-color: oklch(0.22 0.006 260) !important;
     }
 
     .dark .bg-slate-200,
-    .dark [class*="bg-slate-200"] {
-        background-color: oklch(0.30 0 0) !important;
-    }
-
-    .dark .bg-slate-300,
-    .dark [class*="bg-slate-300"] {
-        background-color: oklch(0.36 0 0) !important;
-    }
-
-    .dark .bg-slate-400,
-    .dark [class*="bg-slate-400"] {
-        background-color: oklch(0.42 0 0) !important;
-    }
-
-    .dark .bg-gray-50,
-    .dark [class*="bg-gray-50"] {
-        background-color: oklch(0.24 0 0) !important;
-    }
-
-    .dark .bg-gray-100,
-    .dark [class*="bg-gray-100"] {
-        background-color: oklch(0.27 0 0) !important;
-    }
-
     .dark .bg-gray-200,
-    .dark [class*="bg-gray-200"] {
-        background-color: oklch(0.32 0 0) !important;
-    }
-
-    .dark .bg-gray-300,
-    .dark [class*="bg-gray-300"] {
-        background-color: oklch(0.37 0 0) !important;
-    }
-
-    .dark .bg-gray-400,
-    .dark [class*="bg-gray-400"] {
-        background-color: oklch(0.42 0 0) !important;
-    }
-
-    .dark .bg-neutral-100,
-    .dark [class*="bg-neutral-100"] {
-        background-color: oklch(0.24 0 0) !important;
-    }
-
     .dark .bg-neutral-200,
-    .dark [class*="bg-neutral-200"] {
-        background-color: oklch(0.28 0 0) !important;
+    .dark .bg-zinc-200 {
+        background-color: oklch(0.27 0.008 260) !important;
     }
 
-    .dark .bg-black,
-    .dark [class*="bg-black"] {
-        background-color: oklch(0.06 0 0) !important;
+    .dark .bg-black {
+        background-color: oklch(0.08 0 0) !important;
     }
 
-    .dark .border-black,
-    .dark [class*="border-black/"] {
-        border-color: oklch(0.5 0 0) !important;
-    }
-
-    .dark .border-slate-200,
-    .dark [class*="border-slate-200"] {
-        border-color: oklch(0.26 0 0) !important;
-    }
-
-    .dark .border-slate-300,
-    .dark [class*="border-slate-300"] {
-        border-color: oklch(0.30 0 0) !important;
-    }
-
-    .dark .border-slate-400,
-    .dark [class*="border-slate-400"] {
-        border-color: oklch(0.34 0 0) !important;
-    }
-
-    .dark .border-gray-100,
-    .dark [class*="border-gray-100"] {
-        border-color: oklch(0.26 0 0) !important;
-    }
-
-    .dark .border-gray-200,
-    .dark [class*="border-gray-200"] {
-        border-color: oklch(0.30 0 0) !important;
-    }
-
-    .dark .border-gray-300,
-    .dark [class*="border-gray-300"] {
-        border-color: oklch(0.34 0 0) !important;
-    }
-
-    .dark .border-gray-400,
-    .dark [class*="border-gray-400"] {
-        border-color: oklch(0.40 0 0) !important;
-    }
-
+    /* 2. Text Hierarchy (Apple Neutral Silver Gray - Zero Neon Cast) */
     .dark .text-black,
-    .dark [class*="text-black"] {
-        color: var(--foreground) !important;
-    }
-
-    .dark .text-gray-900,
-    .dark [class*="text-gray-900"] {
-        color: var(--foreground) !important;
-    }
-
-    .dark .text-gray-800,
-    .dark [class*="text-gray-800"] {
-        color: oklch(0.96 0.08 257) !important;
-    }
-
-    .dark .text-gray-700,
-    .dark [class*="text-gray-700"] {
-        color: oklch(0.88 0.06 257) !important;
-    }
-
-    .dark .text-gray-600,
-    .dark [class*="text-gray-600"] {
-        color: oklch(0.80 0.05 257) !important;
-    }
-
-    .dark .text-gray-500,
-    .dark [class*="text-gray-500"] {
-        color: oklch(0.72 0.04 257) !important;
-    }
-
+    .dark .text-slate-950,
+    .dark .text-gray-950,
     .dark .text-slate-900,
-    .dark [class*="text-slate-900"] {
+    .dark .text-gray-900 {
         color: var(--foreground) !important;
     }
 
     .dark .text-slate-800,
-    .dark [class*="text-slate-800"] {
-        color: oklch(0.96 0.08 257) !important;
+    .dark .text-gray-800 {
+        color: oklch(0.94 0.005 260) !important;
     }
 
     .dark .text-slate-700,
-    .dark [class*="text-slate-700"] {
-        color: oklch(0.92 0.06 257) !important;
+    .dark .text-gray-700 {
+        color: oklch(0.86 0.006 260) !important;
     }
 
     .dark .text-slate-600,
-    .dark [class*="text-slate-600"] {
-        color: oklch(0.86 0.05 257) !important;
+    .dark .text-gray-600 {
+        color: oklch(0.74 0.008 260) !important;
     }
 
     .dark .text-slate-500,
-    .dark [class*="text-slate-500"] {
-        color: oklch(0.8 0.04 257) !important;
+    .dark .text-gray-500 {
+        color: oklch(0.65 0.01 260) !important;
+    }
+
+    .dark .text-slate-400,
+    .dark .text-gray-400 {
+        color: oklch(0.52 0.01 260) !important;
+    }
+
+    /* 3. Hairline Borders & Separators */
+    .dark .border-slate-100,
+    .dark .border-gray-100 {
+        border-color: oklch(0.22 0.005 260) !important;
+    }
+
+    .dark .border-slate-200,
+    .dark .border-gray-200,
+    .dark .border-neutral-200 {
+        border-color: oklch(0.27 0.006 260) !important;
+    }
+
+    .dark .border-slate-300,
+    .dark .border-gray-300 {
+        border-color: oklch(0.32 0.006 260) !important;
+    }
+
+    .dark .border-slate-400,
+    .dark .border-gray-400 {
+        border-color: oklch(0.38 0.006 260) !important;
+    }
+
+    .dark .border-black,
+    .dark [class*="border-black/"] {
+        border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    /* 4. Kanban Columns & Pastel Containers (Rich Luminous Dark Tones) */
+    .dark .bg-blue-50 {
+        background-color: oklch(0.20 0.04 255) !important;
+        border-color: oklch(0.32 0.06 255) !important;
+    }
+    .dark .border-l-blue-400 {
+        border-left-color: oklch(0.65 0.22 255) !important;
+    }
+
+    .dark .bg-amber-50 {
+        background-color: oklch(0.20 0.04 75) !important;
+        border-color: oklch(0.32 0.06 75) !important;
+    }
+    .dark .border-l-amber-400 {
+        border-left-color: oklch(0.78 0.18 70) !important;
+    }
+
+    .dark .bg-emerald-50,
+    .dark .bg-green-50 {
+        background-color: oklch(0.20 0.04 150) !important;
+        border-color: oklch(0.32 0.06 150) !important;
+    }
+    .dark .border-l-emerald-400,
+    .dark .border-l-green-400 {
+        border-left-color: oklch(0.72 0.18 150) !important;
+    }
+
+    .dark .bg-violet-50,
+    .dark .bg-purple-50 {
+        background-color: oklch(0.20 0.04 290) !important;
+        border-color: oklch(0.32 0.06 290) !important;
+    }
+    .dark .border-l-violet-400,
+    .dark .border-l-purple-400 {
+        border-left-color: oklch(0.66 0.22 290) !important;
+    }
+
+    .dark .bg-cyan-50 {
+        background-color: oklch(0.20 0.04 210) !important;
+        border-color: oklch(0.32 0.06 210) !important;
+    }
+    .dark .border-l-cyan-400 {
+        border-left-color: oklch(0.70 0.16 210) !important;
+    }
+
+    .dark .bg-orange-50 {
+        background-color: oklch(0.20 0.04 55) !important;
+        border-color: oklch(0.32 0.06 55) !important;
+    }
+    .dark .border-l-orange-400 {
+        border-left-color: oklch(0.70 0.20 55) !important;
+    }
+
+    .dark .bg-red-50 {
+        background-color: oklch(0.20 0.04 25) !important;
+        border-color: oklch(0.32 0.06 25) !important;
+    }
+    .dark .border-l-red-400 {
+        border-left-color: oklch(0.65 0.22 25) !important;
+    }
+
+    /* 5. Status Badges & Pills (Apple HIG Tinted Translucent Capsules) */
+    .dark .bg-blue-100 {
+        background-color: rgba(59, 130, 246, 0.20) !important;
+    }
+    .dark .text-blue-800,
+    .dark .text-blue-700,
+    .dark .text-blue-600 {
+        color: #60A5FA !important;
+    }
+
+    .dark .bg-amber-100 {
+        background-color: rgba(245, 158, 11, 0.20) !important;
+    }
+    .dark .text-amber-800,
+    .dark .text-amber-700,
+    .dark .text-amber-600 {
+        color: #FBBF24 !important;
+    }
+
+    .dark .bg-emerald-100,
+    .dark .bg-green-100 {
+        background-color: rgba(16, 185, 129, 0.20) !important;
+    }
+    .dark .text-emerald-800,
+    .dark .text-emerald-700,
+    .dark .text-green-800,
+    .dark .text-green-700 {
+        color: #34D399 !important;
+    }
+
+    .dark .bg-violet-100,
+    .dark .bg-purple-100 {
+        background-color: rgba(139, 92, 246, 0.20) !important;
+    }
+    .dark .text-violet-800,
+    .dark .text-violet-700,
+    .dark .text-purple-800 {
+        color: #C084FC !important;
+    }
+
+    .dark .bg-cyan-100 {
+        background-color: rgba(6, 182, 212, 0.20) !important;
+    }
+    .dark .text-cyan-800,
+    .dark .text-cyan-700 {
+        color: #38BDF8 !important;
+    }
+
+    .dark .bg-orange-100 {
+        background-color: rgba(249, 115, 22, 0.20) !important;
+    }
+    .dark .text-orange-800,
+    .dark .text-orange-700 {
+        color: #FB923C !important;
+    }
+
+    .dark .bg-red-100 {
+        background-color: rgba(239, 68, 68, 0.20) !important;
+    }
+    .dark .text-red-800,
+    .dark .text-red-700,
+    .dark .text-red-600 {
+        color: #F87171 !important;
+    }
+
+    /* 6. Subtle Apple Table Hover Effect */
+    .dark tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+
+    /* 7. react-select iOS Dark & Light Adaptation */
+    .select__control {
+        background-color: var(--card) !important;
+        border-color: var(--input) !important;
+        border-radius: 0.75rem !important;
+        min-height: 2.375rem !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease !important;
+    }
+    .select__control:hover {
+        border-color: var(--ring) !important;
+    }
+    .select__single-value {
+        color: var(--foreground) !important;
+    }
+    .select__placeholder {
+        color: var(--muted-foreground) !important;
+    }
+    .select__input-container,
+    .select__input {
+        color: var(--foreground) !important;
+    }
+    .select__menu {
+        background-color: var(--popover) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 1rem !important;
+        box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.25) !important;
+        overflow: hidden !important;
+        padding: 4px !important;
+        z-index: 50 !important;
+    }
+    .select__option {
+        background-color: transparent !important;
+        color: var(--foreground) !important;
+        border-radius: 0.625rem !important;
+        padding: 6px 12px !important;
+        cursor: pointer !important;
+        transition: background-color 0.15s ease !important;
+    }
+    .select__option--is-focused {
+        background-color: var(--accent) !important;
+        color: var(--accent-foreground) !important;
+    }
+    .select__option--is-selected {
+        background-color: var(--primary) !important;
+        color: var(--primary-foreground) !important;
+    }
+    .select__indicator-separator {
+        background-color: var(--border) !important;
+    }
+    .select__dropdown-indicator,
+    .select__clear-indicator {
+        color: var(--muted-foreground) !important;
+    }
+    .select__multi-value {
+        background-color: var(--secondary) !important;
+        border-radius: 9999px !important;
+        padding-left: 6px !important;
+    }
+    .select__multi-value__label {
+        color: var(--secondary-foreground) !important;
+        font-size: 0.75rem !important;
+    }
+    .select__multi-value__remove {
+        border-radius: 9999px !important;
+    }
+    .select__multi-value__remove:hover {
+        background-color: var(--destructive) !important;
+        color: white !important;
+    }
+
+    /* 8. Quill Rich Text Editor iOS Adaptation */
+    .dark .ql-toolbar {
+        background-color: var(--muted) !important;
+        border-color: var(--border) !important;
+        border-top-left-radius: 0.75rem !important;
+        border-top-right-radius: 0.75rem !important;
+    }
+    .dark .ql-container {
+        background-color: var(--card) !important;
+        border-color: var(--border) !important;
+        color: var(--foreground) !important;
+        border-bottom-left-radius: 0.75rem !important;
+        border-bottom-right-radius: 0.75rem !important;
+    }
+    .dark .ql-stroke {
+        stroke: var(--foreground) !important;
+    }
+    .dark .ql-fill {
+        fill: var(--foreground) !important;
+    }
+    .dark .ql-picker {
+        color: var(--foreground) !important;
+    }
+    .dark .ql-picker-options {
+        background-color: var(--popover) !important;
+        border-color: var(--border) !important;
+        border-radius: 0.75rem !important;
     }
 }
+
+/* ==========================================================================
+   BASE & COMPONENT STYLES
+   ========================================================================== */
+
 @layer base {
     * {
         @apply border-border;
@@ -339,18 +529,44 @@
 
     body {
         @apply bg-background text-foreground antialiased;
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     }
-    
-    h1,h2,h3,h4 {
-        letter-spacing: -0.02em;
+
+    h1, h2, h3, h4 {
+        letter-spacing: -0.025em;
     }
+
+    /* iOS Focus Visibility */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+}
+
+/* iOS-Style Thin Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(140, 140, 145, 0.3);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 140, 145, 0.5);
 }
 
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

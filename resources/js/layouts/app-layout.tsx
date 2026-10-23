@@ -52,19 +52,19 @@ export default function AppLayout({
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
                         {/* LEFT CONTENT */}
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             {information && (
-                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
                                     {information}
                                 </p>
                             )}
 
-                            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                                 {title}
                             </h1>
 
                             {description && (
-                                <p className="max-w-2xl text-sm leading-6 text-slate-500">
+                                <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
                                     {description}
                                 </p>
                             )}

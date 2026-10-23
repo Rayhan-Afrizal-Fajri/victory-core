@@ -87,8 +87,8 @@ export default function Index({ nextJobTicket, customers, companyProfiles, produ
         <div className="space-y-6">
           
           {/* SECTION 1: DATA PO */}
-          <div className="rounded-sm border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 text-base font-semibold text-slate-800">1. Data Purchase Order</h3>
+          <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs transition-colors">
+            <h3 className="mb-4 text-base font-bold text-foreground">1. Data Purchase Order</h3>
             {/* Render Input No PO, Deadline, Select Perusahaan di sini */}
             <CustomerSelector
               form={form}

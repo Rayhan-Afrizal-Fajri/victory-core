@@ -57,32 +57,32 @@ export default function DataTable<T extends Record<string, any>>({
   const pageData = filteredData.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
 
   return (
-    <Card className="rounded-md w-full h-fit">
-      <CardHeader className="items-start gap-2 px-4">
+    <Card className="rounded-2xl border border-border/70 bg-card shadow-xs w-full h-fit">
+      <CardHeader className="items-start gap-2 px-6 pt-6 pb-2">
         <div>
-          {title && <CardTitle className="text-lg font-semibold">{title}</CardTitle>}
+          {title && <CardTitle className="text-base font-bold text-foreground sm:text-lg">{title}</CardTitle>}
           {description && (
-            <p className="text-sm text-slate-500">{description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
           )}
         </div>
-        <div className="ml-auto flex w-full">
+        <div className="ml-auto flex w-full max-w-xs">
           <Input
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search"
-            className="h-8 px-3 text-sm"
+            placeholder="Search..."
+            className="h-8.5 px-3 text-xs rounded-xl"
           />
         </div>
       </CardHeader>
-        <CardContent className="p-4">
-            <div className="overflow-hidden rounded-md border border-slate-200">
+        <CardContent className="p-6 pt-2">
+            <div className="overflow-hidden rounded-xl border border-border/60">
                 <div className="overflow-x-auto">
                     <table className="min-w-full table-fixed text-sm">
                         <thead
-                            className="bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-500">
+                            className="bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/60">
                             <tr>
                                 {columns.map((column) => (
                                 <th
@@ -98,12 +98,12 @@ export default function DataTable<T extends Record<string, any>>({
                             <tr>
                                 <td
                                     colSpan={columns.length}
-                                    className="px-6 py-8 text-center text-sm text-slate-500">
+                                    className="px-6 py-8 text-center text-sm text-muted-foreground">
                                     {emptyText}
                                 </td>
                             </tr>
                             ) : ( pageData.map((row, rowIndex) => (
-                            <tr key={rowIndex} className="border-t border-slate-200 last:border-b">
+                            <tr key={rowIndex} className="border-t border-border/60 bg-card hover:bg-muted/30 transition-colors">
                                 {columns.map((column) => (
                                 <td
                                     key={column.header}
@@ -118,8 +118,8 @@ export default function DataTable<T extends Record<string, any>>({
                 </div>
             </div>
         </CardContent>
-      <div className="flex flex-col gap-4 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-500">
+      <div className="flex flex-col gap-4 border-t border-border/60 px-6 py-3.5 sm:flex-row sm:items-center sm:justify-between bg-card/30">
+        <p className="text-xs text-muted-foreground">
           Showing {pageData.length} of {filteredData.length} entries
         </p>
         <div className="flex items-center gap-2">
@@ -128,19 +128,21 @@ export default function DataTable<T extends Record<string, any>>({
             variant="outline"
             size="sm"
             disabled={page <= 1}
-            onClick={() => setPage((current) => Math.max(current - 1, 1))}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="h-8 rounded-lg"
           >
-            Previous
+            Prev
           </Button>
-          <span className="text-sm text-slate-600">
-            Page {page} / {pageCount}
+          <span className="text-xs text-muted-foreground px-2">
+            {page} / {pageCount}
           </span>
           <Button
             type="button"
             variant="outline"
             size="sm"
             disabled={page >= pageCount}
-            onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
+            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+            className="h-8 rounded-lg"
           >
             Next
           </Button>

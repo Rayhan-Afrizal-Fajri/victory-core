@@ -1,6 +1,5 @@
-import type {ReactNode}
-from 'react';
-import {Card} from '@/components/ui/card';
+import type { ReactNode } from 'react';
+import { Card } from '@/components/ui/card';
 
 interface SummaryCardProps {
     title: string;
@@ -13,21 +12,24 @@ export default function SummaryCard({
     title,
     value,
     icon,
-    iconClassName = 'bg-slate-100 text-slate-900'
-} : SummaryCardProps) {
+    iconClassName = 'bg-primary/10 text-primary',
+}: SummaryCardProps) {
     return (
-        <Card className="p-4">
+        <Card className="p-5 rounded-2xl border border-border/70 bg-card shadow-xs transition-all duration-200 hover:shadow-md">
             <div className="flex flex-col items-start justify-between">
-                <div className='w-full flex items-center justify-between'>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                <div className="flex w-full items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         {title}
                     </p>
                     <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-sm ${iconClassName}`}>
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 ${iconClassName}`}
+                    >
                         {icon}
                     </div>
                 </div>
-                <p className="mt-4 text-[24px] font-semibold text-slate-900">{value}</p>
+                <p className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    {value}
+                </p>
             </div>
         </Card>
     );

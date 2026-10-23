@@ -11,42 +11,50 @@ export default function AppearanceToggleTab({
 }: HTMLAttributes<HTMLDivElement>) {
     const { appearance, updateAppearance } = useAppearance();
 
-    // DARK MODE DISABLED: Show only light mode, no switching available
-    // To re-enable dark mode toggle, uncomment the full tabs array below
     const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
         { value: 'light', icon: Sun, label: 'Light' },
         { value: 'dark', icon: Moon, label: 'Dark' },
         { value: 'system', icon: Monitor, label: 'System' },
     ];
-    
-    // Light mode only
-    // const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
-    //     { value: 'light', icon: Sun, label: 'Light' },
-    // ];
 
     return (
         <div
             className={cn(
-                'inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800',
+                'inline-flex items-center gap-1 rounded-xl bg-muted/80 p-1 border border-border/50 backdrop-blur-sm shadow-xs',
                 className,
             )}
+            role="radiogroup"
+            aria-label="Appearance options"
             {...props}
         >
-            {tabs.map(({ value, icon: Icon, label }) => (
-                <button
-                    key={value}
-                    onClick={() => updateAppearance(value)}
-                    className={cn(
-                        'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
-                        appearance === value
-                            ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white'
-                            : 'text-neutral-500 bg-white shadow-xs dark:bg-slate-900 dark:text-neutral-300',
-                    )}
-                >
-                    <Icon className="-ml-1 h-4 w-4" />
-                    <span className="ml-1.5 text-sm">{label}</span>
-                </button>
-            ))}
+            {tabs.map(({ value, icon: Icon, label }) => {
+                const isActive = appearance === value;
+                return (
+                    <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={isActive}
+                        onClick={() => updateAppearance(value)}
+                        className={cn(
+                            'group relative flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]',
+                            isActive
+                                ? 'bg-card text-foreground font-semibold shadow-xs'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5',
+                        )}
+                    >
+                        <Icon
+                            className={cn(
+                                'size-4 transition-transform duration-200 group-hover:scale-110',
+                                isActive && value === 'light' && 'text-amber-500',
+                                isActive && value === 'dark' && 'text-sky-400',
+                                isActive && value === 'system' && 'text-primary',
+                            )}
+                        />
+                        <span>{label}</span>
+                    </button>
+                );
+            })}
         </div>
     );
 }

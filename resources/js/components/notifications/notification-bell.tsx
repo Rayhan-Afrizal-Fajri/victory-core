@@ -99,37 +99,49 @@ function NotificationBellContent({ auth }: { auth: AuthProps }) {
     return (
         <div className="relative group">
             {/* Tombol Lonceng */}
-            <Link href="/notifications" className="relative p-2 rounded-full hover:bg-slate-100 flex items-center">
-                <Bell className="size-5 text-slate-600" />
+            <Link
+                href="/notifications"
+                className="relative flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-200 active:scale-95"
+                title="Notifikasi"
+            >
+                <Bell className="size-4.5" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground shadow-xs animate-in zoom-in-50">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
             </Link>
 
-            {/* Dropdown Quick View (Opsional, muncul saat di-hover/klik) */}
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 shadow-lg rounded-xl hidden group-hover:block z-50">
-                <div className="p-3 border-b flex justify-between items-center bg-slate-50 rounded-t-xl">
-                    <h4 className="font-bold text-sm">Notifikasi</h4>
+            {/* Dropdown Quick View */}
+            <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-xl shadow-xl hidden group-hover:block z-50 overflow-hidden transition-all duration-200">
+                <div className="p-3.5 border-b border-border/60 flex justify-between items-center bg-muted/40">
+                    <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Notifikasi</h4>
+                    {unreadCount > 0 && (
+                        <span className="text-[11px] font-medium text-primary">
+                            {unreadCount} baru
+                        </span>
+                    )}
                 </div>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-64 overflow-y-auto divide-y divide-border/40">
                     {notifications.length === 0 ? (
-                        <p className="p-4 text-center text-xs text-slate-500">Belum ada notifikasi baru.</p>
+                        <p className="p-5 text-center text-xs text-muted-foreground">Belum ada notifikasi baru.</p>
                     ) : (
                         notifications.map((notif: any) => (
                             <button 
                                 key={notif.id} 
                                 onClick={() => markAsRead(notif.id, notif.data.url)}
-                                className="w-full text-left p-3 border-b hover:bg-slate-50 transition"
+                                className="w-full text-left p-3.5 hover:bg-accent/60 transition cursor-pointer"
                             >
-                                <p className="text-sm font-bold text-slate-800">{notif.data.title}</p>
-                                <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.data.message}</p>
+                                <p className="text-sm font-medium text-foreground">{notif.data.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{notif.data.message}</p>
                             </button>
                         ))
                     )}
                 </div>
-                <Link href="/notifications" className="block text-center p-2 text-xs font-semibold text-blue-600 hover:bg-slate-50 rounded-b-xl">
+                <Link
+                    href="/notifications"
+                    className="block text-center py-2.5 px-3 text-xs font-medium text-primary hover:bg-accent/40 border-t border-border/50 transition-colors"
+                >
                     Lihat Semua Riwayat
                 </Link>
             </div>

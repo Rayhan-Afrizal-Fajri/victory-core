@@ -18,20 +18,20 @@ export default function AuthSplitLayout({
                 <div className="w-full max-w-md">
                     <div className="flex flex-col gap-8">
                         <div className="flex flex-col gap-6">
-                            <div className="flex gap-2 items-start">
-                                <div className="p-1 bg-blue-600 text-white rounded-md">
-                                    <AppLogoIcon className="size-8 fill-current text-white dark:text-black " />
+                            <div className="flex gap-2.5 items-center">
+                                <div className="p-1.5 bg-primary text-primary-foreground rounded-xl shadow-xs">
+                                    <AppLogoIcon className="size-7 fill-current text-white" />
                                 </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="font-black text-md text-primary">Victory Labs</span>
-                                    <span className="text-gray-600 uppercase text-[10px] dark:text-blue-200">ERP Tekstil internal</span>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-base text-foreground tracking-tight">Victory Labs</span>
+                                    <span className="text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">ERP Tekstil Internal</span>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                            <div className="flex flex-col gap-1.5">
+                                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                                     {title}
                                 </h1>
-                                <p className="text-gray-600 text-sm dark:text-blue-200">
+                                <p className="text-muted-foreground text-sm">
                                     {description}
                                 </p>
                             </div>

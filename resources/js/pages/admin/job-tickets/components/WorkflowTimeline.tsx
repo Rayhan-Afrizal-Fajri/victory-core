@@ -104,28 +104,13 @@ export const WorkflowTimeline: React.FC<{
   const flags = activePesanan.workflow_status;
 
   return (
-    <Card className="rounded-4xl py-0 overflow-hidden">
+    <Card className="rounded-2xl border border-border/70 bg-card py-0 overflow-hidden shadow-xs">
       <div className="overflow-x-auto no-scrollbar">
-        <div className="flex min-w-max px-8 py-6 -pb-12">
+        <div className="flex min-w-max px-8 py-6">
           {workflowGroups.map((group, index) => {
             let progress = getGroupProgress(group, flags);
             let status = getGroupStatus(progress.percentage);
             let isLast = index === workflowGroups.length - 1;
-
-            // if (index > 0) {
-            //   const prevGroup = workflowGroups[index - 1];
-            //   const prevProgress = getGroupProgress(prevGroup, flags);
-            //   const prevStatus = getGroupStatus(prevProgress.percentage);
-
-            //   if (prevStatus !== 'completed') {
-            //     progress = {
-            //       total: group.steps.length,
-            //       completed: 0,
-            //       percentage: 0,
-            //     };
-            //     status = 'pending'; 
-            //   }
-            // }
 
             return (
               <div
@@ -133,9 +118,9 @@ export const WorkflowTimeline: React.FC<{
                 className="relative flex flex-col items-center w-40"
               >
                 {!isLast && (
-                  <div className="absolute top-5 left-1/2 w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="absolute top-5 left-1/2 w-full h-1 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-green-500 transition-all duration-500"
+                      className="h-full bg-emerald-500 transition-all duration-500"
                       style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
@@ -143,13 +128,13 @@ export const WorkflowTimeline: React.FC<{
 
                 <div
                   className={`
-                    relative z-10 w-10 h-10 rounded-full border-4 flex items-center justify-center
+                    relative z-10 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
                     ${
                       status === 'completed'
-                        ? 'bg-green-500 border-green-500 text-white'
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
                         : status === 'active'
-                        ? 'border-green-500 text-green-500 bg-white'
-                        : 'border-gray-300 text-gray-400 bg-white'
+                        ? 'border-emerald-500 text-emerald-500 bg-card shadow-xs ring-4 ring-emerald-500/10'
+                        : 'border-border text-muted-foreground bg-muted/50'
                     }
                   `}
                 >
@@ -162,11 +147,11 @@ export const WorkflowTimeline: React.FC<{
                   )}
                 </div>
 
-                <div className="mt-2 text-xs text-center w-28 leading-tight text-gray-700">
+                <div className="mt-2.5 text-xs text-center w-28 leading-tight font-medium text-foreground/90">
                   {group.label}
                 </div>
 
-                <div className="text-[10px] text-gray-500 mt-1">
+                <div className="text-[10px] text-muted-foreground mt-1 font-medium">
                   {progress.completed}/{progress.total}
                 </div>
               </div>

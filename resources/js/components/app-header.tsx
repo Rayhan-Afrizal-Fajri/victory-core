@@ -33,6 +33,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import ThemeToggle from '@/components/theme-toggle';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -178,10 +179,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                     <div className="ml-auto flex items-center space-x-2">
                         <div className="relative flex items-center space-x-1">
+                            <ThemeToggle />
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="group h-9 w-9 cursor-pointer"
+                                className="group h-9 w-9 cursor-pointer rounded-full"
                             >
                                 <Search className="size-5! opacity-80 group-hover:opacity-100" />
                             </Button>

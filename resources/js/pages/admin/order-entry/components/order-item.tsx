@@ -59,11 +59,11 @@ export default function OrderItem({ order, oIndex, isRemovable, productNamesInUs
   const sizeIsValid = totalSizeQty === Number(order.q || 0);
 
   return (
-    <div className="relative rounded-lg border border-slate-200 p-5 pt-7 bg-slate-50/50">
-      <span className="absolute top-2 left-3 text-xs font-bold text-slate-400">Pesanan #{oIndex + 1}</span>
+    <div className="relative rounded-2xl border border-border/70 p-5 pt-7 bg-muted/20">
+      <span className="absolute top-2.5 left-3.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Pesanan #{oIndex + 1}</span>
       
       {isRemovable && (
-        <Button type="button" variant="ghost" size="sm" className="absolute top-2 right-2 text-red-500 h-6 px-2 hover:bg-red-100" onClick={onRemove}>
+        <Button type="button" variant="ghost" size="sm" className="absolute top-2 right-2 text-destructive h-7 px-2.5 hover:bg-destructive/10 rounded-lg" onClick={onRemove}>
           Hapus
         </Button>
       )}

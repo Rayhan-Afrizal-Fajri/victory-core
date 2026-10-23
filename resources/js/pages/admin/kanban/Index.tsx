@@ -132,11 +132,11 @@ export default function Index({
         <>
             <Head title="Kanban Board" />
 
-            <div className="space-y-6 flex flex-col overflow-hidden bg-gray-50 p-4">
+            <div className="space-y-6 flex flex-col overflow-hidden bg-background p-4">
 
                 {/* --- MULAI SECTION URGENT ISSUES (NEW UI) --- */}
                 {urgentIssues && urgentIssues.length > 0 && (
-                    <div className="mb-6 bg-white border border-red-200 rounded-lg shadow-sm overflow-hidden flex-shrink-0">
+                    <div className="mb-6 bg-card border border-destructive/20 rounded-2xl shadow-xs overflow-hidden flex-shrink-0">
                         {/* Header Banner */}
                         <div className="bg-red-50/80 border-b border-red-100 px-4 py-3 flex items-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-red-600 animate-pulse" />
@@ -248,42 +248,42 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
               : null;
 
     return (
-        <div className="rounded-xl border-l-4 border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-            <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="rounded-2xl border border-border/70 border-l-4 bg-card p-4 shadow-xs transition-all duration-200 hover:shadow-md">
+            <div className="mb-2.5 flex items-start justify-between gap-3">
                 <div>
-                    <h4 className="font-semibold text-slate-900">
+                    <h4 className="font-bold text-sm text-foreground">
                         {card.jobNo}
                     </h4>
 
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                         {card.customer}
                     </p>
                 </div>
 
-                <Badge className="bg-slate-100 text-slate-700">
+                <Badge className="border-transparent rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-muted text-muted-foreground">
                     {card.stageLabel}
                 </Badge>
             </div>
 
-            <p className="text-sm font-medium text-slate-800">
+            <p className="text-xs font-medium text-foreground/90">
                 {card.product}
             </p>
 
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-muted-foreground">
                 Qty: {card.qty} pcs
             </p>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-3.5 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Progress</span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="text-muted-foreground text-[11px]">Progress</span>
+                    <span className="font-semibold text-foreground text-[11px]">
                         {card.progress}%
                     </span>
                 </div>
 
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted/80">
                     <div
-                        className={`h-full rounded-full transition-all ${getProgressColor(card.progress)}`}
+                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(card.progress)}`}
                         style={{ width: `${card.progress}%` }}
                     />
                 </div>
@@ -291,30 +291,30 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
 
             {/* Rincian Proses Produksi (Cutting, Sewing, dll) */}
             {activeRun?.process_details && activeRun?.process_details.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Rincian QC & Proses
                     </p>
                     
                     {activeRun?.process_details.map((process: any) => (
                         <div 
                             key={process.id} 
-                            className="rounded border border-slate-100 bg-white p-2 text-[11px] shadow-sm"
+                            className="rounded-xl border border-border/60 bg-muted/30 p-2 text-[11px]"
                         >
-                            <div className="mb-1 flex items-center justify-between font-medium text-slate-700">
+                            <div className="mb-1 flex items-center justify-between font-medium text-foreground">
                                 <span>{process.work_name}</span>
-                                <span className="font-normal text-slate-400">
+                                <span className="font-normal text-muted-foreground">
                                     Target: {process.target_qty}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-slate-500">
-                                    Cek: <span className="font-semibold text-slate-700">{process.checked_qty}</span>
+                                <span className="text-muted-foreground">
+                                    Cek: <span className="font-semibold text-foreground">{process.checked_qty}</span>
                                 </span>
-                                <span className="text-emerald-600">
+                                <span className="text-emerald-600 dark:text-emerald-400">
                                     Lolos: <span className="font-semibold">{process.passed_qty}</span>
                                 </span>
-                                <span className="text-rose-500">
+                                <span className="text-rose-600 dark:text-rose-400">
                                     Cacat: <span className="font-semibold">{process.defect_qty}</span>
                                 </span>
                             </div>
@@ -324,15 +324,15 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
             )}
 
             {card.blocker && card.stage !== 'done' && (
-                <div className="mt-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                <div className="mt-3 flex gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                     <span>{card.blocker}</span>
                 </div>
             )}
 
-            <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="mt-3.5 flex items-center justify-between gap-3 pt-1 border-t border-border/40">
                 <div
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${getDeadlineClass(card.daysLeft)}`}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${getDeadlineClass(card.daysLeft)}`}
                 >
                     <CalendarDays className="size-3" />
                     {getDeadlineText(card.daysLeft)}
@@ -340,8 +340,8 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
 
                 {can('dashboard.admin') && (
                     <Link href={card.showUrl}>
-                        <Button size="sm" variant="outline">
-                            <Eye className="size-4" />
+                        <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg px-2.5">
+                            <Eye className="size-3.5 mr-1" />
                             Detail
                         </Button>
                     </Link>
@@ -359,13 +359,13 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
         cards: KanbanCard[];
     }) {
         return (
-            <div className={`flex min-h-105 flex-col rounded-xl border ${column.bgColor} p-4`}>
-                <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-bold tracking-wide text-slate-900">
+            <div className={`flex min-h-105 flex-col rounded-2xl border ${column.bgColor} p-3.5 backdrop-blur-xs shadow-xs`}>
+                <div className="mb-3.5 flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold tracking-wider text-foreground uppercase">
                         {column.name}
                     </h3>
 
-                    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-2 text-xs font-bold text-slate-700 shadow-sm">
+                    <span className="inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-card px-2 text-xs font-bold text-foreground shadow-xs border border-border/50">
                         {cards.length}
                     </span>
                 </div>
@@ -376,8 +376,8 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                             <KanbanJobCard key={card.id} card={card} />
                         ))
                     ) : (
-                        <div className="flex h-28 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/60 text-center">
-                            <p className="text-sm text-slate-500">
+                        <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/80 bg-card/40 text-center p-3">
+                            <p className="text-xs text-muted-foreground">
                                 Tidak ada job ticket
                             </p>
                         </div>
