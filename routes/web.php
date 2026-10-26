@@ -202,9 +202,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/samples/{sample}/media', [SampleController::class, 'storeMedia'])
         ->name('samples.media.store');
 
-    Route::delete('/samples/{sample}/media', [SampleController::class, 'deleteMedia'])
-        ->name('samples.media.store');
-
     Route::patch('/samples/{sample}/start', [SampleController::class, 'start'])
         ->name('samples.start');
 
