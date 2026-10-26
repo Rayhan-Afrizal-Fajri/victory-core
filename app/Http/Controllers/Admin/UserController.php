@@ -78,16 +78,30 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8'], 
-            'role' => ['required', 'exists:roles,name'],  
+            'role_id' => ['nullable', 'exists:roles,id'],
+            'role' => ['nullable'],
         ]);
+
+        $roleName = null;
+        if (!empty($validated['role_id'])) {
+            $role = Role::findOrFail($validated['role_id']);
+            $roleName = $role->name;
+        } elseif (!empty($validated['role'])) {
+            $roleName = $validated['role'];
+        }
+
+        if (!$roleName) {
+            return back()->withErrors(['role_id' => 'Role wajib dipilih.']);
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
+            'is_active' => true,
         ]);
 
-        $user->assignRole($validated['role']);
+        $user->assignRole($roleName);
 
         return back()->with('success', 'User berhasil dibuat');
     }
@@ -119,29 +133,67 @@ class UserController extends Controller
             return back()->with('error', 'User owner tidak dapat diubah.');
         }
 
-        // dd($request->all());
-
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required', 
                 'email', 
-                Rule::unique('users')->ignore($user->id)],
+                Rule::unique('users')->ignore($user->id)
+            ],
             'password' => ['nullable', 'min:8'], 
-            'role_id' => ['required', 'exists:roles,id'], 
+            'role_id' => ['nullable', 'exists:roles,id'],
+            'role' => ['nullable'],
         ]);
 
-        $user->update([
+        $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => $validated['password'] ? bcrypt($validated['password']) : $user->password,
-        ]);
+        ];
 
-        $role = Role::findOrFail($validated['role_id']);
+        if (!empty($validated['password'])) {
+            $userData['password'] = bcrypt($validated['password']);
+        }
 
-        $user->syncRoles([$role->name]);
+        $user->update($userData);
+
+        $roleName = null;
+        if (!empty($validated['role_id'])) {
+            $role = Role::findOrFail($validated['role_id']);
+            $roleName = $role->name;
+        } elseif (!empty($validated['role'])) {
+            $roleName = $validated['role'];
+        }
+
+        if ($roleName) {
+            $user->syncRoles([$roleName]);
+        }
 
         return back()->with('success', "User {$user->name} berhasil diperbarui");
+    }
+
+    /**
+     * Toggle user active status.
+     */
+    public function updateStatus(Request $request, string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->hasRole('owner')) {
+            return back()->with('error', 'Status user owner tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'is_active' => ['nullable', 'boolean'],
+            'status_aktif' => ['nullable', 'boolean'],
+        ]);
+
+        $status = $validated['is_active'] ?? $validated['status_aktif'] ?? !$user->is_active;
+
+        $user->update([
+            'is_active' => $status,
+        ]);
+
+        return back()->with('success', "Status user {$user->name} berhasil diubah.");
     }
 
     /**

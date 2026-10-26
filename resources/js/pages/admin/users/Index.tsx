@@ -4,24 +4,23 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RoleData, UserData } from './types';
 
-// Import komponen tab dan modal Anda
+// Components & Modals
 import UsersTab from './components/users-tab';
 import RolesTab from './components/roles-tab';
 import UserFormModal from './components/user-form-modal';
 import RoleFormModal from './components/role-form-modal';
+import PasswordModal from './components/password-modal';
 import { toast } from 'sonner';
 import { useCan } from '@/hooks/use-can';
 
-// Sesuaikan path import Anda jika berbeda
-import { store as userStore, update as userUpdate, destroy as userDestroy } from '@/routes/users';
+import { destroy as userDestroy } from '@/routes/users';
 
 // --- TYPES ---
 export type Permission = { id: number; name: string; description?: string; module?: string };
-// export type RoleData = { id: number; name: string; description?: string; users_count?: number; permissions?: Permission[] };
-// export type UserData = { id: number; name: string; username: string; email: string; phone?: string; status_aktif: boolean; roles?: RoleData[] };
 
 interface Props {
     users: UserData[];
@@ -41,24 +40,51 @@ export default function Index({ users, roles, permissions }: Props) {
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [selectedRole, setSelectedRole] = useState<RoleData | null>(null);
 
+    // State untuk Modal Password
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordUser, setPasswordUser] = useState<UserData | null>(null);
+
     // --- HANDLER USER ---
-    const openCreateUser = () => { setSelectedUser(null); setIsUserModalOpen(true); };
-    const openEditUser = (user: UserData) => { setSelectedUser(user); setIsUserModalOpen(true); };
+    const openCreateUser = () => { 
+        setSelectedUser(null); 
+        setIsUserModalOpen(true); 
+    };
+    
+    const openEditUser = (user: UserData) => { 
+        setSelectedUser(user); 
+        setIsUserModalOpen(true); 
+    };
+    
+    const openPasswordModal = (user: UserData) => {
+        setPasswordUser(user);
+        setIsPasswordModalOpen(true);
+    };
+
     const handleDeleteUser = (user: UserData) => {
         if (confirm(`Yakin ingin menghapus user ${user.name}?`)) {
-            router.delete(userDestroy(user.id), {
-                onSuccess: () => toast.success('User berhasil dihapus')
+            router.delete(`/users/${user.id}`, {
+                onSuccess: () => toast.success('User berhasil dihapus'),
+                onError: (errs) => toast.error(Object.values(errs).join('\n') || 'Gagal menghapus user'),
             });
         }
     };
 
     // --- HANDLER ROLE ---
-    const openCreateRole = () => { setSelectedRole(null); setIsRoleModalOpen(true); };
-    const openEditRole = (role: RoleData) => { setSelectedRole(role); setIsRoleModalOpen(true); };
+    const openCreateRole = () => { 
+        setSelectedRole(null); 
+        setIsRoleModalOpen(true); 
+    };
+    
+    const openEditRole = (role: RoleData) => { 
+        setSelectedRole(role); 
+        setIsRoleModalOpen(true); 
+    };
+    
     const handleDeleteRole = (role: RoleData) => {
         if (confirm(`Yakin ingin menghapus role ${role.name}?`)) {
-            router.delete(route('roles.destroy', role.id), {
-                onSuccess: () => toast.success('Role berhasil dihapus')
+            router.delete(`/roles/${role.id}`, {
+                onSuccess: () => toast.success('Role berhasil dihapus'),
+                onError: (errs) => toast.error(Object.values(errs).join('\n') || 'Gagal menghapus role'),
             });
         }
     };
@@ -78,23 +104,47 @@ export default function Index({ users, roles, permissions }: Props) {
 
     return (
         <div className="space-y-6">
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-2 rounded-lg border shadow-sm">
-                    <TabsList className="grid w-full sm:w-100 grid-cols-2">
-                        <TabsTrigger value="users" className="flex items-center gap-2">
-                            <Users className="h-4 w-4" /> Users
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-card p-2 rounded-xl border shadow-xs">
+                    <TabsList className="grid w-full sm:w-80 grid-cols-2">
+                        <TabsTrigger value="users" className="flex items-center gap-2 cursor-pointer">
+                            <Users className="h-4 w-4" /> Users ({users.length})
                         </TabsTrigger>
-                        <TabsTrigger value="roles" className="flex items-center gap-2">
-                            <Shield className="h-4 w-4" /> Roles & Permissions
+                        <TabsTrigger value="roles" className="flex items-center gap-2 cursor-pointer">
+                            <Shield className="h-4 w-4" /> Roles ({roles.length})
                         </TabsTrigger>
                     </TabsList>
+
+                    {/* ACTION BUTTON TO CREATE USER / ROLE */}
+                    <div>
+                        {activeTab === 'users' ? (
+                            <Button
+                                onClick={openCreateUser}
+                                size="sm"
+                                className="gap-2 cursor-pointer shadow-xs text-xs"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span>Tambah Pengguna</span>
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={openCreateRole}
+                                size="sm"
+                                className="gap-2 cursor-pointer shadow-xs text-xs"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span>Tambah Role Baru</span>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <TabsContent value="users" className="m-0">
                     <UsersTab 
                         users={users} 
                         openEdit={openEditUser}
+                        openPassword={openPasswordModal}
+                        openCreate={openCreateUser}
                         onDelete={handleDeleteUser}
                     />
                 </TabsContent>
@@ -103,8 +153,9 @@ export default function Index({ users, roles, permissions }: Props) {
                     <RolesTab 
                         role={roles}
                         permissions={permissions}
-                        isOwner={false} // Sesuaikan logika IsOwner jika ada
+                        isOwner={false}
                         openEdit={openEditRole}
+                        openCreate={openCreateRole}
                         onDelete={handleDeleteRole}
                         groupPermissions={groupPermissions}
                         formatModuleName={formatModuleName}
@@ -126,6 +177,12 @@ export default function Index({ users, roles, permissions }: Props) {
                 role={selectedRole} 
                 permissions={permissions} 
             />
+
+            <PasswordModal
+                open={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+                user={passwordUser}
+            />
         </div>
     );
 }
@@ -133,14 +190,14 @@ export default function Index({ users, roles, permissions }: Props) {
 Index.layout = (page: ReactNode) => (
     <AppLayout
         title="Users & Roles" 
-        information="Admin · Access" 
-        description="Kelola user, role, dan hak akses sistem."
+        information="Admin · Access Control" 
+        description="Kelola akun pengguna, peran hak akses (roles), dan izin akses modul sistem."
         breadcrumbs={[
-        {
-            title: 'Master Users & Roles',
-            href: '',
-        },
-    ]}
+            {
+                title: 'Master Users & Roles',
+                href: '/users',
+            },
+        ]}
     >
         {page}
     </AppLayout>

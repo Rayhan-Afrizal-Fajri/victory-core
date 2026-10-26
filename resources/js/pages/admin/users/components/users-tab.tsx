@@ -2,26 +2,30 @@ import { router } from "@inertiajs/react"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table"; // Pastikan path import benar
+import { KeyRound, Edit, Trash2, Plus } from "lucide-react";
+import { DataTable } from "@/components/data-table";
 import type { DataTableColumn } from "@/components/data-table"
-import type { UserData } from "../types" // Sesuaikan path
+import type { UserData } from "../types"
 
 interface Props {
     users: UserData[]
     search?: string
     openEdit: (user: UserData) => void
+    openPassword?: (user: UserData) => void
+    openCreate?: () => void
     onDelete: (user: UserData) => void
 }
 
-export default function UsersTab({ users, search = '', openEdit, onDelete }: Props) {
+export default function UsersTab({ users, search = '', openEdit, openPassword, openCreate, onDelete }: Props) {
     
     // Handler Switch Status
     const handleToggleStatus = (user: UserData, checked: boolean) => {
         router.patch(route('users.update-status', user.id), {
-            status_aktif: checked
+            is_active: checked
         }, {
             preserveScroll: true,
             onSuccess: () => toast.success(`Status ${user.name} berhasil diubah.`),
+            onError: (errs) => toast.error(Object.values(errs).join('\n') || 'Gagal mengubah status'),
         });
     };
 
@@ -31,19 +35,27 @@ export default function UsersTab({ users, search = '', openEdit, onDelete }: Pro
             accessor: 'name',
             cell: (row) => (
                 <div>
-                    <p className="font-medium text-slate-900">{row.name}</p>
-                    <p className="text-xs text-slate-500">{row.email}</p>
+                    <p className="font-semibold text-foreground text-xs">{row.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{row.email}</p>
                 </div>
             )
         },
         {
             header: 'Role',
             accessor: 'roles',
-            cell: (row) => (
-                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                    {row.roles?.[0]?.name ? row.roles[0].name.replace(/_/g, ' ') : 'No Role'}
-                </span>
-            )
+            cell: (row) => {
+                const roleName = row.roles?.[0]?.name ? row.roles[0].name.replace(/_/g, ' ') : 'No Role';
+                const isOwner = row.roles?.[0]?.name?.toLowerCase() === 'owner';
+                return (
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ${
+                        isOwner
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                    }`}>
+                        {roleName}
+                    </span>
+                );
+            }
         },
         {
             header: 'Status',
@@ -54,25 +66,53 @@ export default function UsersTab({ users, search = '', openEdit, onDelete }: Pro
                     <Switch
                         checked={Boolean(row.is_active)}
                         onCheckedChange={(checked) => handleToggleStatus(row, checked)}
-                        className="data-[state=checked]:bg-emerald-500" 
+                        className="data-[state=checked]:bg-emerald-500 cursor-pointer" 
                     />
-                    <span className={`text-sm font-medium ${row.is_active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                    <span className={`text-xs font-semibold ${row.is_active ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                         {row.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
                 </div>
             ),
         },
         {
-            header: 'Action',
+            header: 'Aksi',
             accessor: 'id',
             sortable: false,
             cell: (row) => (
-                <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
-                        Edit
+                <div className="flex items-center gap-1.5">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs px-2 gap-1 cursor-pointer"
+                        onClick={() => openEdit(row)}
+                        title="Edit User"
+                    >
+                        <Edit className="h-3 w-3" />
+                        <span className="hidden sm:inline">Edit</span>
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => onDelete(row)}>
-                        Hapus
+
+                    {openPassword && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2 gap-1 cursor-pointer"
+                            onClick={() => openPassword(row)}
+                            title="Ganti Password"
+                        >
+                            <KeyRound className="h-3 w-3" />
+                            <span className="hidden sm:inline">Password</span>
+                        </Button>
+                    )}
+
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 text-xs px-2 gap-1 cursor-pointer"
+                        onClick={() => onDelete(row)}
+                        title="Hapus User"
+                    >
+                        <Trash2 className="h-3 w-3" />
+                        <span className="hidden sm:inline">Hapus</span>
                     </Button>
                 </div>
             )
@@ -87,7 +127,7 @@ export default function UsersTab({ users, search = '', openEdit, onDelete }: Pro
         : users;
 
     return (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
             <DataTable
                 columns={columns}
                 data={displayUsers}
