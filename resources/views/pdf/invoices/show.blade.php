@@ -290,7 +290,9 @@
                     //     ? ($pesanan->harga_sample_per_pcs ?? 0)
                     //     : ($pesanan->harga_jual_per_pcs ?? 0);
 
-                    $subtotal = $item->subtotal ?? $item->quantity * $item->price_per_pcs;
+                    $subtotal = ($item->subtotal && (float) $item->subtotal > 0)
+                        ? (float) $item->subtotal
+                        : ((float) ($item->quantity ?? 0) * (float) ($item->price_per_pcs ?? 0));
 
                     $grandSubtotal += $subtotal;
                 @endphp

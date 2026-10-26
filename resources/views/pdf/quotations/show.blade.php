@@ -231,17 +231,21 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 25%;" class="text-center">Produk</th>
-                <th style="width: 35%;" class="text-center">Deskripsi</th>
+                <th style="width: 22%;" class="text-center">Produk</th>
+                <th style="width: 28%;" class="text-center">Deskripsi</th>
                 <th style="width: 10%;" class="text-center">Kuantitas</th>
-                <th style="width: 10%;" class="text-center">Satuan</th>
-                <th style="width: 20%;" class="text-center">Harga</th>
+                <th style="width: 8%;" class="text-center">Satuan</th>
+                <th style="width: 16%;" class="text-center">Harga Satuan</th>
+                <th style="width: 16%;" class="text-center">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach($quotation->items as $index => $item)
                 @php
                     $pesanan = $item->pesanan;
+                    $itemTotal = ($item->subtotal && (float) $item->subtotal > 0)
+                        ? (float) $item->subtotal
+                        : ((float) $item->quantity * (float) $item->price_per_pcs);
                 @endphp
                 <tr>
                     <td>
@@ -268,6 +272,7 @@
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                     <td class="text-center">Pcs</td>
                     <td class="text-right">{{ number_format($item->price_per_pcs, 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($itemTotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
             
@@ -277,6 +282,7 @@
                 <td></td>
                 <td class="text-center">1</td>
                 <td class="text-center">Kirim</td>
+                <td class="text-right">{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
             </tr>
             @endif
@@ -330,7 +336,7 @@
                     </tr>
                     <tr>
                         <td class="summary-label text-right">Biaya Pengiriman</td>
-                        <td class="text-right font-bold">Rp{{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
+                        <td class="text-right font-bold">Rp {{ number_format($quotation->delivery_cost, 0, ',', '.') }}</td>
                     </tr>
                     <tr class="grand-total-row">
                         <td class="text-right" style="padding-top: 10px;">Total</td>
