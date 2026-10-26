@@ -399,7 +399,7 @@ function QcTaskCard({ task }: { task: QcTask }) {
 
                     {qcInvalid && (
                         <p className="text-[11px] text-red-600 leading-tight bg-red-50 p-1.5 rounded">
-                            Checked qty wajib > 0, maks {task.quantity}, dan Passed + Defect = Checked.
+                            Checked qty wajib &gt; 0, maks {task.quantity}, dan Passed + Defect = Checked.
                         </p>
                     )}
 

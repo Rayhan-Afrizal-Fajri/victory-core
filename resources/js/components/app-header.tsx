@@ -1,4 +1,5 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -69,6 +70,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const [openMobile, setOpenMobile] = useState(false);
+
+    useEffect(() => {
+        return router.on('navigate', () => {
+            setOpenMobile(false);
+            document.body.style.removeProperty('pointer-events');
+        });
+    }, []);
 
     return (
         <>
@@ -76,7 +85,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     {/* Mobile Menu */}
                     <div className="lg:hidden">
-                        <Sheet>
+                        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
                             <SheetTrigger asChild>
                                 <Button
                                     variant="ghost"
@@ -89,6 +98,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetContent
                                 side="left"
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
+                                onClick={(e) => {
+                                    if ((e.target as HTMLElement).closest('a')) {
+                                        setOpenMobile(false);
+                                    }
+                                }}
                             >
                                 <SheetTitle className="sr-only">
                                     Navigation menu

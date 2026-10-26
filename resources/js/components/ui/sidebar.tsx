@@ -1,4 +1,5 @@
 import { Slot } from "@radix-ui/react-slot"
+import { router } from "@inertiajs/react"
 import type { VariantProps} from "class-variance-authority";
 import { cva } from "class-variance-authority"
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react"
@@ -107,6 +108,21 @@ function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleSidebar])
 
+  // Automatically close mobile sidebar on Inertia page navigation
+  React.useEffect(() => {
+    return router.on("navigate", () => {
+      setOpenMobile(false)
+      document.body.style.removeProperty("pointer-events")
+    })
+  }, [])
+
+  // Close mobile sidebar if screen is resized to desktop
+  React.useEffect(() => {
+    if (!isMobile) {
+      setOpenMobile(false)
+    }
+  }, [isMobile])
+
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
@@ -195,7 +211,17 @@ function Sidebar({
           }
           side={side}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div
+            className="flex h-full w-full flex-col"
+            onClick={(event) => {
+              const target = event.target as HTMLElement
+              if (target.closest("a")) {
+                setOpenMobile(false)
+              }
+            }}
+          >
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     )
