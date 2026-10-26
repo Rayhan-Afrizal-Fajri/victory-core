@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
     BookOpen,
     Plus,
@@ -40,11 +40,21 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockCOA, ChartOfAccountItem } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingCOA() {
-    const [accounts, setAccounts] = useState<ChartOfAccountItem[]>(mockCOA);
+interface CoaProps {
+    accounts?: ChartOfAccountItem[];
+}
+
+export default function AccountingCOA({ accounts: propAccounts }: CoaProps) {
+    const [accounts, setAccounts] = useState<ChartOfAccountItem[]>((propAccounts && propAccounts.length > 0) ? propAccounts : mockCOA);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (propAccounts && propAccounts.length > 0) {
+            setAccounts(propAccounts);
+        }
+    }, [propAccounts]);
 
     // Form State for new account
     const [newAccountCode, setNewAccountCode] = useState('');
@@ -82,23 +92,26 @@ export default function AccountingCOA() {
             return;
         }
 
-        const newAccount: ChartOfAccountItem = {
-            code: newAccountCode,
-            name: newAccountName,
+        router.post('/admin/accounting/coa', {
+            account_code: newAccountCode,
+            account_name: newAccountName,
             category: newCategory,
-            subCategory: newSubCategory,
-            normalBalance: newNormalBalance,
-            balance: Number(newBalance) || 0,
-        };
-
-        setAccounts([newAccount, ...accounts]);
-        setIsAddModalOpen(false);
-        toast.success(`Akun ${newAccountCode} - ${newAccountName} berhasil ditambahkan!`);
-
-        // Reset
-        setNewAccountCode('');
-        setNewAccountName('');
-        setNewBalance(0);
+            sub_category: newSubCategory,
+            normal_balance: newNormalBalance,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAddModalOpen(false);
+                toast.success(`Akun ${newAccountCode} - ${newAccountName} berhasil ditambahkan!`);
+                setNewAccountCode('');
+                setNewAccountName('');
+                setNewBalance(0);
+            },
+            onError: (err) => {
+                const msg = Object.values(err)[0] as string || 'Gagal menambahkan akun.';
+                toast.error(msg);
+            }
+        });
     };
 
     const handleExportCOA = () => {
@@ -183,13 +196,13 @@ export default function AccountingCOA() {
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-muted/60 text-muted-foreground font-medium border-b">
                                     <tr>
-                                        <th className="p-3 w-[120px]">Kode Akun</th>
+                                        <th className="p-3 w-30">Kode Akun</th>
                                         <th className="p-3">Nama Rekening</th>
-                                        <th className="p-3 w-[140px]">Kategori</th>
-                                        <th className="p-3 w-[160px]">Sub-Kategori</th>
-                                        <th className="p-3 text-center w-[120px]">Posisi Normal</th>
-                                        <th className="p-3 text-right w-[180px]">Saldo Berjalan</th>
-                                        <th className="p-3 text-center w-[100px]">Aksi</th>
+                                        <th className="p-3 w-35">Kategori</th>
+                                        <th className="p-3 w-40">Sub-Kategori</th>
+                                        <th className="p-3 text-center w-30">Posisi Normal</th>
+                                        <th className="p-3 text-right w-45">Saldo Berjalan</th>
+                                        <th className="p-3 text-center w-25">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -272,7 +285,7 @@ export default function AccountingCOA() {
 
                 {/* MODAL TAMBAH AKUN BARU */}
                 <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                    <DialogContent className="sm:max-w-[480px]">
+                    <DialogContent className="sm:max-w-120">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold">Tambah Rekening Akuntansi</DialogTitle>
                             <DialogDescription className="text-xs">

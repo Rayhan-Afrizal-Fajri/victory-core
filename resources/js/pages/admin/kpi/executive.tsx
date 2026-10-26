@@ -185,7 +185,7 @@ export default function KpiExecutive() {
                                             <TrendingUp className="h-3 w-3" />
                                             {metric.trendValue}
                                         </span>
-                                        <span className="text-[11px] text-muted-foreground truncate max-w-[150px]">
+                                        <span className="text-[11px] text-muted-foreground truncate max-w-37.5">
                                             {metric.description}
                                         </span>
                                     </div>
@@ -226,7 +226,7 @@ export default function KpiExecutive() {
                                 ].map((item) => (
                                     <div key={item.month} className="space-y-1">
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="font-semibold text-foreground w-[80px]">{item.month}</span>
+                                            <span className="font-semibold text-foreground w-20">{item.month}</span>
                                             <div className="flex items-center gap-3 font-mono text-[11px]">
                                                 <span className="text-muted-foreground">Pendapatan: {formatCurrency(item.rev)}</span>
                                                 <span className="text-rose-600">HPP: {formatCurrency(item.cogs)}</span>
@@ -322,7 +322,7 @@ export default function KpiExecutive() {
 
                 {/* MODAL SETTING TARGET KPI */}
                 <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                    <DialogContent className="sm:max-w-[480px]">
+                    <DialogContent className="sm:max-w-120">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold">Konfigurasi Target KPI & Ambang Batas</DialogTitle>
                             <DialogDescription className="text-xs">

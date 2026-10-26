@@ -137,6 +137,11 @@ class Pesanan extends Model
         return $this->hasMany(ProductionRunProcess::class);
     }    
 
+    public function purchasings()
+    {
+        return $this->hasMany(Purchasing::class);
+    }
+
     public function sampleRun()
     {
         return $this->hasOne(ProductionRun::class, 'pesanan_id')

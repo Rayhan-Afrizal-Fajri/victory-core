@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     ArrowDownLeft,
@@ -30,22 +30,56 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockReceivables, ReceivableItem } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingReceivables() {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedStatementCustomer, setSelectedStatementCustomer] = useState<ReceivableItem | null>(null);
+interface ReceivableProps {
+    receivables?: any[];
+    summary?: {
+        totalAR: number;
+        totalPaid: number;
+        current: number;
+        aging1_30: number;
+        aging31_60: number;
+        aging61_90: number;
+        agingOver90: number;
+    };
+}
 
-    const filteredAR = mockReceivables.filter((ar) =>
+export default function AccountingReceivables({ receivables: propReceivables, summary }: ReceivableProps) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedStatementCustomer, setSelectedStatementCustomer] = useState<any | null>(null);
+
+    const items = useMemo(() => {
+        if (!propReceivables || propReceivables.length === 0) {
+            return mockReceivables;
+        }
+        return propReceivables.map((r) => ({
+            id: r.id,
+            invoiceNo: r.invoiceNumber,
+            jobTicketNo: r.jobTicketNo,
+            customer: r.customerName,
+            invoiceDate: r.issueDate,
+            dueDate: r.dueDate,
+            daysOverdue: r.daysOverdue,
+            totalAmount: r.totalAmount,
+            paidAmount: r.paidAmount,
+            remainingAmount: r.remainingAmount,
+            agingBucket: r.aging === 'current' ? 'current' : (r.aging === '1_30_days' ? '1-30' : (r.aging === '31_60_days' ? '31-60' : (r.aging === '61_90_days' ? '61-90' : '>90'))),
+            status: r.status,
+            contactPhone: '0812-xxxx-xxxx',
+        }));
+    }, [propReceivables]);
+
+    const filteredAR = items.filter((ar: any) =>
         ar.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ar.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ar.jobTicketNo.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Aging Buckets Calculation
-    const totalCurrent = mockReceivables.filter(r => r.agingBucket === 'current').reduce((a, c) => a + c.remainingAmount, 0);
-    const total1to30 = mockReceivables.filter(r => r.agingBucket === '1-30').reduce((a, c) => a + c.remainingAmount, 0);
-    const total31to60 = mockReceivables.filter(r => r.agingBucket === '31-60').reduce((a, c) => a + c.remainingAmount, 0);
-    const totalAbove60 = mockReceivables.filter(r => r.agingBucket === '61-90' || r.agingBucket === '>90').reduce((a, c) => a + c.remainingAmount, 0);
-    const totalReceivables = mockReceivables.reduce((a, c) => a + c.remainingAmount, 0);
+    const totalCurrent = summary ? summary.current : items.filter((r: any) => r.agingBucket === 'current').reduce((a: number, c: any) => a + c.remainingAmount, 0);
+    const total1to30 = summary ? summary.aging1_30 : items.filter((r: any) => r.agingBucket === '1-30').reduce((a: number, c: any) => a + c.remainingAmount, 0);
+    const total31to60 = summary ? summary.aging31_60 : items.filter((r: any) => r.agingBucket === '31-60').reduce((a: number, c: any) => a + c.remainingAmount, 0);
+    const totalAbove60 = summary ? (summary.aging61_90 + summary.agingOver90) : items.filter((r: any) => r.agingBucket === '61-90' || r.agingBucket === '>90').reduce((a: number, c: any) => a + c.remainingAmount, 0);
+    const totalReceivables = summary ? summary.totalAR : items.reduce((a: number, c: any) => a + c.remainingAmount, 0);
 
     const handleSendReminder = (customer: string) => {
         toast.success(`Pengingat tagihan (WhatsApp & Email) berhasil dikirim ke ${customer}`);
@@ -172,7 +206,7 @@ export default function AccountingReceivables() {
                                         <th className="p-3 text-right">Sudah Dibayar</th>
                                         <th className="p-3 text-right font-bold">Sisa Piutang</th>
                                         <th className="p-3 text-center">Status / Aging</th>
-                                        <th className="p-3 text-center w-[130px]">Aksi Penagihan</th>
+                                        <th className="p-3 text-center w-32.5">Aksi Penagihan</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -243,7 +277,7 @@ export default function AccountingReceivables() {
 
                 {/* MODAL STATEMENT OF ACCOUNT / REKENING KORAN PIUTANG */}
                 <Dialog open={!!selectedStatementCustomer} onOpenChange={() => setSelectedStatementCustomer(null)}>
-                    <DialogContent className="sm:max-w-[580px]">
+                    <DialogContent className="sm:max-w-145">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold flex items-center justify-between">
                                 <span>Statement of Account (Rekening Koran)</span>

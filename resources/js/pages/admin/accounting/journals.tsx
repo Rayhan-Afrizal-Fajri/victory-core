@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
     FileText,
     Plus,
@@ -41,16 +41,38 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockJournals, mockCOA, JournalEntry, JournalLine } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingJournals() {
-    const [journals, setJournals] = useState<JournalEntry[]>(mockJournals);
+interface JournalsProps {
+    journals?: {
+        data: JournalEntry[];
+        links: any[];
+        total: number;
+    } | JournalEntry[];
+    accounts?: any[];
+    filters?: any;
+}
+
+export default function AccountingJournals({ journals: propJournals, accounts: propAccounts }: JournalsProps) {
+    const rawJournals = useMemo(() => {
+        if (!propJournals) return mockJournals;
+        if (Array.isArray(propJournals)) return propJournals.length > 0 ? propJournals : mockJournals;
+        return propJournals.data && propJournals.data.length > 0 ? propJournals.data : mockJournals;
+    }, [propJournals]);
+
+    const availableAccounts = (propAccounts && propAccounts.length > 0) ? propAccounts : mockCOA;
+
+    const [journals, setJournals] = useState<JournalEntry[]>(rawJournals);
     const [viewMode, setViewMode] = useState<'journal' | 'ledger'>('journal');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRefType, setSelectedRefType] = useState<string>('all');
     const [selectedLedgerAccount, setSelectedLedgerAccount] = useState<string>('1-1120');
 
+    useEffect(() => {
+        setJournals(rawJournals);
+    }, [rawJournals]);
+
     // Manual Journal Modal State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-    const [journalDate, setJournalDate] = useState('2026-10-26');
+    const [journalDate, setJournalDate] = useState(new Date().toISOString().slice(0, 10));
     const [journalDescription, setJournalDescription] = useState('');
     const [manualLines, setManualLines] = useState<JournalLine[]>([
         { accountCode: '1-1110', accountName: 'Kas Operasional (Petty Cash Pabrik)', debit: 1500000, credit: 0 },
@@ -78,10 +100,10 @@ export default function AccountingJournals() {
     };
 
     const handleLineAccountChange = (index: number, code: string) => {
-        const found = mockCOA.find(c => c.code === code);
+        const found = availableAccounts.find((c: any) => (c.code || c.account_code) === code);
         const updated = [...manualLines];
         updated[index].accountCode = code;
-        updated[index].accountName = found ? found.name : '';
+        updated[index].accountName = found ? (found.name || found.account_name) : '';
         setManualLines(updated);
     };
 
@@ -102,24 +124,33 @@ export default function AccountingJournals() {
             return;
         }
 
-        const newEntry: JournalEntry = {
-            id: `JE-${Date.now()}`,
-            entryNumber: `JE/2026/10/01${journals.length + 29}`,
-            date: journalDate,
-            referenceType: 'manual',
-            referenceNumber: `MAN-${Date.now().toString().slice(-4)}`,
-            description: journalDescription,
-            lines: manualLines,
-            totalDebit: totalManualDebit,
-            totalCredit: totalManualCredit,
-            isAuto: false,
-            status: 'posted',
-        };
+        const payloadLines = manualLines.map(line => {
+            const acc = availableAccounts.find((c: any) => (c.code || c.account_code) === line.accountCode);
+            return {
+                account_id: acc ? acc.id : null,
+                account_code: line.accountCode,
+                debit: line.debit,
+                credit: line.credit,
+                memo: line.accountName,
+            };
+        });
 
-        setJournals([newEntry, ...journals]);
-        setIsManualModalOpen(false);
-        toast.success(`Jurnal ${newEntry.entryNumber} berhasil disimpan & diposting!`);
-        setJournalDescription('');
+        router.post('/admin/accounting/journals', {
+            entry_date: journalDate,
+            description: journalDescription,
+            lines: payloadLines,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsManualModalOpen(false);
+                toast.success('Jurnal manual berhasil disimpan & diposting ke Buku Besar!');
+                setJournalDescription('');
+            },
+            onError: (err) => {
+                const msg = Object.values(err)[0] as string || 'Gagal menyimpan jurnal manual.';
+                toast.error(msg);
+            }
+        });
     };
 
     // Filtered Journals

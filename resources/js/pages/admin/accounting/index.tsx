@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Wallet,
     ArrowDownLeft,
@@ -27,17 +27,45 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockCOA, mockJournals, mockJobCosting, mockReceivables, mockPayables } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingIndex() {
-    const [filterPeriod, setFilterPeriod] = useState('oktober-2026');
+interface OverviewProps {
+    overview?: {
+        totalCash: number;
+        totalAR: number;
+        totalAP: number;
+        netProfit: number;
+        totalRevenue: number;
+        totalCogs: number;
+        unpaidInvoicesCount: number;
+        unpaidBillsCount: number;
+    };
+    recentJournals?: any[];
+}
 
-    // Aggregate Calculations
-    const cashTotal = 8500000 + 74200000 + 35800000;
-    const arTotal = mockReceivables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
-    const apTotal = mockPayables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
-    const netProfitMonth = 25300000;
+export default function AccountingIndex({ overview, recentJournals }: OverviewProps) {
+    const [filterPeriod, setFilterPeriod] = useState('oktober-2026');
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // Aggregate Calculations (Real data with fallback)
+    const cashTotal = overview ? overview.totalCash : (8500000 + 74200000 + 35800000);
+    const arTotal = overview ? overview.totalAR : mockReceivables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
+    const apTotal = overview ? overview.totalAP : mockPayables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
+    const netProfitMonth = overview ? overview.netProfit : 25300000;
+
+    const displayJournals = (recentJournals && recentJournals.length > 0) ? recentJournals : mockJournals;
 
     const handleSyncEvent = () => {
-        toast.success('Sinkronisasi Event Operasional selesai! 6 Jurnal Otomatis ter-update.');
+        setIsSyncing(true);
+        router.post('/admin/accounting/sync', {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSyncing(false);
+                toast.success('Sinkronisasi Event Operasional selesai! Jurnal otomatis telah diperbarui.');
+            },
+            onError: () => {
+                setIsSyncing(false);
+                toast.error('Gagal sinkronisasi data operasional.');
+            }
+        });
     };
 
     return (
@@ -220,14 +248,20 @@ export default function AccountingIndex() {
                                     Transaksi operasional Victory Core dicatat otomatis ke jurnal umum tanpa input manual
                                 </CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" className="gap-1 text-xs cursor-pointer" onClick={handleSyncEvent}>
-                                <RefreshCw className="h-3.5 w-3.5" />
-                                <span>Sinkronisasi</span>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1 text-xs cursor-pointer" 
+                                onClick={handleSyncEvent}
+                                disabled={isSyncing}
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi'}</span>
                             </Button>
                         </CardHeader>
                         <CardContent>
                             <div className="divide-y rounded-lg border">
-                                {mockJournals.slice(0, 4).map((journal) => (
+                                {displayJournals.slice(0, 4).map((journal: any) => (
                                     <div key={journal.id} className="p-3.5 transition-colors hover:bg-muted/40">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
@@ -325,7 +359,7 @@ export default function AccountingIndex() {
                                         <tr key={job.id} className="hover:bg-muted/30 transition-colors">
                                             <td className="p-3 font-medium">
                                                 <span className="font-semibold text-primary">{job.jobTicketNo}</span>
-                                                <div className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                                                <div className="text-[11px] text-muted-foreground truncate max-w-50">
                                                     {job.productName}
                                                 </div>
                                             </td>

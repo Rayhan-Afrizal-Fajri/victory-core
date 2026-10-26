@@ -216,7 +216,7 @@ export default function AccountingExpenses() {
                     </Card>
 
                     {/* Reimbursement Card Action */}
-                    <Card className="bg-gradient-to-br from-primary/10 via-background to-primary/5 shadow-xs flex flex-col justify-between">
+                    <Card className="bg-linear-to-br from-primary/10 via-background to-primary/5 shadow-xs flex flex-col justify-between">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-xs font-semibold text-primary">Klaim Kas Kecil</CardTitle>
                             <CardDescription className="text-[11px]">
@@ -274,12 +274,12 @@ export default function AccountingExpenses() {
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-muted/60 text-muted-foreground font-medium border-b text-[11px]">
                                     <tr>
-                                        <th className="p-3 w-[140px]">No. Bukti & Tgl</th>
-                                        <th className="p-3 w-[150px]">Kategori & Akun</th>
+                                        <th className="p-3 w-35">No. Bukti & Tgl</th>
+                                        <th className="p-3 w-37.5">Kategori & Akun</th>
                                         <th className="p-3">Deskripsi / Peruntukan</th>
                                         <th className="p-3">Penerima Dana</th>
                                         <th className="p-3">Sumber Dana</th>
-                                        <th className="p-3 text-right w-[150px] font-bold">Nominal (Rp)</th>
+                                        <th className="p-3 text-right w-37.5 font-bold">Nominal (Rp)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -311,7 +311,7 @@ export default function AccountingExpenses() {
 
                 {/* MODAL CATAT PENGELUARAN BARU */}
                 <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                    <DialogContent className="sm:max-w-[500px]">
+                    <DialogContent className="sm:max-w-125">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold">Catat Beban Operasional / Kasbon</DialogTitle>
                             <DialogDescription className="text-xs">

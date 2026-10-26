@@ -36,7 +36,7 @@ export function KpiHeader({ activeTab, period = 'monthly', onPeriodChange, onOpe
     return (
         <div className="space-y-4">
             {/* STAGE 2 BANNER */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-primary/5 p-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-background to-primary/5 p-4 shadow-xs">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
                         <Gauge className="h-5 w-5" />

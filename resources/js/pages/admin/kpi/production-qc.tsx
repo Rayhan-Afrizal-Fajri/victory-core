@@ -235,11 +235,11 @@ export default function KpiProductionQc() {
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-muted/60 text-muted-foreground font-medium border-b text-[11px]">
                                     <tr>
-                                        <th className="p-3 w-[50px] text-center">Rank</th>
+                                        <th className="p-3 w-12.5 text-center">Rank</th>
                                         <th className="p-3">Penyebab Cacat (Defect Reason)</th>
-                                        <th className="p-3 text-right w-[100px]">Jumlah Kasus</th>
-                                        <th className="p-3 text-right w-[110px]">Frekuensi (%)</th>
-                                        <th className="p-3 text-right w-[130px]">Kumulatif (80/20)</th>
+                                        <th className="p-3 text-right w-25">Jumlah Kasus</th>
+                                        <th className="p-3 text-right w-27.5">Frekuensi (%)</th>
+                                        <th className="p-3 text-right w-32.5">Kumulatif (80/20)</th>
                                         <th className="p-3">Aksi Korektif Standar (Corrective Action)</th>
                                     </tr>
                                 </thead>

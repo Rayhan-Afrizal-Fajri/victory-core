@@ -30,6 +30,20 @@ use App\Http\Controllers\Admin\ProductionRunController;
 use App\Http\Controllers\Admin\PesananMaterialSpecController;
 use App\Http\Controllers\Admin\PesananManufacturingSpecController;
 use App\Http\Controllers\Admin\PurchasingExportController;
+use App\Http\Controllers\Admin\Accounting\AccountingOverviewController;
+use App\Http\Controllers\Admin\Accounting\ChartOfAccountController;
+use App\Http\Controllers\Admin\Accounting\JournalController;
+use App\Http\Controllers\Admin\Accounting\JobCostingController;
+use App\Http\Controllers\Admin\Accounting\ReceivableController;
+use App\Http\Controllers\Admin\Accounting\PayableController;
+use App\Http\Controllers\Admin\Accounting\ExpenseController;
+use App\Http\Controllers\Admin\Accounting\FinancialReportController;
+use App\Http\Controllers\Admin\Kpi\KpiExecutiveController;
+use App\Http\Controllers\Admin\Kpi\KpiProductionQcController;
+use App\Http\Controllers\Admin\Kpi\KpiCommercialFinancialController;
+use App\Http\Controllers\Admin\Kpi\KpiSupplierController;
+use App\Http\Controllers\Admin\Kpi\KpiWorkerController;
+use App\Http\Controllers\Admin\Kpi\KpiAlertController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -385,29 +399,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
 
     /**
-     * STAGE 2: ACCOUNTING MODULE PROTOTYPE
+     * STAGE 2: ACCOUNTING MODULE
      */
     Route::prefix('admin/accounting')->name('accounting.')->group(function () {
-        Route::get('/', fn () => Inertia::render('admin/accounting/index'))->name('index');
-        Route::get('/coa', fn () => Inertia::render('admin/accounting/coa'))->name('coa');
-        Route::get('/journals', fn () => Inertia::render('admin/accounting/journals'))->name('journals');
-        Route::get('/costing', fn () => Inertia::render('admin/accounting/costing'))->name('costing');
-        Route::get('/receivables', fn () => Inertia::render('admin/accounting/receivables'))->name('receivables');
-        Route::get('/payables', fn () => Inertia::render('admin/accounting/payables'))->name('payables');
-        Route::get('/expenses', fn () => Inertia::render('admin/accounting/expenses'))->name('expenses');
-        Route::get('/reports', fn () => Inertia::render('admin/accounting/reports'))->name('reports');
+        Route::get('/', [AccountingOverviewController::class, 'index'])->name('index');
+        Route::post('/sync', [AccountingOverviewController::class, 'sync'])->name('sync');
+        
+        Route::get('/coa', [ChartOfAccountController::class, 'index'])->name('coa');
+        Route::post('/coa', [ChartOfAccountController::class, 'store'])->name('coa.store');
+        Route::put('/coa/{account}', [ChartOfAccountController::class, 'update'])->name('coa.update');
+        Route::delete('/coa/{account}', [ChartOfAccountController::class, 'destroy'])->name('coa.destroy');
+
+        Route::get('/journals', [JournalController::class, 'index'])->name('journals');
+        Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
+
+        Route::get('/costing', [JobCostingController::class, 'index'])->name('costing');
+
+        Route::get('/receivables', [ReceivableController::class, 'index'])->name('receivables');
+
+        Route::get('/payables', [PayableController::class, 'index'])->name('payables');
+        Route::post('/payables/{bill}/payment', [PayableController::class, 'recordPayment'])->name('payables.payment');
+
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+
+        Route::get('/reports', [FinancialReportController::class, 'index'])->name('reports');
     });
 
     /**
-     * STAGE 2: KPI & ANALYTICS MODULE PROTOTYPE
+     * STAGE 2: KPI & ANALYTICS MODULE
      */
     Route::prefix('admin/kpi')->name('kpi.')->group(function () {
-        Route::get('/', fn () => Inertia::render('admin/kpi/executive'))->name('index');
-        Route::get('/executive', fn () => Inertia::render('admin/kpi/executive'))->name('executive');
-        Route::get('/production-qc', fn () => Inertia::render('admin/kpi/production-qc'))->name('production-qc');
-        Route::get('/commercial-financial', fn () => Inertia::render('admin/kpi/commercial-financial'))->name('commercial-financial');
-        Route::get('/suppliers', fn () => Inertia::render('admin/kpi/suppliers'))->name('suppliers');
-        Route::get('/workers', fn () => Inertia::render('admin/kpi/workers'))->name('workers');
+        Route::get('/', [KpiExecutiveController::class, 'index'])->name('index');
+        Route::get('/executive', [KpiExecutiveController::class, 'index'])->name('executive');
+        Route::get('/production-qc', [KpiProductionQcController::class, 'index'])->name('production-qc');
+        Route::get('/commercial-financial', [KpiCommercialFinancialController::class, 'index'])->name('commercial-financial');
+        Route::get('/suppliers', [KpiSupplierController::class, 'index'])->name('suppliers');
+        Route::get('/workers', [KpiWorkerController::class, 'index'])->name('workers');
+        Route::post('/alerts/{id}/acknowledge', [KpiAlertController::class, 'acknowledge'])->name('alerts.acknowledge');
+        Route::post('/targets', [KpiAlertController::class, 'saveTargets'])->name('targets.save');
     });
 });
 
@@ -415,23 +445,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
  * Stage 2 Direct Prototype Preview Routes (Accessible without login if presenting quickly)
  */
 Route::prefix('prototype/accounting')->group(function () {
-    Route::get('/', fn () => Inertia::render('admin/accounting/index'));
-    Route::get('/coa', fn () => Inertia::render('admin/accounting/coa'));
-    Route::get('/journals', fn () => Inertia::render('admin/accounting/journals'));
-    Route::get('/costing', fn () => Inertia::render('admin/accounting/costing'));
-    Route::get('/receivables', fn () => Inertia::render('admin/accounting/receivables'));
-    Route::get('/payables', fn () => Inertia::render('admin/accounting/payables'));
-    Route::get('/expenses', fn () => Inertia::render('admin/accounting/expenses'));
-    Route::get('/reports', fn () => Inertia::render('admin/accounting/reports'));
+    Route::get('/', [AccountingOverviewController::class, 'index']);
+    Route::get('/coa', [ChartOfAccountController::class, 'index']);
+    Route::get('/journals', [JournalController::class, 'index']);
+    Route::get('/costing', [JobCostingController::class, 'index']);
+    Route::get('/receivables', [ReceivableController::class, 'index']);
+    Route::get('/payables', [PayableController::class, 'index']);
+    Route::get('/expenses', [ExpenseController::class, 'index']);
+    Route::get('/reports', [FinancialReportController::class, 'index']);
 });
 
 Route::prefix('prototype/kpi')->group(function () {
-    Route::get('/', fn () => Inertia::render('admin/kpi/executive'));
-    Route::get('/executive', fn () => Inertia::render('admin/kpi/executive'));
-    Route::get('/production-qc', fn () => Inertia::render('admin/kpi/production-qc'));
-    Route::get('/commercial-financial', fn () => Inertia::render('admin/kpi/commercial-financial'));
-    Route::get('/suppliers', fn () => Inertia::render('admin/kpi/suppliers'));
-    Route::get('/workers', fn () => Inertia::render('admin/kpi/workers'));
+    Route::get('/', [KpiExecutiveController::class, 'index']);
+    Route::get('/executive', [KpiExecutiveController::class, 'index']);
+    Route::get('/production-qc', [KpiProductionQcController::class, 'index']);
+    Route::get('/commercial-financial', [KpiCommercialFinancialController::class, 'index']);
+    Route::get('/suppliers', [KpiSupplierController::class, 'index']);
+    Route::get('/workers', [KpiWorkerController::class, 'index']);
 });
 
 require __DIR__.'/settings.php';

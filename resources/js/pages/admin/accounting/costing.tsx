@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     Target,
@@ -34,22 +34,59 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockJobCosting, JobOrderCostItem } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingCosting() {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedJob, setSelectedJob] = useState<JobOrderCostItem | null>(null);
+interface CostingProps {
+    jobCostings?: any[];
+    summary?: {
+        totalEstimatedCogs: number;
+        totalActualCogs: number;
+        totalRevenue: number;
+        totalGrossProfit: number;
+        avgGrossMargin: number;
+        totalVariance: number;
+    };
+}
 
-    const filteredJobs = mockJobCosting.filter((job) =>
+export default function AccountingCosting({ jobCostings: propJobCostings, summary }: CostingProps) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedJob, setSelectedJob] = useState<any | null>(null);
+
+    const jobs = useMemo(() => {
+        if (!propJobCostings || propJobCostings.length === 0) {
+            return mockJobCosting;
+        }
+        return propJobCostings.map((c) => ({
+            id: c.id,
+            jobTicketNo: c.jobTicketNo,
+            customer: c.customerName,
+            productName: c.articleName,
+            qty: c.quantity,
+            revenue: c.revenueBilled,
+            estBOMCost: c.totalEstimatedCogs,
+            actualMaterial: c.actualMaterial,
+            actualLabor: c.actualLabor,
+            actualSubcon: c.actualSubcon,
+            defectScrapCost: c.defectScrapCost,
+            totalActualCost: c.totalActualCogs,
+            varianceAmount: c.costVariance,
+            variancePercent: c.costVariancePct,
+            grossProfit: c.grossProfit,
+            grossMarginPercent: c.grossMarginPct,
+            status: c.status,
+        }));
+    }, [propJobCostings]);
+
+    const filteredJobs = jobs.filter((job: any) =>
         job.jobTicketNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.productName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Aggregate Variance
-    const totalEstCost = mockJobCosting.reduce((acc, curr) => acc + curr.estBOMCost, 0);
-    const totalActCost = mockJobCosting.reduce((acc, curr) => acc + curr.totalActualCost, 0);
-    const totalRevenue = mockJobCosting.reduce((acc, curr) => acc + curr.revenue, 0);
-    const netVariance = totalActCost - totalEstCost;
-    const avgMargin = (mockJobCosting.reduce((acc, curr) => acc + curr.grossMarginPercent, 0) / mockJobCosting.length).toFixed(1);
+    const totalEstCost = summary ? summary.totalEstimatedCogs : jobs.reduce((acc: number, curr: any) => acc + curr.estBOMCost, 0);
+    const totalActCost = summary ? summary.totalActualCogs : jobs.reduce((acc: number, curr: any) => acc + curr.totalActualCost, 0);
+    const totalRevenue = summary ? summary.totalRevenue : jobs.reduce((acc: number, curr: any) => acc + curr.revenue, 0);
+    const netVariance = summary ? summary.totalVariance : (totalActCost - totalEstCost);
+    const avgMargin = summary ? summary.avgGrossMargin : (jobs.reduce((acc: number, curr: any) => acc + curr.grossMarginPercent, 0) / (jobs.length || 1)).toFixed(1);
 
     return (
         <>

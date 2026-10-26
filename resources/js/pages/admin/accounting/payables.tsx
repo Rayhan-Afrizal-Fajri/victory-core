@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
     ArrowUpRight,
     Search,
@@ -39,15 +39,53 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockPayables, PayableItem, mockCOA } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingPayables() {
-    const [payables, setPayables] = useState<PayableItem[]>(mockPayables);
+interface PayableProps {
+    payables?: any[];
+    paymentAccounts?: any[];
+    summary?: {
+        totalAP: number;
+        totalPaid: number;
+        current: number;
+        aging1_30: number;
+        aging31_60: number;
+        aging61_90: number;
+        agingOver90: number;
+    };
+}
+
+export default function AccountingPayables({ payables: propPayables, paymentAccounts: propPaymentAccounts, summary }: PayableProps) {
+    const rawPayables = useMemo(() => {
+        if (!propPayables || propPayables.length === 0) {
+            return mockPayables;
+        }
+        return propPayables.map((b) => ({
+            id: b.id,
+            billNumber: b.billNumber,
+            supplier: b.supplierName,
+            category: 'Bahan Baku & Aksesoris',
+            poRef: b.jobTicketNo,
+            billDate: b.billDate,
+            dueDate: b.dueDate,
+            daysOverdue: b.daysOverdue,
+            totalAmount: b.totalAmount,
+            paidAmount: b.paidAmount,
+            remainingAmount: b.remainingAmount,
+            status: b.remainingAmount <= 0 ? 'paid' : (b.paidAmount > 0 ? 'partial' : 'unpaid'),
+        }));
+    }, [propPayables]);
+
+    const [payables, setPayables] = useState<any[]>(rawPayables);
     const [searchTerm, setSearchTerm] = useState('');
-    const [payingBill, setPayingBill] = useState<PayableItem | null>(null);
+    const [payingBill, setPayingBill] = useState<any | null>(null);
+
+    useEffect(() => {
+        setPayables(rawPayables);
+    }, [rawPayables]);
 
     // Form State for Payment
     const [payAmount, setPayAmount] = useState<number>(0);
     const [payAccount, setPayAccount] = useState<string>('1-1120');
-    const [payDate, setPayDate] = useState<string>('2026-10-26');
+    const [payDate, setPayDate] = useState<string>(new Date().toISOString().slice(0, 10));
     const [payMethod, setPayMethod] = useState<string>('transfer');
 
     const filteredAP = payables.filter((bill) =>
@@ -57,10 +95,10 @@ export default function AccountingPayables() {
         bill.poRef.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const totalPayables = payables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
+    const totalPayables = summary ? summary.totalAP : payables.reduce((acc, curr) => acc + curr.remainingAmount, 0);
     const totalDueThisWeek = payables.filter(p => p.remainingAmount > 0).slice(0, 2).reduce((a, c) => a + c.remainingAmount, 0);
 
-    const handleOpenPayment = (bill: PayableItem) => {
+    const handleOpenPayment = (bill: any) => {
         setPayingBill(bill);
         setPayAmount(bill.remainingAmount);
     };
@@ -74,23 +112,26 @@ export default function AccountingPayables() {
             return;
         }
 
-        const updated = payables.map((item) => {
-            if (item.id === payingBill.id) {
-                const newPaid = item.paidAmount + payAmount;
-                const newRemaining = item.totalAmount - newPaid;
-                return {
-                    ...item,
-                    paidAmount: newPaid,
-                    remainingAmount: newRemaining,
-                    status: newRemaining === 0 ? ('paid' as const) : ('partial' as const),
-                };
-            }
-            return item;
-        });
+        const selectedAcc = (propPaymentAccounts || []).find((a: any) => a.account_code === payAccount || a.id === payAccount);
+        const accountId = selectedAcc ? selectedAcc.id : 1;
 
-        setPayables(updated);
-        setPayingBill(null);
-        toast.success(`Pembayaran sebesar ${formatCurrency(payAmount)} ke ${payingBill.supplier} berhasil dicatat & jurnal otomatis diposting!`);
+        router.post(`/admin/accounting/payables/${payingBill.id}/payment`, {
+            payment_date: payDate,
+            amount: payAmount,
+            payment_method: payMethod,
+            account_id: accountId,
+            notes: `Pembayaran tagihan ${payingBill.billNumber}`,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setPayingBill(null);
+                toast.success(`Pembayaran sebesar ${formatCurrency(payAmount)} ke ${payingBill.supplier} berhasil dicatat & jurnal otomatis diposting!`);
+            },
+            onError: (err) => {
+                const msg = Object.values(err)[0] as string || 'Gagal memproses pembayaran.';
+                toast.error(msg);
+            }
+        });
     };
 
     return (
@@ -198,7 +239,7 @@ export default function AccountingPayables() {
                                         <th className="p-3 text-right">Sudah Dibayar</th>
                                         <th className="p-3 text-right font-bold">Sisa Hutang</th>
                                         <th className="p-3 text-center">Status</th>
-                                        <th className="p-3 text-center w-[120px]">Aksi Bayar</th>
+                                        <th className="p-3 text-center w-30">Aksi Bayar</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -269,7 +310,7 @@ export default function AccountingPayables() {
 
                 {/* MODAL PELUNASAN HUTANG VENDOR */}
                 <Dialog open={!!payingBill} onOpenChange={() => setPayingBill(null)}>
-                    <DialogContent className="sm:max-w-[500px]">
+                    <DialogContent className="sm:max-w-125">
                         <DialogHeader>
                             <DialogTitle className="text-base font-semibold">Form Pembayaran Hutang Supplier</DialogTitle>
                             <DialogDescription className="text-xs">

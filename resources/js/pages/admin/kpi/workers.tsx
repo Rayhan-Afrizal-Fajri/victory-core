@@ -148,7 +148,7 @@ export default function KpiWorkers() {
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-muted/60 text-muted-foreground font-medium border-b text-[11px]">
                                     <tr>
-                                        <th className="p-3 w-[60px] text-center">Rank</th>
+                                        <th className="p-3 w-15 text-center">Rank</th>
                                         <th className="p-3">Nama Operator & Peran</th>
                                         <th className="p-3">Stasiun Kerja</th>
                                         <th className="p-3 text-right">Output Selesai</th>

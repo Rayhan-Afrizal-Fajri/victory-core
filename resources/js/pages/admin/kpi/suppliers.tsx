@@ -112,7 +112,7 @@ export default function KpiSuppliers() {
                                         <th className="p-3 text-right">Kualitas Bebas Cacat</th>
                                         <th className="p-3 text-right">Kompetisi Harga</th>
                                         <th className="p-3 text-center font-bold">Skor Akhir</th>
-                                        <th className="p-3 text-center w-[90px]">Grade</th>
+                                        <th className="p-3 text-center w-22.5">Grade</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
