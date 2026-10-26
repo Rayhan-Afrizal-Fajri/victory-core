@@ -202,7 +202,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('samples.media.store');
 
     Route::delete('/samples/{sample}/media', [SampleController::class, 'deleteMedia'])
-        ->name('samples.media.store');
+        ->name('samples.media.delete');
 
     Route::patch('/samples/{sample}/start', [SampleController::class, 'start'])
         ->name('samples.start');
