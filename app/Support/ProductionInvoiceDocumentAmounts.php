@@ -24,6 +24,9 @@ class ProductionInvoiceDocumentAmounts
             'settlement_total' => $settlementTotal,
             'settlement_paid' => $settlementPaid,
             'settlement_remaining' => $settlementTotal - $settlementPaid,
+            'full_total' => $total,
+            'full_paid' => $verifiedPaid,
+            'full_remaining' => max($total - $verifiedPaid, 0),
         ];
     }
 }

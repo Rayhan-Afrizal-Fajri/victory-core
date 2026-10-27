@@ -49,4 +49,19 @@ class DocumentFilenameTest extends TestCase
 
         $this->assertSame('Dokumen - Customer - Tanpa Artikel.pdf', $filename);
     }
+
+    public function test_it_formats_invoice_keseluruhan_filename(): void
+    {
+        $filename = DocumentFilename::make(
+            'INV/2026/10/001',
+            'PT Victory Maju',
+            ['Kemeja Tactical Drill'],
+            'Invoice Keseluruhan'
+        );
+
+        $this->assertSame(
+            'INV-2026-10-001 - PT Victory Maju - Kemeja Tactical Drill - Invoice Keseluruhan.pdf',
+            $filename
+        );
+    }
 }

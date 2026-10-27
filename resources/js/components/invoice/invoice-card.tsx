@@ -199,6 +199,17 @@ const InvoiceCard = ({
                                 >
                                     Cetak Pelunasan ({settlementPercentage}%)
                                 </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        window.open(
+                                            `/invoices/${invoice.id}/print?document=full`,
+                                            '_blank'
+                                        )
+                                    }
+                                >
+                                    Cetak Invoice Keseluruhan
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </>

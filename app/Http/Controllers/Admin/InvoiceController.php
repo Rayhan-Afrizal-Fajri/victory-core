@@ -469,7 +469,10 @@ class InvoiceController extends Controller
         ])->findOrFail($invoiceId);
 
         $documentType = $request->query('document');
-        if (! in_array($documentType, ['dp', 'settlement'], true)) {
+        if ($documentType === 'keseluruhan') {
+            $documentType = 'full';
+        }
+        if (! in_array($documentType, ['dp', 'settlement', 'full'], true)) {
             $documentType = null;
         }
 
@@ -480,7 +483,7 @@ class InvoiceController extends Controller
         );
 
         if ($documentType && ! $isProductionInvoice) {
-            abort(422, 'Dokumen DP dan pelunasan hanya tersedia untuk invoice produksi.');
+            abort(422, 'Dokumen DP, pelunasan, dan invoice keseluruhan hanya tersedia untuk invoice produksi.');
         }
 
         $verifiedPaid = (float) $invoice->payments
@@ -522,6 +525,7 @@ class InvoiceController extends Controller
         $documentTitle = match ($documentType) {
             'dp' => 'DP Produksi',
             'settlement' => 'Pelunasan Produksi',
+            'full' => 'Invoice Keseluruhan',
             default => null,
         };
 
@@ -581,7 +585,7 @@ class InvoiceController extends Controller
             'documentStatus' => $documentStatus,
             'documentTotalLabel' => $documentType === 'dp'
                 ? "Tagihan DP ({$dpLabelPct}%)"
-                : ($documentType === 'settlement' ? "Tagihan Pelunasan ({$settlementLabelPct}%)" : 'Total Amount'),
+                : ($documentType === 'settlement' ? "Tagihan Pelunasan ({$settlementLabelPct}%)" : ($documentType === 'full' ? 'Total Tagihan (100%)' : 'Total Amount')),
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream(DocumentFilename::make(

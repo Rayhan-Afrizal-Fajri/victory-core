@@ -52,5 +52,19 @@ class ProductionInvoiceDocumentAmountsTest extends TestCase
         $this->assertSame(35_000_000.0, $amounts['settlement_total']);
         $this->assertSame(0.0, $amounts['settlement_paid']);
         $this->assertSame(35_000_000.0, $amounts['settlement_remaining']);
+        $this->assertSame(50_000_000.0, $amounts['full_total']);
+        $this->assertSame(15_000_000.0, $amounts['full_paid']);
+        $this->assertSame(35_000_000.0, $amounts['full_remaining']);
+    }
+
+    public function test_full_payment_calculates_correctly(): void
+    {
+        $amounts = ProductionInvoiceDocumentAmounts::calculate(50_000_000, 50_000_000, 50.0);
+
+        $this->assertSame(50_000_000.0, $amounts['full_total']);
+        $this->assertSame(50_000_000.0, $amounts['full_paid']);
+        $this->assertSame(0.0, $amounts['full_remaining']);
+        $this->assertSame(25_000_000.0, $amounts['dp_paid']);
+        $this->assertSame(25_000_000.0, $amounts['settlement_paid']);
     }
 }

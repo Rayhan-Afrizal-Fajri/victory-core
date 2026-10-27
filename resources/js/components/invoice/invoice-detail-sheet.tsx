@@ -18,6 +18,12 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import InvoicePaymentList from './invoice-payment-list';
 
@@ -265,14 +271,45 @@ const InvoiceDetailSheet = ({
 
                             <div className="flex flex-wrap gap-2">
                                 {isProd ? (
-                                    <>
-                                        <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=dp`, '_blank')}>
-                                            <Printer className="size-4" /> Cetak DP ({dpPercentage}%)
-                                        </Button>
-                                        <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print?document=settlement`, '_blank')}>
-                                            <Printer className="size-4" /> Cetak Pelunasan ({settlementPercentage}%)
-                                        </Button>
-                                    </>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary">
+                                                <Printer className="size-4" /> Cetak
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    window.open(
+                                                        `/invoices/${invoice.id}/print?document=dp`,
+                                                        '_blank'
+                                                    )
+                                                }
+                                            >
+                                                Cetak DP ({dpPercentage}%)
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    window.open(
+                                                        `/invoices/${invoice.id}/print?document=settlement`,
+                                                        '_blank'
+                                                    )
+                                                }
+                                            >
+                                                Cetak Pelunasan ({settlementPercentage}%)
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    window.open(
+                                                        `/invoices/${invoice.id}/print?document=full`,
+                                                        '_blank'
+                                                    )
+                                                }
+                                            >
+                                                Cetak Invoice Keseluruhan
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 ) : (
                                     <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
                                         <Printer className="size-4" /> Cetak

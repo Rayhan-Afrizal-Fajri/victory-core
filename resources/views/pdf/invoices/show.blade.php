@@ -178,7 +178,7 @@
                 <img src="{{ public_path('images/logo.png') }}" alt="Victory Labs" style="max-height: 45px;">
             </td>
             <td style="width: 50%; vertical-align: top;" class="text-right">
-                <div class="doc-title">{{ $documentTitle ? 'INVOICE - ' . strtoupper($documentTitle) : 'INVOICE' }}</div>
+                <div class="doc-title">{{ $documentTitle ? (str_starts_with(strtoupper($documentTitle), 'INVOICE') ? strtoupper($documentTitle) : 'INVOICE - ' . strtoupper($documentTitle)) : 'INVOICE' }}</div>
                 <table class="meta-table">
                     <tr>
                         <td class="text-right" style="color: #111827;">No Invoice</td>
@@ -211,8 +211,12 @@
 
     <div class="title">
         @if($documentTitle)
-            {{ strtoupper($documentTitle) }}<br>
-            INVOICE
+            @if(str_starts_with(strtoupper($documentTitle), 'INVOICE'))
+                {{ strtoupper($documentTitle) }}
+            @else
+                {{ strtoupper($documentTitle) }}<br>
+                INVOICE
+            @endif
         @else
             {{ $invoice->kategori_invoice === 'sample' ? 'SAMPLE' : '' }} <br>
             {{ $invoice->kategori_invoice === 'sample' ? 'PROFORMA ' : '' }}
