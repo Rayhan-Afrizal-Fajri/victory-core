@@ -7,8 +7,10 @@ use App\Models\Accounting\ChartOfAccount;
 use App\Models\Accounting\JobOrderCost;
 use App\Models\Accounting\JournalEntryLine;
 use App\Models\Accounting\OperationalExpense;
+use App\Models\CompanyProfile;
 use App\Models\Invoice;
 use App\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +18,48 @@ use Inertia\Response;
 class FinancialReportController extends Controller
 {
     public function index(Request $request): Response
+    {
+        return Inertia::render('admin/accounting/reports', $this->getFinancialData());
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $type = $request->query('type', 'income-statement');
+        $allData = $this->getFinancialData();
+        $company = CompanyProfile::first() ?? (object) [
+            'nama_perusahaan' => 'VICTORY GARMENT MANUFACTURING',
+            'alamat' => 'Bandung, Jawa Barat',
+            'telepon' => '(022) 8765-4321',
+            'email' => 'finance@victorygarment.id',
+        ];
+
+        $title = match ($type) {
+            'balance-sheet' => 'Laporan Neraca Keuangan (Balance Sheet)',
+            'trial-balance' => 'Neraca Saldo Penutupan (Trial Balance)',
+            default => 'Laporan Laba Rugi Komprehensif (Income Statement)',
+        };
+
+        $subtitle = 'Periode Pembukuan s/d ' . now()->translatedFormat('d F Y');
+        $filename = strtolower(str_replace([' ', '(', ')'], ['_', '', ''], $title)) . '_' . now()->format('Ymd') . '.pdf';
+
+        $payload = match ($type) {
+            'balance-sheet' => $allData['balanceSheet'],
+            'trial-balance' => ['trialBalance' => $allData['trialBalance']],
+            default => $allData['incomeStatement'],
+        };
+
+        $pdf = Pdf::loadView('pdf.accounting.financial-report', [
+            'title' => $title,
+            'subtitle' => $subtitle,
+            'reportType' => $type,
+            'company' => $company,
+            'data' => $payload,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download($filename);
+    }
+
+    public function getFinancialData(): array
     {
         // 1. Income Statement (Laba Rugi)
         $revenueAccounts = ChartOfAccount::where('category', 'revenue')->get();
@@ -112,7 +156,7 @@ class FinancialReportController extends Controller
             ->filter(fn ($t) => $t['debit'] > 0 || $t['credit'] > 0)
             ->values();
 
-        return Inertia::render('admin/accounting/reports', [
+        return [
             'incomeStatement' => [
                 'revenues' => $revenues,
                 'totalRevenue' => $totalRevenue,
@@ -131,6 +175,6 @@ class FinancialReportController extends Controller
                 'totalEquity' => $totalEquity,
             ],
             'trialBalance' => $trialBalance,
-        ]);
+        ];
     }
 }

@@ -149,7 +149,10 @@ export default function KpiSuppliers({
                                 variant="outline"
                                 size="sm"
                                 className="text-xs cursor-pointer"
-                                onClick={() => toast.success('Evaluasi Supplier berhasil diekspor ke format PDF!')}
+                                onClick={() => {
+                                    window.open('/admin/kpi/suppliers/export/scorecard', '_blank');
+                                    toast.success('Mengunduh Raport Evaluasi Kinerja Supplier (PDF)...');
+                                }}
                             >
                                 Cetak Raport Supplier
                             </Button>

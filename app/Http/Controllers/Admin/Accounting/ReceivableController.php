@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompanyProfile;
 use App\Models\Invoice;
 use App\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -78,5 +80,69 @@ class ReceivableController extends Controller
                 'agingOver90' => $agingOver90,
             ],
         ]);
+    }
+
+    public function exportStatement($id)
+    {
+        $targetInvoice = Invoice::with(['jobTicket.customer', 'payments'])->findOrFail($id);
+        $job = $targetInvoice->jobTicket;
+        $customer = $job ? $job->customer : null;
+        $customerId = $customer ? $customer->id : null;
+        $customerName = $job ? ($job->customer_nama_snapshot ?: ($customer ? ($customer->nama ?: $customer->name) : 'Pelanggan')) : 'Pelanggan';
+
+        // Get all invoices for this customer
+        $query = Invoice::with(['jobTicket', 'payments']);
+        if ($customerId) {
+            $query->whereHas('jobTicket', fn ($q) => $q->where('customer_id', $customerId));
+        } else {
+            $query->where('id', $targetInvoice->id);
+        }
+
+        $allInvoices = $query->get()->map(function ($inv) {
+            $total = (float) $inv->total_tagihan;
+            $verified = (float) $inv->payments->where('status', 'verified')->sum('jumlah_bayar');
+            $rem = max(0, $total - $verified);
+            $dueDate = $inv->tgl_jatuh_tempo ? date('Y-m-d', strtotime($inv->tgl_jatuh_tempo)) : ($inv->created_at ? $inv->created_at->addDays(30)->format('Y-m-d') : now()->format('Y-m-d'));
+            $overdue = (int) round((time() - strtotime($dueDate)) / 86400);
+
+            return [
+                'invoiceNumber' => $inv->no_invoice,
+                'issueDate' => $inv->created_at ? $inv->created_at->format('d/m/Y') : '-',
+                'jobTicketNo' => $inv->jobTicket ? $inv->jobTicket->no_job_ticket : '-',
+                'category' => $inv->kategori_invoice,
+                'dueDate' => date('d/m/Y', strtotime($dueDate)),
+                'daysOverdue' => max(0, $overdue),
+                'totalAmount' => $total,
+                'paidAmount' => $verified,
+                'remainingAmount' => $rem,
+            ];
+        });
+
+        $company = CompanyProfile::first() ?? (object) [
+            'nama_perusahaan' => 'VICTORY GARMENT MANUFACTURING',
+            'alamat' => 'Bandung, Jawa Barat',
+            'telepon' => '(022) 8765-4321',
+            'email' => 'finance@victorygarment.id',
+        ];
+
+        $totalBilled = $allInvoices->sum('totalAmount');
+        $totalPaid = $allInvoices->sum('paidAmount');
+        $outstanding = $allInvoices->sum('remainingAmount');
+
+        $pdf = Pdf::loadView('pdf.accounting.statement-of-account', [
+            'company' => $company,
+            'customerName' => $customerName,
+            'customerCompany' => $job?->customer_perusahaan_snapshot ?? $customer?->nama_perusahaan ?? '',
+            'customerPhone' => $customer?->kontak ?? '',
+            'customerEmail' => $customer?->email ?? '',
+            'customerAddress' => $customer?->alamat ?? '',
+            'invoices' => $allInvoices,
+            'totalBilled' => $totalBilled,
+            'totalPaid' => $totalPaid,
+            'outstanding' => $outstanding,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'kartu_piutang_' . strtolower(str_replace([' ', '/', '\\'], '_', $customerName)) . '_' . now()->format('Ymd') . '.pdf';
+        return $pdf->download($filename);
     }
 }

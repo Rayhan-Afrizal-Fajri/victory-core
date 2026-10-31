@@ -156,7 +156,14 @@ export default function AccountingReports({
     }, [propTrialBalance]);
 
     const handleExport = (format: 'pdf' | 'excel') => {
-        toast.success(`Laporan Keuangan berhasil diekspor ke format ${format.toUpperCase()}!`);
+        const typeMap: Record<string, string> = {
+            pnl: 'income-statement',
+            bs: 'balance-sheet',
+            tb: 'trial-balance',
+        };
+        const exportType = typeMap[reportType] || 'income-statement';
+        window.open(`/admin/accounting/reports/export/pdf?type=${exportType}`, '_blank');
+        toast.success(`Mengunduh Laporan Keuangan format ${format.toUpperCase()}...`);
     };
 
     return (

@@ -416,6 +416,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/costing', [JobCostingController::class, 'index'])->name('costing');
 
         Route::get('/receivables', [ReceivableController::class, 'index'])->name('receivables');
+        Route::get('/receivables/{invoice}/statement', [ReceivableController::class, 'exportStatement'])->name('receivables.statement');
 
         Route::get('/payables', [PayableController::class, 'index'])->name('payables');
         Route::post('/payables/{bill}/payment', [PayableController::class, 'recordPayment'])->name('payables.payment');
@@ -424,6 +425,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
 
         Route::get('/reports', [FinancialReportController::class, 'index'])->name('reports');
+        Route::get('/reports/export/pdf', [FinancialReportController::class, 'exportPdf'])->name('reports.export.pdf');
     });
 
     /**
@@ -435,7 +437,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/production-qc', [KpiProductionQcController::class, 'index'])->name('production-qc');
         Route::get('/commercial-financial', [KpiCommercialFinancialController::class, 'index'])->name('commercial-financial');
         Route::get('/suppliers', [KpiSupplierController::class, 'index'])->name('suppliers');
+        Route::get('/suppliers/export/scorecard', [KpiSupplierController::class, 'exportScorecard'])->name('suppliers.export.scorecard');
         Route::get('/workers', [KpiWorkerController::class, 'index'])->name('workers');
+        Route::get('/workers/export/slip', [KpiWorkerController::class, 'exportSlip'])->name('workers.export.slip');
         Route::post('/alerts/{id}/acknowledge', [KpiAlertController::class, 'acknowledge'])->name('alerts.acknowledge');
         Route::post('/targets', [KpiAlertController::class, 'saveTargets'])->name('targets.save');
     });
@@ -450,9 +454,11 @@ Route::prefix('prototype/accounting')->group(function () {
     Route::get('/journals', [JournalController::class, 'index']);
     Route::get('/costing', [JobCostingController::class, 'index']);
     Route::get('/receivables', [ReceivableController::class, 'index']);
+    Route::get('/receivables/{invoice}/statement', [ReceivableController::class, 'exportStatement']);
     Route::get('/payables', [PayableController::class, 'index']);
     Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::get('/reports', [FinancialReportController::class, 'index']);
+    Route::get('/reports/export/pdf', [FinancialReportController::class, 'exportPdf']);
 });
 
 Route::prefix('prototype/kpi')->group(function () {
@@ -461,7 +467,9 @@ Route::prefix('prototype/kpi')->group(function () {
     Route::get('/production-qc', [KpiProductionQcController::class, 'index']);
     Route::get('/commercial-financial', [KpiCommercialFinancialController::class, 'index']);
     Route::get('/suppliers', [KpiSupplierController::class, 'index']);
+    Route::get('/suppliers/export/scorecard', [KpiSupplierController::class, 'exportScorecard']);
     Route::get('/workers', [KpiWorkerController::class, 'index']);
+    Route::get('/workers/export/slip', [KpiWorkerController::class, 'exportSlip']);
 });
 
 require __DIR__.'/settings.php';

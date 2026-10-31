@@ -153,7 +153,10 @@ export default function KpiWorkers({ workers: propWorkers }: WorkerProps) {
                             variant="outline"
                             size="sm"
                             className="gap-1.5 text-xs cursor-pointer"
-                            onClick={() => toast.success('Rekap Slip Gaji Borongan Mingguan berhasil diunduh!')}
+                            onClick={() => {
+                                window.open('/admin/kpi/workers/export/slip', '_blank');
+                                toast.success('Mengunduh Rekap Slip Gaji Borongan Mingguan (PDF)...');
+                            }}
                         >
                             <Download className="h-3.5 w-3.5" />
                             <span>Export Slip Borongan</span>

@@ -331,7 +331,8 @@ export default function AccountingReceivables({ receivables: propReceivables, su
                                         variant="outline"
                                         className="text-xs cursor-pointer"
                                         onClick={() => {
-                                            toast.success('File PDF Statement of Account berhasil diunduh!');
+                                            window.open(`/admin/accounting/receivables/${selectedStatementCustomer.id}/statement`, '_blank');
+                                            toast.success('Mengunduh File PDF Statement of Account...');
                                             setSelectedStatementCustomer(null);
                                         }}
                                     >

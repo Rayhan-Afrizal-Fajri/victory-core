@@ -17,8 +17,6 @@ import PasswordModal from './components/password-modal';
 import { toast } from 'sonner';
 import { useCan } from '@/hooks/use-can';
 
-import { destroy as userDestroy } from '@/routes/users';
-
 // --- TYPES ---
 export type Permission = { id: number; name: string; description?: string; module?: string };
 

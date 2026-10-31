@@ -14,7 +14,9 @@ export type RoleData = {
 export type UserData = {
     id: number;
     name: string;
+    username?: string;
     email: string;
+    phone?: string;
     roles: RoleData[];
     password?: string;
     is_active: boolean;

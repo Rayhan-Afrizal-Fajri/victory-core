@@ -20,7 +20,7 @@ export default function UsersTab({ users, search = '', openEdit, openPassword, o
     
     // Handler Switch Status
     const handleToggleStatus = (user: UserData, checked: boolean) => {
-        router.patch(route('users.update-status', user.id), {
+        router.patch(`/users/${user.id}/toggle-status`, {
             is_active: checked
         }, {
             preserveScroll: true,

@@ -84,10 +84,12 @@ export default function UserCard({ user, onEdit, onPassword, onDelete }: Props) 
                             <Mail className="size-3" />
                             {user.email}
                         </div>
-                        <div className='flex items-center gap-1'>
-                            <User className="size-3" />
-                            {user.username}
-                        </div>
+                        {user.username && (
+                            <div className='flex items-center gap-1'>
+                                <User className="size-3" />
+                                {user.username}
+                            </div>
+                        )}
                         {user.phone &&
                         <div className='flex items-center gap-1'>
                             <Phone className="size-3" />

@@ -133,3 +133,19 @@ Semua halaman frontend berikut telah di-upgrade dari prototype statis menjadi ap
    - `php artisan victory:calculate-kpi` berjalan sukses, mencatat 13 metrik snapshot harian ke dalam database.
 3. **Penyelarasan Tipe & Struktur**:
    - Semua antarmuka props dan alias relasi model (`JobTicket->pesanan`, `Supplier->purchasings`, `Pesanan->purchasings`) telah disesuaikan dan berfungsi tanpa kendala.
+
+---
+
+## 5. FITUR EKSPOR DOKUMEN RESMI (PDF ENGINE)
+
+Seluruh template dan backend generator dokumen resmi PDF telah selesai dibangun menggunakan DomPDF dan terintegrasi langsung pada tombol antarmuka:
+
+1. **Laporan Keuangan Resmi (PDF)** (`/admin/accounting/reports/export/pdf`):
+   - Mendukung format Laporan Laba Rugi Komprehensif (Multi-Step), Neraca Keuangan (Balance Sheet), dan Neraca Saldo (Trial Balance).
+   - Dilengkapi kop perusahaan resmi, tanggal audit, dan tanda tangan Direktur & Finance.
+2. **Statement of Account / Kartu Piutang Customer (PDF)** (`/admin/accounting/receivables/{id}/statement`):
+   - Dokumen rekapitulasi penagihan invoice per customer, riwayat bayar, saldo piutang berjalan, umur piutang (aging), dan nomor rekening bank BCA & Mandiri untuk transfer.
+3. **Papan Evaluasi Kinerja Supplier (PDF)** (`/admin/kpi/suppliers/export/scorecard`):
+   - Raport resmi penilaian supplier mencakup total pesanan, total belanja, rata-rata lead time, reject rate %, dan peringkat Grade A–D.
+4. **Rekapitulasi Slip Upah Borongan Operator (PDF)** (`/admin/kpi/workers/export/slip`):
+   - Rekap hak upah operator jahit, potong, dan finishing berdasarkan kuantitas output validasi QC shopfloor.

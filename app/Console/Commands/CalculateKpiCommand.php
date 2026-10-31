@@ -151,3 +151,4 @@ class CalculateKpiCommand extends Command
         return Command::SUCCESS;
     }
 }
+
