@@ -58,7 +58,19 @@ export default function AccountingJournals({ journals: propJournals, accounts: p
         return propJournals.data && propJournals.data.length > 0 ? propJournals.data : mockJournals;
     }, [propJournals]);
 
-    const availableAccounts = (propAccounts && propAccounts.length > 0) ? propAccounts : mockCOA;
+    const availableAccounts = useMemo(() => {
+        if (propAccounts && propAccounts.length > 0) {
+            return propAccounts.map((a: any) => ({
+                id: a.id,
+                code: a.account_code || a.code,
+                name: a.account_name || a.name,
+                normalBalance: a.normal_balance || a.normalBalance || 'debit',
+                balance: a.balance || 0,
+                isHeader: a.isHeader || false,
+            }));
+        }
+        return mockCOA;
+    }, [propAccounts]);
 
     const [journals, setJournals] = useState<JournalEntry[]>(rawJournals);
     const [viewMode, setViewMode] = useState<'journal' | 'ledger'>('journal');
@@ -167,8 +179,8 @@ export default function AccountingJournals({ journals: propJournals, accounts: p
 
     // Ledger Calculation for Selected Account
     const ledgerData = useMemo(() => {
-        const targetAcc = mockCOA.find(c => c.code === selectedLedgerAccount);
-        let runningBalance = targetAcc ? targetAcc.balance - 25000000 : 0; // baseline
+        const targetAcc = availableAccounts.find((c: any) => c.code === selectedLedgerAccount);
+        let runningBalance = targetAcc ? (targetAcc.balance || 0) : 0;
         const rows: any[] = [];
 
         journals.forEach((j) => {
@@ -261,7 +273,7 @@ export default function AccountingJournals({ journals: propJournals, accounts: p
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {mockCOA.filter(c => !c.isHeader).map(c => (
+                                        {availableAccounts.filter((c: any) => !c.isHeader).map((c: any) => (
                                             <SelectItem key={c.code} value={c.code}>
                                                 {c.code} - {c.name}
                                             </SelectItem>
@@ -527,7 +539,7 @@ export default function AccountingJournals({ journals: propJournals, accounts: p
                                                             onChange={(e) => handleLineAccountChange(idx, e.target.value)}
                                                             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground shadow-xs focus:ring-1 focus:ring-primary"
                                                         >
-                                                            {mockCOA.filter(c => !c.isHeader).map(c => (
+                                                            {availableAccounts.filter((c: any) => !c.isHeader).map((c: any) => (
                                                                 <option key={c.code} value={c.code}>
                                                                     {c.code} - {c.name}
                                                                 </option>

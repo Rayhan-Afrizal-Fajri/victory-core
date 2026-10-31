@@ -39,7 +39,6 @@ class AccountingOverviewController extends Controller
             });
 
         $totalCash = $cashAccounts->sum('balance');
-        // If cash accounts haven't been seeded with initial balances, calculate verified payments
         if ($totalCash <= 0) {
             $totalCash = (float) Payment::where('status', 'verified')->sum('jumlah_bayar');
         }
@@ -88,6 +87,30 @@ class AccountingOverviewController extends Controller
                 ];
             });
 
+        // 6. Recent Real Job Order Costings
+        $recentCostings = JobOrderCost::with(['pesanan', 'jobTicket'])
+            ->orderByDesc('id')
+            ->take(6)
+            ->get()
+            ->map(function ($cost) {
+                $job = $cost->jobTicket;
+                $pesanan = $cost->pesanan;
+                return [
+                    'id' => $cost->id,
+                    'jobTicketNo' => $job ? $job->no_job_ticket : "PO-{$cost->id}",
+                    'customer' => $job ? ($job->customer_nama_snapshot ?: 'Pelanggan') : 'Pelanggan',
+                    'productName' => $pesanan ? ($pesanan->produk ?: $pesanan->requested_product_name) : 'Pakaian Garment',
+                    'qty' => $cost->quantity ?: 100,
+                    'revenue' => (float) $cost->revenue_billed,
+                    'estBOMCost' => (float) $cost->total_estimated_cogs,
+                    'totalActualCost' => (float) $cost->total_actual_cogs,
+                    'varianceAmount' => (float) $cost->cost_variance,
+                    'variancePercent' => (float) $cost->cost_variance_pct,
+                    'grossProfit' => (float) $cost->gross_profit,
+                    'grossMarginPercent' => (float) $cost->gross_margin_pct,
+                ];
+            });
+
         return Inertia::render('admin/accounting/index', [
             'overview' => [
                 'totalCash' => $totalCash,
@@ -101,6 +124,7 @@ class AccountingOverviewController extends Controller
                 'totalCogs' => $totalCogs,
             ],
             'recentJournals' => $recentJournals,
+            'recentCostings' => $recentCostings,
         ]);
     }
 

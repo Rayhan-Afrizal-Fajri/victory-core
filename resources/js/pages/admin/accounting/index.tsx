@@ -39,9 +39,10 @@ interface OverviewProps {
         unpaidBillsCount: number;
     };
     recentJournals?: any[];
+    recentCostings?: any[];
 }
 
-export default function AccountingIndex({ overview, recentJournals }: OverviewProps) {
+export default function AccountingIndex({ overview, recentJournals, recentCostings }: OverviewProps) {
     const [filterPeriod, setFilterPeriod] = useState('oktober-2026');
     const [isSyncing, setIsSyncing] = useState(false);
 
@@ -52,6 +53,7 @@ export default function AccountingIndex({ overview, recentJournals }: OverviewPr
     const netProfitMonth = overview ? overview.netProfit : 25300000;
 
     const displayJournals = (recentJournals && recentJournals.length > 0) ? recentJournals : mockJournals;
+    const displayCostings = (recentCostings && recentCostings.length > 0) ? recentCostings : mockJobCosting;
 
     const handleSyncEvent = () => {
         setIsSyncing(true);
@@ -355,7 +357,7 @@ export default function AccountingIndex({ overview, recentJournals }: OverviewPr
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {mockJobCosting.map((job) => (
+                                    {displayCostings.map((job: any) => (
                                         <tr key={job.id} className="hover:bg-muted/30 transition-colors">
                                             <td className="p-3 font-medium">
                                                 <span className="font-semibold text-primary">{job.jobTicketNo}</span>
