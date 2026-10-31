@@ -347,14 +347,14 @@
                         $dpAmount = round((float) $quotation->grand_total * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP);
                         $settlementAmount = (float) $quotation->grand_total - $dpAmount;
                     @endphp
-                    <tr>
+                    {{-- <tr>
                         <td class="summary-label text-right" style="padding-top: 8px; color: #0b5394;">DP Produksi ({{ round($dpPercentage, 2) }}%)</td>
                         <td class="text-right font-bold" style="padding-top: 8px; color: #0b5394;">Rp {{ number_format($dpAmount, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
                         <td class="summary-label text-right">Pelunasan ({{ round(100 - $dpPercentage, 2) }}%)</td>
                         <td class="text-right font-bold">Rp {{ number_format($settlementAmount, 0, ',', '.') }}</td>
-                    </tr>
+                    </tr> --}}
                 </table>
             </td>
         </tr>
