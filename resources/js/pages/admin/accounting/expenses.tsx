@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
     Wallet,
     Plus,
@@ -105,21 +105,78 @@ const initialExpenses: ExpenseItem[] = [
     },
 ];
 
-export default function AccountingExpenses() {
-    const [expenses, setExpenses] = useState<ExpenseItem[]>(initialExpenses);
+interface ExpensesProps {
+    expenses?: any[];
+    summary?: {
+        totalExpense: number;
+        count: number;
+    };
+    expenseAccounts?: any[];
+    paymentAccounts?: any[];
+}
+
+export default function AccountingExpenses({
+    expenses: propExpenses,
+    summary,
+    expenseAccounts: propExpenseAccounts,
+    paymentAccounts: propPaymentAccounts,
+}: ExpensesProps) {
+    const rawExpenses = useMemo(() => {
+        if (!propExpenses || propExpenses.length === 0) {
+            return initialExpenses;
+        }
+        return propExpenses.map((e) => ({
+            id: String(e.id),
+            expenseNo: e.expenseNumber,
+            date: e.date,
+            accountCode: e.accountCode,
+            accountName: e.accountName,
+            category: e.category,
+            paidFrom: e.paymentMethod,
+            amount: e.amount,
+            recipient: e.recipient || '-',
+            description: e.description,
+        }));
+    }, [propExpenses]);
+
+    const [expenses, setExpenses] = useState<ExpenseItem[]>(rawExpenses);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        setExpenses(rawExpenses);
+    }, [rawExpenses]);
+
+    // Available accounts
+    const availableExpenseAccounts = propExpenseAccounts && propExpenseAccounts.length > 0
+        ? propExpenseAccounts
+        : [
+            { id: 1, account_code: '6-3000', account_name: 'Beban Listrik Industri & Internet', category: 'Utilitas' },
+            { id: 2, account_code: '6-5000', account_name: 'Beban Pemeliharaan Mesin & Sparepart', category: 'Pemeliharaan' },
+            { id: 3, account_code: '6-7000', account_name: 'Beban ATK & Konsumsi Workshop', category: 'Konsumsi' },
+            { id: 4, account_code: '6-2000', account_name: 'Beban Sewa Workshop & Pabrik', category: 'Fasilitas' },
+            { id: 5, account_code: '6-1000', account_name: 'Beban Gaji Staf & Manajemen', category: 'Gaji Staf' },
+        ];
+
+    const availablePaymentAccounts = propPaymentAccounts && propPaymentAccounts.length > 0
+        ? propPaymentAccounts
+        : [
+            { id: 1, account_code: '1-1110', account_name: 'Kas Operasional (Petty Cash)' },
+            { id: 2, account_code: '1-1120', account_name: 'Bank BCA Operasional' },
+            { id: 3, account_code: '1-1130', account_name: 'Bank Mandiri Penerimaan' },
+        ];
 
     // Form State
-    const [expDate, setExpDate] = useState('2026-10-26');
-    const [expCategory, setExpCategory] = useState<string>('Pemeliharaan');
-    const [expAccount, setExpAccount] = useState<string>('6-5000');
-    const [expPaidFrom, setExpPaidFrom] = useState<string>('Kas Operasional (Petty Cash)');
+    const [expDate, setExpDate] = useState(new Date().toISOString().slice(0, 10));
+    const [selectedExpenseAccountId, setSelectedExpenseAccountId] = useState<string>(String(availableExpenseAccounts[0]?.id || 1));
+    const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState<string>(String(availablePaymentAccounts[0]?.id || 1));
+    const [expCategory, setExpCategory] = useState<string>('Utilitas');
     const [expAmount, setExpAmount] = useState<number>(0);
     const [expRecipient, setExpRecipient] = useState<string>('');
     const [expDesc, setExpDesc] = useState<string>('');
 
-    const totalOPEX = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalOPEX = summary ? summary.totalExpense : expenses.reduce((acc, curr) => acc + curr.amount, 0);
     const pettyCashBalance = 8500000;
     const imprestLimit = 10000000;
 
@@ -130,27 +187,31 @@ export default function AccountingExpenses() {
             return;
         }
 
-        const newExpense: ExpenseItem = {
-            id: `EXP-${Date.now()}`,
-            expenseNo: `EXP/2026/10/00${expenses.length + 49}`,
-            date: expDate,
-            accountCode: expAccount,
-            accountName: expCategory === 'Utilitas' ? 'Beban Listrik & Air' : 'Beban Pemeliharaan & Alat',
-            category: expCategory as any,
-            paidFrom: expPaidFrom,
+        setIsSubmitting(true);
+        router.post('/admin/accounting/expenses', {
+            expense_date: expDate,
+            account_id: Number(selectedExpenseAccountId),
+            payment_account_id: Number(selectedPaymentAccountId),
             amount: expAmount,
+            category: expCategory,
             recipient: expRecipient || 'Vendor / Toko',
             description: expDesc,
-        };
-
-        setExpenses([newExpense, ...expenses]);
-        setIsAddModalOpen(false);
-        toast.success(`Pengeluaran sebesar ${formatCurrency(expAmount)} berhasil dicatat!`);
-
-        // Reset
-        setExpAmount(0);
-        setExpDesc('');
-        setExpRecipient('');
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSubmitting(false);
+                setIsAddModalOpen(false);
+                toast.success(`Pengeluaran sebesar ${formatCurrency(expAmount)} berhasil dicatat & jurnal otomatis diposting!`);
+                setExpAmount(0);
+                setExpDesc('');
+                setExpRecipient('');
+            },
+            onError: (err) => {
+                setIsSubmitting(false);
+                const msg = Object.values(err)[0] as string || 'Gagal mencatat pengeluaran.';
+                toast.error(msg);
+            }
+        });
     };
 
     const handleReimbursePettyCash = () => {
@@ -332,16 +393,26 @@ export default function AccountingExpenses() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs">Kategori Biaya</Label>
-                                    <Select value={expCategory} onValueChange={setExpCategory}>
+                                    <Label className="text-xs">Akun Beban (COA)</Label>
+                                    <Select
+                                        value={selectedExpenseAccountId}
+                                        onValueChange={(val) => {
+                                            setSelectedExpenseAccountId(val);
+                                            const acc = availableExpenseAccounts.find((a: any) => String(a.id) === val);
+                                            if (acc) {
+                                                setExpCategory(acc.sub_category || acc.category || 'Beban Operasional');
+                                            }
+                                        }}
+                                    >
                                         <SelectTrigger className="text-xs">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Utilitas">Listrik & Internet (6-3000)</SelectItem>
-                                            <SelectItem value="Pemeliharaan">Sparepart & Oli Mesin (6-5000)</SelectItem>
-                                            <SelectItem value="Konsumsi">Konsumsi & ATK (6-7000)</SelectItem>
-                                            <SelectItem value="Fasilitas">Sewa Workshop (6-2000)</SelectItem>
+                                            {availableExpenseAccounts.map((acc: any) => (
+                                                <SelectItem key={acc.id} value={String(acc.id)}>
+                                                    {acc.account_code} - {acc.account_name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -382,15 +453,17 @@ export default function AccountingExpenses() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs">Dibayar Melalui</Label>
-                                <Select value={expPaidFrom} onValueChange={setExpPaidFrom}>
+                                <Label className="text-xs">Sumber Dana (Kas / Bank Pengirim)</Label>
+                                <Select value={selectedPaymentAccountId} onValueChange={setSelectedPaymentAccountId}>
                                     <SelectTrigger className="text-xs">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Kas Operasional (Petty Cash)">Kas Operasional (Petty Cash)</SelectItem>
-                                        <SelectItem value="Bank BCA Operasional">Bank BCA Operasional</SelectItem>
-                                        <SelectItem value="Bank Mandiri Penerimaan">Bank Mandiri Penerimaan</SelectItem>
+                                        {availablePaymentAccounts.map((acc: any) => (
+                                            <SelectItem key={acc.id} value={String(acc.id)}>
+                                                {acc.account_code} - {acc.account_name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -405,8 +478,8 @@ export default function AccountingExpenses() {
                                 >
                                     Batal
                                 </Button>
-                                <Button type="submit" size="sm" className="text-xs cursor-pointer">
-                                    Simpan Pengeluaran
+                                <Button type="submit" size="sm" className="text-xs cursor-pointer" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Menyimpan...' : 'Simpan Pengeluaran'}
                                 </Button>
                             </DialogFooter>
                         </form>

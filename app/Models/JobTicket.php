@@ -40,6 +40,11 @@ class JobTicket extends Model
         return $this->hasMany(Pesanan::class);
     }
 
+    public function pesanan()
+    {
+        return $this->hasMany(Pesanan::class);
+    }
+
     public function invoices()
     {
         return $this->hasMany(Invoice::class);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     FileSpreadsheet,
@@ -21,8 +21,139 @@ import { AccountingHeader } from './components/accounting-header';
 import { mockCOA } from './data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function AccountingReports() {
+interface AccountLine {
+    code: string;
+    name: string;
+    amount: number;
+}
+
+interface ReportsProps {
+    incomeStatement?: {
+        revenues: AccountLine[];
+        totalRevenue: number;
+        cogs: AccountLine[];
+        totalCogs: number;
+        grossProfit: number;
+        expenses: AccountLine[];
+        totalExpense: number;
+        netProfit: number;
+    };
+    balanceSheet?: {
+        assets: AccountLine[];
+        totalAssets: number;
+        liabilities: AccountLine[];
+        totalLiabilities: number;
+        totalEquity: number;
+    };
+    trialBalance?: Array<{
+        code: string;
+        name: string;
+        debit: number;
+        credit: number;
+        balance: number;
+    }>;
+}
+
+export default function AccountingReports({
+    incomeStatement: propIncomeStatement,
+    balanceSheet: propBalanceSheet,
+    trialBalance: propTrialBalance,
+}: ReportsProps) {
     const [reportType, setReportType] = useState<'pnl' | 'balance_sheet' | 'cash_flow' | 'trial_balance'>('pnl');
+
+    // Default mock P&L
+    const defaultRevenues: AccountLine[] = [
+        { code: '4-1000', name: 'Pendapatan Penjualan Produksi Pakaian Jadi', amount: 92100000 },
+        { code: '4-2000', name: 'Pendapatan Prototyping & Sample', amount: 4800000 },
+        { code: '4-3000', name: 'Pendapatan Jasa Pengiriman & Ongkir', amount: 1500000 },
+    ];
+    const defaultCogs: AccountLine[] = [
+        { code: '5-1100', name: 'Biaya Bahan Baku Utama (Kain)', amount: 31200000 },
+        { code: '5-1200', name: 'Biaya Aksesoris & Trims (Kancing, Label)', amount: 4800000 },
+        { code: '5-2000', name: 'Biaya Tenaga Kerja Langsung (Upah Borongan)', amount: 12400000 },
+        { code: '5-3100', name: 'Biaya Makloon Sablon DTF & Manual', amount: 5200000 },
+        { code: '5-3200', name: 'Biaya Makloon Bordir Komputer', amount: 2100000 },
+        { code: '5-4000', name: 'Biaya Kerusakan, Cacat & Rework', amount: 1200000 },
+    ];
+    const defaultExpenses: AccountLine[] = [
+        { code: '6-1000', name: 'Beban Gaji Staf Tetap & Admin QC', amount: 8500000 },
+        { code: '6-2000', name: 'Beban Sewa Workshop Pabrik', amount: 3500000 },
+        { code: '6-3000', name: 'Beban Listrik Industri & Internet', amount: 2100000 },
+        { code: '6-5000', name: 'Beban Pemeliharaan & Jarum Mesin', amount: 900000 },
+        { code: '6-7000', name: 'Beban ATK & Konsumsi Workshop', amount: 1200000 },
+    ];
+
+    const pnl = useMemo(() => {
+        if (!propIncomeStatement) {
+            const totalRev = defaultRevenues.reduce((a, b) => a + b.amount, 0);
+            const totalC = defaultCogs.reduce((a, b) => a + b.amount, 0);
+            const gp = totalRev - totalC;
+            const totalE = defaultExpenses.reduce((a, b) => a + b.amount, 0);
+            return {
+                revenues: defaultRevenues,
+                totalRevenue: totalRev,
+                cogs: defaultCogs,
+                totalCogs: totalC,
+                grossProfit: gp,
+                expenses: defaultExpenses,
+                totalExpense: totalE,
+                netProfit: gp - totalE,
+            };
+        }
+        return {
+            revenues: propIncomeStatement.revenues?.length ? propIncomeStatement.revenues : defaultRevenues,
+            totalRevenue: propIncomeStatement.totalRevenue,
+            cogs: propIncomeStatement.cogs?.length ? propIncomeStatement.cogs : defaultCogs,
+            totalCogs: propIncomeStatement.totalCogs,
+            grossProfit: propIncomeStatement.grossProfit,
+            expenses: propIncomeStatement.expenses?.length ? propIncomeStatement.expenses : defaultExpenses,
+            totalExpense: propIncomeStatement.totalExpense,
+            netProfit: propIncomeStatement.netProfit,
+        };
+    }, [propIncomeStatement]);
+
+    // Balance Sheet calculation
+    const bs = useMemo(() => {
+        if (!propBalanceSheet) {
+            return {
+                assets: [
+                    { code: '1-1110', name: 'Kas Operasional Pabrik', amount: 8500000 },
+                    { code: '1-1120', name: 'Bank BCA Operasional', amount: 74200000 },
+                    { code: '1-1130', name: 'Bank Mandiri Penerimaan', amount: 35800000 },
+                    { code: '1-1210', name: 'Piutang Usaha Produksi', amount: 28400000 },
+                    { code: '1-1220', name: 'Piutang Sample', amount: 2600000 },
+                    { code: '1-1310', name: 'Persediaan Bahan Baku', amount: 14800000 },
+                    { code: '1-1320', name: 'Persediaan Aksesoris', amount: 4200000 },
+                    { code: '1-1330', name: 'Barang Dalam Proses (WIP)', amount: 4000000 },
+                ],
+                totalAssets: 284500000,
+                liabilities: [
+                    { code: '2-1110', name: 'Hutang Supplier Bahan Baku', amount: 18500000 },
+                    { code: '2-1120', name: 'Hutang Supplier Aksesoris', amount: 3200000 },
+                    { code: '2-1130', name: 'Hutang Vendor Makloon', amount: 6400000 },
+                    { code: '2-1210', name: 'Uang Muka DP Pesanan', amount: 14200000 },
+                    { code: '2-1310', name: 'Hutang Upah Borongan Worker', amount: 4400000 },
+                ],
+                totalLiabilities: 46700000,
+                totalEquity: 237800000,
+            };
+        }
+        return propBalanceSheet;
+    }, [propBalanceSheet]);
+
+    // Trial Balance
+    const tbLines = useMemo(() => {
+        if (propTrialBalance && propTrialBalance.length > 0) {
+            return propTrialBalance;
+        }
+        return mockCOA.filter(c => !c.isHeader).map(c => ({
+            code: c.code,
+            name: c.name,
+            debit: c.normalBalance === 'debit' ? Math.abs(c.balance) : 0,
+            credit: c.normalBalance === 'credit' ? Math.abs(c.balance) : 0,
+            balance: c.balance,
+        }));
+    }, [propTrialBalance]);
 
     const handleExport = (format: 'pdf' | 'excel') => {
         toast.success(`Laporan Keuangan berhasil diekspor ke format ${format.toUpperCase()}!`);
@@ -120,21 +251,15 @@ export default function AccountingReports() {
                                         1. PENDAPATAN USAHA (REVENUE)
                                     </h3>
                                     <div className="space-y-1.5 pl-3">
-                                        <div className="flex justify-between py-1">
-                                            <span>4-1000 Pendapatan Penjualan Produksi Pakaian Jadi</span>
-                                            <span className="font-mono font-medium">{formatCurrency(92100000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>4-2000 Pendapatan Prototyping & Sample</span>
-                                            <span className="font-mono font-medium">{formatCurrency(4800000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>4-3000 Pendapatan Jasa Pengiriman & Ongkir</span>
-                                            <span className="font-mono font-medium">{formatCurrency(1500000)}</span>
-                                        </div>
+                                        {pnl.revenues.map((rev) => (
+                                            <div key={rev.code} className="flex justify-between py-1">
+                                                <span>{rev.code} {rev.name}</span>
+                                                <span className="font-mono font-medium">{formatCurrency(rev.amount)}</span>
+                                            </div>
+                                        ))}
                                         <div className="flex justify-between border-t border-dashed pt-1.5 font-bold text-foreground">
                                             <span>TOTAL PENDAPATAN BERSIH:</span>
-                                            <span className="font-mono">{formatCurrency(98400000)}</span>
+                                            <span className="font-mono">{formatCurrency(pnl.totalRevenue)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -145,33 +270,15 @@ export default function AccountingReports() {
                                         2. HARGA POKOK PENJUALAN (HPP / COGS)
                                     </h3>
                                     <div className="space-y-1.5 pl-3">
-                                        <div className="flex justify-between py-1">
-                                            <span>5-1100 Biaya Bahan Baku Utama (Kain)</span>
-                                            <span className="font-mono">{formatCurrency(31200000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>5-1200 Biaya Aksesoris & Trims (Kancing, Label)</span>
-                                            <span className="font-mono">{formatCurrency(4800000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>5-2000 Biaya Tenaga Kerja Langsung (Upah Borongan)</span>
-                                            <span className="font-mono">{formatCurrency(12400000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>5-3100 Biaya Makloon Sablon DTF & Manual</span>
-                                            <span className="font-mono">{formatCurrency(5200000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>5-3200 Biaya Makloon Bordir Komputer</span>
-                                            <span className="font-mono">{formatCurrency(2100000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>5-4000 Biaya Kerusakan, Cacat & Rework</span>
-                                            <span className="font-mono">{formatCurrency(1200000)}</span>
-                                        </div>
+                                        {pnl.cogs.map((item) => (
+                                            <div key={item.code} className="flex justify-between py-1">
+                                                <span>{item.code} {item.name}</span>
+                                                <span className="font-mono">{formatCurrency(item.amount)}</span>
+                                            </div>
+                                        ))}
                                         <div className="flex justify-between border-t border-dashed pt-1.5 font-bold text-rose-600">
                                             <span>TOTAL HARGA POKOK PENJUALAN:</span>
-                                            <span className="font-mono">({formatCurrency(56900000)})</span>
+                                            <span className="font-mono">({formatCurrency(pnl.totalCogs)})</span>
                                         </div>
                                     </div>
                                 </div>
@@ -179,7 +286,9 @@ export default function AccountingReports() {
                                 {/* GROSS PROFIT */}
                                 <div className="rounded-lg bg-emerald-500/10 p-3 flex justify-between font-bold text-sm text-emerald-800 dark:text-emerald-300">
                                     <span>LABA KOTOR (GROSS OPERATING PROFIT):</span>
-                                    <span className="font-mono">{formatCurrency(41500000)} (Margin: 42.2%)</span>
+                                    <span className="font-mono">
+                                        {formatCurrency(pnl.grossProfit)} (Margin: {pnl.totalRevenue > 0 ? ((pnl.grossProfit / pnl.totalRevenue) * 100).toFixed(1) : '0'}%)
+                                    </span>
                                 </div>
 
                                 {/* SECTION: BEBAN OPERASIONAL */}
@@ -188,29 +297,15 @@ export default function AccountingReports() {
                                         3. BEBAN OPERASIONAL (OPEX)
                                     </h3>
                                     <div className="space-y-1.5 pl-3">
-                                        <div className="flex justify-between py-1">
-                                            <span>6-1000 Beban Gaji Staf Tetap & Admin QC</span>
-                                            <span className="font-mono">{formatCurrency(8500000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>6-2000 Beban Sewa Workshop Pabrik</span>
-                                            <span className="font-mono">{formatCurrency(3500000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>6-3000 Beban Listrik Industri & Internet</span>
-                                            <span className="font-mono">{formatCurrency(2100000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>6-5000 Beban Pemeliharaan & Jarum Mesin</span>
-                                            <span className="font-mono">{formatCurrency(900000)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1">
-                                            <span>6-7000 Beban ATK & Konsumsi Workshop</span>
-                                            <span className="font-mono">{formatCurrency(1200000)}</span>
-                                        </div>
+                                        {pnl.expenses.map((item) => (
+                                            <div key={item.code} className="flex justify-between py-1">
+                                                <span>{item.code} {item.name}</span>
+                                                <span className="font-mono">{formatCurrency(item.amount)}</span>
+                                            </div>
+                                        ))}
                                         <div className="flex justify-between border-t border-dashed pt-1.5 font-bold text-foreground">
                                             <span>TOTAL BEBAN OPERASIONAL:</span>
-                                            <span className="font-mono text-rose-600">({formatCurrency(16200000)})</span>
+                                            <span className="font-mono text-rose-600">({formatCurrency(pnl.totalExpense)})</span>
                                         </div>
                                     </div>
                                 </div>
@@ -219,10 +314,10 @@ export default function AccountingReports() {
                                 <div className="rounded-lg bg-primary/10 border-2 border-primary/30 p-4 flex justify-between font-bold text-base text-foreground">
                                     <span className="flex items-center gap-2">
                                         <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                        LABA BERSIH BULAN INI (NET PROFIT):
+                                        LABA BERSIH (NET PROFIT):
                                     </span>
-                                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                                        {formatCurrency(25300000)}
+                                    <span className={`font-mono ${pnl.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                                        {formatCurrency(pnl.netProfit)}
                                     </span>
                                 </div>
                             </div>
@@ -237,73 +332,19 @@ export default function AccountingReports() {
                                         ASET (AKTIVA)
                                     </h3>
                                     <div className="space-y-2">
-                                        <p className="font-semibold text-primary">Aset Lancar</p>
+                                        <p className="font-semibold text-primary">Daftar Akun Aset</p>
                                         <div className="space-y-1 pl-2">
-                                            <div className="flex justify-between">
-                                                <span>1-1110 Kas Operasional Pabrik</span>
-                                                <span className="font-mono">{formatCurrency(8500000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1120 Bank BCA Operasional</span>
-                                                <span className="font-mono">{formatCurrency(74200000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1130 Bank Mandiri Penerimaan</span>
-                                                <span className="font-mono">{formatCurrency(35800000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1210 Piutang Usaha Produksi</span>
-                                                <span className="font-mono">{formatCurrency(28400000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1220 Piutang Sample</span>
-                                                <span className="font-mono">{formatCurrency(2600000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1310 Persediaan Bahan Baku</span>
-                                                <span className="font-mono">{formatCurrency(14800000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1320 Persediaan Aksesoris</span>
-                                                <span className="font-mono">{formatCurrency(4200000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>1-1330 Barang Dalam Proses (WIP)</span>
-                                                <span className="font-mono">{formatCurrency(4000000)}</span>
-                                            </div>
-                                            <div className="flex justify-between border-t pt-1 font-semibold text-foreground">
-                                                <span>Total Aset Lancar:</span>
-                                                <span className="font-mono">{formatCurrency(172500000)}</span>
-                                            </div>
-                                        </div>
-
-                                        <p className="font-semibold text-primary pt-2">Aset Tetap</p>
-                                        <div className="space-y-1 pl-2">
-                                            <div className="flex justify-between">
-                                                <span>Mesin Pabrik (Jahit, Obras, Cutting)</span>
-                                                <span className="font-mono">{formatCurrency(125000000)}</span>
-                                            </div>
-                                            <div className="flex justify-between text-muted-foreground">
-                                                <span>Akumulasi Penyusutan Mesin</span>
-                                                <span className="font-mono">({formatCurrency(22000000)})</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Peralatan Kantor & Komputer</span>
-                                                <span className="font-mono">{formatCurrency(15000000)}</span>
-                                            </div>
-                                            <div className="flex justify-between text-muted-foreground">
-                                                <span>Akumulasi Penyusutan Kantor</span>
-                                                <span className="font-mono">({formatCurrency(6000000)})</span>
-                                            </div>
-                                            <div className="flex justify-between border-t pt-1 font-semibold text-foreground">
-                                                <span>Total Aset Tetap:</span>
-                                                <span className="font-mono">{formatCurrency(112000000)}</span>
-                                            </div>
+                                            {bs.assets.map((item) => (
+                                                <div key={item.code} className="flex justify-between">
+                                                    <span>{item.code} {item.name}</span>
+                                                    <span className="font-mono">{formatCurrency(item.amount)}</span>
+                                                </div>
+                                            ))}
                                         </div>
 
                                         <div className="rounded-lg bg-blue-500/10 p-3 flex justify-between font-bold text-sm text-blue-900 dark:text-blue-200 border border-blue-500/20">
                                             <span>TOTAL ASET (AKTIVA):</span>
-                                            <span className="font-mono">{formatCurrency(284500000)}</span>
+                                            <span className="font-mono">{formatCurrency(bs.totalAssets)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -314,57 +355,35 @@ export default function AccountingReports() {
                                         KEWAJIBAN & EKUITAS (PASIVA)
                                     </h3>
                                     <div className="space-y-2">
-                                        <p className="font-semibold text-primary">Kewajiban Jangka Pendek</p>
+                                        <p className="font-semibold text-primary">Kewajiban (Liabilitas)</p>
                                         <div className="space-y-1 pl-2">
-                                            <div className="flex justify-between">
-                                                <span>2-1110 Hutang Supplier Bahan Baku</span>
-                                                <span className="font-mono">{formatCurrency(18500000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>2-1120 Hutang Supplier Aksesoris</span>
-                                                <span className="font-mono">{formatCurrency(3200000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>2-1130 Hutang Vendor Makloon</span>
-                                                <span className="font-mono">{formatCurrency(6400000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>2-1210 Uang Muka DP Pesanan</span>
-                                                <span className="font-mono">{formatCurrency(14200000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>2-1310 Hutang Upah Borongan Worker</span>
-                                                <span className="font-mono">{formatCurrency(4400000)}</span>
-                                            </div>
+                                            {bs.liabilities.map((item) => (
+                                                <div key={item.code} className="flex justify-between">
+                                                    <span>{item.code} {item.name}</span>
+                                                    <span className="font-mono">{formatCurrency(item.amount)}</span>
+                                                </div>
+                                            ))}
                                             <div className="flex justify-between border-t pt-1 font-semibold text-foreground">
                                                 <span>Total Kewajiban:</span>
-                                                <span className="font-mono">{formatCurrency(46700000)}</span>
+                                                <span className="font-mono">{formatCurrency(bs.totalLiabilities)}</span>
                                             </div>
                                         </div>
 
                                         <p className="font-semibold text-primary pt-2">Ekuitas & Modal</p>
                                         <div className="space-y-1 pl-2">
                                             <div className="flex justify-between">
-                                                <span>3-1000 Modal Disetor Pemilik</span>
-                                                <span className="font-mono">{formatCurrency(180000000)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>3-2000 Laba Ditahan (Retained Earnings)</span>
-                                                <span className="font-mono">{formatCurrency(32500000)}</span>
-                                            </div>
-                                            <div className="flex justify-between text-emerald-600 font-medium">
-                                                <span>3-3000 Laba Periode Berjalan</span>
-                                                <span className="font-mono">{formatCurrency(25300000)}</span>
+                                                <span>Total Ekuitas & Laba Periode Berjalan</span>
+                                                <span className="font-mono">{formatCurrency(bs.totalEquity)}</span>
                                             </div>
                                             <div className="flex justify-between border-t pt-1 font-semibold text-foreground">
                                                 <span>Total Ekuitas:</span>
-                                                <span className="font-mono">{formatCurrency(237800000)}</span>
+                                                <span className="font-mono">{formatCurrency(bs.totalEquity)}</span>
                                             </div>
                                         </div>
 
                                         <div className="rounded-lg bg-blue-500/10 p-3 flex justify-between font-bold text-sm text-blue-900 dark:text-blue-200 border border-blue-500/20">
                                             <span>TOTAL PASIVA:</span>
-                                            <span className="font-mono">{formatCurrency(284500000)}</span>
+                                            <span className="font-mono">{formatCurrency(bs.totalLiabilities + bs.totalEquity)}</span>
                                         </div>
 
                                         <div className="rounded-lg bg-emerald-500/15 p-2 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-400">
@@ -435,15 +454,15 @@ export default function AccountingReports() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {mockCOA.filter(c => !c.isHeader).map((acc) => (
+                                        {tbLines.map((acc) => (
                                             <tr key={acc.code} className="hover:bg-muted/20">
                                                 <td className="p-2.5 font-mono font-medium">{acc.code}</td>
                                                 <td className="p-2.5">{acc.name}</td>
                                                 <td className="p-2.5 text-right font-mono text-emerald-700 dark:text-emerald-400">
-                                                    {acc.normalBalance === 'debit' ? formatCurrency(Math.abs(acc.balance)) : '-'}
+                                                    {acc.debit > 0 ? formatCurrency(acc.debit) : '-'}
                                                 </td>
                                                 <td className="p-2.5 text-right font-mono text-blue-700 dark:text-blue-400">
-                                                    {acc.normalBalance === 'credit' ? formatCurrency(Math.abs(acc.balance)) : '-'}
+                                                    {acc.credit > 0 ? formatCurrency(acc.credit) : '-'}
                                                 </td>
                                             </tr>
                                         ))}

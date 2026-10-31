@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     Activity,
@@ -24,12 +24,83 @@ import { KpiHeader } from './components/kpi-header';
 import { mockThroughput, mockDefectPareto, ThroughputItem } from './data/kpi-mock';
 import { toast } from 'sonner';
 
-export default function KpiProductionQc() {
+interface ProductionQcProps {
+    otdRate?: number;
+    defectRate?: number;
+    ftprRate?: number;
+    paretoDefects?: any[];
+    workCenterThroughput?: any[];
+    deadlineWatchlist?: any[];
+}
+
+export default function KpiProductionQc({
+    otdRate: propOtdRate,
+    defectRate: propDefectRate,
+    ftprRate: propFtprRate,
+    paretoDefects: propParetoDefects,
+    workCenterThroughput: propWorkCenterThroughput,
+    deadlineWatchlist: propDeadlineWatchlist,
+}: ProductionQcProps) {
     const [period, setPeriod] = useState('daily');
 
-    const otdRate = 94.2;
-    const ftprRate = 96.8;
-    const defectRate = 1.8;
+    const otdRate = propOtdRate !== undefined ? propOtdRate : 94.2;
+    const ftprRate = propFtprRate !== undefined ? propFtprRate : 96.8;
+    const defectRate = propDefectRate !== undefined ? propDefectRate : 1.8;
+
+    const paretoList = useMemo(() => {
+        if (propParetoDefects && propParetoDefects.length > 0) {
+            return propParetoDefects.map((p) => ({
+                reason: p.defectReason || p.reason,
+                count: p.count,
+                pct: p.percentage || p.pct,
+                cumulativePct: p.cumulativePct,
+                correctiveAction: p.correctiveAction || 'Kalibrasi jarum dan QC berkala',
+            }));
+        }
+        return mockDefectPareto;
+    }, [propParetoDefects]);
+
+    const throughputList = useMemo(() => {
+        if (propWorkCenterThroughput && propWorkCenterThroughput.length > 0) {
+            return propWorkCenterThroughput.map((tp) => ({
+                center: tp.station || tp.center,
+                currentPcs: tp.actualPcs || tp.currentPcs,
+                targetPcs: tp.targetPcs,
+                completionPct: tp.efficiency || tp.completionPct,
+                activeWorkers: tp.activeWorkers || 4,
+                leadOperator: tp.leadOperator || 'Supervisor Line',
+            }));
+        }
+        return mockThroughput;
+    }, [propWorkCenterThroughput]);
+
+    const watchlist = useMemo(() => {
+        if (propDeadlineWatchlist && propDeadlineWatchlist.length > 0) {
+            return propDeadlineWatchlist;
+        }
+        return [
+            {
+                jobTicketNo: 'PO-2026-10-044',
+                article: 'Kemeja PDH 300 pcs',
+                customer: 'SMA Nusantara 1',
+                deadline: '28 Okt 2026',
+                statusText: '< 48 Jam',
+                statusColor: 'red',
+                progressPct: 65,
+                workStation: 'Jahit (Sewing - Line 2)',
+            },
+            {
+                jobTicketNo: 'PO-2026-10-046',
+                article: 'Jersey Komunitas 200 pcs',
+                customer: 'PT Mandiri Sejahtera',
+                deadline: '29 Okt 2026',
+                statusText: '3 Hari',
+                statusColor: 'amber',
+                progressPct: 90,
+                workStation: 'QC & Steam Polybag',
+            },
+        ];
+    }, [propDeadlineWatchlist]);
 
     return (
         <>
@@ -162,7 +233,7 @@ export default function KpiProductionQc() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            {mockThroughput.map((tp) => {
+                            {throughputList.map((tp) => {
                                 const isOverTarget = tp.completionPct >= 100;
                                 return (
                                     <div key={tp.center} className="rounded-xl border p-4 bg-muted/20 space-y-3">
@@ -244,7 +315,7 @@ export default function KpiProductionQc() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {mockDefectPareto.map((item, idx) => (
+                                    {paretoList.map((item, idx) => (
                                         <tr key={item.reason} className="hover:bg-muted/20 transition-colors">
                                             <td className="p-3 text-center font-bold text-muted-foreground">
                                                 #{idx + 1}
@@ -275,7 +346,7 @@ export default function KpiProductionQc() {
                             </table>
                         </div>
                         <p className="mt-3 text-[11px] text-muted-foreground italic">
-                            * Prinsip Pareto: 80% cacat berasal dari 3 penyebab teratas (Jahitan melompat, noda minyak, sablon retak). Penanganan 3 pos ini akan memangkas reject hingga 82.4%.
+                            * Prinsip Pareto: 80% cacat berasal dari penyebab teratas. Penanganan pos-pos ini akan memangkas reject secara signifikan.
                         </p>
                     </CardContent>
                 </Card>
@@ -307,26 +378,24 @@ export default function KpiProductionQc() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    <tr className="hover:bg-muted/10">
-                                        <td className="p-2.5 font-semibold text-primary">PO-2026-10-044 (Kemeja PDH 300 pcs)</td>
-                                        <td className="p-2.5">SMA Nusantara 1</td>
-                                        <td className="p-2.5 font-mono">28 Okt 2026</td>
-                                        <td className="p-2.5 font-bold text-rose-600 font-mono">&lt; 48 Jam</td>
-                                        <td className="p-2.5">Jahit (Sewing - Line 2)</td>
-                                        <td className="p-2.5 text-center">
-                                            <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">65% Selesai</Badge>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-muted/10">
-                                        <td className="p-2.5 font-semibold text-primary">PO-2026-10-046 (Jersey Komunitas 200 pcs)</td>
-                                        <td className="p-2.5">PT Mandiri Sejahtera</td>
-                                        <td className="p-2.5 font-mono">29 Okt 2026</td>
-                                        <td className="p-2.5 font-bold text-amber-600 font-mono">3 Hari</td>
-                                        <td className="p-2.5">QC & Steam Polybag</td>
-                                        <td className="p-2.5 text-center">
-                                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">90% Selesai</Badge>
-                                        </td>
-                                    </tr>
+                                    {watchlist.map((w: any) => (
+                                        <tr key={w.jobTicketNo} className="hover:bg-muted/10">
+                                            <td className="p-2.5 font-semibold text-primary">
+                                                {w.jobTicketNo} ({w.article} {w.quantity ? `${w.quantity} pcs` : ''})
+                                            </td>
+                                            <td className="p-2.5">{w.customer}</td>
+                                            <td className="p-2.5 font-mono">{w.deadline}</td>
+                                            <td className={`p-2.5 font-bold font-mono ${w.statusColor === 'red' ? 'text-rose-600' : 'text-amber-600'}`}>
+                                                {w.statusText}
+                                            </td>
+                                            <td className="p-2.5">{w.workStation || 'Produksi Aktif'}</td>
+                                            <td className="p-2.5 text-center">
+                                                <Badge className={w.progressPct >= 80 ? 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' : 'bg-amber-500/15 text-amber-700 border-amber-500/30'}>
+                                                    {w.progressPct}% Selesai
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

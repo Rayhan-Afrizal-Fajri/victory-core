@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     Truck,
@@ -19,11 +19,66 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { KpiHeader } from './components/kpi-header';
+import { formatCurrency } from '@/helpers/format';
 import { mockSupplierScorecards, SupplierScorecardItem } from './data/kpi-mock';
 import { toast } from 'sonner';
 
-export default function KpiSuppliers() {
+interface SupplierProps {
+    suppliers?: any[];
+    urgentIssues?: any[];
+}
+
+export default function KpiSuppliers({
+    suppliers: propSuppliers,
+    urgentIssues: propUrgentIssues,
+}: SupplierProps) {
     const [period, setPeriod] = useState('monthly');
+
+    const supplierList = useMemo(() => {
+        if (propSuppliers && propSuppliers.length > 0) {
+            return propSuppliers;
+        }
+        return mockSupplierScorecards.map((s) => ({
+            id: s.id,
+            name: s.name,
+            category: s.category,
+            totalPos: s.totalOrders,
+            totalSpend: 25000000,
+            leadTimeAvg: 3,
+            rejectRate: (100 - s.qualityPassPct),
+            performanceScore: s.compositeScore,
+            grade: s.grade,
+        }));
+    }, [propSuppliers]);
+
+    const issues = useMemo(() => {
+        if (propUrgentIssues && propUrgentIssues.length > 0) {
+            return propUrgentIssues;
+        }
+        return [
+            {
+                id: 1,
+                supplierName: 'CV Sumber Tekstil Bandung',
+                materialName: 'Cotton Combed 30s Hitam (Roll #3)',
+                defectQty: '1 Roll (25 kg)',
+                condition: 'damaged',
+                receivedAt: '24 Okt 2026',
+                notes: 'Lot kain memiliki susut lebar 2 cm. Supplier segera mengganti potongan 1 roll baru dalam 4 jam.',
+            },
+        ];
+    }, [propUrgentIssues]);
+
+    const avgRejectRate = useMemo(() => {
+        if (!supplierList.length) return 0.8;
+        const total = supplierList.reduce((acc, curr) => acc + (curr.rejectRate || 0), 0);
+        return (total / supplierList.length).toFixed(1);
+    }, [supplierList]);
+
+    const avgLeadTime = useMemo(() => {
+        if (!supplierList.length) return 3.2;
+        const total = supplierList.reduce((acc, curr) => acc + (curr.leadTimeAvg || 3), 0);
+        return (total / supplierList.length).toFixed(1);
+    }, [supplierList]);
 
     return (
         <>
@@ -40,10 +95,10 @@ export default function KpiSuppliers() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold font-mono text-emerald-600">
-                                0.8%
+                                {avgRejectRate}%
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Di bawah ambang batas toleransi pabrik (&le;1.0%)
+                                Di bawah ambang batas toleransi pabrik (&le;1.5%)
                             </p>
                         </CardContent>
                     </Card>
@@ -54,7 +109,7 @@ export default function KpiSuppliers() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold font-mono text-foreground">
-                                3.2 <span className="text-sm font-normal text-muted-foreground">Hari</span>
+                                {avgLeadTime} <span className="text-sm font-normal text-muted-foreground">Hari</span>
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
                                 Durasi pemesanan PO hingga kain tiba di gudang
@@ -68,10 +123,10 @@ export default function KpiSuppliers() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold font-mono text-foreground">
-                                4 Mitra
+                                {supplierList.length} Mitra
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                2 Suplier Kain & Aksesoris, 2 Vendor Makloon
+                                Supplier Kain, Aksesoris & Vendor Makloon
                             </p>
                         </CardContent>
                     </Card>
@@ -87,7 +142,7 @@ export default function KpiSuppliers() {
                                     Papan Peringkat & Evaluasi Kinerja Supplier (Supplier Scorecard)
                                 </CardTitle>
                                 <CardDescription className="text-xs">
-                                    Skor komposit dihitung dari: Ketepatan Waktu Pengiriman (40%), Kualitas Lolos Bebas Cacat (40%), dan Kompetisi Harga (20%)
+                                    Skor komposit dihitung dari: Ketepatan Waktu Pengiriman (40%), Kualitas Lolos Bebas Cacat (40%), dan Konsistensi Pasokan (20%)
                                 </CardDescription>
                             </div>
                             <Button
@@ -107,16 +162,16 @@ export default function KpiSuppliers() {
                                     <tr>
                                         <th className="p-3">Nama Mitra / Supplier</th>
                                         <th className="p-3">Kategori Pasokan</th>
-                                        <th className="p-3 text-center">Total Order</th>
-                                        <th className="p-3 text-right">Ketepatan Kirim</th>
-                                        <th className="p-3 text-right">Kualitas Bebas Cacat</th>
-                                        <th className="p-3 text-right">Kompetisi Harga</th>
+                                        <th className="p-3 text-center">Total Order (PO)</th>
+                                        <th className="p-3 text-right">Total Belanja (Spend)</th>
+                                        <th className="p-3 text-right">Lead Time Rata-rata</th>
+                                        <th className="p-3 text-right">Reject Rate (%)</th>
                                         <th className="p-3 text-center font-bold">Skor Akhir</th>
                                         <th className="p-3 text-center w-22.5">Grade</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {mockSupplierScorecards.map((sup) => (
+                                    {supplierList.map((sup: any) => (
                                         <tr key={sup.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="p-3 font-semibold text-foreground">
                                                 {sup.name}
@@ -127,25 +182,27 @@ export default function KpiSuppliers() {
                                                 </Badge>
                                             </td>
                                             <td className="p-3 text-center font-mono font-medium">
-                                                {sup.totalOrders} Transaksi
-                                            </td>
-                                            <td className="p-3 text-right font-mono font-medium text-emerald-600">
-                                                {sup.onTimeDeliveryPct}%
-                                            </td>
-                                            <td className="p-3 text-right font-mono font-medium text-emerald-600">
-                                                {sup.qualityPassPct}%
+                                                {sup.totalPos} PO
                                             </td>
                                             <td className="p-3 text-right font-mono font-medium text-foreground">
-                                                {sup.priceCompetitiveness}%
+                                                {formatCurrency(sup.totalSpend || 0)}
+                                            </td>
+                                            <td className="p-3 text-right font-mono font-medium text-blue-600">
+                                                {sup.leadTimeAvg} Hari
+                                            </td>
+                                            <td className="p-3 text-right font-mono font-medium text-emerald-600">
+                                                {sup.rejectRate}%
                                             </td>
                                             <td className="p-3 text-center font-mono font-bold text-sm text-primary">
-                                                {sup.compositeScore}
+                                                {sup.performanceScore}
                                             </td>
                                             <td className="p-3 text-center">
                                                 <Badge
                                                     className={
                                                         sup.grade === 'A'
                                                             ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold text-xs px-3'
+                                                            : sup.grade === 'B'
+                                                            ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 font-bold text-xs px-3'
                                                             : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold text-xs px-3'
                                                     }
                                                 >
@@ -175,17 +232,21 @@ export default function KpiSuppliers() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            <div className="rounded-lg border p-3 bg-muted/20 flex flex-wrap items-center justify-between gap-2 text-xs">
-                                <div>
-                                    <span className="font-semibold text-foreground">CV Sumber Tekstil Bandung · 24 Okt 2026</span>
-                                    <p className="text-muted-foreground mt-0.5">
-                                        Lot kain Cotton Combed 30s Hitam (Roll #3) memiliki susut lebar 2 cm. Supplier segera mengganti potongan 1 roll baru dalam 4 jam.
-                                    </p>
+                            {issues.map((issue: any) => (
+                                <div key={issue.id} className="rounded-lg border p-3 bg-muted/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div>
+                                        <span className="font-semibold text-foreground">
+                                            {issue.supplierName} · {issue.receivedAt}
+                                        </span>
+                                        <p className="text-muted-foreground mt-0.5">
+                                            <strong className="text-foreground">{issue.materialName} ({issue.defectQty}):</strong> {issue.notes}
+                                        </p>
+                                    </div>
+                                    <Badge className={issue.condition === 'damaged' ? 'bg-amber-500/15 text-amber-700 border-amber-500/30 text-[10px]' : 'bg-rose-500/15 text-rose-700 border-rose-500/30 text-[10px]'}>
+                                        {issue.condition === 'damaged' ? 'Cacat Fisik Kain / Roll' : 'Ditolak / Expired'}
+                                    </Badge>
                                 </div>
-                                <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[10px]">
-                                    Terselesaikan / Diganti
-                                </Badge>
-                            </div>
+                            ))}
                         </div>
                     </CardContent>
                 </Card>

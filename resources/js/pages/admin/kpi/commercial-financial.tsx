@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     TrendingUp,
@@ -24,13 +24,54 @@ import { KpiHeader } from './components/kpi-header';
 import { mockJobCosting } from '../accounting/data/accounting-mock';
 import { toast } from 'sonner';
 
-export default function KpiCommercialFinancial() {
+interface CommercialFinancialProps {
+    winRate?: number;
+    aov?: number;
+    dso?: number;
+    repeatOrderRate?: number;
+    quotationBreakdown?: {
+        approved: number;
+        draft: number;
+        expired: number;
+    };
+    costVarianceList?: any[];
+}
+
+export default function KpiCommercialFinancial({
+    winRate: propWinRate,
+    aov: propAov,
+    dso: propDso,
+    repeatOrderRate: propRepeatOrderRate,
+    quotationBreakdown,
+    costVarianceList: propCostVarianceList,
+}: CommercialFinancialProps) {
     const [period, setPeriod] = useState('monthly');
 
-    const winRate = 68.5;
-    const aov = 14850000;
-    const dsoDays = 11.4;
-    const repeatOrderRate = 42.8;
+    const winRate = propWinRate !== undefined ? propWinRate : 68.5;
+    const aov = propAov !== undefined ? propAov : 14850000;
+    const dsoDays = propDso !== undefined ? propDso : 11.4;
+    const repeatOrderRate = propRepeatOrderRate !== undefined ? propRepeatOrderRate : 42.8;
+
+    const varianceItems = useMemo(() => {
+        if (propCostVarianceList && propCostVarianceList.length > 0) {
+            return propCostVarianceList;
+        }
+        return mockJobCosting.map((item) => ({
+            id: item.id,
+            poNumber: item.jobTicketNo,
+            article: item.productName,
+            customer: item.customer,
+            revenue: item.revenue,
+            estimatedCogs: item.estBOMCost,
+            actualCogs: item.totalActualCost,
+            varianceAmount: item.varianceAmount,
+            variancePct: item.variancePercent,
+            status: item.varianceAmount <= 0 ? 'efficient' : 'over_budget',
+        }));
+    }, [propCostVarianceList]);
+
+    const approvedQuotes = quotationBreakdown?.approved ?? 24;
+    const totalDecidedQuotes = (quotationBreakdown?.approved ?? 24) + (quotationBreakdown?.expired ?? 11);
 
     return (
         <>
@@ -51,7 +92,7 @@ export default function KpiCommercialFinancial() {
                                 {winRate}%
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                24 dari 35 penawaran disetujui (Target &ge;65%)
+                                {approvedQuotes} dari {totalDecidedQuotes} penawaran closing (Target &ge;65%)
                             </p>
                         </CardContent>
                     </Card>
@@ -66,7 +107,7 @@ export default function KpiCommercialFinancial() {
                                 {formatCurrency(aov)}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Rata-rata nominal per Purchase Order
+                                Rata-rata nominal per Invoice / Pesanan
                             </p>
                         </CardContent>
                     </Card>
@@ -135,25 +176,25 @@ export default function KpiCommercialFinancial() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {mockJobCosting.map((item) => {
+                                    {varianceItems.map((item: any) => {
                                         const isEfficient = item.varianceAmount <= 0;
                                         return (
-                                            <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                                            <tr key={item.id || item.poNumber} className="hover:bg-muted/20 transition-colors">
                                                 <td className="p-3 font-semibold font-mono text-primary">
-                                                    {item.jobTicketNo}
+                                                    {item.poNumber || item.jobTicketNo}
                                                 </td>
                                                 <td className="p-3">
-                                                    <div className="font-medium text-foreground">{item.productName}</div>
-                                                    <div className="text-[11px] text-muted-foreground">{item.customer}</div>
+                                                    <div className="font-medium text-foreground">{item.article || item.productName}</div>
+                                                    <div className="text-[11px] text-muted-foreground">{item.customer || `${item.quantity || 100} pcs`}</div>
                                                 </td>
                                                 <td className="p-3 text-right font-mono font-medium">
-                                                    {formatCurrency(item.revenue)}
+                                                    {formatCurrency(item.revenue || ((item.actualCogs || item.totalActualCost || 1000000) * 1.35))}
                                                 </td>
                                                 <td className="p-3 text-right font-mono text-muted-foreground">
-                                                    {formatCurrency(item.estBOMCost)}
+                                                    {formatCurrency(item.estimatedCogs || item.estBOMCost || 0)}
                                                 </td>
                                                 <td className="p-3 text-right font-mono font-bold text-foreground">
-                                                    {formatCurrency(item.totalActualCost)}
+                                                    {formatCurrency(item.actualCogs || item.totalActualCost || 0)}
                                                 </td>
                                                 <td className="p-3 text-right font-mono font-bold">
                                                     {isEfficient ? (
