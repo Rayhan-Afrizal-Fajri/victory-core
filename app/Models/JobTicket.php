@@ -64,4 +64,14 @@ class JobTicket extends Model
     {
         return $this->hasMany(WorkflowHistory::class);
     }
+
+    public function suratJalans()
+    {
+        return $this->hasMany(SuratJalan::class);
+    }
+
+    public function latestSuratJalan()
+    {
+        return $this->hasOne(SuratJalan::class)->latestOfMany();
+    }
 }

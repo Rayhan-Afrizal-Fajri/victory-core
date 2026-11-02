@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\Kpi\KpiCommercialFinancialController;
 use App\Http\Controllers\Admin\Kpi\KpiSupplierController;
 use App\Http\Controllers\Admin\Kpi\KpiWorkerController;
 use App\Http\Controllers\Admin\Kpi\KpiAlertController;
+use App\Http\Controllers\Admin\SuratJalanController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -384,6 +385,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Production Runs Board (Worker & QC)
     Route::get('/production-runs/board', [ProductionRunController::class, 'boardIndex'])
         ->name('production-runs.board');
+
+    // Surat Jalan / Delivery Order Documents & Actions
+    Route::get('/surat-jalan/{id}/print', [SuratJalanController::class, 'print'])
+        ->name('surat-jalan.print');
+    Route::get('/surat-jalan/{id}/download', [SuratJalanController::class, 'download'])
+        ->name('surat-jalan.download');
+    Route::get('/job-tickets/{jobTicket}/surat-jalan/print', [SuratJalanController::class, 'printForJobTicket'])
+        ->name('job-tickets.surat-jalan.print');
+    Route::get('/production-runs/{run}/surat-jalan/print', [SuratJalanController::class, 'printForProductionRun'])
+        ->name('production-runs.surat-jalan.print');
+    Route::patch('/surat-jalan/{id}', [SuratJalanController::class, 'update'])
+        ->name('surat-jalan.update');
 
     /**
      * End of detail job tickets

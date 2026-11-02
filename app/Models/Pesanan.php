@@ -204,4 +204,14 @@ class Pesanan extends Model
     {
         return $this->urgentMaterialIssues()->count() > 0;
     }
+
+    public function suratJalans()
+    {
+        return $this->hasMany(SuratJalan::class);
+    }
+
+    public function latestSuratJalan()
+    {
+        return $this->hasOne(SuratJalan::class)->latestOfMany();
+    }
 }

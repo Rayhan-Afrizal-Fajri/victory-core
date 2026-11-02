@@ -37,4 +37,9 @@ class ProductionRun extends Model
     {
         return $this->hasMany(ProductionRunProcess::class);
     }
+
+    public function suratJalan()
+    {
+        return $this->hasOne(SuratJalan::class);
+    }
 }
