@@ -194,12 +194,12 @@ const SampleTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                 <div className={`space-y-6 ${isNoSample || (!sample && (!workflow?.sample_revision && !workflow?.sample_approved)) || (!designApproved && (!workflow?.sample_revision && !workflow?.sample_approved)) ? 'col-span-3' : 'xl:col-span-2'}`}>
                     {/* LOGIKA PENGECEKAN UTAMA */}
                     {isNoSample ? (
-                        <div className="flex flex-col items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 p-12 text-center shadow-sm">
-                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                        <div className="flex flex-col items-center justify-center rounded-lg border border-emerald-100 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-12 text-center shadow-sm">
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+                                <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
                             </div>
-                            <h3 className="text-xl font-semibold text-emerald-900">Tahap Sample Dilewati</h3>
-                            <p className="mt-2 max-w-md text-sm text-emerald-700">
+                            <h3 className="text-xl font-semibold text-emerald-900 dark:text-emerald-200">Tahap Sample Dilewati</h3>
+                            <p className="mt-2 max-w-md text-sm text-emerald-700 dark:text-emerald-300">
                                 Kebutuhan Sample Qty untuk pesanan ini adalah 0. Sistem otomatis meneruskan pesanan ini langsung ke tahap Produksi.
                             </p>
                         </div>

@@ -129,25 +129,25 @@ export default function ProductionBoard({ workerTasks, qcTasks }: BoardProps) {
         <div className="space-y-6">
             <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Shop Floor Board</h1>
-                    <p className="text-slate-500 mt-1">Pantau antrean kerja produksi dan kontrol kualitas per pesanan.</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Shop Floor Board</h1>
+                    <p className="text-muted-foreground mt-1">Pantau antrean kerja produksi dan kontrol kualitas per pesanan.</p>
                 </div>
 
                 {/* FILTER CONTROLS */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
                             placeholder="Cari No Ticket, Produk, Customer..." 
-                            className="pl-9 w-full sm:w-64 bg-white"
+                            className="pl-9 w-full sm:w-64"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <div className="relative">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <select 
-                            className="flex h-10 w-full sm:w-40 items-center justify-between rounded-md border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 cursor-pointer"
+                            className="flex h-10 w-full sm:w-40 items-center justify-between rounded-xl border border-input bg-card text-foreground pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer shadow-xs"
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value as any)}
                         >
@@ -228,34 +228,34 @@ function PesananContainer({ group, children, isQc = false }: { group: any, child
 
     return (
         <Card className={`overflow-hidden border-l-4 ${isQc ? 'border-l-amber-500' : 'border-l-blue-600'} shadow-sm`}>
-            <CardHeader className="bg-slate-50/50 pb-4 border-b">
+            <CardHeader className="bg-muted/40 pb-4 border-b">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     
                     {/* Info Utama: Job Ticket & Produk */}
                     <div>
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge variant="outline" className="bg-white font-mono text-slate-600">
+                            <Badge variant="outline" className="bg-card font-mono text-muted-foreground">
                                 {jt?.no_job_ticket ?? 'NO-TICKET'}
                             </Badge>
-                            <Badge variant="secondary" className={isSample ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}>
+                            <Badge variant="secondary" className={isSample ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'}>
                                 {isSample ? 'Pembuatan Sample' : 'Produksi Massal'}
                             </Badge>
                             {isUrgent && (
                                 <Badge variant="destructive" className="animate-pulse">URGENT</Badge>
                             )}
                         </div>
-                        <CardTitle className="text-xl font-bold text-slate-800">
+                        <CardTitle className="text-xl font-bold text-foreground">
                             {productName}
                         </CardTitle>
                     </div>
 
                     {/* Info Pelengkap: Customer & Deadline */}
                     <div className="flex flex-col gap-1.5 text-sm md:text-right">
-                        <div className="flex items-center md:justify-end gap-1.5 text-slate-600 font-medium">
-                            <Building2 className="h-4 w-4 text-slate-400" />
+                        <div className="flex items-center md:justify-end gap-1.5 text-muted-foreground font-medium">
+                            <Building2 className="h-4 w-4 text-muted-foreground/60" />
                             {cust?.nama_perusahaan || cust?.nama || 'Customer Internal'}
                         </div>
-                        <div className={`flex items-center md:justify-end gap-1.5 ${isUrgent ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
+                        <div className={`flex items-center md:justify-end gap-1.5 ${isUrgent ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted-foreground'}`}>
                             <CalendarClock className="h-4 w-4" />
                             Target Selesai: {jt?.deadline ? new Date(jt.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                         </div>
@@ -263,7 +263,7 @@ function PesananContainer({ group, children, isQc = false }: { group: any, child
 
                 </div>
             </CardHeader>
-            <CardContent className="pt-2 pb-6 bg-slate-50/30">
+            <CardContent className="pt-2 pb-6 bg-muted/15">
                 {children}
             </CardContent>
         </Card>
@@ -287,32 +287,32 @@ function WorkerTaskCard({ task }: { task: WorkerTask }) {
     };
 
     return (
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-card border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                     <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
                             Sequence {task.sequence.toString().padStart(2, '0')}
                         </span>
-                        <h4 className="font-bold text-slate-800 leading-tight">{task.work_name}</h4>
+                        <h4 className="font-bold text-foreground leading-tight">{task.work_name}</h4>
                     </div>
-                    <Badge variant={isPending ? 'secondary' : 'default'} className={isInProgress ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}>
+                    <Badge variant={isPending ? 'secondary' : 'default'} className={isInProgress ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : ''}>
                         {isPending ? 'Menunggu' : 'Dikerjakan'}
                     </Badge>
                 </div>
                 
-                <div className="flex items-center gap-1.5 text-sm text-slate-600 mb-4 bg-slate-50 px-2 py-1.5 rounded-md border border-slate-100">
-                    <Package className="h-4 w-4 text-slate-400" />
-                    Target: <span className="font-semibold text-slate-900">{task.quantity} pcs</span>
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4 bg-muted/50 px-2 py-1.5 rounded-md border border-border/60">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    Target: <span className="font-semibold text-foreground">{task.quantity} pcs</span>
                 </div>
 
                 {isPending && (
-                    <Button onClick={() => handleStatusUpdate('in_progress')} className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                    <Button onClick={() => handleStatusUpdate('in_progress')} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" size="sm">
                         <Play className="mr-2 h-3.5 w-3.5" /> Mulai Kerjakan
                     </Button>
                 )}
                 {isInProgress && (
-                    <Button onClick={() => handleStatusUpdate('completed')} className="w-full bg-emerald-600 hover:bg-emerald-700" size="sm">
+                    <Button onClick={() => handleStatusUpdate('completed')} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="sm">
                         <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Selesaikan
                     </Button>
                 )}
@@ -358,16 +358,16 @@ function QcTaskCard({ task }: { task: QcTask }) {
     };
 
     return (
-        <Card className="bg-white border-amber-200 shadow-sm flex flex-col">
-            <CardHeader className="p-4 pb-2 border-b border-amber-100 bg-amber-50/30">
+        <Card className="bg-card border-border shadow-sm flex flex-col">
+            <CardHeader className="p-4 pb-2 border-b border-border/60 bg-muted/30">
                 <div className="flex justify-between items-start">
                     <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
                             Form Quality Control
                         </span>
-                        <h4 className="font-bold text-slate-800">{task.work_name}</h4>
+                        <h4 className="font-bold text-foreground">{task.work_name}</h4>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ${isExternal ? 'border-purple-200 bg-purple-50 text-purple-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
+                    <Badge variant="outline" className={`text-[10px] ${isExternal ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300'}`}>
                         {isExternal ? vendor?.nama_perusahaan || 'Vendor Luar' : 'Tim Internal'}
                     </Badge>
                 </div>
@@ -379,15 +379,15 @@ function QcTaskCard({ task }: { task: QcTask }) {
                             <FormattedNumberInput value={qcForm.data.checked_qty} onValueChange={handleCheckedChange} className="h-8 text-sm" />
                         </Field>
                         <Field label="Lulus">
-                            <FormattedNumberInput value={qcForm.data.passed_qty} disabled className="h-8 text-sm bg-emerald-50 text-emerald-700 font-semibold" />
+                            <FormattedNumberInput value={qcForm.data.passed_qty} disabled className="h-8 text-sm bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold" />
                         </Field>
                         <Field label="Defect">
-                            <FormattedNumberInput value={qcForm.data.defect_qty} onValueChange={handleDefectChange} className={`h-8 text-sm ${qcForm.data.defect_qty > 0 ? 'bg-red-50 text-red-700 border-red-200' : ''}`} />
+                            <FormattedNumberInput value={qcForm.data.defect_qty} onValueChange={handleDefectChange} className={`h-8 text-sm ${qcForm.data.defect_qty > 0 ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200 dark:border-red-800' : ''}`} />
                         </Field>
                     </div>
 
                     {qcForm.data.defect_qty > 0 && (
-                        <div className="rounded-md border border-red-100 bg-red-50/50 p-2.5 space-y-2.5">
+                        <div className="rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/30 p-2.5 space-y-2.5">
                             <Field label="Penyebab Defect" error={qcForm.errors.defect_reason}>
                                 <Input value={qcForm.data.defect_reason} onChange={(e) => qcForm.setData('defect_reason', e.target.value)} placeholder="Cth: Jahitan miring" required={qcForm.data.defect_qty > 0} className="h-8 text-sm" />
                             </Field>
@@ -398,12 +398,12 @@ function QcTaskCard({ task }: { task: QcTask }) {
                     )}
 
                     {qcInvalid && (
-                        <p className="text-[11px] text-red-600 leading-tight bg-red-50 p-1.5 rounded">
+                        <p className="text-[11px] text-red-600 dark:text-red-400 leading-tight bg-red-50 dark:bg-red-950/50 p-1.5 rounded">
                             Checked qty wajib &gt; 0, maks {task.quantity}, dan Passed + Defect = Checked.
                         </p>
                     )}
 
-                    <Button type="submit" disabled={qcForm.processing || qcInvalid} className="w-full bg-slate-800 hover:bg-slate-900" size="sm">
+                    <Button type="submit" disabled={qcForm.processing || qcInvalid} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" size="sm">
                         <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Simpan QC
                     </Button>
                 </form>
@@ -415,11 +415,11 @@ function QcTaskCard({ task }: { task: QcTask }) {
 // --- HELPER COMPONENT ---
 function EmptyStateCard({ icon, title, message }: { icon: React.ReactNode, title: string, message: string }) {
     return (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-400">
-            <div className="flex justify-center mb-3 [&>svg]:h-12 [&>svg]:w-12 [&>svg]:text-slate-300">
+        <div className="rounded-xl border border-dashed border-border bg-muted/40 p-12 text-center text-muted-foreground">
+            <div className="flex justify-center mb-3 [&>svg]:h-12 [&>svg]:w-12 [&>svg]:text-muted-foreground/60">
                 {icon}
             </div>
-            <h3 className="text-lg font-medium text-slate-700">{title}</h3>
+            <h3 className="text-lg font-medium text-foreground">{title}</h3>
             <p className="text-sm mt-1">{message}</p>
         </div>
     );

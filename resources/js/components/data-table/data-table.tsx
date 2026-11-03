@@ -287,7 +287,7 @@ export default function DataTable<T extends Record<string, any>>({
                   onDragOver={(e) => { if (enableReorder) e.preventDefault(); }}
                 >
                   {enableReorder && (
-                    <td className="w-10 px-4 py-3 text-slate-300 align-middle">
+                    <td className="w-10 px-4 py-3 text-muted-foreground/50 align-middle">
                       <GripVertical className="size-4" />
                     </td>
                   )}
@@ -295,7 +295,7 @@ export default function DataTable<T extends Record<string, any>>({
                   {columns.map((column) => (
                     <td
                       key={column.header}
-                      className={cn('px-4 py-3 align-middle', column.className)}
+                      className={cn('px-4 py-3 align-middle text-foreground', column.className)}
                     >
                       {column.cell
                         ? column.cell(row)

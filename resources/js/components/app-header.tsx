@@ -63,7 +63,7 @@ const rightNavItems: NavItem[] = [
 ];
 
 const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+    'bg-primary/15 text-primary font-semibold';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();

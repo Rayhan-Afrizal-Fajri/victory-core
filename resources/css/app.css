@@ -130,67 +130,68 @@
 }
 
 .dark {
-    /* iOS System Grouped Background: True Deep Black (#000000 / #0B0B0C) */
-    --background: oklch(0.10 0 0);
-    /* iOS Primary Label: Crisp pure white (#FFFFFF) */
-    --foreground: oklch(0.985 0 0);
+    /* Base Page Canvas: Deep midnight slate navy (#0B1329 / #0F172A) */
+    --background: oklch(0.208 0.042 265);
+    /* High-contrast, clean & comfortable soft white (#F8FAFC) */
+    --foreground: oklch(0.985 0.005 260);
 
-    /* iOS Secondary System Background: Elevated Cards (#1C1C1E) */
-    --card: oklch(0.20 0.005 260);
-    --card-foreground: oklch(0.985 0 0);
+    /* Elevated Surfaces & Cards (#162238 / #1B253B) */
+    --card: oklch(0.265 0.038 265);
+    --card-foreground: oklch(0.985 0.005 260);
 
-    /* iOS Tertiary System Background: Popovers & Modals (#242426) */
-    --popover: oklch(0.22 0.006 260);
-    --popover-foreground: oklch(0.985 0 0);
+    /* Popovers, Dropdowns, Modals (#1B253B / #1E293B) */
+    --popover: oklch(0.265 0.038 265);
+    --popover-foreground: oklch(0.985 0.005 260);
 
-    /* iOS Luminous Dynamic Blue (#0A84FF) - Vibrant with white text! */
-    --primary: oklch(0.65 0.22 255);
+    /* Vibrant Royal Blue (#2563EB / #3B82F6) */
+    --primary: oklch(0.60 0.22 255);
     --primary-foreground: oklch(1 0 0);
 
-    /* iOS Tertiary System Background: Secondary buttons / wells (#2C2C2E) */
-    --secondary: oklch(0.27 0.008 260);
-    --secondary-foreground: oklch(0.985 0 0);
+    /* Secondary Controls & Wells (#1E2C44) */
+    --secondary: oklch(0.28 0.035 265);
+    --secondary-foreground: oklch(0.95 0.005 260);
 
-    /* iOS Inset Well / Muted surface (#242426) */
-    --muted: oklch(0.24 0.006 260);
-    --muted-foreground: oklch(0.68 0.01 260); /* Apple Silver Gray #8E8E93, crystal clear */
+    /* Recessed Inputs & Insets (#121B2D / #0F172A) */
+    --muted: oklch(0.22 0.038 265);
+    --muted-foreground: oklch(0.72 0.03 260); /* Clear readable slate-400 #94A3B8 */
 
-    /* iOS Hover Surface (#323236) */
-    --accent: oklch(0.29 0.008 260);
-    --accent-foreground: oklch(0.985 0 0);
+    /* Hover State Surface (#24344D) */
+    --accent: oklch(0.32 0.038 265);
+    --accent-foreground: oklch(0.985 0.005 260);
 
-    /* iOS System Red Dark (#FF453A) */
+    /* System Red Dark */
     --destructive: oklch(0.65 0.22 25);
     --destructive-foreground: oklch(1 0 0);
 
-    /* iOS Hairline Separator (#38383A / rgba(255, 255, 255, 0.12)) */
-    --border: oklch(0.27 0.006 260);
-    --input: oklch(0.27 0.006 260);
+    /* Hairline Separators & Input Borders (#26354D / #2B3A52) */
+    --border: oklch(0.33 0.035 265);
+    --input: oklch(0.33 0.035 265);
 
     /* Focus Ring */
-    --ring: oklch(0.65 0.22 255 / 0.5);
+    --ring: oklch(0.60 0.22 255 / 0.5);
 
-    /* Dynamic iOS Charts */
+    /* Dynamic Charts */
     --chart-1: oklch(0.65 0.22 255);
     --chart-2: oklch(0.72 0.17 155);
     --chart-3: oklch(0.78 0.18 70);
     --chart-4: oklch(0.65 0.22 25);
     --chart-5: oklch(0.66 0.22 300);
 
-    /* SIDEBAR (#121214) */
-    --sidebar: oklch(0.14 0.003 260);
-    --sidebar-foreground: oklch(0.92 0.005 260);
-    --sidebar-primary: oklch(0.65 0.22 255);
+    /* Left Sidebar: Deep midnight navy (#0B1329 / #0D1527) */
+    --sidebar: oklch(0.195 0.040 265);
+    --sidebar-foreground: oklch(0.75 0.025 260);
+    --sidebar-primary: oklch(0.60 0.22 255);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.23 0.006 260);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.22 0.005 260);
-    --sidebar-ring: oklch(0.65 0.22 255);
+    --sidebar-accent: oklch(0.265 0.038 265);
+    --sidebar-accent-foreground: oklch(0.985 0.005 260);
+    --sidebar-border: oklch(0.28 0.035 265);
+    --sidebar-ring: oklch(0.60 0.22 255);
 }
 
 /* ==========================================================================
-   iOS SMART ADAPTER LAYER FOR DARK MODE
-   Transforms hardcoded colors & pastels into Apple HIG standard dark surfaces
+   SMART ADAPTER LAYER FOR DARK MODE
+   Transforms hardcoded colors & pastels into Bridge Studio navy-slate palette
+   Guarantees 100% text contrast and readability without exception
    ========================================================================== */
 
 @layer utilities {
@@ -198,223 +199,414 @@
     .dark .bg-white,
     .dark [class*="bg-white"] {
         background-color: var(--card) !important;
+        color: var(--card-foreground);
     }
 
     .dark .bg-slate-50,
     .dark .bg-gray-50,
     .dark .bg-neutral-50,
-    .dark .bg-zinc-50 {
-        background-color: oklch(0.15 0.003 260) !important;
+    .dark .bg-zinc-50,
+    .dark .bg-stone-50 {
+        background-color: var(--muted) !important;
     }
 
     .dark .bg-slate-100,
     .dark .bg-gray-100,
     .dark .bg-neutral-100,
-    .dark .bg-zinc-100 {
-        background-color: oklch(0.22 0.006 260) !important;
+    .dark .bg-zinc-100,
+    .dark .bg-stone-100 {
+        background-color: oklch(0.26 0.035 265) !important;
     }
 
     .dark .bg-slate-200,
     .dark .bg-gray-200,
     .dark .bg-neutral-200,
-    .dark .bg-zinc-200 {
-        background-color: oklch(0.27 0.008 260) !important;
+    .dark .bg-zinc-200,
+    .dark .bg-stone-200 {
+        background-color: oklch(0.30 0.035 265) !important;
+    }
+
+    .dark .bg-slate-300,
+    .dark .bg-gray-300,
+    .dark .bg-neutral-300,
+    .dark .bg-zinc-300,
+    .dark .bg-stone-300 {
+        background-color: oklch(0.35 0.035 265) !important;
     }
 
     .dark .bg-black {
-        background-color: oklch(0.08 0 0) !important;
+        background-color: var(--muted) !important;
     }
 
-    /* 2. Text Hierarchy (Apple Neutral Silver Gray - Zero Neon Cast) */
+    .dark .bg-slate-950,
+    .dark .bg-gray-950,
+    .dark .bg-neutral-950,
+    .dark .bg-zinc-950,
+    .dark .bg-stone-950 {
+        background-color: var(--card) !important;
+    }
+
+    .dark .bg-slate-900,
+    .dark .bg-gray-900,
+    .dark .bg-neutral-900,
+    .dark .bg-zinc-900,
+    .dark .bg-stone-900 {
+        background-color: var(--muted) !important;
+    }
+
+    .dark .bg-slate-800,
+    .dark .bg-gray-800,
+    .dark .bg-neutral-800,
+    .dark .bg-zinc-800,
+    .dark .bg-stone-800 {
+        background-color: var(--secondary) !important;
+    }
+
+    .dark .bg-slate-700,
+    .dark .bg-gray-700,
+    .dark .bg-neutral-700,
+    .dark .bg-zinc-700,
+    .dark .bg-stone-700 {
+        background-color: var(--accent) !important;
+    }
+
+    /* 2. Text Hierarchy: Crystal Clear, Never Invisible */
     .dark .text-black,
     .dark .text-slate-950,
     .dark .text-gray-950,
+    .dark .text-zinc-950,
+    .dark .text-neutral-950,
+    .dark .text-stone-950,
     .dark .text-slate-900,
-    .dark .text-gray-900 {
+    .dark .text-gray-900,
+    .dark .text-zinc-900,
+    .dark .text-neutral-900,
+    .dark .text-stone-900 {
         color: var(--foreground) !important;
     }
 
     .dark .text-slate-800,
-    .dark .text-gray-800 {
-        color: oklch(0.94 0.005 260) !important;
+    .dark .text-gray-800,
+    .dark .text-zinc-800,
+    .dark .text-neutral-800,
+    .dark .text-stone-800 {
+        color: oklch(0.93 0.01 260) !important; /* #e2e8f0 */
     }
 
     .dark .text-slate-700,
-    .dark .text-gray-700 {
-        color: oklch(0.86 0.006 260) !important;
+    .dark .text-gray-700,
+    .dark .text-zinc-700,
+    .dark .text-neutral-700,
+    .dark .text-stone-700 {
+        color: oklch(0.85 0.015 260) !important; /* #cbd5e1 */
     }
 
     .dark .text-slate-600,
-    .dark .text-gray-600 {
-        color: oklch(0.74 0.008 260) !important;
+    .dark .text-gray-600,
+    .dark .text-zinc-600,
+    .dark .text-neutral-600,
+    .dark .text-stone-600 {
+        color: oklch(0.78 0.02 260) !important; /* #94a3b8 */
     }
 
     .dark .text-slate-500,
-    .dark .text-gray-500 {
-        color: oklch(0.65 0.01 260) !important;
+    .dark .text-gray-500,
+    .dark .text-zinc-500,
+    .dark .text-neutral-500,
+    .dark .text-stone-500 {
+        color: oklch(0.72 0.025 260) !important; /* Clear, highly legible on dark slate */
     }
 
     .dark .text-slate-400,
-    .dark .text-gray-400 {
-        color: oklch(0.52 0.01 260) !important;
+    .dark .text-gray-400,
+    .dark .text-zinc-400,
+    .dark .text-neutral-400,
+    .dark .text-stone-400 {
+        color: oklch(0.65 0.025 260) !important;
+    }
+
+    /* Colored Text High Contrast Adapter */
+    .dark .text-blue-950,
+    .dark .text-blue-900,
+    .dark .text-sky-950,
+    .dark .text-sky-900,
+    .dark .text-indigo-950,
+    .dark .text-indigo-900 {
+        color: #93c5fd !important; /* Light sky blue */
+    }
+    .dark .text-blue-800,
+    .dark .text-blue-700,
+    .dark .text-blue-600,
+    .dark .text-sky-800,
+    .dark .text-sky-700,
+    .dark .text-sky-600,
+    .dark .text-indigo-800,
+    .dark .text-indigo-700 {
+        color: #60a5fa !important; /* Blue 400 */
+    }
+
+    .dark .text-amber-950,
+    .dark .text-amber-900,
+    .dark .text-yellow-950,
+    .dark .text-yellow-900 {
+        color: #fde68a !important; /* Amber 200 */
+    }
+    .dark .text-amber-800,
+    .dark .text-amber-700,
+    .dark .text-amber-600,
+    .dark .text-yellow-800,
+    .dark .text-yellow-700 {
+        color: #fbbf24 !important; /* Amber 400 */
+    }
+
+    .dark .text-emerald-950,
+    .dark .text-emerald-900,
+    .dark .text-green-950,
+    .dark .text-green-900,
+    .dark .text-teal-950,
+    .dark .text-teal-900 {
+        color: #a7f3d0 !important; /* Emerald 200 */
+    }
+    .dark .text-emerald-800,
+    .dark .text-emerald-700,
+    .dark .text-emerald-600,
+    .dark .text-green-800,
+    .dark .text-green-700,
+    .dark .text-green-600,
+    .dark .text-teal-800,
+    .dark .text-teal-700 {
+        color: #34d399 !important; /* Emerald 400 */
+    }
+
+    .dark .text-red-950,
+    .dark .text-red-900,
+    .dark .text-rose-950,
+    .dark .text-rose-900 {
+        color: #fecaca !important; /* Red 200 */
+    }
+    .dark .text-red-800,
+    .dark .text-red-700,
+    .dark .text-red-600,
+    .dark .text-rose-800,
+    .dark .text-rose-700,
+    .dark .text-rose-600 {
+        color: #f87171 !important; /* Red 400 */
+    }
+
+    .dark .text-purple-950,
+    .dark .text-purple-900,
+    .dark .text-violet-950,
+    .dark .text-violet-900,
+    .dark .text-fuchsia-950,
+    .dark .text-fuchsia-900 {
+        color: #e9d5ff !important; /* Purple 200 */
+    }
+    .dark .text-purple-800,
+    .dark .text-purple-700,
+    .dark .text-violet-800,
+    .dark .text-violet-700,
+    .dark .text-fuchsia-800,
+    .dark .text-fuchsia-700 {
+        color: #c084fc !important; /* Purple 400 */
+    }
+
+    .dark .text-orange-950,
+    .dark .text-orange-900 {
+        color: #fed7aa !important; /* Orange 200 */
+    }
+    .dark .text-orange-800,
+    .dark .text-orange-700,
+    .dark .text-orange-600 {
+        color: #fb923c !important; /* Orange 400 */
     }
 
     /* 3. Hairline Borders & Separators */
     .dark .border-slate-100,
-    .dark .border-gray-100 {
-        border-color: oklch(0.22 0.005 260) !important;
+    .dark .border-gray-100,
+    .dark .border-neutral-100,
+    .dark .border-zinc-100,
+    .dark .border-stone-100 {
+        border-color: oklch(0.28 0.035 265) !important;
     }
 
     .dark .border-slate-200,
     .dark .border-gray-200,
-    .dark .border-neutral-200 {
-        border-color: oklch(0.27 0.006 260) !important;
+    .dark .border-neutral-200,
+    .dark .border-zinc-200,
+    .dark .border-stone-200 {
+        border-color: var(--border) !important;
     }
 
     .dark .border-slate-300,
-    .dark .border-gray-300 {
-        border-color: oklch(0.32 0.006 260) !important;
+    .dark .border-gray-300,
+    .dark .border-neutral-300,
+    .dark .border-zinc-300,
+    .dark .border-stone-300 {
+        border-color: oklch(0.36 0.035 265) !important;
     }
 
     .dark .border-slate-400,
-    .dark .border-gray-400 {
-        border-color: oklch(0.38 0.006 260) !important;
+    .dark .border-gray-400,
+    .dark .border-neutral-400,
+    .dark .border-zinc-400,
+    .dark .border-stone-400 {
+        border-color: oklch(0.42 0.035 265) !important;
     }
 
     .dark .border-black,
     .dark [class*="border-black/"] {
-        border-color: rgba(255, 255, 255, 0.12) !important;
+        border-color: var(--border) !important;
+    }
+
+    .dark .divide-slate-100,
+    .dark .divide-slate-200,
+    .dark .divide-gray-100,
+    .dark .divide-gray-200,
+    .dark .divide-neutral-100,
+    .dark .divide-neutral-200,
+    .dark .divide-zinc-100,
+    .dark .divide-zinc-200 {
+        border-color: var(--border) !important;
     }
 
     /* 4. Kanban Columns & Pastel Containers (Rich Luminous Dark Tones) */
-    .dark .bg-blue-50 {
-        background-color: oklch(0.20 0.04 255) !important;
-        border-color: oklch(0.32 0.06 255) !important;
+    .dark .bg-blue-50,
+    .dark .bg-sky-50,
+    .dark .bg-indigo-50 {
+        background-color: oklch(0.23 0.04 255) !important;
+        border-color: oklch(0.34 0.06 255) !important;
     }
-    .dark .border-l-blue-400 {
-        border-left-color: oklch(0.65 0.22 255) !important;
+    .dark .border-l-blue-400,
+    .dark .border-l-sky-400,
+    .dark .border-l-indigo-400 {
+        border-left-color: oklch(0.60 0.22 255) !important;
     }
 
-    .dark .bg-amber-50 {
-        background-color: oklch(0.20 0.04 75) !important;
-        border-color: oklch(0.32 0.06 75) !important;
+    .dark .bg-amber-50,
+    .dark .bg-yellow-50 {
+        background-color: oklch(0.23 0.04 75) !important;
+        border-color: oklch(0.34 0.06 75) !important;
     }
-    .dark .border-l-amber-400 {
+    .dark .border-l-amber-400,
+    .dark .border-l-yellow-400 {
         border-left-color: oklch(0.78 0.18 70) !important;
     }
 
     .dark .bg-emerald-50,
-    .dark .bg-green-50 {
-        background-color: oklch(0.20 0.04 150) !important;
-        border-color: oklch(0.32 0.06 150) !important;
+    .dark .bg-green-50,
+    .dark .bg-teal-50 {
+        background-color: oklch(0.23 0.04 150) !important;
+        border-color: oklch(0.34 0.06 150) !important;
     }
     .dark .border-l-emerald-400,
-    .dark .border-l-green-400 {
+    .dark .border-l-green-400,
+    .dark .border-l-teal-400 {
         border-left-color: oklch(0.72 0.18 150) !important;
     }
 
     .dark .bg-violet-50,
-    .dark .bg-purple-50 {
-        background-color: oklch(0.20 0.04 290) !important;
-        border-color: oklch(0.32 0.06 290) !important;
+    .dark .bg-purple-50,
+    .dark .bg-fuchsia-50 {
+        background-color: oklch(0.23 0.04 290) !important;
+        border-color: oklch(0.34 0.06 290) !important;
     }
     .dark .border-l-violet-400,
-    .dark .border-l-purple-400 {
+    .dark .border-l-purple-400,
+    .dark .border-l-fuchsia-400 {
         border-left-color: oklch(0.66 0.22 290) !important;
     }
 
     .dark .bg-cyan-50 {
-        background-color: oklch(0.20 0.04 210) !important;
-        border-color: oklch(0.32 0.06 210) !important;
+        background-color: oklch(0.23 0.04 210) !important;
+        border-color: oklch(0.34 0.06 210) !important;
     }
     .dark .border-l-cyan-400 {
         border-left-color: oklch(0.70 0.16 210) !important;
     }
 
     .dark .bg-orange-50 {
-        background-color: oklch(0.20 0.04 55) !important;
-        border-color: oklch(0.32 0.06 55) !important;
+        background-color: oklch(0.23 0.04 55) !important;
+        border-color: oklch(0.34 0.06 55) !important;
     }
     .dark .border-l-orange-400 {
         border-left-color: oklch(0.70 0.20 55) !important;
     }
 
-    .dark .bg-red-50 {
-        background-color: oklch(0.20 0.04 25) !important;
-        border-color: oklch(0.32 0.06 25) !important;
+    .dark .bg-red-50,
+    .dark .bg-rose-50 {
+        background-color: oklch(0.23 0.04 25) !important;
+        border-color: oklch(0.34 0.06 25) !important;
     }
-    .dark .border-l-red-400 {
+    .dark .border-l-red-400,
+    .dark .border-l-rose-400 {
         border-left-color: oklch(0.65 0.22 25) !important;
     }
 
-    /* 5. Status Badges & Pills (Apple HIG Tinted Translucent Capsules) */
-    .dark .bg-blue-100 {
-        background-color: rgba(59, 130, 246, 0.20) !important;
+    /* 5. Status Badges & Pills (Tinted Translucent Capsules) */
+    .dark .bg-blue-100,
+    .dark .bg-sky-100,
+    .dark .bg-indigo-100 {
+        background-color: rgba(59, 130, 246, 0.22) !important;
     }
-    .dark .text-blue-800,
-    .dark .text-blue-700,
-    .dark .text-blue-600 {
-        color: #60A5FA !important;
+    .dark .bg-amber-100,
+    .dark .bg-yellow-100 {
+        background-color: rgba(245, 158, 11, 0.22) !important;
     }
-
-    .dark .bg-amber-100 {
-        background-color: rgba(245, 158, 11, 0.20) !important;
-    }
-    .dark .text-amber-800,
-    .dark .text-amber-700,
-    .dark .text-amber-600 {
-        color: #FBBF24 !important;
-    }
-
     .dark .bg-emerald-100,
-    .dark .bg-green-100 {
-        background-color: rgba(16, 185, 129, 0.20) !important;
+    .dark .bg-green-100,
+    .dark .bg-teal-100 {
+        background-color: rgba(16, 185, 129, 0.22) !important;
     }
-    .dark .text-emerald-800,
-    .dark .text-emerald-700,
-    .dark .text-green-800,
-    .dark .text-green-700 {
-        color: #34D399 !important;
-    }
-
     .dark .bg-violet-100,
-    .dark .bg-purple-100 {
-        background-color: rgba(139, 92, 246, 0.20) !important;
+    .dark .bg-purple-100,
+    .dark .bg-fuchsia-100 {
+        background-color: rgba(139, 92, 246, 0.22) !important;
     }
-    .dark .text-violet-800,
-    .dark .text-violet-700,
-    .dark .text-purple-800 {
-        color: #C084FC !important;
-    }
-
     .dark .bg-cyan-100 {
-        background-color: rgba(6, 182, 212, 0.20) !important;
+        background-color: rgba(6, 182, 212, 0.22) !important;
     }
-    .dark .text-cyan-800,
-    .dark .text-cyan-700 {
-        color: #38BDF8 !important;
-    }
-
     .dark .bg-orange-100 {
-        background-color: rgba(249, 115, 22, 0.20) !important;
+        background-color: rgba(249, 115, 22, 0.22) !important;
     }
-    .dark .text-orange-800,
-    .dark .text-orange-700 {
-        color: #FB923C !important;
-    }
-
-    .dark .bg-red-100 {
-        background-color: rgba(239, 68, 68, 0.20) !important;
-    }
-    .dark .text-red-800,
-    .dark .text-red-700,
-    .dark .text-red-600 {
-        color: #F87171 !important;
+    .dark .bg-red-100,
+    .dark .bg-rose-100 {
+        background-color: rgba(239, 68, 68, 0.22) !important;
     }
 
-    /* 6. Subtle Apple Table Hover Effect */
+    /* 6. Universal Table Styling in Dark Mode */
+    .dark table {
+        color: var(--foreground);
+    }
+    .dark thead {
+        background-color: var(--muted) !important;
+    }
+    .dark th {
+        color: var(--muted-foreground) !important;
+        border-color: var(--border) !important;
+    }
+    .dark td {
+        color: var(--foreground);
+        border-color: var(--border) !important;
+    }
     .dark tbody tr:hover {
-        background-color: rgba(255, 255, 255, 0.03) !important;
+        background-color: var(--accent) !important;
+    }
+
+    /* 7. Universal Form Inputs, Selects, and Textareas */
+    .dark select,
+    .dark input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+    .dark textarea {
+        color: var(--foreground) !important;
+        background-color: var(--muted);
+        border-color: var(--input);
+    }
+    .dark select option {
+        background-color: var(--card) !important;
+        color: var(--foreground) !important;
+    }
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: var(--muted-foreground) !important;
     }
 
     /* 7. react-select iOS Dark & Light Adaptation */

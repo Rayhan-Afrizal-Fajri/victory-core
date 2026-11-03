@@ -90,8 +90,8 @@ export function SidebarDropdown({
                                 prefetch
                                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                     active
-                                        ? 'text-sidebar-primary'
-                                        : 'text-sidebar-foreground/50 hover:text-sidebar-foreground dark:text-sidebar-foreground dark:hover:bg-sidebar-accent'
+                                        ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
+                                        : 'text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent'
                                 }`}
                             >
                                 {ItemIcon && <ItemIcon className="h-4 w-4" />}

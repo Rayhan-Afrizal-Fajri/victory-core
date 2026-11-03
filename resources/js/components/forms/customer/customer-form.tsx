@@ -142,7 +142,7 @@ export function CustomerForm({ form }: Props) {
       {/* ================= KOLOM KIRI: DATA UTAMA ================= */}
       <div className="space-y-4">
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Nama PIC</label>
+          <label className="text-sm font-medium text-foreground">Nama PIC</label>
           <Input
             value={form.data.nama}
             onChange={(e) => form.setData('nama', e.target.value)}
@@ -152,7 +152,7 @@ export function CustomerForm({ form }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Jabatan PIC</label>
+          <label className="text-sm font-medium text-foreground">Jabatan PIC</label>
           <Input
             value={form.data.jabatan}
             onChange={(e) => form.setData('jabatan', e.target.value)}
@@ -162,7 +162,7 @@ export function CustomerForm({ form }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Nama Perusahaan</label>
+          <label className="text-sm font-medium text-foreground">Nama Perusahaan</label>
           <Input
             value={form.data.nama_perusahaan}
             onChange={(e) => form.setData('nama_perusahaan', e.target.value)}
@@ -172,7 +172,7 @@ export function CustomerForm({ form }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Kontak (No. HP)</label>
+          <label className="text-sm font-medium text-foreground">Kontak (No. HP)</label>
           <Input
             value={form.data.no_hp}
             onChange={(e) => form.setData('no_hp', e.target.value)}
@@ -185,7 +185,7 @@ export function CustomerForm({ form }: Props) {
       {/* ================= KOLOM KANAN: DETAIL ALAMAT WILAYAH ================= */}
       <div className="space-y-4">
       <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Detail Alamat</label>
+          <label className="text-sm font-medium text-foreground">Detail Alamat</label>
           <Textarea
             value={form.data.alamat_detail}
             onChange={(e) => form.setData('alamat_detail', e.target.value)}
@@ -196,7 +196,7 @@ export function CustomerForm({ form }: Props) {
           <InputError message={form.errors.alamat_detail} />
         </div>
       <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Kode Pos</label>
+          <label className="text-sm font-medium text-foreground">Kode Pos</label>
           <Input
             value={form.data.kode_pos}
             onChange={(e) => form.setData('kode_pos', e.target.value)}
@@ -205,7 +205,7 @@ export function CustomerForm({ form }: Props) {
           <InputError message={form.errors.kode_pos} />
         </div>
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Provinsi</label>
+          <label className="text-sm font-medium text-foreground">Provinsi</label>
           <Select
             className="text-sm"
             classNamePrefix="select"
@@ -225,7 +225,7 @@ export function CustomerForm({ form }: Props) {
         </div>
         
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Kota/Kabupaten</label>
+          <label className="text-sm font-medium text-foreground">Kota/Kabupaten</label>
           <Select
             className="text-sm"
             classNamePrefix="select"
@@ -246,7 +246,7 @@ export function CustomerForm({ form }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Kecamatan</label>
+          <label className="text-sm font-medium text-foreground">Kecamatan</label>
           <Select
             className="text-sm"
             classNamePrefix="select"
@@ -263,7 +263,7 @@ export function CustomerForm({ form }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium text-slate-700">Kelurahan / Desa</label>
+          <label className="text-sm font-medium text-foreground">Kelurahan / Desa</label>
           <Select
             className="text-sm"
             classNamePrefix="select"

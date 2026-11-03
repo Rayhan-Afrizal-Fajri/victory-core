@@ -87,18 +87,18 @@ function getDeadlineText(daysLeft?: number | null) {
 
 function getDeadlineClass(daysLeft?: number | null) {
     if (daysLeft === null || daysLeft === undefined) {
-        return 'text-slate-500 bg-slate-100';
+        return 'text-muted-foreground bg-muted';
     }
 
     if (daysLeft < 0) {
-        return 'text-red-700 bg-red-100';
+        return 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-950/60';
     }
 
     if (daysLeft <= 3) {
-        return 'text-orange-700 bg-orange-100';
+        return 'text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-950/60';
     }
 
-    return 'text-emerald-700 bg-emerald-100';
+    return 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/60';
 }
 
 function getProgressColor(progress: number) {
@@ -155,20 +155,20 @@ export default function Index({
                         </div>
 
                         {/* List Content */}
-                        <div className="divide-y divide-slate-100 max-h-75 overflow-y-auto custom-scrollbar">
+                        <div className="divide-y divide-border max-h-75 overflow-y-auto custom-scrollbar">
                             {urgentIssues.map((order) => (
-                                <div key={order.id} className="flex flex-col md:flex-row p-4 hover:bg-slate-50 transition-colors">
+                                <div key={order.id} className="flex flex-col md:flex-row p-4 hover:bg-muted/40 transition-colors">
                                     
                                     {/* Info Pesanan (Sebelah Kiri) */}
                                     <div className="md:w-1/4 mb-3 md:mb-0 md:pr-4">
                                         <Link 
                                             href={order.showUrl} 
-                                            className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                                            className="font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline text-sm"
                                         >
                                             {order.jobNo}
                                         </Link>
-                                        <p className="text-sm font-medium text-slate-800 mt-1">{order.customer}</p>
-                                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{order.product}</p>
+                                        <p className="text-sm font-medium text-foreground mt-1">{order.customer}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{order.product}</p>
                                     </div>
 
                                     {/* Detail Item Cacat (Sebelah Kanan) */}
@@ -176,42 +176,42 @@ export default function Index({
                                         {order.issues.map((issue, idx) => (
                                             <div 
                                                 key={issue.id} 
-                                                className="flex flex-wrap md:flex-nowrap items-start justify-between bg-white border border-red-100 p-3 rounded-md shadow-sm gap-4 relative overflow-hidden"
+                                                className="flex flex-wrap md:flex-nowrap items-start justify-between bg-card border border-red-200/50 dark:border-red-900/50 p-3 rounded-md shadow-sm gap-4 relative overflow-hidden"
                                             >
                                                 {/* Efek Garis Merah di Kiri */}
                                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
                                                 
                                                 <div className="pl-2">
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-bold text-slate-800">
+                                                        <p className="text-sm font-bold text-foreground">
                                                             {issue.title} {/* Diubah dari issue.item_bahan */}
                                                         </p>
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-100 text-red-700`}>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300`}>
                                                             {issue.condition === 'damaged_issue' ? 'Damaged' : issue.condition}
                                                         </span>
                                                     </div>
                                                     
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-600">
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                                                         <div className="flex items-center gap-1">
-                                                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                                                            <Building2 className="w-3.5 h-3.5 text-muted-foreground/60" />
                                                             <span>{issue.subtitle}</span> {/* Diubah dari issue.supplier */}
                                                         </div>
                                                         <div className="flex items-center gap-1">
-                                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                                            <Calendar className="w-3.5 h-3.5 text-muted-foreground/60" />
                                                             <span>Status: {issue.date}</span> {/* Diubah dari issue.received_at */}
                                                         </div>
                                                     </div>
 
                                                     {issue.notes && (
-                                                        <p className="text-xs text-red-600 font-medium italic mt-2 bg-red-50 inline-block px-2 py-1 rounded">
+                                                        <p className="text-xs text-red-600 dark:text-red-300 font-medium italic mt-2 bg-red-50 dark:bg-red-950/40 inline-block px-2 py-1 rounded">
                                                             Catatan: "{issue.notes}"
                                                         </p>
                                                     )}
                                                 </div>
 
-                                                <div className="text-right flex flex-row md:flex-col items-center md:items-end gap-2 md:gap-0 pl-2 md:pl-0 w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0 mt-2 md:mt-0 border-slate-100">
-                                                    <p className="text-xs text-slate-500 font-medium hidden md:block">Qty Bermasalah</p>
-                                                    <div className="flex items-center gap-1 text-red-600 font-bold text-lg md:mt-1">
+                                                <div className="text-right flex flex-row md:flex-col items-center md:items-end gap-2 md:gap-0 pl-2 md:pl-0 w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0 mt-2 md:mt-0 border-border">
+                                                    <p className="text-xs text-muted-foreground font-medium hidden md:block">Qty Bermasalah</p>
+                                                    <div className="flex items-center gap-1 text-red-600 dark:text-red-400 font-bold text-lg md:mt-1">
                                                         <PackageX className="w-4 h-4 md:hidden" />
                                                         {issue.qty} <span className="text-sm font-medium">{issue.satuan}</span> {/* Diubah dari issue.received_qty */}
                                                     </div>

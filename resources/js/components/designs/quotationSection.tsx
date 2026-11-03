@@ -288,7 +288,7 @@ function QuotationSection({
                                 {Number(quotationForm.data.delivery_cost || 0) > 0 && (
                                     <span>Ongkir: <strong className="text-slate-800">{formatRupiah(Number(quotationForm.data.delivery_cost || 0))}</strong></span>
                                 )}
-                                <span className="font-semibold text-blue-950">Grand Total: {formatRupiah(estimatedGrandTotal)}</span>
+                                <span className="font-semibold text-primary dark:text-blue-300">Grand Total: {formatRupiah(estimatedGrandTotal)}</span>
                             </div>
                         </div>
                         

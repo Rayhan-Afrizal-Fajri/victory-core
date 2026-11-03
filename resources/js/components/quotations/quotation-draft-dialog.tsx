@@ -396,7 +396,7 @@ export default function QuotationDraftDialog({
                     <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
                             <div>
-                                <span className="font-semibold text-blue-900">Ketentuan DP Produksi: {dpPercentage}%</span>
+                                <span className="font-semibold text-primary dark:text-blue-300">Ketentuan DP Produksi: {dpPercentage}%</span>
                                 <p className="text-slate-600">Invoice produksi akan mewajibkan pembayaran DP minimal sesuai nominal ini.</p>
                             </div>
                             <div className="flex flex-wrap gap-2 text-right">
@@ -423,7 +423,7 @@ export default function QuotationDraftDialog({
                             {Number(form.data.delivery_cost || 0) > 0 && (
                                 <span>Ongkir: <strong className="text-slate-800">{formatRupiah(Number(form.data.delivery_cost || 0))}</strong></span>
                             )}
-                            <span className="font-semibold text-blue-950">Grand Total: {formatRupiah(grandTotal)}</span>
+                            <span className="font-semibold text-primary dark:text-blue-300">Grand Total: {formatRupiah(grandTotal)}</span>
                         </div>
                     </div>
 

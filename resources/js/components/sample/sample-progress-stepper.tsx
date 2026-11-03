@@ -55,12 +55,12 @@ const SampleProgressStepper = ({
                         key={step.title}
                         className={`relative rounded-2xl border p-4 transition ${
                             step.active
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                                : 'border-slate-100 bg-white text-slate-400'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'border-border bg-card text-muted-foreground'
                         }`}
                     >
                         <div className="mb-3 flex items-center justify-between">
-                            <div className={`rounded-xl p-2 ${step.active ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                            <div className={`rounded-xl p-2 ${step.active ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'bg-muted text-muted-foreground'}`}>
                                 {step.icon}
                             </div>
                         </div>
