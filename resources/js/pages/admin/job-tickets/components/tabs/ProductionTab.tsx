@@ -13,7 +13,9 @@ import {
     History,
     ChevronUp,
     ChevronDown,
-    RefreshCcw
+    RefreshCcw,
+    Printer,
+    FileText
 } from 'lucide-react';
 
 import type { JobTicket, Pesanan } from '../../types';
@@ -207,9 +209,27 @@ const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                         Target Qty: <span className="font-semibold text-slate-700">{processes[0]?.quantity || activeOrder?.quantity} pcs</span>  
                                     </p>
                                 </div>
-                                <Badge className={`px-3 py-1 text-sm font-medium ${statusClass[run.status ?? ''] || statusClass.draft}`}>  
-                                    Status: {run.status?.toUpperCase() || 'DRAFT'}
-                                </Badge>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge className={`px-3 py-1 text-sm font-medium ${statusClass[run.status ?? ''] || statusClass.draft}`}>  
+                                        Status: {run.status?.toUpperCase() || 'DRAFT'}
+                                    </Badge>
+                                    <a
+                                        href={run?.id ? `/production-runs/${run.id}/surat-jalan/print` : `/job-tickets/${job.id}/surat-jalan/print`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-300"
+                                            title="Cetak Dokumen Surat Jalan Resmi"
+                                        >
+                                            <Printer className="size-3.5" />
+                                            Surat Jalan
+                                        </Button>
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
@@ -325,6 +345,44 @@ const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                 Delivery Production
                             </h3>
 
+                            {/* SURAT JALAN CARD / BANNER */}
+                            {(run.packing_completed || isDeliverySubmitted || isDelivered || run.surat_jalan_id) && (
+                                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-start gap-3">
+                                            <FileText className="size-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                                                    Dokumen Surat Jalan Resmi
+                                                </h4>
+                                                <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">
+                                                    Dokumen pengiriman otomatis siap dicetak untuk kurir atau serah terima barang.
+                                                </p>
+                                                {run.surat_jalan_number && (
+                                                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mt-1">
+                                                        No. Surat Jalan: <span className="font-mono">{run.surat_jalan_number}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={run?.id ? `/production-runs/${run.id}/surat-jalan/print` : `/job-tickets/${job.id}/surat-jalan/print`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="shrink-0"
+                                        >
+                                            <Button
+                                                type="button"
+                                                className="w-full sm:w-auto gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
+                                            >
+                                                <Printer className="size-4" />
+                                                Cetak Surat Jalan
+                                            </Button>
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
                             <form onSubmit={submitDelivery} className="space-y-4">
                                 <div className="space-y-3">
                                     <Field label="Kurir Pengiriman" error={deliveryForm.errors.courier_name}>  
@@ -342,21 +400,82 @@ const ProductionTab: React.FC<{ job: JobTicket }> = ({ job }) => {
                                 </div>
 
                                 {canDelivery && (  
-                                    <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')} className="w-full bg-slate-800 hover:bg-slate-900">  
-                                        <Truck className="mr-2 size-4" /> Submit Delivery
-                                    </Button>
+                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                        <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')} className="w-full sm:flex-1 bg-slate-800 hover:bg-slate-900">  
+                                            <Truck className="mr-2 size-4" /> Submit Delivery
+                                        </Button>
+                                        <a
+                                            href={run?.id ? `/production-runs/${run.id}/surat-jalan/print` : `/job-tickets/${job.id}/surat-jalan/print`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <Button type="button" variant="outline" className="w-full gap-2">
+                                                <Printer className="size-4" /> Cetak Surat Jalan
+                                            </Button>
+                                        </a>
+                                    </div>
                                 )}
                             </form>
 
                             {canMarkDelivered && (  
-                                <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery')} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700">  
-                                    <CheckCircle2 className="mr-2 size-4" /> Mark as Delivered
-                                </Button>
+                                <div className="mt-3 flex flex-col sm:flex-row items-center gap-2">
+                                    <Button type="button" onClick={markDelivered} disabled={deliveryForm.processing || !can('productions.delivery')} className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700">  
+                                        <CheckCircle2 className="mr-2 size-4" /> Mark as Delivered
+                                    </Button>
+                                    <a
+                                        href={run?.id ? `/production-runs/${run.id}/surat-jalan/print` : `/job-tickets/${job.id}/surat-jalan/print`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Button type="button" variant="outline" className="w-full gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300">
+                                            <Printer className="size-4" /> Surat Jalan
+                                        </Button>
+                                    </a>
+                                </div>
                             )}
 
                             {isDelivered && (  
-                                <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-center text-sm font-medium text-emerald-700">
-                                    Produksi Telah Diterima (Delivered)  
+                                <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-sm">Produksi Telah Diterima (Delivered)</span>
+                                        <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <p className="text-xs text-emerald-600/90 dark:text-emerald-400/90">
+                                        Pesanan sudah selesai dikirim. Anda dapat mencetak atau mengunduh ulang dokumen Surat Jalan kapan saja:
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                        <a
+                                            href={run?.id ? `/production-runs/${run.id}/surat-jalan/print` : `/job-tickets/${job.id}/surat-jalan/print`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full sm:flex-1"
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300 font-medium"
+                                            >
+                                                <Printer className="size-4" />
+                                                Cetak Surat Jalan
+                                            </Button>
+                                        </a>
+                                        <a
+                                            href={run?.id ? `/production-runs/${run.id}/surat-jalan/download` : `/job-tickets/${job.id}/surat-jalan/download`}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                className="w-full gap-2"
+                                            >
+                                                Download PDF
+                                            </Button>
+                                        </a>
+                                    </div>
                                 </div>
                             )}
 

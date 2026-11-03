@@ -14,14 +14,14 @@ class RoleController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
-            'permission_ids' => ['array'],
+            'permission_ids' => ['nullable', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
 
         if (strtolower($validated['name']) === 'owner') {
-            return response()->json([
-                'message' => 'Role owner tidak dapat dibuat lewat antarmuka ini.',
-            ], 422);
+            return back()->withErrors([
+                'name' => 'Role owner tidak dapat dibuat lewat antarmuka ini.',
+            ]);
         }
 
         $role = Role::create([
@@ -29,7 +29,9 @@ class RoleController extends Controller
             'guard_name' => 'web',
         ]);
 
-        $role->syncPermissions($validated['permission_ids'] ?? []);
+        if (!empty($validated['permission_ids'])) {
+            $role->syncPermissions($validated['permission_ids']);
+        }
 
         return back()->with('success', 'Role berhasil dibuat');
     }

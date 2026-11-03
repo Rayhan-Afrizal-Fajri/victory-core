@@ -361,7 +361,14 @@
     </table>
 
     @php
-        $signature = $owner?->signature ? storage_path('app/public/' . $owner->signature) : null;
+        $signaturePath = $owner?->signature ? storage_path('app/public/' . $owner->signature) : null;
+        $signature = ($signaturePath && file_exists($signaturePath)) ? $signaturePath : null;
+        if (!$signature) {
+            $available = glob(storage_path('app/public/signatures/*.png'));
+            if (!empty($available)) {
+                $signature = $available[0];
+            }
+        }
     @endphp
     <!-- Signature (Tanya Direktur Saja) -->
     <table class="signature-container">

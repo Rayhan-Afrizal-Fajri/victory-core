@@ -393,7 +393,7 @@ export default function QuotationDraftDialog({
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 space-y-3">
+                    <div className="rounded-xl border border-blue-100 bg-slate-50 p-4 space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
                             <div>
                                 <span className="font-semibold text-primary dark:text-blue-300">Ketentuan DP Produksi: {dpPercentage}%</span>

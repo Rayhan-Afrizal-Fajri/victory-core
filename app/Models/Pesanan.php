@@ -137,6 +137,11 @@ class Pesanan extends Model
         return $this->hasMany(ProductionRunProcess::class);
     }    
 
+    public function purchasings()
+    {
+        return $this->hasMany(Purchasing::class);
+    }
+
     public function sampleRun()
     {
         return $this->hasOne(ProductionRun::class, 'pesanan_id')
@@ -198,5 +203,15 @@ class Pesanan extends Model
     public function getHasUrgentIssuesAttribute(): bool
     {
         return $this->urgentMaterialIssues()->count() > 0;
+    }
+
+    public function suratJalans()
+    {
+        return $this->hasMany(SuratJalan::class);
+    }
+
+    public function latestSuratJalan()
+    {
+        return $this->hasOne(SuratJalan::class)->latestOfMany();
     }
 }

@@ -19,6 +19,7 @@ class KanbanBoardController extends Controller
         $cardsQuery = Pesanan::query()
             ->with([
                 'jobTicket.customer',
+                'jobTicket.suratJalans',
                 'workflowStatus',
                 'productionRuns.processes.qcLogs',
                 'urgentMaterialIssues.purchasing.supplier'
@@ -161,6 +162,9 @@ class KanbanBoardController extends Controller
                 $generatedCards = [];
                 $jobId = $jobTicket?->id ?? 0;
 
+                $prodRun = $pesanan->productionRuns->where('type', 'production')->first();
+                $suratJalan = $pesanan->jobTicket?->suratJalans?->first();
+
                 if ($isInvoiceUnpaidButProductionStarted) {
                     // CARD 1: Tertahan di kolom "INVOICE PRODUCTION" (menunggu pelunasan)
                     $stage1 = 'invoice_production';
@@ -180,11 +184,18 @@ class KanbanBoardController extends Controller
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
                         'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab1),
+                        'suratJalanId' => $suratJalan?->id,
+                        'suratJalanNumber' => $suratJalan?->surat_jalan_number,
+                        'suratJalanUrl' => $jobId > 0 ? "/job-tickets/{$jobId}/surat-jalan/print" : null,
+                        'canPrintSuratJalan' => false,
+                        'courierName' => null,
+                        'trackingNumber' => null,
                     ];
 
                     // CARD 2: Melaju ke Purchasing Production atau Production (mengikuti kondisi riil pabrik)
                     $stage2 = $this->resolveStage($w, true); // true = abaikan cek status DP
                     $tab2 = $this->getTabForStage($stage2);
+                    $canPrint2 = in_array($stage2, ['delivery', 'production', 'done']) && ($w->packing_completed || $w->qc_completed || $w->delivered || (bool) $prodRun?->packing_completed);
                     $generatedCards[] = [
                         'id' => $pesanan->id,
                         'jobNo' => $jobTicket?->no_job_ticket ?? '-',
@@ -200,11 +211,18 @@ class KanbanBoardController extends Controller
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
                         'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab2),
+                        'suratJalanId' => $suratJalan?->id,
+                        'suratJalanNumber' => $suratJalan?->surat_jalan_number,
+                        'suratJalanUrl' => $jobId > 0 ? "/job-tickets/{$jobId}/surat-jalan/print" : null,
+                        'canPrintSuratJalan' => $canPrint2,
+                        'courierName' => $prodRun?->courier_name,
+                        'trackingNumber' => $prodRun?->tracking_number,
                     ];
                 } else {
                     // JIKA NORMAL: Hanya 1 Card
                     $stage = $this->resolveStage($w, false);
                     $tab = $this->getTabForStage($stage);
+                    $canPrint = in_array($stage, ['delivery', 'production', 'done']) && ($w->packing_completed || $w->qc_completed || $w->delivered || (bool) $prodRun?->packing_completed);
                     $generatedCards[] = [
                         'id' => $pesanan->id,
                         'jobNo' => $jobTicket?->no_job_ticket ?? '-',
@@ -220,6 +238,12 @@ class KanbanBoardController extends Controller
                         'sampleProgress' => $sampleProgress,
                         'productionProgress' => $productionProgress,
                         'showUrl' => '/purchase-orders/' . $jobId . '?tab=' . urlencode($tab),
+                        'suratJalanId' => $suratJalan?->id,
+                        'suratJalanNumber' => $suratJalan?->surat_jalan_number,
+                        'suratJalanUrl' => $jobId > 0 ? "/job-tickets/{$jobId}/surat-jalan/print" : null,
+                        'canPrintSuratJalan' => $canPrint,
+                        'courierName' => $prodRun?->courier_name,
+                        'trackingNumber' => $prodRun?->tracking_number,
                     ];
                 }
 
@@ -413,6 +437,19 @@ class KanbanBoardController extends Controller
                     'borderColor' => 'border-l-slate-600',
                 ],
             ],
+
+            [
+                'permissions' => [
+                    'productions.delivery',
+                    'productions.run',
+                ],
+                'column' => [
+                    'id' => 'delivery',
+                    'name' => 'DELIVERY ORDER',
+                    'bgColor' => 'bg-emerald-50',
+                    'borderColor' => 'border-l-emerald-500',
+                ],
+            ],
         ];
 
         $columns = [];
@@ -470,14 +507,17 @@ class KanbanBoardController extends Controller
         }
 
         if (! $w->production_materials_ready) return 'purchasing_production';
-        
-        // PRODUCTION mencakup mulai dikerjakan, QC, Packing, Final Payment, sampai Delivery
-        if ((! $w->delivered && ! $w->completed) || ($w->delivered && !$w->completed)) return 'production';
 
         // Jika semua tuntas, pindah ke DONE
         if ($w->completed) return 'done';
 
-        return 'cancel';
+        // DELIVERY ORDER: Begitu packing selesai / QC selesai / dalam proses delivery
+        if ($w->delivered || $w->packing_completed || ($w->qc_completed && $w->production_completed)) {
+            return 'delivery';
+        }
+
+        // PRODUCTION mencakup mulai dikerjakan sampai QC
+        return 'production';
     }
 
     private function getStageLabel(string $stage): string
@@ -495,6 +535,7 @@ class KanbanBoardController extends Controller
             'invoice_production' => 'INVOICE PRODUCTION',
             'purchasing_production' => 'PURCHASING PRODUCTION',
             'production' => 'PRODUCTION',
+            'delivery' => 'DELIVERY ORDER',
             'done' => 'DONE',
             'cancel' => 'CANCEL',
         ];
@@ -509,11 +550,11 @@ class KanbanBoardController extends Controller
     {
         return match ($stage) {
             'upload_design', 'approval_design', 'bom' => 'design',
-            'price_approval', 'quotation' => 'costing & quotation', // Ganti menjadi 'costing & quotation' jika di React masih memakai nama tersebut
+            'price_approval', 'quotation' => 'costing & quotation',
             'invoice_sample', 'invoice_production' => 'invoices',
             'purchasing_sample', 'purchasing_production' => 'purchasing',
             'sample' => 'sample',
-            'production', 'done' => 'production',
+            'production', 'delivery', 'done' => 'production',
             default => 'overview',
         };
     }
@@ -532,6 +573,7 @@ class KanbanBoardController extends Controller
             'invoice_production' => 80,
             'purchasing_production' => 85,
             'production' => 90,
+            'delivery' => 95,
             'done' => 100,
             'cancel' => 0,
         ];
@@ -655,14 +697,18 @@ class KanbanBoardController extends Controller
             ($w->packing_completed ?? false) &&
             ! ($w->final_payment_paid ?? false)
         ) {
-            return 'Menunggu pelunasan / approval AR';
+            return 'Menunggu pelunasan / approval AR (Surat Jalan Siap)';
         }
 
         if (
             ($w->final_payment_paid ?? false) &&
             ! ($w->delivered ?? false)
         ) {
-            return 'Menunggu delivery';
+            return 'Siap Kirim - Cetak Surat Jalan';
+        }
+
+        if ($w->delivered ?? false) {
+            return 'Dalam Pengiriman Kurir';
         }
 
         return null;

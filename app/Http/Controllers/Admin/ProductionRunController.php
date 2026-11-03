@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceService;
 use App\Services\ProductionRunService;
+use App\Services\Delivery\SuratJalanService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -22,6 +23,7 @@ class ProductionRunController extends Controller
     public function __construct(
         protected ProductionRunService $productionRunService,
         protected InvoiceService $invoiceService,
+        protected SuratJalanService $suratJalanService,
     ) {}
 
     public function index()
@@ -441,9 +443,15 @@ class ProductionRunController extends Controller
                     ]
                 );
             }
+
+            // Otomatis generate dokumen Surat Jalan begitu packing selesai sebelum delivery
+            $this->suratJalanService->createOrUpdateForProductionRun($run, [
+                'notes' => $validated['packing_notes'] ?? null,
+                'status' => 'ready_to_ship',
+            ]);
         });
 
-        return back()->with('success', 'Packing sample selesai.');
+        return back()->with('success', 'Packing selesai dan Surat Jalan otomatis dibuat.');
     }
 
     public function submitDelivery(Request $request, string $runId)
@@ -505,6 +513,15 @@ class ProductionRunController extends Controller
                 'notes' => $run->type === 'sample'
                     ? 'Sample mulai dikirim ke customer.'
                     : 'Produk mulai dikirim ke customer.',
+            ]);
+
+            // Sinkronisasi informasi kurir & tracking ke Surat Jalan
+            $this->suratJalanService->createOrUpdateForProductionRun($run, [
+                'courier_name' => $validated['courier_name'] ?? null,
+                'tracking_number' => $validated['tracking_number'] ?? null,
+                'tracking_url' => $validated['tracking_url'] ?? null,
+                'delivery_note' => $validated['delivery_note'] ?? null,
+                'status' => 'in_transit',
             ]);
 
         });
@@ -574,6 +591,12 @@ class ProductionRunController extends Controller
                 'notes' => $run->type === 'sample'
                     ? 'Sample telah dikirim ke customer.'
                     : 'Produk telah dikirim ke customer.',
+            ]);
+
+            // Update status Surat Jalan menjadi delivered
+            $this->suratJalanService->createOrUpdateForProductionRun($run, [
+                'status' => 'delivered',
+                'delivered_at' => now(),
             ]);
         });
 

@@ -4,7 +4,8 @@ import { router } from "@inertiajs/react"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table"; // Pastikan path import benar
+import { Edit, Trash2, Plus, Shield } from "lucide-react";
+import { DataTable } from "@/components/data-table";
 import type { DataTableColumn } from "@/components/data-table"
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
     search?: string
     isOwner: boolean
     openEdit: (role: RoleData) => void
+    openCreate?: () => void
     onDelete: (role: RoleData) => void
     groupPermissions: (perms: Permission[]) => Record<string, Permission[]>
     formatModuleName: (name: string) => string
@@ -24,57 +26,52 @@ export default function RolesTab({
     search = '',
     isOwner,
     openEdit,
+    openCreate,
     onDelete,
     groupPermissions,
     formatModuleName,
 }: Props) {
-
-    const formatRoleName = (name: string) => {
-        const words = name.replace(/_/g, " ").split(" ")
-
-        return words
-            .map((w) => {
-                if (w.toLowerCase() === "spv") return "SPV"
-                return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-            })
-            .join(" ")
-    }
-
-    // const grouped = groupPermissions(role.permissions || [])
-    // const totalModules = Object.keys(groupPermissions(permissions)).length
-    // const ownedModules = Object.keys(grouped).length
 
     const columns: DataTableColumn<RoleData>[] = [
         {
             header: 'Nama Role',
             accessor: 'name',
             cell: (row) => {
-                // 1. Dapatkan object hasil grouping (pastikan array kosong jika permissions undefined)
                 const grouped = groupPermissions(row.permissions || []);
-                
-                // 2. Ambil hanya nama modulnya (keys dari object)
                 const modules = Object.keys(grouped);
+                const isOwnerRole = row.name.toLowerCase() === 'owner';
 
                 return (
-                    <div>
-                        <p className="font-medium text-slate-900">
-                            {row.name.replace(/_/g, ' ').toUpperCase()}
-                        </p>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Shield className={`size-4 ${isOwnerRole ? 'text-purple-600' : 'text-primary'}`} />
+                            <p className="font-bold text-foreground text-xs uppercase font-mono">
+                                {row.name.replace(/_/g, ' ')}
+                            </p>
+                            {isOwnerRole && (
+                                <span className="bg-purple-100 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                    System Core
+                                </span>
+                            )}
+                            <span className="text-[11px] text-muted-foreground">
+                                ({row.users_count || 0} Pengguna)
+                            </span>
+                        </div>
                         
-                        {/* 3. Render modules sebagai array of spans/badges */}
-                        <div className="flex flex-wrap gap-1 mt-1.5">
+                        {/* Modules Badges */}
+                        <div className="flex flex-wrap gap-1 mt-1">
                             {modules.length > 0 ? (
                                 modules.map((module) => (
                                     <span 
                                         key={module} 
-                                        className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
+                                        className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/60"
                                     >
                                         {formatModuleName(module)}
                                     </span>
                                 ))
                             ) : (
-                                <span className="text-xs text-slate-400 italic">
-                                    Tidak ada akses
+                                <span className="text-xs text-muted-foreground italic">
+                                    Tidak ada hak akses
                                 </span>
                             )}
                         </div>
@@ -83,19 +80,53 @@ export default function RolesTab({
             }
         },
         {
-            header: 'Action',
+            header: 'Total Akses',
+            accessor: 'permissions',
+            cell: (row) => (
+                <span className="font-mono text-xs font-semibold text-foreground">
+                    {row.permissions?.length || 0} / {permissions.length}
+                </span>
+            )
+        },
+        {
+            header: 'Aksi',
             accessor: 'id',
             sortable: false,
-            cell: (row) => (
-                <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
-                        Edit
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => onDelete(row)}>
-                        Hapus
-                    </Button>
-                </div>
-            )
+            cell: (row) => {
+                const isOwnerRole = row.name.toLowerCase() === 'owner';
+                if (isOwnerRole) {
+                    return (
+                        <span className="text-[11px] text-muted-foreground italic">
+                            Terkunci (System)
+                        </span>
+                    );
+                }
+
+                return (
+                    <div className="flex items-center gap-1.5">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2 gap-1 cursor-pointer"
+                            onClick={() => openEdit(row)}
+                            title="Edit Role & Permissions"
+                        >
+                            <Edit className="h-3 w-3" />
+                            <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-xs px-2 gap-1 cursor-pointer"
+                            onClick={() => onDelete(row)}
+                            title="Hapus Role"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                            <span className="hidden sm:inline">Hapus</span>
+                        </Button>
+                    </div>
+                );
+            }
         },
     ];
 
@@ -106,7 +137,7 @@ export default function RolesTab({
         : role;
 
     return (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
             <DataTable
                 columns={columns}
                 data={displayRole}

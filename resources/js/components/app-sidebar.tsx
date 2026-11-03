@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, ClipboardPlus, CreditCard, FileText, FolderGit2, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
+import { BookOpen, Calculator, ClipboardList, ClipboardPlus, CreditCard, FileText, FolderGit2, Gauge, LayoutGrid, Package, ShoppingCart, SquareKanban, TrendingUp, UsersRound, Workflow } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -146,6 +146,26 @@ export function AppSidebar() {
     const masterLinks: { label: string; href: string | RouteDefinition<"get"> }[] = masterItems
         .map(({ label, href }) => ({ label, href }));
     const showMasterDropdown = masterLinks.length > 0;
+
+    const accountingLinks = [
+        { label: 'Ringkasan Akuntansi', href: '/admin/accounting' },
+        { label: 'Bagan Akun (COA)', href: '/admin/accounting/coa' },
+        { label: 'Jurnal & Buku Besar', href: '/admin/accounting/journals' },
+        { label: 'Job Order Costing (HPP)', href: '/admin/accounting/costing' },
+        { label: 'Piutang Usaha (AR)', href: '/admin/accounting/receivables' },
+        { label: 'Hutang Usaha (AP)', href: '/admin/accounting/payables' },
+        { label: 'Kas & Beban OPEX', href: '/admin/accounting/expenses' },
+        { label: 'Laporan Keuangan', href: '/admin/accounting/reports' },
+    ];
+
+    const kpiLinks = [
+        { label: 'Executive Dashboard', href: '/admin/kpi/executive' },
+        { label: 'Produksi & QC', href: '/admin/kpi/production-qc' },
+        { label: 'Komersial & Finansial', href: '/admin/kpi/commercial-financial' },
+        { label: 'Supplier Scorecard', href: '/admin/kpi/suppliers' },
+        { label: 'Worker Leaderboard', href: '/admin/kpi/workers' },
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -173,23 +193,37 @@ export function AppSidebar() {
                     <NavMain items={reportWorkspace} title="Laporan" />
                 )}
 
-                {masterLinks.length > 0 && (
-                    <>
-                    <div className="mt-4 px-3 text-xs font-semibold text-sidebar-foreground/50 opacity-100 group-data-[collapsible=icon]:hidden">
-                        Pengaturan
-                    </div>
-                    <SidebarDropdownProvider>
-                        {showMasterDropdown && (
+                {/* STAGE 2 MODULES */}
+                <div className="mt-4 px-3 text-xs font-semibold text-primary tracking-wider uppercase opacity-100 group-data-[collapsible=icon]:hidden">
+                    Stage 2 (Enterprise)
+                </div>
+                <SidebarDropdownProvider>
+                    <SidebarDropdown
+                        sectionKey="accounting"
+                        title="Akuntansi Terpadu"
+                        icon={Calculator}
+                        items={accountingLinks}
+                    />
+                    <SidebarDropdown
+                        sectionKey="kpi"
+                        title="KPI & Analitik"
+                        icon={Gauge}
+                        items={kpiLinks}
+                    />
+                    {showMasterDropdown && (
+                        <>
+                            <div className="mt-4 px-3 text-xs font-semibold text-sidebar-foreground/50 opacity-100 group-data-[collapsible=icon]:hidden">
+                                Pengaturan
+                            </div>
                             <SidebarDropdown
-                            sectionKey="master"
-                            title="Master Data"
-                            icon={Package}
-                            items={masterLinks}
+                                sectionKey="master"
+                                title="Master Data"
+                                icon={Package}
+                                items={masterLinks}
                             />
-                        )}
-                    </SidebarDropdownProvider>
-                </>
-                )}
+                        </>
+                    )}
+                </SidebarDropdownProvider>
             </SidebarContent>
 
             <SidebarFooter>

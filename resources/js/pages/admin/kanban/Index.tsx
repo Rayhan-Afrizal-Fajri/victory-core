@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, Building2, Calendar, CalendarDays, Eye, FileSpreadsheet, PackageX } from 'lucide-react';
+import { AlertTriangle, Building2, Calendar, CalendarDays, Eye, FileSpreadsheet, PackageX, Truck, FileText } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,12 @@ type KanbanCard = {
     sampleProgress?: RunProgress | null;
     productionProgress?: RunProgress | null;
     showUrl: string;
+    suratJalanId?: number | null;
+    suratJalanNumber?: string | null;
+    suratJalanUrl?: string | null;
+    canPrintSuratJalan?: boolean;
+    courierName?: string | null;
+    trackingNumber?: string | null;
 };
 
 type PageProps = {
@@ -260,7 +266,13 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                     </p>
                 </div>
 
-                <Badge className="border-transparent rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-muted text-muted-foreground">
+                <Badge 
+                    className={`border-transparent rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                        card.stage === 'delivery' 
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300'
+                            : 'bg-muted text-muted-foreground'
+                    }`}
+                >
                     {card.stageLabel}
                 </Badge>
             </div>
@@ -272,6 +284,17 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
             <p className="mt-0.5 text-xs text-muted-foreground">
                 Qty: {card.qty} pcs
             </p>
+
+            {/* Info Kurir & Resi jika ada */}
+            {card.courierName && (
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/40 p-1.5 rounded-lg border border-border/50">
+                    <Truck className="size-3.5 text-primary shrink-0" />
+                    <span>Kurir: <strong className="text-foreground">{card.courierName}</strong></span>
+                    {card.trackingNumber && (
+                        <span className="text-[10px] text-muted-foreground">({card.trackingNumber})</span>
+                    )}
+                </div>
+            )}
 
             <div className="mt-3.5 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
@@ -330,7 +353,7 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                 </div>
             )}
 
-            <div className="mt-3.5 flex items-center justify-between gap-3 pt-1 border-t border-border/40">
+            <div className="mt-3.5 flex items-center justify-between gap-2 pt-1 border-t border-border/40">
                 <div
                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${getDeadlineClass(card.daysLeft)}`}
                 >
@@ -338,14 +361,34 @@ function KanbanJobCard({ card }: { card: KanbanCard }) {
                     {getDeadlineText(card.daysLeft)}
                 </div>
 
-                {can('dashboard.admin') && (
-                    <Link href={card.showUrl}>
-                        <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg px-2.5">
-                            <Eye className="size-3.5 mr-1" />
-                            Detail
-                        </Button>
-                    </Link>
-                )}
+                <div className="flex items-center gap-1.5">
+                    {card.canPrintSuratJalan && card.suratJalanUrl && (
+                        <a
+                            href={card.suratJalanUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Unduh / Cetak Dokumen Surat Jalan"
+                        >
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs rounded-lg px-2 text-blue-700 bg-blue-50/90 hover:bg-blue-100 hover:text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 font-medium cursor-pointer"
+                            >
+                                <Truck className="size-3.5 mr-1 text-blue-600 dark:text-blue-400" />
+                                Surat Jalan
+                            </Button>
+                        </a>
+                    )}
+
+                    {can('dashboard.admin') && (
+                        <Link href={card.showUrl}>
+                            <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg px-2.5 cursor-pointer">
+                                <Eye className="size-3.5 mr-1" />
+                                Detail
+                            </Button>
+                        </Link>
+                    )}
+                </div>
             </div>
         </div>
     );

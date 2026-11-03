@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Printer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import JobTicketHeader from './components/JobTicketHeader';
 import WorkflowTimeline from './components/WorkflowTimeline';
 import WorkflowTabs from './components/WorkflowTabs';
@@ -153,6 +155,31 @@ Show.layout = (page: React.ReactElement<Props>) => {
                             variant={status === 'Done' ? 'success' : 'info'}
                         />
                     </div>
+
+                    {jobTicket && (
+                        <div className="flex items-center self-end sm:self-center">
+                            <a
+                                href={`/job-tickets/${jobTicket.id}/surat-jalan/print`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Button
+                                    type="button"
+                                    variant={status === 'Done' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className={`gap-1.5 font-medium shadow-xs ${
+                                        status === 'Done'
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                            : 'border-border text-foreground hover:bg-accent'
+                                    }`}
+                                    title="Cetak / Export Dokumen Surat Jalan Resmi"
+                                >
+                                    <Printer className="size-4" />
+                                    <span>Surat Jalan</span>
+                                </Button>
+                            </a>
+                        </div>
+                    )}
                 </div>
             }
         >

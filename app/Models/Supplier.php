@@ -20,6 +20,11 @@ class Supplier extends Model
         return $this->hasMany(Purchasing::class);
     }
 
+    public function purchasings()
+    {
+        return $this->hasMany(Purchasing::class);
+    }
+
     public function materials()
     {
         return $this->hasMany(Material::class, 'default_vendor_id');

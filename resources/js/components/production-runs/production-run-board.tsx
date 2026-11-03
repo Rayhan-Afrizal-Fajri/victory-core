@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, PackageCheck, Play, Truck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, PackageCheck, Play, Truck, FileText, Printer, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 import SectionCard from '@/pages/admin/job-tickets/components/SectionCard';
@@ -267,6 +267,47 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                 </SectionCard>
 
                 <SectionCard title={`Delivery ${capitalizeWord(runType)}`}>
+                    {/* Banner Dokumen Surat Jalan Otomatis */}
+                    {(run.packing_completed || ['in_delivery', 'delivered', 'approved'].includes(run.status ?? '')) && (
+                        <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/40">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                                        <FileText className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                            Dokumen Surat Jalan Resmi
+                                        </h4>
+                                        <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">
+                                            Dokumen Surat Jalan telah digenerate otomatis. Silakan cetak untuk diserahkan kepada kurir / ekspedisi.
+                                        </p>
+                                        {run.surat_jalan_number && (
+                                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mt-1">
+                                                No. Surat Jalan: <span className="font-mono">{run.surat_jalan_number}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/print`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0"
+                                >
+                                    <Button
+                                        type="button"
+                                        className="w-full sm:w-auto gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs"
+                                    >
+                                        <Printer className="size-4" />
+                                        Cetak Surat Jalan
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={submitDelivery} className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Courier" error={deliveryForm.errors.courier_name}>
@@ -316,10 +357,23 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                         </Field>
 
                         {Number(canDelivery) !== 0 && (
-                            <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')}>
-                                <Truck className="size-4" />
-                                Submit Delivery
-                            </Button>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Button type="submit" disabled={deliveryForm.processing || !can('productions.delivery')}>
+                                    <Truck className="size-4" />
+                                    Submit Delivery
+                                </Button>
+
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/print`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button type="button" variant="outline" className="gap-2 border-slate-300">
+                                        <Printer className="size-4" />
+                                        Cetak Surat Jalan
+                                    </Button>
+                                </a>
+                            </div>
                         )}
                     </form>
 
@@ -330,8 +384,32 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                     )}
 
                     {['delivered', 'approved'].includes(run.status ?? '') && (
-                        <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                            {capitalizeWord(runType)} sudah delivered.
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                            <div>
+                                <span className="font-semibold">{capitalizeWord(runType)} sudah delivered.</span>
+                                <p className="text-xs text-emerald-600/90 dark:text-emerald-400/90 mt-0.5">
+                                    Dokumen Surat Jalan dapat dicetak ulang kapan saja:
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/print`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button type="button" variant="outline" size="sm" className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300">
+                                        <Printer className="size-4" />
+                                        Cetak Surat Jalan
+                                    </Button>
+                                </a>
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/download`}
+                                >
+                                    <Button type="button" variant="secondary" size="sm" className="gap-2">
+                                        Download PDF
+                                    </Button>
+                                </a>
+                            </div>
                         </div>
                     )}
 

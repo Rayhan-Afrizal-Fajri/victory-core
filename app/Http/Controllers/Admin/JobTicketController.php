@@ -157,6 +157,8 @@ class JobTicketController extends Controller
             
             // PERUBAHAN UTAMA: productionRuns sekarang langsung menempel di pesanans
             'pesanans.productionRuns.processes.qcCheckedBy',
+            'pesanans.productionRuns.suratJalan',
+            'suratJalans.items',
             
             'pesanans.attachment',
             'pesanans.workflowStatus',
@@ -226,6 +228,9 @@ class JobTicketController extends Controller
                 'delivery_note' => $run->delivery_note,
                 'delivered_at' => $run->delivered_at,
                 'approved_at' => $run->approved_at,
+                'surat_jalan_id' => $run->suratJalan?->id,
+                'surat_jalan_number' => $run->suratJalan?->surat_jalan_number,
+                'surat_jalan_url' => route('production-runs.surat-jalan.print', $run->id),
                 'processes' => $run->processes->sortBy('sequence')->values()->map(fn ($process) => [
                     'id' => $process->id,
                     'work_name' => $process->work_name,
