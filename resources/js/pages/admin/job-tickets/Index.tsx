@@ -1,5 +1,5 @@
 import { Head, Link, router } from "@inertiajs/react";
-import { ArrowUpRight, Edit, Trash2 } from "lucide-react";
+import { ArrowUpRight, Edit, Trash2, Printer } from "lucide-react";
 import type { ReactNode } from "react";
 import ProgressBar from "@/components/dashboard/progress-bar";
 import { DataTable } from '@/components/data-table';
@@ -160,10 +160,10 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
     {
       header: 'Aksi',
       accessor: 'id',
-      className: 'w-[180px]',
+      className: 'w-[220px]',
       sortable: false,
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* {row.can_edit && (
           )} */}
           <Link href={orderEntry.edit(row.id).url}>
@@ -171,6 +171,24 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
               <Edit className="size-4" /> Edit
             </Button>
           </Link>
+
+          {(row.current_step === 'Done' || row.status_divisi === 'Done' || row.progress >= 100) && (
+            <a
+              href={`/job-tickets/${row.id}/surat-jalan/print`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Cetak Surat Jalan Resmi"
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-400"
+              >
+                <Printer className="size-3.5" /> Surat Jalan
+              </Button>
+            </a>
+          )}
 
           {row.can_delete && (
             <Button
@@ -184,7 +202,7 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
             </Button>
           )}
 
-          {!row.can_edit && !row.can_delete && (
+          {!row.can_edit && !row.can_delete && row.current_step !== 'Done' && row.status_divisi !== 'Done' && row.progress < 100 && (
             <span className="text-xs text-slate-400">
               Terkunci (Sedang berjalan)
             </span>

@@ -384,8 +384,32 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                     )}
 
                     {['delivered', 'approved'].includes(run.status ?? '') && (
-                        <div className="rounded-xl border bg-emerald-50 p-4 text-sm text-emerald-700">
-                            {capitalizeWord(runType)} sudah delivered.
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                            <div>
+                                <span className="font-semibold">{capitalizeWord(runType)} sudah delivered.</span>
+                                <p className="text-xs text-emerald-600/90 dark:text-emerald-400/90 mt-0.5">
+                                    Dokumen Surat Jalan dapat dicetak ulang kapan saja:
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/print`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button type="button" variant="outline" size="sm" className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-300">
+                                        <Printer className="size-4" />
+                                        Cetak Surat Jalan
+                                    </Button>
+                                </a>
+                                <a
+                                    href={`/production-runs/${run.id}/surat-jalan/download`}
+                                >
+                                    <Button type="button" variant="secondary" size="sm" className="gap-2">
+                                        Download PDF
+                                    </Button>
+                                </a>
+                            </div>
                         </div>
                     )}
 

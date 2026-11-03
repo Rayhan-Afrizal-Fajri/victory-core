@@ -393,8 +393,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('surat-jalan.download');
     Route::get('/job-tickets/{jobTicket}/surat-jalan/print', [SuratJalanController::class, 'printForJobTicket'])
         ->name('job-tickets.surat-jalan.print');
+    Route::get('/job-tickets/{jobTicket}/surat-jalan/download', [SuratJalanController::class, 'downloadForJobTicket'])
+        ->name('job-tickets.surat-jalan.download');
     Route::get('/production-runs/{run}/surat-jalan/print', [SuratJalanController::class, 'printForProductionRun'])
         ->name('production-runs.surat-jalan.print');
+    Route::get('/production-runs/{run}/surat-jalan/download', [SuratJalanController::class, 'downloadForProductionRun'])
+        ->name('production-runs.surat-jalan.download');
     Route::patch('/surat-jalan/{id}', [SuratJalanController::class, 'update'])
         ->name('surat-jalan.update');
 

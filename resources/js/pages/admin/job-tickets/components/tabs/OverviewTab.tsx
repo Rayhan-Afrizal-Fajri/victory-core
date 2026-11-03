@@ -3,6 +3,7 @@ import type { JobTicket, Pesanan, WorkflowStatus } from '../../types';
 import SectionCard from '../SectionCard';
 import { getWorkflowProgress } from '@/components/job-tickets/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   AlertCircle, 
   CalendarClock, 
@@ -13,7 +14,8 @@ import {
   Hash, 
   Package, 
   Ruler, 
-  User 
+  User,
+  Printer 
 } from 'lucide-react';
 
 type Props = {
@@ -255,8 +257,20 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
                         ></div>
                     </div>
                     {progressData.percent >= 100 && (
-                        <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded-md border border-green-100">
-                            <CheckCircle2 className="w-4 h-4 text-white dark:text-black" /> Pesanan ini telah selesai.
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-green-700 bg-green-50 dark:bg-green-950/20 dark:text-green-300 p-3 rounded-md border border-green-200 dark:border-green-900/40">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                                <span>Pesanan ini telah selesai (Done).</span>
+                            </div>
+                            <a
+                                href={`/job-tickets/${jobTicket.id}/surat-jalan/print`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Button size="sm" variant="outline" className="gap-2 border-green-300 hover:bg-green-100 dark:border-green-800 dark:hover:bg-green-900/30">
+                                    <Printer className="size-4" /> Cetak Surat Jalan
+                                </Button>
+                            </a>
                         </div>
                     )}
                 </SectionCard>

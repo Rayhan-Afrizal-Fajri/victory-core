@@ -76,6 +76,22 @@ class SuratJalanController extends Controller
     }
 
     /**
+     * Auto-generate (if not exists) and download Surat Jalan for a Job Ticket
+     */
+    public function downloadForJobTicket(string $jobTicketId)
+    {
+        $jobTicket = JobTicket::with(['customer', 'companyProfile', 'pesanans.product'])->findOrFail($jobTicketId);
+
+        $suratJalan = $this->suratJalanService->createOrUpdateForJobTicket($jobTicket);
+
+        $suratJalan->update([
+            'printed_at' => now(),
+        ]);
+
+        return $this->generatePdfResponse($suratJalan, true);
+    }
+
+    /**
      * Auto-generate (if not exists) and print Surat Jalan for a Production Run
      */
     public function printForProductionRun(string $runId)
@@ -89,6 +105,22 @@ class SuratJalanController extends Controller
         ]);
 
         return $this->generatePdfResponse($suratJalan, false);
+    }
+
+    /**
+     * Auto-generate (if not exists) and download Surat Jalan for a Production Run
+     */
+    public function downloadForProductionRun(string $runId)
+    {
+        $run = ProductionRun::with(['pesanan.jobTicket.customer', 'pesanan.jobTicket.companyProfile'])->findOrFail($runId);
+
+        $suratJalan = $this->suratJalanService->createOrUpdateForProductionRun($run);
+
+        $suratJalan->update([
+            'printed_at' => now(),
+        ]);
+
+        return $this->generatePdfResponse($suratJalan, true);
     }
 
     /**
