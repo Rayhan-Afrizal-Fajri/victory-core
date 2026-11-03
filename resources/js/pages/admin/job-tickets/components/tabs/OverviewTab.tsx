@@ -104,10 +104,10 @@ const OverviewTab: React.FC<Props> = ({ jobTicket, activePesanan }) => {
             
             {/* ALERT PENDING REQUIREMENT - Jika pesanan belum Done */}
             {!workflow?.completed && pendingTasks.length > 0 && (
-                <div className="flex gap-3 bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg items-start shadow-sm">
-                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 p-4 rounded-lg items-start shadow-sm">
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold text-sm mb-1 text-amber-900">Action Required (Pesanan Ini)</p>
+                        <p className="font-semibold text-sm mb-1 text-amber-900 dark:text-amber-200">Action Required (Pesanan Ini)</p>
                         <ul className="text-sm space-y-1">
                             {pendingTasks.slice(0, 2).map((task, idx) => (
                                 <li key={idx} className="flex items-center gap-2">

@@ -37,8 +37,8 @@ function OrderRequestSummaryCard({ activeOrder, customerNotes }: { activeOrder: 
                 />
             </div>
 
-            <div className="mt-4 rounded-md border bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-                    <p className="mb-3 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+            <div className="mt-4 rounded-md border border-border bg-muted/50 p-4">
+                    <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
                         Size Breakdown {totalSize > 0 && <span className="normal-case">({totalSize} pcs)</span>}
                     </p>
                     {sizeBreakdowns.length > 0 ? (
@@ -46,12 +46,12 @@ function OrderRequestSummaryCard({ activeOrder, customerNotes }: { activeOrder: 
                             {sizeBreakdowns.map((row) => (
                                 <div
                                     key={row.id || `${row.color}-${row.size_label}`}
-                                    className="rounded-md border bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                                    className="rounded-md border border-border bg-card px-3 py-2 text-sm"
                                 >
-                                    <span className="font-semibold text-slate-900 dark:text-white">
+                                    <span className="font-semibold text-foreground">
                                         {[row.color, row.fabric_spec, row.size_label].filter(Boolean).join(' / ') || 'Tanpa label'}
                                     </span>
-                                    <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{row.qty} pcs</span>
+                                    <span className="ml-2 text-xs text-muted-foreground">{row.qty} pcs</span>
                                 </div>
                             ))}
                         </div>

@@ -193,10 +193,10 @@ export function SearchableSelect({
           }
         }}
         className={cn(
-          'border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-1 text-sm shadow-xs transition-colors outline-none cursor-pointer',
+          'border-input bg-card text-foreground flex h-9.5 w-full items-center justify-between rounded-xl border px-3 py-1 text-sm shadow-xs transition-colors outline-none cursor-pointer',
           'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-          disabled && 'cursor-not-allowed opacity-50 bg-slate-50',
-          readOnly && 'cursor-default bg-slate-50',
+          disabled && 'cursor-not-allowed opacity-50 bg-muted',
+          readOnly && 'cursor-default bg-muted',
           triggerClassName
         )}
       >
@@ -205,16 +205,16 @@ export function SearchableSelect({
             renderTrigger(selectedOption)
           ) : selectedOption ? (
             <div className="flex items-center gap-1.5 truncate">
-              <span className="font-medium text-slate-800 truncate">
+              <span className="font-medium text-foreground truncate">
                 {selectedOption.label}
               </span>
               {selectedOption.subLabel && (
-                <span className="text-xs text-slate-400 truncate">
+                <span className="text-xs text-muted-foreground truncate">
                   ({selectedOption.subLabel})
                 </span>
               )}
               {selectedOption.badge && (
-                <span className="ml-1 inline-flex items-center rounded-sm bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                <span className="ml-1 inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
                   {selectedOption.badge}
                 </span>
               )}
@@ -231,7 +231,7 @@ export function SearchableSelect({
             <button
               type="button"
               onClick={handleClear}
-              className="text-slate-400 hover:text-slate-600 p-0.5 rounded-sm transition-colors"
+              className="text-muted-foreground hover:text-foreground p-0.5 rounded-sm transition-colors"
               title="Hapus pilihan"
             >
               <X className="size-3.5" />
@@ -239,8 +239,8 @@ export function SearchableSelect({
           )}
           <ChevronDown
             className={cn(
-              'size-4 text-slate-400 transition-transform duration-200',
-              isOpen && 'rotate-180 text-slate-600'
+              'size-4 text-muted-foreground transition-transform duration-200',
+              isOpen && 'rotate-180 text-foreground'
             )}
           />
         </div>
@@ -250,26 +250,26 @@ export function SearchableSelect({
       {isOpen && (
         <div
           className={cn(
-            'absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg overflow-hidden animate-in fade-in-50 zoom-in-95',
+            'absolute left-0 top-full z-50 mt-1 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden animate-in fade-in-50 zoom-in-95',
             dropdownClassName
           )}
         >
           {/* Search Input Box */}
-          <div className="flex items-center border-b border-slate-100 px-2.5 py-1.5 bg-slate-50/50">
-            <Search className="size-4 shrink-0 text-slate-400 mr-2" />
+          <div className="flex items-center border-b border-border px-2.5 py-2 bg-muted/50">
+            <Search className="size-4 shrink-0 text-muted-foreground mr-2" />
             <input
               ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full bg-transparent text-sm placeholder:text-slate-400 outline-none h-7"
+              className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none h-7"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="text-slate-400 hover:text-slate-600 p-0.5 rounded-sm"
+                className="text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
               >
                 <X className="size-3.5" />
               </button>
@@ -279,7 +279,7 @@ export function SearchableSelect({
           {/* Options List */}
           <div
             ref={listRef}
-            className={cn('overflow-y-auto p-1 divide-y divide-slate-50', maxDropdownHeight)}
+            className={cn('overflow-y-auto p-1 divide-y divide-border/40', maxDropdownHeight)}
           >
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, index) => {
@@ -296,21 +296,21 @@ export function SearchableSelect({
                     }}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={cn(
-                      'flex items-center justify-between rounded-sm px-2.5 py-2 text-sm cursor-pointer transition-colors',
-                      isHighlighted && 'bg-slate-100/80',
-                      isSelected && 'bg-blue-50/60 font-medium text-blue-900',
-                      opt.disabled && 'cursor-not-allowed opacity-50 bg-slate-50'
+                      'flex items-center justify-between rounded-lg px-2.5 py-2 text-sm cursor-pointer transition-colors',
+                      isHighlighted && 'bg-accent text-accent-foreground',
+                      isSelected && 'bg-primary/15 font-medium text-primary',
+                      opt.disabled && 'cursor-not-allowed opacity-50 bg-muted'
                     )}
                   >
                     {renderOption ? (
                       renderOption(opt, isSelected)
                     ) : (
                       <div className="flex flex-col text-left truncate mr-2">
-                        <span className="truncate text-slate-900 font-medium">
+                        <span className="truncate text-foreground font-medium">
                           {opt.label}
                         </span>
                         {opt.subLabel && (
-                          <span className="text-xs text-slate-500 truncate">
+                          <span className="text-xs text-muted-foreground truncate">
                             {opt.subLabel}
                           </span>
                         )}
@@ -319,12 +319,12 @@ export function SearchableSelect({
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                       {opt.badge && (
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
                           {opt.badge}
                         </span>
                       )}
                       {isSelected && (
-                        <Check className="size-4 text-blue-600 stroke-[2.5]" />
+                        <Check className="size-4 text-primary stroke-[2.5]" />
                       )}
                     </div>
                   </div>

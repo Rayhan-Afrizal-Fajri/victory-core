@@ -291,7 +291,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
                 ) : (
                   <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <Label className="text-blue-900 font-semibold">Data Customer Baru</Label>
+                      <Label className="text-blue-900 dark:text-blue-200 font-semibold">Data Customer Baru</Label>
                       <Button type="button" variant="outline" size="sm" onClick={() => setCustomerMode('existing')}>Batal</Button>
                     </div>
                     <Input required placeholder="Nama PIC*" value={form.data.new_customer_name} onChange={e => form.setData('new_customer_name', e.target.value)} className="mb-2" />
@@ -528,7 +528,7 @@ export default function Index({ nextJobTicket, customers, companyProfiles, editi
 
               <div className="rounded-lg bg-emerald-50 px-4 py-3 border border-emerald-100">
                 <p className="text-xs text-emerald-600 mb-1">Total Quantity Keseluruhan</p>
-                <p className="text-lg font-bold text-emerald-900">{totalQtyAcrossOrders} <span className="text-sm font-normal">Pcs</span></p>
+                <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200">{totalQtyAcrossOrders} <span className="text-sm font-normal">Pcs</span></p>
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-100">

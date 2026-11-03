@@ -473,7 +473,7 @@ export default function ImportConflictDialog({
                               {/* Kolom Kanan: Data Baru dari Excel */}
                               <div className="border border-indigo-200 rounded-lg p-3.5 bg-indigo-50/40 space-y-2.5">
                                 <div className="flex items-center justify-between pb-2 border-b border-indigo-100">
-                                  <span className="text-xs font-semibold text-indigo-950 flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
                                     <span className="size-2 rounded-full bg-indigo-600"></span>
                                     Data Baru dari Excel (Sheet #{conflict.sheet_index})
                                   </span>
@@ -489,9 +489,9 @@ export default function ImportConflictDialog({
                                         className="text-xs p-2.5 rounded-md bg-white border border-indigo-200 shadow-xs flex justify-between items-center gap-3 hover:border-indigo-300 transition-colors"
                                       >
                                         <div className="min-w-0 flex-1">
-                                          <div className="font-semibold text-indigo-950 truncate">{m.name}</div>
+                                          <div className="font-semibold text-indigo-950 dark:text-indigo-100 truncate">{m.name}</div>
                                           <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                                            <span className="text-indigo-900">{m.vendor || 'Vendor default'}</span>
+                                            <span className="text-indigo-900 dark:text-indigo-200">{m.vendor || 'Vendor default'}</span>
                                             <span>•</span>
                                             <span>{m.usage} {m.unit || 'Unit'}</span>
                                             {m.notes && (
@@ -570,7 +570,7 @@ export default function ImportConflictDialog({
                               {/* Data Baru Manufaktur */}
                               <div className="border border-indigo-200 rounded-lg p-3.5 bg-indigo-50/40 space-y-2.5">
                                 <div className="flex items-center justify-between pb-2 border-b border-indigo-100">
-                                  <span className="text-xs font-semibold text-indigo-950 flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
                                     <span className="size-2 rounded-full bg-indigo-600"></span>
                                     Data Baru dari Excel (Sheet #{conflict.sheet_index})
                                   </span>
@@ -586,7 +586,7 @@ export default function ImportConflictDialog({
                                         className="text-xs p-2.5 rounded-md bg-white border border-indigo-200 shadow-xs flex justify-between items-center gap-3 hover:border-indigo-300 transition-colors"
                                       >
                                         <div className="min-w-0 flex-1">
-                                          <div className="font-semibold text-indigo-950 truncate">{w.name}</div>
+                                          <div className="font-semibold text-indigo-950 dark:text-indigo-100 truncate">{w.name}</div>
                                           <div className="text-[11px] text-slate-500 mt-0.5">
                                             {w.vendor || 'Vendor default'} • {w.usage} {w.unit || 'Pcs'}
                                           </div>

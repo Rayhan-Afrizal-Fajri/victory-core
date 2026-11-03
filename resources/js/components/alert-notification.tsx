@@ -16,7 +16,7 @@ const alertStyles = {
     success: {
         container:
             'bg-green-50 border-green-200 shadow-lg',
-        title: 'text-green-900',
+        title: 'text-green-900 dark:text-emerald-200',
         description: 'text-green-700',
         icon: 'text-green-600',
         Icon: CheckCircle2Icon,
@@ -24,7 +24,7 @@ const alertStyles = {
     error: {
         container:
             'bg-red-50 border-red-200 shadow-lg',
-        title: 'text-red-900',
+        title: 'text-red-900 dark:text-red-200',
         description: 'text-red-700',
         icon: 'text-red-600',
         Icon: XCircleIcon,
@@ -32,7 +32,7 @@ const alertStyles = {
     warning: {
         container:
             'bg-yellow-50 border-yellow-200 shadow-lg',
-        title: 'text-yellow-900',
+        title: 'text-yellow-900 dark:text-amber-200',
         description: 'text-yellow-700',
         icon: 'text-yellow-600',
         Icon: AlertCircleIcon,
@@ -40,7 +40,7 @@ const alertStyles = {
     info: {
         container:
             'bg-blue-50 border-blue-200 shadow-lg',
-        title: 'text-blue-900',
+        title: 'text-blue-900 dark:text-blue-200',
         description: 'text-blue-700',
         icon: 'text-blue-600',
         Icon: InfoIcon,

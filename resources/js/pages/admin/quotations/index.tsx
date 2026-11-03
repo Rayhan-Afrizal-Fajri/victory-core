@@ -375,10 +375,10 @@ export default function Index({ quotations, customers, companyProfiles, eligible
                         </td>
                       </tr>
                       <tr className="border-t border-slate-200 bg-blue-50/50">
-                        <td className="px-4 py-3 font-medium text-blue-900">
+                        <td className="px-4 py-3 font-medium text-blue-900 dark:text-blue-200">
                           DP Produksi ({selectedQuotation.dp_percentage ?? 50}%)
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-blue-700">
+                        <td className="px-4 py-3 text-right font-bold text-blue-700 dark:text-blue-300">
                           {formatCurrency(
                             Math.round(
                               Number(selectedQuotation.grand_total || 0) *

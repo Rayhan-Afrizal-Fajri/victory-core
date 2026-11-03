@@ -97,10 +97,10 @@ function CostingSummaryCard({
                             }
                             className={`rounded-xl border p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 ${form.processing || !can('costings.input_price') || activeOrder?.workflow_status?.quotation_approved ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-muted-foreground">
                                 Margin {marginValue}%
                             </p>
-                            <p className="mt-1 text-lg font-bold text-slate-900">
+                            <p className="mt-1 text-lg font-bold text-foreground">
                                 {formatCurrency(recommendations[marginValue as keyof typeof recommendations] || 0)}
                             </p>
                         </button>
@@ -108,19 +108,19 @@ function CostingSummaryCard({
                 </div>
             </div>
 
-            <form onSubmit={onSubmit} className="mt-5 space-y-4 rounded-2xl border bg-white p-4">
+            <form onSubmit={onSubmit} className="mt-5 space-y-4 rounded-2xl border bg-card p-4">
                 <div>
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-foreground">
                         Harga Jual Final
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                         Harga ini akan digunakan untuk generate surat penawaran.
                     </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="text-sm font-medium text-foreground">
                             Harga Jual / pcs
                         </label>
                         <FormattedNumberInput
@@ -182,13 +182,13 @@ function SummaryBox({
     danger?: boolean;
 }) {
     return (
-        <div className="rounded-xl border bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <div className="rounded-xl border bg-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {label}
             </p>
             <p
                 className={`mt-1 text-lg font-bold ${
-                    danger ? 'text-red-500' : 'text-slate-900'
+                    danger ? 'text-destructive' : 'text-foreground'
                 }`}
             >
                 {value}

@@ -439,16 +439,16 @@ export default function Product({ products, categories, importConflicts = [] }: 
         )}
 
         {importConflicts.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-amber-50/90 border border-amber-200 text-amber-950 rounded-lg shadow-xs animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-100 rounded-lg shadow-xs animate-in fade-in duration-200">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-md bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+              <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5">
                 <AlertTriangle className="size-5" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-amber-900">
+                <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
                   Perhatian: Terdapat {importConflicts.length} Data Produk Diperbarui dari Import Excel
                 </h4>
-                <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
+                <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed max-w-3xl">
                   Sheet produk pada file Excel memiliki nama yang sama dengan produk yang sudah ada di database sehingga data bahan & manufaktur diperbarui. Anda dapat meninjau perbedaannya dan memilih apakah data tersebut <strong>tetap diperbarui</strong> atau <strong>dipisahkan menjadi produk baru tersendiri</strong>.
                 </p>
               </div>

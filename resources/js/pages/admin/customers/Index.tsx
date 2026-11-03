@@ -270,26 +270,26 @@ export default function Index({ customers }: Props) {
 
           {selectedCustomer ? (
             <div className="space-y-6 px-4 pb-10">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Customer</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
-                    <p className="mt-1 text-sm text-slate-600">{selectedCustomer.contact}</p>
-                    <p className="mt-1 text-sm text-slate-500">{selectedCustomer.detail_address}</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Customer</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-foreground">{selectedCustomer.name}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedCustomer.contact}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedCustomer.detail_address}</p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 p-4 text-center dark:bg-slate-900">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Total orders</p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{selectedCustomer.total_orders}</p>
+                  <div className="rounded-2xl bg-muted p-4 text-center">
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Total orders</p>
+                    <p className="mt-2 text-3xl font-semibold text-foreground">{selectedCustomer.total_orders}</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-slate-900">Order History</h3>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
+                <h3 className="text-lg font-semibold text-foreground">Order History</h3>
+                <div className="overflow-x-auto rounded-2xl border border-border bg-card">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                    <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3">Purchase Order</th>
                         <th className="px-4 py-3">Item</th>
@@ -300,15 +300,15 @@ export default function Index({ customers }: Props) {
                     </thead>
                     <tbody>
                       {selectedCustomer.order_history.map((order) => (
-                        <tr key={order.id} className="border-t border-slate-200">
-                          <td className="px-4 py-3 text-slate-900">{order.job_ticket}</td>
-                          <td className="px-4 py-3 text-slate-700">{order.item_names}</td>
-                          <td className="px-4 py-3 text-slate-700">{order.quantity}</td>
-                          <td className="px-4 py-3 text-slate-700">
+                        <tr key={order.id} className="border-t border-border">
+                          <td className="px-4 py-3 text-foreground font-medium">{order.job_ticket}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{order.item_names}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{order.quantity}</td>
+                          <td className="px-4 py-3 text-muted-foreground">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.total_cost)}
                           </td>
                           <td className="px-4 py-3">
-                            <Badge className={order.status === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}>
+                            <Badge className={order.status === 'Delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'}>
                               {order.status}
                             </Badge>
                           </td>

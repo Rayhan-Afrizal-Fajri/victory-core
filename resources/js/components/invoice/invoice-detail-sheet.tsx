@@ -173,7 +173,7 @@ const InvoiceDetailSheet = ({
                         {isProd && (
                             <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs">
                                 <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-blue-950">
+                                    <span className="font-semibold text-primary dark:text-blue-300">
                                         Ketentuan DP Produksi ({dpPercentage}%)
                                     </span>
                                     <Badge

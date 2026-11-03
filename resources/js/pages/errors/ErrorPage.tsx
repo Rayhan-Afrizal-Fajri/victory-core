@@ -18,22 +18,22 @@ export default function ErrorPage({
 }: ErrorPageProps) {
   return (
     <div className="grid min-h-[calc(100vh-4rem)] place-items-center py-8">
-      <div className="w-full max-w-4xl rounded-4xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
+      <div className="w-full max-w-4xl rounded-4xl border border-border bg-card p-8 shadow-sm sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1.4fr_0.95fr] lg:items-center">
           <div className="space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-500 dark:text-slate-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-muted-foreground">
               Error {code}
             </p>
-            <h2 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+            <h2 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               {title}
             </h2>
-            <p className="max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
+            <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
               {description}
             </p>
           </div>
 
-          <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-950">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+          <div className="space-y-4 rounded-3xl border border-border bg-muted p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground">
               Quick actions
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">

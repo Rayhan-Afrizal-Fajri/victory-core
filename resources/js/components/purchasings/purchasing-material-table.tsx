@@ -84,9 +84,9 @@ const PurchasingMaterialTable = ({
             className: 'min-w-[200px] align-top',
             cell: (row) => (
                 <div className="space-y-1 py-1">
-                    <p className="font-semibold text-slate-900">{row.item}</p>
-                    <p className="text-xs text-slate-500">{getSupplierName(row)}</p>
-                    <p className="text-xs text-slate-400">{row.tgl_pembelian || '-'}</p>
+                    <p className="font-semibold text-foreground">{row.item}</p>
+                    <p className="text-xs text-muted-foreground">{getSupplierName(row)}</p>
+                    <p className="text-xs text-muted-foreground/80">{row.tgl_pembelian || '-'}</p>
                 </div>
             ),
         },
@@ -301,14 +301,14 @@ function QuantityAndHistoryCell({ item, can, onDeleteReceiving }: { item: any, c
         <div className="py-1">
             {/* Ringkasan Qty */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
-                <span className="text-slate-500">Required:</span>
-                <span className="font-medium text-slate-900">{formatDecimal(item.required_qty || 0)} {item.unit}</span>
+                <span className="text-muted-foreground">Required:</span>
+                <span className="font-medium text-foreground">{formatDecimal(item.required_qty || 0)} {item.unit}</span>
                 
-                <span className="text-slate-500">Purchased:</span>
-                <span className="font-medium text-slate-900">{formatDecimal(item.purchase_qty || item.ordered_qty || 0)} {item.unit}</span>
+                <span className="text-muted-foreground">Purchased:</span>
+                <span className="font-medium text-foreground">{formatDecimal(item.purchase_qty || item.ordered_qty || 0)} {item.unit}</span>
                 
-                <span className="text-slate-500">Received:</span>
-                <span className="font-medium text-emerald-600">{formatDecimal(receivedQty)} {item.unit}</span>
+                <span className="text-muted-foreground">Received:</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatDecimal(receivedQty)} {item.unit}</span>
             </div>
 
             {/* Toggle History */}
@@ -316,7 +316,7 @@ function QuantityAndHistoryCell({ item, can, onDeleteReceiving }: { item: any, c
                 <div className="mt-2">
                     <button 
                         onClick={() => setIsExpanded(!isExpanded)} 
-                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center font-medium"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center font-medium"
                     >
                         <History className="size-3 mr-1" />
                         {isExpanded ? 'Tutup Riwayat' : `Lihat Riwayat (${receivings.length})`}
@@ -324,12 +324,12 @@ function QuantityAndHistoryCell({ item, can, onDeleteReceiving }: { item: any, c
 
                     {/* Expandable History Area (Render in Cell) */}
                     {isExpanded && (
-                        <div className="mt-2 space-y-2 border-t border-slate-100 pt-2">
+                        <div className="mt-2 space-y-2 border-t border-border pt-2">
                             {receivings.map((receiving: any) => (
-                                <div key={receiving.id} className="flex items-start justify-between gap-2 p-2 rounded-md bg-slate-50 border border-slate-200">
+                                <div key={receiving.id} className="flex items-start justify-between gap-2 p-2 rounded-md bg-muted/50 border border-border">
                                     <div>
                                        <div className="flex gap-1">
-                                            <p className="font-medium text-slate-800 text-[11px]">{formatDecimal(receiving.received_qty)} {item.unit}</p>
+                                            <p className="font-medium text-foreground text-[11px]">{formatDecimal(receiving.received_qty)} {item.unit}</p>
                                             <p className={`text-[11px] ${receiving.item_condition === 'good' ? 'text-emerald-600' : 'text-amber-600'}`}>
                                                 {receiving.item_condition === 'good' ? 'Baik' : receiving.item_condition === 'damaged' ? 'Rusak' : 'Kadaluarsa'}
                                             </p>

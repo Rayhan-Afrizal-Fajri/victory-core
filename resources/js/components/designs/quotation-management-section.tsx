@@ -153,7 +153,7 @@ function QuotationManagementSection({ job, quotations }: Props) {
         {
             header: 'Nomor Quotation',
             accessor: 'quotation_number',
-            cell: (row) => <span className="font-medium text-slate-900">{row.quotation_number}</span>,
+            cell: (row) => <span className="font-medium text-foreground">{row.quotation_number}</span>,
         },
         {
             header: 'Tanggal',
@@ -186,8 +186,8 @@ function QuotationManagementSection({ job, quotations }: Props) {
 
                 return (
                     <div>
-                        <span className="font-semibold text-slate-900">{formatRupiah(total)}</span>
-                        <p className="text-[11px] font-medium text-blue-700">
+                        <span className="font-semibold text-foreground">{formatRupiah(total)}</span>
+                        <p className="text-[11px] font-medium text-primary dark:text-blue-300">
                             DP ({dpPct}%): {formatRupiah(dpNominal)}
                         </p>
                     </div>
@@ -254,11 +254,11 @@ function QuotationManagementSection({ job, quotations }: Props) {
         <>
             <SectionCard title="Surat Penawaran / Quotation">
                 {!canProceedWithQuotation && (
-                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-amber-900 shadow-sm">
+                    <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-200 shadow-sm">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
                             <div className="space-y-1">
-                                <p className="font-semibold text-amber-900">
+                                <p className="font-semibold text-amber-900 dark:text-amber-200">
                                     {quotations.some((q) => q.status === 'draft')
                                         ? 'Persetujuan (Approval) & Pembuatan Surat Penawaran Dinonaktifkan'
                                         : 'Pembuatan Surat Penawaran Dinonaktifkan'}
