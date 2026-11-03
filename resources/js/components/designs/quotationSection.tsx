@@ -251,7 +251,7 @@ function QuotationSection({
                             />
                         </Field>
 
-                        <div className="md:col-span-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4 space-y-3">
+                        <div className="md:col-span-3 rounded-xl border border-blue-100 bg-slate-50 p-4 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-wider text-blue-800">

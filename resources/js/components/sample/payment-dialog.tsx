@@ -74,7 +74,7 @@ const PaymentDialog = ({
                         const remainingDp = Math.max(0, dpTotal - verifiedPaid);
 
                         return (
-                            <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                            <div className="mt-3 rounded-lg border border-blue-200 bg-slate-50 p-3 text-xs text-blue-900 dark:text-blue-200 space-y-1">
                                 <div className="flex items-center justify-between font-semibold">
                                     <span>Ketentuan DP Produksi: {dpPct}% ({formatCurrency(dpTotal)})</span>
                                     {isDpDone ? (
