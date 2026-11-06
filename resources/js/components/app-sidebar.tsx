@@ -196,20 +196,20 @@ export function AppSidebar() {
                 {/* STAGE 2 MODULES */}
                 {/* <div className="mt-4 px-3 text-xs font-semibold text-primary tracking-wider uppercase opacity-100 group-data-[collapsible=icon]:hidden">
                     Stage 2 (Enterprise)
-                </div>
+                </div> */}
                 <SidebarDropdownProvider>
-                    <SidebarDropdown
+                    {/* <SidebarDropdown
                         sectionKey="accounting"
                         title="Akuntansi Terpadu"
                         icon={Calculator}
                         items={accountingLinks}
-                    />
-                    <SidebarDropdown
+                    /> */}
+                    {/* <SidebarDropdown
                         sectionKey="kpi"
                         title="KPI & Analitik"
                         icon={Gauge}
                         items={kpiLinks}
-                    />
+                    /> */}
                     {showMasterDropdown && (
                         <>
                             <div className="mt-4 px-3 text-xs font-semibold text-sidebar-foreground/50 opacity-100 group-data-[collapsible=icon]:hidden">
@@ -223,7 +223,7 @@ export function AppSidebar() {
                             />
                         </>
                     )}
-                </SidebarDropdownProvider> */}
+                </SidebarDropdownProvider>
             </SidebarContent>
 
             <SidebarFooter>
