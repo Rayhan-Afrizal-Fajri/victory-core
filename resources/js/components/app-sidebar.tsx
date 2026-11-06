@@ -194,7 +194,7 @@ export function AppSidebar() {
                 )}
 
                 {/* STAGE 2 MODULES */}
-                <div className="mt-4 px-3 text-xs font-semibold text-primary tracking-wider uppercase opacity-100 group-data-[collapsible=icon]:hidden">
+                {/* <div className="mt-4 px-3 text-xs font-semibold text-primary tracking-wider uppercase opacity-100 group-data-[collapsible=icon]:hidden">
                     Stage 2 (Enterprise)
                 </div>
                 <SidebarDropdownProvider>
@@ -223,7 +223,7 @@ export function AppSidebar() {
                             />
                         </>
                     )}
-                </SidebarDropdownProvider>
+                </SidebarDropdownProvider> */}
             </SidebarContent>
 
             <SidebarFooter>
