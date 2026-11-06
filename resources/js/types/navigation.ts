@@ -16,6 +16,6 @@ export type NavItem = {
 
 export type NavItemProps = {
     label: string;
-    href: RouteDefinition<"get">;
+    href: RouteDefinition<"get"> | string;
     icon?: React.ComponentType<{ className?: string }>;
 }
