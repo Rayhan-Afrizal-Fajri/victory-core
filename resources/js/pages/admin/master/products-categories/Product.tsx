@@ -16,6 +16,14 @@ import type { Product } from '@/types';
 import { formatCurrency } from '@/helpers/format';
 import { store as ProductStore, update as ProductUpdate, destroy as ProductDestroy, show as ProductShow } from '@/routes/products';
 import Select from 'react-select';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select as UiSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import ProductLayout from './layout';
 import { ProductCategory } from './Categories';
@@ -69,7 +77,30 @@ export default function Product({ products, categories, importConflicts = [] }: 
     is_pattern_available: false,
   });
 
-  const filteredProducts = useMemo(() => products, [products]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [patternFilter, setPatternFilter] = useState<string>('all');
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (categoryFilter !== 'all') {
+        const catIdMatch = String(product.product_category_id) === categoryFilter;
+        const catNameMatch = product.category?.toLowerCase() === categoryFilter.toLowerCase();
+        if (!catIdMatch && !catNameMatch) return false;
+      }
+      if (statusFilter !== 'all') {
+        const isActive = Boolean(product.is_active);
+        if (statusFilter === 'active' && !isActive) return false;
+        if (statusFilter === 'inactive' && isActive) return false;
+      }
+      if (patternFilter !== 'all') {
+        const isPattern = Boolean(product.is_pattern_available);
+        if (patternFilter === 'available' && !isPattern) return false;
+        if (patternFilter === 'unavailable' && isPattern) return false;
+      }
+      return true;
+    });
+  }, [products, categoryFilter, statusFilter, patternFilter]);
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
@@ -468,14 +499,78 @@ export default function Product({ products, categories, importConflicts = [] }: 
           </div>
         )}
 
-        <div className="bg-white rounded-lg border border-slate-200">
-          <DataTable 
-            columns={columns}
-            data={filteredProducts}
-            searchKeys={['name', 'category']} 
-            searchPlaceholder="Cari nama produk atau kategori..."
-          />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Kategori
+                </label>
+                <UiSelect
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kategori</SelectItem>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </UiSelect>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Status
+                </label>
+                <UiSelect
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </UiSelect>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Pola
+                </label>
+                <UiSelect
+                  value={patternFilter}
+                  onValueChange={setPatternFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status pola" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Pola</SelectItem>
+                    <SelectItem value="available">Tersedia</SelectItem>
+                    <SelectItem value="unavailable">Tidak Tersedia</SelectItem>
+                  </SelectContent>
+                </UiSelect>
+              </div>
+            </div>
+
+            <DataTable 
+              columns={columns}
+              data={filteredProducts}
+              searchKeys={['name', 'category']} 
+              searchPlaceholder="Cari nama produk atau kategori..."
+            />
+          </CardContent>
+        </Card>
 
         <ImportConflictDialog
           open={isConflictDialogOpen}

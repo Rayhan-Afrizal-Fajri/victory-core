@@ -53,7 +53,23 @@ export default function Index({ suppliers }: Props) {
     alamat: '',
   });
 
-  const filteredSuppliers = useMemo(() => suppliers, [suppliers]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [orderFilter, setOrderFilter] = useState<string>('all');
+
+  const filteredSuppliers = useMemo(() => {
+    return suppliers.filter((supplier) => {
+      if (categoryFilter !== 'all' && supplier.category !== categoryFilter) {
+        return false;
+      }
+      if (orderFilter === 'has_orders' && (supplier.total_orders || 0) <= 0) {
+        return false;
+      }
+      if (orderFilter === 'no_orders' && (supplier.total_orders || 0) > 0) {
+        return false;
+      }
+      return true;
+    });
+  }, [suppliers, categoryFilter, orderFilter]);
 
   const openSupplierDetail = (supplier: SupplierRow) => {
     setSelectedSupplier(supplier);
@@ -306,7 +322,49 @@ export default function Index({ suppliers }: Props) {
         </div>
 
         <Card>
-          <CardContent>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Kategori
+                </label>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kategori</SelectItem>
+                    <SelectItem value="Bahan Baku">Bahan Baku</SelectItem>
+                    <SelectItem value="Aksesoris">Aksesoris</SelectItem>
+                    <SelectItem value="CMT">CMT</SelectItem>
+                    <SelectItem value="Makloon">Makloon</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Riwayat Order
+                </label>
+                <Select
+                  value={orderFilter}
+                  onValueChange={setOrderFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih riwayat order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Supplier</SelectItem>
+                    <SelectItem value="has_orders">Pernah Order (&gt;0)</SelectItem>
+                    <SelectItem value="no_orders">Belum Ada Order (0)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <DataTable
               columns={columns}
               data={filteredSuppliers}

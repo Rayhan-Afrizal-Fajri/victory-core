@@ -10,6 +10,7 @@ import type { DataTableColumn } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +34,7 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
   // State untuk Drag & Drop
   const [localBreakdowns, setLocalBreakdowns] = useState<DefaultSizeBreakdown[]>(defaultSizeBreakdowns);
   const [changedTypes, setChangedTypes] = useState<Set<string>>(new Set());
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // Sinkronisasi local state saat props data berubah (misal setelah tambah/edit/hapus)
   useEffect(() => {
@@ -231,8 +233,30 @@ export default function Index({ defaultSizeBreakdowns }: Props) {
           </Dialog>
         </div>
 
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid gap-2 max-w-sm">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Filter Tipe Breakdown
+              </label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Tipe (Color, Fabric, Size, Unit)</SelectItem>
+                  <SelectItem value="color">Color</SelectItem>
+                  <SelectItem value="fabric">Fabric</SelectItem>
+                  <SelectItem value="size">Size</SelectItem>
+                  <SelectItem value="unit">Unit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {['color', 'fabric', 'size', 'unit'].map((type) => {
+          {(typeFilter === 'all' ? ['color', 'fabric', 'size', 'unit'] : [typeFilter]).map((type) => {
             // Gunakan localBreakdowns agar urutan UI bereaksi seketika
             const data = localBreakdowns.filter((item) => item.type === type);
             const isChanged = changedTypes.has(type);

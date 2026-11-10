@@ -7,6 +7,7 @@ import type { DataTableColumn } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,7 +35,25 @@ export default function Index({ companyProfiles }: Props) {
     swift_code: '',
   });
 
-  const filteredProfiles = useMemo(() => companyProfiles, [companyProfiles]);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [bankFilter, setBankFilter] = useState<string>('all');
+
+  const bankOptions = useMemo(() => {
+    const list = companyProfiles.map((p) => p.bank_type).filter(Boolean);
+    return Array.from(new Set(list)).sort();
+  }, [companyProfiles]);
+
+  const filteredProfiles = useMemo(() => {
+    return companyProfiles.filter((profile) => {
+      if (typeFilter !== 'all' && profile.company_type !== typeFilter) {
+        return false;
+      }
+      if (bankFilter !== 'all' && (profile.bank_type || '').toLowerCase() !== bankFilter.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+  }, [companyProfiles, typeFilter, bankFilter]);
 
   const openEditDialog = (profile: CompanyProfile) => {
     setEditingProfile(profile);
@@ -242,9 +261,48 @@ export default function Index({ companyProfiles }: Props) {
           </Dialog>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <DataTable columns={columns} data={filteredProfiles} />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Tipe Pajak
+                </label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih tipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Tipe</SelectItem>
+                    <SelectItem value="pkp">PKP</SelectItem>
+                    <SelectItem value="non_pkp">Non PKP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Bank
+                </label>
+                <Select value={bankFilter} onValueChange={setBankFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih bank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Bank</SelectItem>
+                    {bankOptions.map((bank) => (
+                      <SelectItem key={bank} value={bank}>
+                        {bank}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DataTable columns={columns} data={filteredProfiles} searchKeys={['company_name', 'bank_type', 'account_number', 'account_name']} />
+          </CardContent>
+        </Card>
       </div>
     </>
   );

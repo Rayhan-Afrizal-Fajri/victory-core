@@ -1,8 +1,16 @@
-import { ReactNode, useState, FormEventHandler } from 'react';
+import { ReactNode, useState, useMemo, FormEventHandler } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import ProductLayout from './layout';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -56,6 +64,24 @@ interface Props {
 export default function Categories({ categories, bahanMaterials, aksesorisMaterials, manufacturingWorks }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const [materialFilter, setMaterialFilter] = useState<string>('all');
+  const [workFilter, setWorkFilter] = useState<string>('all');
+
+  const filteredCategories = useMemo(() => {
+    return categories.filter((cat) => {
+      const matCount = cat.materials?.length || 0;
+      const workCount = cat.manufacturing_works?.length || 0;
+
+      if (materialFilter === 'has_materials' && matCount === 0) return false;
+      if (materialFilter === 'no_materials' && matCount > 0) return false;
+
+      if (workFilter === 'has_works' && workCount === 0) return false;
+      if (workFilter === 'no_works' && workCount > 0) return false;
+
+      return true;
+    });
+  }, [categories, materialFilter, workFilter]);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -272,7 +298,45 @@ export default function Categories({ categories, bahanMaterials, aksesorisMateri
           </div>
         </div>
 
-        <DataTable columns={columns} data={categories} searchKeys={['name']} />
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Komposisi Material
+                </label>
+                <Select value={materialFilter} onValueChange={setMaterialFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih komposisi material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kategori</SelectItem>
+                    <SelectItem value="has_materials">Memiliki Material / Bahan</SelectItem>
+                    <SelectItem value="no_materials">Tanpa Material</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Pengerjaan Manufaktur
+                </label>
+                <Select value={workFilter} onValueChange={setWorkFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih pengerjaan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Pengerjaan</SelectItem>
+                    <SelectItem value="has_works">Memiliki Manufaktur</SelectItem>
+                    <SelectItem value="no_works">Tanpa Manufaktur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DataTable columns={columns} data={filteredCategories} searchKeys={['name']} />
+          </CardContent>
+        </Card>
 
       </div>
 

@@ -7,6 +7,7 @@ import type { DataTableColumn } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,7 +40,30 @@ export default function Index({ works, suppliers, units }: Props) {
     is_active: true,
   });
 
-  const filteredWorks = useMemo(() => works, [works]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [vendorFilter, setVendorFilter] = useState<string>('all');
+
+  const vendorOptions = useMemo(() => {
+    const list = suppliers
+      .map((s) => s.nama_perusahaan || s.nama)
+      .filter(Boolean);
+    return Array.from(new Set(list)).sort();
+  }, [suppliers]);
+
+  const filteredWorks = useMemo(() => {
+    return works.filter((work) => {
+      if (statusFilter !== 'all') {
+        const isActive = Boolean(work.is_active);
+        if (statusFilter === 'active' && !isActive) return false;
+        if (statusFilter === 'inactive' && isActive) return false;
+      }
+      if (vendorFilter !== 'all') {
+        const vendorName = work.vendor_name || '';
+        if (vendorName.toLowerCase() !== vendorFilter.toLowerCase()) return false;
+      }
+      return true;
+    });
+  }, [works, statusFilter, vendorFilter]);
 
   const openEditDialog = (work: ManufacturingWork) => {
     setEditingWork(work);
@@ -326,9 +350,48 @@ export default function Index({ works, suppliers, units }: Props) {
           </Dialog>
         </div>
 
-        <div className="bg-white ro ded-lg border border-slate-200">
-          <DataTable columns={columns} data={filteredWorks} />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Status
+                </label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Vendor / Supplier
+                </label>
+                <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Vendor</SelectItem>
+                    {vendorOptions.map((vendor) => (
+                      <SelectItem key={vendor} value={vendor}>
+                        {vendor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DataTable columns={columns} data={filteredWorks} searchKeys={['name', 'behavior', 'vendor_name']} />
+          </CardContent>
+        </Card>
       </div>
     </>
   );

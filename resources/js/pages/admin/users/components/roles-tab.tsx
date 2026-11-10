@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react"
 import type { Permission, RoleData } from "../types"
 import RoleCard from "./role-card"
 import { router } from "@inertiajs/react"
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus, Shield } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import type { DataTableColumn } from "@/components/data-table"
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
     role: RoleData[]
@@ -31,6 +34,26 @@ export default function RolesTab({
     groupPermissions,
     formatModuleName,
 }: Props) {
+    const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [userFilter, setUserFilter] = useState<string>('all');
+
+    const displayRole = useMemo(() => {
+        return role.filter((r) => {
+            const isOwnerRole = r.name.toLowerCase() === 'owner';
+            if (typeFilter === 'system' && !isOwnerRole) return false;
+            if (typeFilter === 'custom' && isOwnerRole) return false;
+
+            const userCount = r.users_count || 0;
+            if (userFilter === 'has_users' && userCount <= 0) return false;
+            if (userFilter === 'no_users' && userCount > 0) return false;
+
+            if (search.trim()) {
+                if (!r.name.toLowerCase().includes(search.toLowerCase())) return false;
+            }
+
+            return true;
+        });
+    }, [role, typeFilter, userFilter, search]);
 
     const columns: DataTableColumn<RoleData>[] = [
         {
@@ -130,20 +153,50 @@ export default function RolesTab({
         },
     ];
 
-    const displayRole = search.trim()
-        ? role.filter(u => 
-            u.name.toLowerCase().includes(search.toLowerCase())
-          )
-        : role;
-
     return (
-        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
-            <DataTable
-                columns={columns}
-                data={displayRole}
-                searchKeys={['name']}
-                searchPlaceholder="Cari nama role..."
-            />
-        </div>
+        <Card>
+            <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Filter Tipe Role
+                        </label>
+                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih tipe role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Tipe Role</SelectItem>
+                                <SelectItem value="system">System Core (Owner)</SelectItem>
+                                <SelectItem value="custom">Custom / Operasional</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Filter Pengguna
+                        </label>
+                        <Select value={userFilter} onValueChange={setUserFilter}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih status pengguna" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Role</SelectItem>
+                                <SelectItem value="has_users">Ada Pengguna (&gt;0)</SelectItem>
+                                <SelectItem value="no_users">Belum Ada Pengguna (0)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <DataTable
+                    columns={columns}
+                    data={displayRole}
+                    searchKeys={['name']}
+                    searchPlaceholder="Cari nama role..."
+                />
+            </CardContent>
+        </Card>
     )
 }

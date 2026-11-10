@@ -1,7 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Edit, Eye, Plus, Printer, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { DataTable } from '@/components/data-table';
@@ -9,6 +9,13 @@ import type { DataTableColumn } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -90,6 +97,21 @@ export default function Index({ quotations, customers, companyProfiles, eligible
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [draftDialogOpen, setDraftDialogOpen] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState<QuotationRow | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((item) => {
+      if (statusFilter !== 'all' && (item.status || '').toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (sourceFilter !== 'all' && (item.source_type || '').toLowerCase() !== sourceFilter.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+  }, [quotations, statusFilter, sourceFilter]);
 
   const openQuotationDetail = (quotation: QuotationRow) => {
     setSelectedQuotation(quotation);
@@ -264,9 +286,46 @@ export default function Index({ quotations, customers, companyProfiles, eligible
         </div> */}
 
         <Card>
-          <CardContent>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Status
+                </label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Terkirim (Sent)</SelectItem>
+                    <SelectItem value="approved">Disetujui (Approved)</SelectItem>
+                    <SelectItem value="rejected">Ditolak (Rejected)</SelectItem>
+                    <SelectItem value="expired">Kedaluwarsa (Expired)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Sumber
+                </label>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih sumber" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Sumber</SelectItem>
+                    <SelectItem value="job_ticket">Job Ticket</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {can('quotation.generate') && (
-              <div className="mb-4 flex justify-end">
+              <div className="flex justify-end">
                 <Button onClick={openCreate}>
                   <Plus className="mr-2 size-4" /> Buat Quotation
                 </Button>
@@ -274,7 +333,7 @@ export default function Index({ quotations, customers, companyProfiles, eligible
             )}
             <DataTable
               columns={columns}
-              data={quotations}
+              data={filteredQuotations}
               searchKeys={['quotation_number', 'status', 'source_type', 'customer_company_snapshot', 'customer_name_snapshot']}
               searchPlaceholder="Cari nomor quotation atau status"
             />

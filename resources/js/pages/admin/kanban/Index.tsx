@@ -1,9 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle, Building2, Calendar, CalendarDays, Eye, FileSpreadsheet, PackageX, Truck, FileText } from 'lucide-react';
-import { useMemo } from 'react';
+import { AlertTriangle, Building2, Calendar, CalendarDays, Eye, FileSpreadsheet, PackageX, Truck, FileText, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { useCan } from '@/hooks/use-can';
 
@@ -114,17 +117,49 @@ export default function Index({
     columns = [],
     urgentIssues = [],
 }: PageProps) {
+    const [customerFilter, setCustomerFilter] = useState<string>('all');
+    const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
+    const customerOptions = useMemo(() => {
+        const custs = cards.map((c) => c.customer).filter(Boolean);
+        return Array.from(new Set(custs)).sort();
+    }, [cards]);
+
+    const filteredCards = useMemo(() => {
+        return cards.filter((card) => {
+            if (customerFilter !== 'all' && card.customer !== customerFilter) {
+                return false;
+            }
+            if (urgencyFilter !== 'all') {
+                const days = card.daysLeft;
+                if (urgencyFilter === 'overdue' && (days === null || days === undefined || days >= 0)) return false;
+                if (urgencyFilter === 'urgent' && (days === null || days === undefined || days < 0 || days > 3)) return false;
+                if (urgencyFilter === 'safe' && (days === null || days === undefined || days <= 3)) return false;
+                if (urgencyFilter === 'no_deadline' && days !== null && days !== undefined) return false;
+            }
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                const matchJob = card.jobNo.toLowerCase().includes(q);
+                const matchCust = card.customer.toLowerCase().includes(q);
+                const matchProd = card.product.toLowerCase().includes(q);
+                if (!matchJob && !matchCust && !matchProd) return false;
+            }
+            return true;
+        });
+    }, [cards, customerFilter, urgencyFilter, searchQuery]);
+
     const cardsByStage = useMemo(() => {
         const grouped: Record<string, KanbanCard[]> = {};
 
         columns.forEach((column) => {
-            grouped[column.id] = cards.filter((card) => {
+            grouped[column.id] = filteredCards.filter((card) => {
                 return card.stage === column.id;
             });
         });
 
         return grouped;
-    }, [cards, columns]);
+    }, [filteredCards, columns]);
     
     // React Component
     const handleExport = ({type, param = ''}: HandleExportProps) => {
@@ -139,6 +174,63 @@ export default function Index({
             <Head title="Kanban Board" />
 
             <div className="space-y-6 flex flex-col overflow-hidden bg-background p-4">
+                <Card>
+                    <CardContent className="space-y-4 pt-6">
+                        <div className="grid gap-3 md:grid-cols-3">
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Cari Job Ticket / Customer
+                                </label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                                    <Input
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Cari job ticket, customer, produk..."
+                                        className="pl-9 h-9"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Filter Customer
+                                </label>
+                                <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Pilih customer" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Customer</SelectItem>
+                                        {customerOptions.map((cust) => (
+                                            <SelectItem key={cust} value={cust}>
+                                                {cust}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Filter Urgensi Deadline
+                                </label>
+                                <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Pilih status deadline" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Deadline</SelectItem>
+                                        <SelectItem value="overdue">Lewat Deadline (&lt; 0 hari)</SelectItem>
+                                        <SelectItem value="urgent">Mendesak (&le; 3 hari)</SelectItem>
+                                        <SelectItem value="safe">Aman (&gt; 3 hari)</SelectItem>
+                                        <SelectItem value="no_deadline">Tanpa Deadline</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* --- MULAI SECTION URGENT ISSUES (NEW UI) --- */}
                 {urgentIssues && urgentIssues.length > 0 && (

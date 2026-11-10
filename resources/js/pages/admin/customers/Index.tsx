@@ -17,6 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { store as customerStore, update as customerUpdate, destroy as customerDestroy } from '@/routes/customers';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -67,7 +74,28 @@ export default function Index({ customers }: Props) {
     alamat_detail: '',
   });
 
-  const filteredCustomers = useMemo(() => customers, [customers]);
+  const [orderFilter, setOrderFilter] = useState<string>('all');
+  const [cityFilter, setCityFilter] = useState<string>('all');
+
+  const cityOptions = useMemo(() => {
+    const cities = customers.map((c) => c.city).filter(Boolean);
+    return Array.from(new Set(cities)).sort();
+  }, [customers]);
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((customer) => {
+      if (orderFilter === 'has_orders' && (customer.total_orders || 0) <= 0) {
+        return false;
+      }
+      if (orderFilter === 'no_orders' && (customer.total_orders || 0) > 0) {
+        return false;
+      }
+      if (cityFilter !== 'all' && (customer.city || '').toLowerCase() !== cityFilter.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+  }, [customers, orderFilter, cityFilter]);
 
   const openCustomerDetail = (customer: CustomerRow) => {
     setSelectedCustomer(customer);
@@ -250,7 +278,44 @@ export default function Index({ customers }: Props) {
         </div>
 
         <Card>
-          <CardContent>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Riwayat Pesanan
+                </label>
+                <Select value={orderFilter} onValueChange={setOrderFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status pesanan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Customer</SelectItem>
+                    <SelectItem value="has_orders">Pernah Pesan (&gt;0)</SelectItem>
+                    <SelectItem value="no_orders">Belum Ada Pesanan (0)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Kota / Wilayah
+                </label>
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kota" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kota</SelectItem>
+                    {cityOptions.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <DataTable
               columns={columns}
               data={filteredCustomers}

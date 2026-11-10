@@ -7,6 +7,7 @@ import type { DataTableColumn } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -48,7 +49,36 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
     is_active: true,
   });
 
-  const filteredMaterials = useMemo(() => materials, [materials]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [vendorFilter, setVendorFilter] = useState<string>('all');
+
+  const vendorOptions = useMemo(() => {
+    const list = suppliers
+      .map((s) => s.nama_perusahaan || s.nama)
+      .filter(Boolean);
+    return Array.from(new Set(list)).sort();
+  }, [suppliers]);
+
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((material) => {
+      if (categoryFilter !== 'all') {
+        const cat = (material.category || '').toLowerCase();
+        if (categoryFilter === 'bahan' && !cat.includes('bahan')) return false;
+        if (categoryFilter === 'aksesoris' && !cat.includes('aksesoris')) return false;
+      }
+      if (statusFilter !== 'all') {
+        const isActive = Boolean(material.is_active);
+        if (statusFilter === 'active' && !isActive) return false;
+        if (statusFilter === 'inactive' && isActive) return false;
+      }
+      if (vendorFilter !== 'all') {
+        const vendorName = material.default_vendor_name || '';
+        if (vendorName.toLowerCase() !== vendorFilter.toLowerCase()) return false;
+      }
+      return true;
+    });
+  }, [materials, categoryFilter, statusFilter, vendorFilter]);
 
   const openEditDialog = (material: Material) => {
     setEditingMaterial(material);
@@ -429,9 +459,64 @@ export default function Index({ materials, suppliers, colors, units }: Props) {
           </Dialog>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200">
-          <DataTable columns={columns} data={filteredMaterials} searchKeys={['name', 'category']} />
-        </div>
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Kategori
+                </label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kategori</SelectItem>
+                    <SelectItem value="bahan">Bahan Baku</SelectItem>
+                    <SelectItem value="aksesoris">Aksesoris</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Status
+                </label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Vendor / Supplier
+                </label>
+                <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Vendor</SelectItem>
+                    {vendorOptions.map((vendor) => (
+                      <SelectItem key={vendor} value={vendor}>
+                        {vendor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DataTable columns={columns} data={filteredMaterials} searchKeys={['name', 'category', 'default_vendor_name']} />
+          </CardContent>
+        </Card>
       </div>
     </>
   );

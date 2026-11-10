@@ -1,10 +1,13 @@
 import { router } from "@inertiajs/react"
+import { useMemo, useState } from "react"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { KeyRound, Edit, Trash2, Plus } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import type { DataTableColumn } from "@/components/data-table"
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { UserData } from "../types"
 
 interface Props {
@@ -17,7 +20,19 @@ interface Props {
 }
 
 export default function UsersTab({ users, search = '', openEdit, openPassword, openCreate, onDelete }: Props) {
-    
+    const [roleFilter, setRoleFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    const roleOptions = useMemo(() => {
+        const rolesSet = new Set<string>();
+        users.forEach((u) => {
+            u.roles?.forEach((r) => {
+                if (r.name) rolesSet.add(r.name);
+            });
+        });
+        return Array.from(rolesSet).sort();
+    }, [users]);
+
     // Handler Switch Status
     const handleToggleStatus = (user: UserData, checked: boolean) => {
         router.patch(`/users/${user.id}/toggle-status`, {
@@ -119,21 +134,74 @@ export default function UsersTab({ users, search = '', openEdit, openPassword, o
         },
     ];
 
-    const displayUsers = search.trim()
-        ? users.filter(u => 
-            u.name.toLowerCase().includes(search.toLowerCase()) || 
-            u.email.toLowerCase().includes(search.toLowerCase())
-          )
-        : users;
+    const displayUsers = useMemo(() => {
+        return users.filter((u) => {
+            if (roleFilter !== 'all') {
+                const hasRole = u.roles?.some((r) => r.name.toLowerCase() === roleFilter.toLowerCase());
+                if (!hasRole) return false;
+            }
+            if (statusFilter !== 'all') {
+                const isActive = Boolean(u.is_active);
+                if (statusFilter === 'active' && !isActive) return false;
+                if (statusFilter === 'inactive' && isActive) return false;
+            }
+            if (search.trim()) {
+                const query = search.toLowerCase();
+                const matchName = u.name.toLowerCase().includes(query);
+                const matchEmail = u.email.toLowerCase().includes(query);
+                if (!matchName && !matchEmail) return false;
+            }
+            return true;
+        });
+    }, [users, roleFilter, statusFilter, search]);
 
     return (
-        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
-            <DataTable
-                columns={columns}
-                data={displayUsers}
-                searchKeys={['name', 'email']}
-                searchPlaceholder="Cari nama atau email pengguna..."
-            />
-        </div>
+        <Card>
+            <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Filter Role
+                        </label>
+                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Role</SelectItem>
+                                {roleOptions.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                        {role.replace(/_/g, ' ')}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Filter Status
+                        </label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="active">Aktif</SelectItem>
+                                <SelectItem value="inactive">Nonaktif</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <DataTable
+                    columns={columns}
+                    data={displayUsers}
+                    searchKeys={['name', 'email']}
+                    searchPlaceholder="Cari nama atau email pengguna..."
+                />
+            </CardContent>
+        </Card>
     )
 }

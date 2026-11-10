@@ -1,11 +1,14 @@
 import { Head, Link, router } from "@inertiajs/react";
 import { ArrowUpRight, Edit, Trash2, Printer } from "lucide-react";
 import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import ProgressBar from "@/components/dashboard/progress-bar";
 import { DataTable } from '@/components/data-table';
 import type { DataTableColumn } from '@/components/data-table';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DeadlineBadge from "@/components/ui/deadline-badge";
 import AppLayout from "@/layouts/app-layout";
 import jobTickets from "@/routes/purchase-orders";
@@ -51,6 +54,47 @@ const statusBadge = (status: string) => {
 };
 
 export default function Index({ orders }: { orders: JobTicketData[] }) {
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [salesFilter, setSalesFilter] = useState<string>('all');
+
+  const salesOptions = useMemo(() => {
+    const list = orders.map((o) => o.sales_name).filter(Boolean);
+    return Array.from(new Set(list)).sort();
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((ticket) => {
+      if (statusFilter !== 'all') {
+        const currentStep = (ticket.current_step || '').toLowerCase();
+        const statusDivisi = (ticket.status_divisi || '').toLowerCase();
+        const target = statusFilter.toLowerCase();
+
+        if (target === 'done') {
+          const isDone = currentStep === 'done' || statusDivisi === 'done' || ticket.progress >= 100;
+          if (!isDone) return false;
+        } else if (target === 'penawaran') {
+          const isQuote =
+            currentStep === 'penawaran' ||
+            currentStep === 'quote' ||
+            statusDivisi === 'penawaran' ||
+            statusDivisi === 'quote';
+          if (!isQuote) return false;
+        } else {
+          if (currentStep !== target && statusDivisi !== target) {
+            return false;
+          }
+        }
+      }
+
+      if (salesFilter !== 'all') {
+        if (ticket.sales_name !== salesFilter) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [orders, statusFilter, salesFilter]);
 
   const deleteJobTicket = (ticket: JobTicketData) => {
     const confirmed = window.confirm(
@@ -215,11 +259,60 @@ export default function Index({ orders }: { orders: JobTicketData[] }) {
   return (
     <>
       <Head title="Purchase Orders" />
-      <DataTable
-        columns={columns}
-        data={orders}
-        searchKeys={['no_job_ticket', 'customer', 'produk']}
-      />
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Filter Status
+              </label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="Done">Selesai (Done)</SelectItem>
+                  <SelectItem value="Produksi">Produksi</SelectItem>
+                  <SelectItem value="Order Entry">Order Entry</SelectItem>
+                  <SelectItem value="Penawaran">Penawaran / Quote</SelectItem>
+                  <SelectItem value="Sample">Sample</SelectItem>
+                  <SelectItem value="Blanks">Blanks</SelectItem>
+                  <SelectItem value="CSA">CSA</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Pelunasan">Pelunasan</SelectItem>
+                  <SelectItem value="Cancel">Dibatalkan (Cancel)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Filter Sales
+              </label>
+              <Select value={salesFilter} onValueChange={setSalesFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih sales" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Sales</SelectItem>
+                  {salesOptions.map((sales) => (
+                    <SelectItem key={sales} value={sales}>
+                      {sales}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DataTable
+            columns={columns}
+            data={filteredOrders}
+            searchKeys={['no_job_ticket', 'customer', 'produk', 'sales_name']}
+          />
+        </CardContent>
+      </Card>
     </>
   );
 }
