@@ -246,7 +246,7 @@ export default function Index({ notifications, unreadCount = 0, currentFilter = 
         );
     };
 
-    const markAsRead = (id: string, url?: string) => {
+    const markAsRead = (id: string, url?: string, isToast: boolean = true) => {
         // Optimistic UI update
         setItems((prev) =>
             prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
@@ -260,7 +260,7 @@ export default function Index({ notifications, unreadCount = 0, currentFilter = 
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
-                    toast.success('Notifikasi telah ditandai dibaca');
+                    if (isToast) toast.success('Notifikasi telah ditandai dibaca');
                     if (url && url !== '#' && url !== '') {
                         router.visit(url);
                     }
@@ -456,7 +456,7 @@ export default function Index({ notifications, unreadCount = 0, currentFilter = 
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        markAsRead(notification.id, notification.data.url)
+                                                        markAsRead(notification.id, notification.data.url, false)
                                                     }
                                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer"
                                                 >
