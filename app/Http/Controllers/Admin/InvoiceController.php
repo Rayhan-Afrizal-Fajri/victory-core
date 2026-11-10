@@ -483,7 +483,7 @@ class InvoiceController extends Controller
         );
 
         if ($documentType && ! $isProductionInvoice) {
-            abort(422, 'Dokumen DP, pelunasan, dan invoice keseluruhan hanya tersedia untuk invoice produksi.');
+            abort(422, 'Dokumen DP, pelunasan, dan invoice hanya tersedia untuk invoice produksi.');
         }
 
         $verifiedPaid = (float) $invoice->payments
@@ -525,7 +525,7 @@ class InvoiceController extends Controller
         $documentTitle = match ($documentType) {
             'dp' => 'DP Produksi',
             'settlement' => 'Pelunasan Produksi',
-            'full' => 'Invoice Keseluruhan',
+            'full' => 'Invoice',
             default => null,
         };
 

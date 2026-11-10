@@ -306,7 +306,7 @@ const InvoiceDetailSheet = ({
                                                     )
                                                 }
                                             >
-                                                Cetak Invoice Keseluruhan
+                                                Cetak Invoice
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

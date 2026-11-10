@@ -56,11 +56,11 @@ class DocumentFilenameTest extends TestCase
             'INV/2026/10/001',
             'PT Victory Maju',
             ['Kemeja Tactical Drill'],
-            'Invoice Keseluruhan'
+            'Invoice'
         );
 
         $this->assertSame(
-            'INV-2026-10-001 - PT Victory Maju - Kemeja Tactical Drill - Invoice Keseluruhan.pdf',
+            'INV-2026-10-001 - PT Victory Maju - Kemeja Tactical Drill - Invoicen.pdf',
             $filename
         );
     }

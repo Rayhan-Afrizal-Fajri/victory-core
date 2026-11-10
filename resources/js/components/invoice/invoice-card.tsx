@@ -208,7 +208,7 @@ const InvoiceCard = ({
                                         )
                                     }
                                 >
-                                    Cetak Invoice Keseluruhan
+                                    Cetak Invoice
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
