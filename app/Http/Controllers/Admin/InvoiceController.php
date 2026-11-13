@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Pesanan;
+use App\Models\User;
 use App\Services\InvoiceService;
 use App\Support\DocumentFilename;
 use App\Support\ProductionInvoiceDocumentAmounts;
@@ -565,6 +566,10 @@ class InvoiceController extends Controller
         $fullSubtotal = (float) ($approvedQuotation?->subtotal ?? max(0, (float) $invoice->total_tagihan - $fullTax - (float) $invoice->delivery_cost));
         $documentSubtotal = $fullSubtotal;
 
+        $owner = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Owner');
+        })->first();
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $companyProfile,
@@ -586,6 +591,7 @@ class InvoiceController extends Controller
             'documentTotalLabel' => $documentType === 'dp'
                 ? "Tagihan DP ({$dpLabelPct}%)"
                 : ($documentType === 'settlement' ? "Tagihan Pelunasan ({$settlementLabelPct}%)" : ($documentType === 'full' ? 'Total Tagihan (100%)' : 'Total Amount')),
+            'owner' => $owner,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream(DocumentFilename::make(

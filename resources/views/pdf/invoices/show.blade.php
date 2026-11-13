@@ -413,5 +413,35 @@
             </td>
         </tr>
     </table>
+
+    @php
+        $owner = $owner ?? \App\Models\User::whereHas('roles', function ($query) {
+            $query->where('name', 'Owner');
+        })->first();
+        $signaturePath = $owner?->signature ? storage_path('app/public/' . $owner->signature) : null;
+        $signature = ($signaturePath && file_exists($signaturePath)) ? $signaturePath : null;
+        if (!$signature) {
+            $available = glob(storage_path('app/public/signatures/*.png'));
+            if (!empty($available)) {
+                $signature = $available[0];
+            }
+        }
+    @endphp
+    <!-- Signature (Tanya Direktur Saja) -->
+    <table class="signature-container">
+        <tr>
+            <td style="width: 65%;"></td> <!-- Spacer Kiri -->
+            <td class="signature-cell">
+                <p style="color: #111827;">Dengan Hormat,</p>
+                <div class="signature-space">
+                   @if($signature)
+                       <img src="{{ $signature }}" alt="" style="max-height: 50px;">
+                   @endif
+                </div>
+                <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner?->name ?? 'Nama Direktur' }}</p>
+                <p style="margin-top: 0; color: #111827;">Direktur</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
