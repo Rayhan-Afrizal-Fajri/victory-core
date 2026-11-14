@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class CompanyProfile extends Model
 {
@@ -15,7 +16,16 @@ class CompanyProfile extends Model
         'account_name',
         'address',
         'swift_code',
+        'stamp',
     ];
+
+    protected $appends = ['stamp_url'];
+
+    public function getStampUrlAttribute(): ?string
+    {
+        if (!$this->stamp) return null;
+        return Storage::disk('public')->url($this->stamp);
+    }
 
     public function jobTickets()
     {

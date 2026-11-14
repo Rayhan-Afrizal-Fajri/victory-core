@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
-import { AlertCircle, Edit, FilePlus2, Link2, Printer, Trash2, Undo2 } from 'lucide-react';
+import { AlertCircle, Edit, FileDown, FilePlus2, Link2, Printer, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { DataTable } from '@/components/data-table';
@@ -217,6 +217,9 @@ function QuotationManagementSection({ job, quotations }: Props) {
                 <div className="flex flex-wrap items-center gap-1">
                     <Button type="button" variant="outline" size="icon" title="Cetak quotation" onClick={() => window.open(`/quotations/${row.id}/print`, '_blank', 'noopener,noreferrer')}>
                         <Printer className="size-4" />
+                    </Button>
+                    <Button type="button" variant="outline" size="icon" title="Unduh Word (.docx)" onClick={() => window.open(`/quotations/${row.id}/export-word`, '_blank', 'noopener,noreferrer')}>
+                        <FileDown className="size-4" />
                     </Button>
                     {row.status !== 'approved' && (
                         <Button type="button" variant="outline" size="icon" title="Edit quotation" onClick={() => setEditingQuotation(row)}>

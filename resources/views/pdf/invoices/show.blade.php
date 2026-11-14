@@ -184,10 +184,24 @@
                         <td class="text-right" style="color: #111827;">No Invoice</td>
                         <td class="font-bold text-left">{{ $invoice->no_invoice }}</td>
                     </tr>
+                    @if(!empty($quotationNumber))
                     <tr>
-                        <td class="text-right" style="color: #111827;">Kategori</td>
-                        <td class="font-bold text-left">{{ ucfirst($invoice->kategori_invoice) }}</td>
+                        <td class="text-right" style="color: #111827;">No. Penawaran</td>
+                        <td class="text-left">{{ $quotationNumber }}</td>
                     </tr>
+                    @endif
+                    @if(!empty($customerPoNumber))
+                    <tr>
+                        <td class="text-right" style="color: #111827;">No. PO</td>
+                        <td class="text-left font-bold">{{ $customerPoNumber }}</td>
+                    </tr>
+                    @endif
+                    @if(!empty($suratJalanNumber))
+                    <tr>
+                        <td class="text-right" style="color: #111827;">No. Surat Jalan</td>
+                        <td class="text-left">{{ $suratJalanNumber }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="text-right" style="color: #111827;">Tanggal</td>
                         <td class="text-left">{{ \Carbon\Carbon::parse($invoice->created_at)->format('d/m/Y') }}</td>
@@ -195,14 +209,6 @@
                     <tr>
                         <td class="text-right" style="color: #111827;">Tgl. Jatuh Tempo</td>
                         <td class="text-left">{{ $invoice->tgl_jatuh_tempo ? \Carbon\Carbon::parse($invoice->tgl_jatuh_tempo)->format('d/m/Y') : '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-right" style="color: #111827;">Status</td>
-                        <td class="text-left">
-                            <span class="badge">
-                                {{ strtoupper($documentStatus) }}
-                            </span>
-                        </td>
                     </tr>
                 </table>
             </td>
@@ -368,9 +374,15 @@
     <table class="bottom-container">
         <tr>
             <!-- PESAN -->
-            <td style="width: 60%; padding-right: 15px;">
+            <td style="width: 58%; padding-right: 15px;">
                 <div class="address-title">Pesan</div>
                 <ul class="pesan-list">
+                    @if(!empty($invoiceNotes ?? $invoice->notes))
+                        <li><b>Catatan Invoice:</b> {!! nl2br(e($invoiceNotes ?? $invoice->notes)) !!}</li>
+                    @endif
+                    @if(!empty($customerPoNumber))
+                        <li><b>No. PO Customer:</b> {{ $customerPoNumber }}</li>
+                    @endif
                     <li>Untuk pembayaran mohon untuk ditransfer ke 
                         <b>{{ $companyProfile?->bank_type ?? 'BCA' }}</b>, no acc
                         <b>{{ $companyProfile?->account_number ?? '453.12.06660' }}</b>,
@@ -379,7 +391,7 @@
                 </ul>
             </td>
            <!-- SUBTOTAL & TOTAL -->
-            <td style="width: 40%; vertical-align: top;">
+            <td style="width: 42%; vertical-align: top;">
                 <table class="summary-table">
                     <tr>
                         <td class="summary-label text-right">{{ $documentTitle ? 'Nilai Produksi' : 'Subtotal' }}</td>
@@ -406,8 +418,16 @@
                         <td class="text-right font-bold">Rp {{ number_format($totalPaid, 0, ',', '.') }}</td>
                     </tr>
                     <tr class="grand-total-row">
-                        <td class="text-right" style="padding-top: 10px;">Remaining</td>
-                        <td class="text-right" style="padding-top: 10px;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
+                        <td class="text-right" style="padding-top: 6px;">Remaining</td>
+                        <td class="text-right" style="padding-top: 6px;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="summary-label text-right" style="padding-top: 8px;">Status Pembayaran</td>
+                        <td class="text-right font-bold" style="padding-top: 8px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: bold; background-color: {{ in_array(strtolower($documentStatus), ['paid', 'lunas']) ? '#dcfce7' : (in_array(strtolower($documentStatus), ['partially_paid', 'sebagian']) ? '#fef3c7' : '#fee2e2') }}; color: {{ in_array(strtolower($documentStatus), ['paid', 'lunas']) ? '#166534' : (in_array(strtolower($documentStatus), ['partially_paid', 'sebagian']) ? '#92400e' : '#991b1b') }};">
+                                {{ strtoupper($documentStatus) }}
+                            </span>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -426,16 +446,28 @@
                 $signature = $available[0];
             }
         }
+
+        $stampPath = $companyProfile?->stamp ? storage_path('app/public/' . $companyProfile->stamp) : null;
+        $stamp = ($stampPath && file_exists($stampPath)) ? $stampPath : ($stamp ?? null);
+        if (!$stamp) {
+            $availableStamps = glob(storage_path('app/public/stamps/*.png'));
+            if (!empty($availableStamps)) {
+                $stamp = $availableStamps[0];
+            }
+        }
     @endphp
-    <!-- Signature (Tanya Direktur Saja) -->
+    <!-- Signature & Cap -->
     <table class="signature-container">
         <tr>
             <td style="width: 65%;"></td> <!-- Spacer Kiri -->
             <td class="signature-cell">
                 <p style="color: #111827;">Dengan Hormat,</p>
-                <div class="signature-space">
+                <div class="signature-space" style="position: relative; height: 60px;">
+                   @if($stamp)
+                       <img src="{{ $stamp }}" alt="Cap" style="max-height: 60px; position: absolute; left: 15px; top: 0px; opacity: 0.8; z-index: 1;">
+                   @endif
                    @if($signature)
-                       <img src="{{ $signature }}" alt="" style="max-height: 50px;">
+                       <img src="{{ $signature }}" alt="TTD" style="max-height: 50px; position: relative; z-index: 2;">
                    @endif
                 </div>
                 <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner?->name ?? 'Nama Direktur' }}</p>

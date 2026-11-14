@@ -33,6 +33,7 @@ export default function Index({ companyProfiles }: Props) {
     account_name: '',
     address: '',
     swift_code: '',
+    stamp: null as File | null,
   });
 
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -66,14 +67,19 @@ export default function Index({ companyProfiles }: Props) {
       account_name: profile.account_name,
       address: profile.address,
       swift_code: profile.swift_code || '',
+      stamp: null,
     });
     setIsDialogOpen(true);
   };
 
   const handleSubmitProfile = () => {
     if (editingProfile) {
-      profileForm.put(route('company-profiles.update', editingProfile.id), {
+      router.post(route('company-profiles.update', editingProfile.id), {
+        _method: 'put',
+        ...profileForm.data,
+      }, {
         preserveScroll: true,
+        forceFormData: true,
         onSuccess: () => {
           setIsDialogOpen(false);
           setEditingProfile(null);
@@ -86,6 +92,7 @@ export default function Index({ companyProfiles }: Props) {
 
     profileForm.post(route('company-profiles.store'), {
       preserveScroll: true,
+      forceFormData: true,
       onSuccess: () => {
         setIsDialogOpen(false);
         profileForm.reset();
@@ -249,6 +256,23 @@ export default function Index({ companyProfiles }: Props) {
                   <label className="text-sm font-medium text-slate-700">Swift Code</label>
                   <Input value={profileForm.data.swift_code} onChange={(e) => profileForm.setData('swift_code', e.target.value)} />
                   <InputError message={profileForm.errors.swift_code as string} />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-slate-700">Template Cap Perusahaan (Stempel TTD)</label>
+                  {editingProfile && (editingProfile as any).stamp_url && (
+                    <div className="flex items-center gap-3 p-2 border rounded-lg bg-slate-50">
+                      <img src={(editingProfile as any).stamp_url} alt="Cap saat ini" className="h-12 w-auto object-contain" />
+                      <span className="text-xs text-slate-500">Cap aktif saat ini</span>
+                    </div>
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={(e) => profileForm.setData('stamp', e.target.files?.[0] || null)}
+                  />
+                  <p className="text-xs text-slate-500">Upload format PNG (disarankan background transparan) untuk ditempel di section TTD dokumen.</p>
+                  <InputError message={profileForm.errors.stamp as string} />
                 </div>
               </div>
 

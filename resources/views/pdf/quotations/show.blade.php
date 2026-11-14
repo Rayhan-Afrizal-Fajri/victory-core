@@ -369,16 +369,28 @@
                 $signature = $available[0];
             }
         }
+
+        $stampPath = $companyProfile?->stamp ? storage_path('app/public/' . $companyProfile->stamp) : null;
+        $stamp = ($stampPath && file_exists($stampPath)) ? $stampPath : ($stamp ?? null);
+        if (!$stamp) {
+            $availableStamps = glob(storage_path('app/public/stamps/*.png'));
+            if (!empty($availableStamps)) {
+                $stamp = $availableStamps[0];
+            }
+        }
     @endphp
-    <!-- Signature (Tanya Direktur Saja) -->
+    <!-- Signature & Cap -->
     <table class="signature-container">
         <tr>
             <td style="width: 65%;"></td> <!-- Spacer Kiri -->
             <td class="signature-cell">
                 <p style="color: #111827;">Dengan Hormat,</p>
-                <div class="signature-space">
+                <div class="signature-space" style="position: relative; height: 60px;">
+                   @if($stamp)
+                       <img src="{{ $stamp }}" alt="Cap" style="max-height: 60px; position: absolute; left: 15px; top: 0px; opacity: 0.8; z-index: 1;">
+                   @endif
                    @if($signature)
-                       <img src="{{ $signature }}" alt="" style="max-height: 50px;">
+                       <img src="{{ $signature }}" alt="" style="max-height: 50px; position: relative; z-index: 2;">
                    @endif
                 </div>
                 <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $owner?->name ?? 'Nama Direktur' }}</p>

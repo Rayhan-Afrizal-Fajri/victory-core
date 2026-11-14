@@ -66,6 +66,28 @@ const InvoiceEditDialog = ({
                         />
                     </Field>
 
+                    <Field label="Nomor PO Customer" error={invoiceForm.errors.customer_po_number}>
+                        <Input
+                            type="text"
+                            placeholder="cth: PO-VICTORY-2026/001"
+                            value={invoiceForm.data.customer_po_number || ''}
+                            onChange={(e) =>
+                                invoiceForm.setData('customer_po_number', e.target.value)
+                            }
+                        />
+                    </Field>
+
+                    <Field label="Catatan Invoice" error={invoiceForm.errors.notes}>
+                        <textarea
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Catatan tambahan yang akan tampil di dokumen invoice..."
+                            value={invoiceForm.data.notes || ''}
+                            onChange={(e) =>
+                                invoiceForm.setData('notes', e.target.value)
+                            }
+                        />
+                    </Field>
+
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button
                             type="button"

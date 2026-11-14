@@ -20,6 +20,7 @@ use App\Services\InvoiceService;
 use App\Services\PurchasingService;
 use App\Services\QuotationDraftService;
 use App\Support\DocumentFilename;
+use App\Services\Export\DocumentDocxService;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -1016,5 +1017,26 @@ class QuotationController extends Controller
         }
 
         return back()->with('success', 'Quotation berhasil dihapus.');
+    }
+
+    /**
+     * Export Quotation to Word (.docx) document
+     */
+    public function exportWord(string $quotationId, DocumentDocxService $docxService)
+    {
+        $quotation = Quotation::with([
+            'jobTicket.customer',
+            'jobTicket.companyProfile',
+            'jobTicket.pesanans.sizeBreakdowns',
+            'customer',
+            'companyProfile',
+            'items.pesanan.sizeBreakdowns',
+        ])->findOrFail($quotationId);
+
+        $filePath = $docxService->generateQuotationDocx($quotation);
+        $cleanNo = $quotation->quotation_number ? str_replace(['/', '\\'], '-', $quotation->quotation_number) : 'quotation';
+        $fileName = "{$cleanNo}.docx";
+
+        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
     }
 }

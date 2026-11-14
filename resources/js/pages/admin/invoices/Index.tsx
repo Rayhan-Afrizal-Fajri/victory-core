@@ -77,6 +77,8 @@ export default function Index({
       title: '',
       total_tagihan: 0,
       tgl_jatuh_tempo: '',
+      customer_po_number: '',
+      notes: '',
   });
 
   const paymentForm = useForm({
@@ -276,6 +278,8 @@ export default function Index({
           title: invoice.title || '',
           total_tagihan: Number(invoice.total_tagihan || 0),
           tgl_jatuh_tempo: invoice.tgl_jatuh_tempo || '',
+          customer_po_number: (invoice as any).customer_po_number || '',
+          notes: (invoice as any).notes || '',
       });
 
       setEditInvoiceOpen(true);

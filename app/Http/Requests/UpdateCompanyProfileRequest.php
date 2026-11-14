@@ -23,6 +23,7 @@ class UpdateCompanyProfileRequest extends FormRequest
             'account_name' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string'],
             'swift_code' => ['nullable', 'string', 'max:255'],
+            'stamp' => ['nullable'],
         ];
     }
 }

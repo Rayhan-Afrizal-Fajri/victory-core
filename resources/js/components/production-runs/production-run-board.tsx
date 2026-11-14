@@ -409,6 +409,15 @@ const ProductionRunBoard = ({ job, runType, activeOrder }: ProductionRunBoardPro
                                         Download PDF
                                     </Button>
                                 </a>
+                                {run.pesanan?.job_ticket_id && (
+                                    <a
+                                        href={`/job-tickets/${run.pesanan.job_ticket_id}/surat-jalan/export-word`}
+                                    >
+                                        <Button type="button" variant="outline" size="sm" className="gap-2">
+                                            Unduh Word (.docx)
+                                        </Button>
+                                    </a>
+                                )}
                             </div>
                         </div>
                     )}

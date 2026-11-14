@@ -8,6 +8,7 @@ use App\Models\ProductionRun;
 use App\Models\SuratJalan;
 use App\Models\User;
 use App\Services\Delivery\SuratJalanService;
+use App\Services\Export\DocumentDocxService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -60,6 +61,25 @@ class SuratJalanController extends Controller
     }
 
     /**
+     * Export Surat Jalan to Word (.docx) by ID
+     */
+    public function exportWord(string $id, DocumentDocxService $docxService)
+    {
+        $suratJalan = SuratJalan::with([
+            'items',
+            'companyProfile',
+            'customer',
+            'jobTicket',
+        ])->findOrFail($id);
+
+        $filePath = $docxService->generateSuratJalanDocx($suratJalan);
+        $cleanNo = $suratJalan->surat_jalan_number ? str_replace(['/', '\\'], '-', $suratJalan->surat_jalan_number) : 'surat-jalan';
+        $fileName = "{$cleanNo}.docx";
+
+        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
      * Auto-generate (if not exists) and print Surat Jalan for a Job Ticket
      */
     public function printForJobTicket(string $jobTicketId)
@@ -89,6 +109,22 @@ class SuratJalanController extends Controller
         ]);
 
         return $this->generatePdfResponse($suratJalan, true);
+    }
+
+    /**
+     * Auto-generate (if not exists) and export Surat Jalan to Word (.docx) for a Job Ticket
+     */
+    public function exportWordForJobTicket(string $jobTicketId, DocumentDocxService $docxService)
+    {
+        $jobTicket = JobTicket::with(['customer', 'companyProfile', 'pesanans.product'])->findOrFail($jobTicketId);
+
+        $suratJalan = $this->suratJalanService->createOrUpdateForJobTicket($jobTicket);
+
+        $filePath = $docxService->generateSuratJalanDocx($suratJalan);
+        $cleanNo = $suratJalan->surat_jalan_number ? str_replace(['/', '\\'], '-', $suratJalan->surat_jalan_number) : 'surat-jalan';
+        $fileName = "{$cleanNo}.docx";
+
+        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
     }
 
     /**

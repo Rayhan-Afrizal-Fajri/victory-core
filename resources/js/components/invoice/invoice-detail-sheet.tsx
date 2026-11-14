@@ -149,6 +149,21 @@ const InvoiceDetailSheet = ({
                             <InfoItem label="Sisa Tagihan" value={formatRupiah(remaining)} />
                         </div>
 
+                        {(invoice.customer_po_number || invoice.notes) && (
+                            <div className="mt-4 border-t pt-3 space-y-1 text-xs">
+                                {invoice.customer_po_number && (
+                                    <p className="text-slate-600">
+                                        <span className="font-medium text-slate-800">No. PO Customer:</span> {invoice.customer_po_number}
+                                    </p>
+                                )}
+                                {invoice.notes && (
+                                    <p className="text-slate-600">
+                                        <span className="font-medium text-slate-800">Catatan:</span> {invoice.notes}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="mt-5">
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">
@@ -308,12 +323,35 @@ const InvoiceDetailSheet = ({
                                             >
                                                 Cetak Invoice
                                             </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    window.open(
+                                                        `/invoices/${invoice.id}/export-word?document=full`,
+                                                        '_blank'
+                                                    )
+                                                }
+                                            >
+                                                Unduh Word (.docx)
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 ) : (
-                                    <Button type="button" variant="secondary" onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
-                                        <Printer className="size-4" /> Cetak
-                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary">
+                                                <Printer className="size-4" /> Cetak
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
+                                                Cetak PDF
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/export-word`, '_blank')}>
+                                                Unduh Word (.docx)
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 )}
 
                                 {canEdit && (
