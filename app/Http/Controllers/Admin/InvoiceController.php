@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\InvoiceService;
 use App\Support\DocumentFilename;
 use App\Support\ProductionInvoiceDocumentAmounts;
+use App\Services\Export\DocumentDocxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +101,8 @@ class InvoiceController extends Controller
             'status_tagihan' => $invoice->status_tagihan,
 
             'tgl_jatuh_tempo' => $invoice->tgl_jatuh_tempo,
+            'customer_po_number' => $invoice->customer_po_number ?? $jobTicket?->customer_po_number,
+            'notes' => $invoice->notes,
 
             'payments' => $payments->map(fn ($payment) => [
 
@@ -240,6 +243,8 @@ class InvoiceController extends Controller
             'total_tagihan' => ['required', 'numeric', 'min:1'],
             'tgl_jatuh_tempo' => ['nullable', 'date'],
             'title' => ['nullable', 'string', 'max:255'],
+            'customer_po_number' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $pesanan = Pesanan::with(['workflowStatus', 'invoices'])->findOrFail($validated['pesanan_id']);
@@ -280,7 +285,16 @@ class InvoiceController extends Controller
                 'total_tagihan' => $validated['total_tagihan'],
                 'status_tagihan' => 'unpaid',
                 'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
+                'customer_po_number' => $validated['customer_po_number'] ?? $pesanan->jobTicket?->customer_po_number,
+                'notes' => $validated['notes'] ?? null,
             ]);
+
+            // Otomatis surat jalan harus sudah digenerate jauh sebelum masuk ke proses delivery
+            if ($pesanan->jobTicket) {
+                try {
+                    app(\App\Services\Delivery\SuratJalanService::class)->createOrUpdateForJobTicket($pesanan->jobTicket);
+                } catch (\Throwable $e) {}
+            }
 
             $workflowPayload = [];
 
@@ -336,6 +350,8 @@ class InvoiceController extends Controller
         $request->validate([
             'total_tagihan' => ['required', 'numeric', 'min:0'],
             'tgl_jatuh_tempo' => ['nullable', 'date'],
+            'customer_po_number' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $invoice = Invoice::with([
@@ -366,10 +382,17 @@ class InvoiceController extends Controller
         }
 
         DB::transaction(function () use ($request, $invoice, $invoiceService){
-            $invoice->update([
+            $updateData = [
                 'total_tagihan' => $request->total_tagihan,
                 'tgl_jatuh_tempo' => $request->tgl_jatuh_tempo,
-            ]);
+            ];
+            if ($request->has('customer_po_number')) {
+                $updateData['customer_po_number'] = $request->customer_po_number;
+            }
+            if ($request->has('notes')) {
+                $updateData['notes'] = $request->notes;
+            }
+            $invoice->update($updateData);
 
             $invoice = $invoiceService->recalculateStatus($invoice);
 
@@ -570,6 +593,32 @@ class InvoiceController extends Controller
             $query->where('name', 'Owner');
         })->first();
 
+        $quotationNumber = $approvedQuotation?->quotation_number
+            ?: $invoice->jobTicket?->quotations?->first()?->quotation_number;
+
+        $customerPoNumber = $invoice->customer_po_number
+            ?: $invoice->jobTicket?->customer_po_number;
+
+        $suratJalan = $invoice->jobTicket?->latestSuratJalan
+            ?: $invoice->jobTicket?->suratJalans?->first();
+
+        if (! $suratJalan && $invoice->jobTicket) {
+            try {
+                $suratJalanService = app(\App\Services\Delivery\SuratJalanService::class);
+                $suratJalan = $suratJalanService->createOrUpdateForJobTicket($invoice->jobTicket);
+            } catch (\Throwable $e) {}
+        }
+        $suratJalanNumber = $suratJalan?->surat_jalan_number;
+
+        $stampPath = $companyProfile?->stamp ? storage_path('app/public/' . $companyProfile->stamp) : null;
+        $stamp = ($stampPath && file_exists($stampPath)) ? $stampPath : null;
+        if (! $stamp) {
+            $availableStamps = glob(storage_path('app/public/stamps/*.png'));
+            if (! empty($availableStamps)) {
+                $stamp = $availableStamps[0];
+            }
+        }
+
         $pdf = Pdf::loadView('pdf.invoices.show', [
             'invoice' => $invoice,
             'company' => $companyProfile,
@@ -592,6 +641,11 @@ class InvoiceController extends Controller
                 ? "Tagihan DP ({$dpLabelPct}%)"
                 : ($documentType === 'settlement' ? "Tagihan Pelunasan ({$settlementLabelPct}%)" : ($documentType === 'full' ? 'Total Tagihan (100%)' : 'Total Amount')),
             'owner' => $owner,
+            'quotationNumber' => $quotationNumber,
+            'customerPoNumber' => $customerPoNumber,
+            'suratJalanNumber' => $suratJalanNumber,
+            'invoiceNotes' => $invoice->notes,
+            'stamp' => $stamp,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream(DocumentFilename::make(
@@ -600,5 +654,29 @@ class InvoiceController extends Controller
             $articles,
             $documentTitle
         ));
+    }
+
+    /**
+     * Export Invoice to Word (.docx) document
+     */
+    public function exportWord(Request $request, string $invoiceId, DocumentDocxService $docxService)
+    {
+        $invoice = Invoice::with([
+            'jobTicket.customer',
+            'jobTicket.companyProfile',
+            'jobTicket.quotations',
+            'jobTicket.pesanans.sizeBreakdowns',
+            'jobTicket.latestSuratJalan',
+            'items.pesanan.sizeBreakdowns',
+            'payments',
+        ])->findOrFail($invoiceId);
+
+        $documentType = $request->query('document');
+        $filePath = $docxService->generateInvoiceDocx($invoice, $documentType);
+
+        $cleanNo = $invoice->no_invoice ? str_replace(['/', '\\'], '-', $invoice->no_invoice) : 'invoice';
+        $fileName = "{$cleanNo}.docx";
+
+        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
     }
 }

@@ -290,6 +290,15 @@
                 $signature = $available[0];
             }
         }
+
+        $stampPath = $companyProfile?->stamp ? storage_path('app/public/' . $companyProfile->stamp) : null;
+        $stamp = ($stampPath && file_exists($stampPath)) ? $stampPath : ($stamp ?? null);
+        if (!$stamp) {
+            $availableStamps = glob(storage_path('app/public/stamps/*.png'));
+            if (!empty($availableStamps)) {
+                $stamp = $availableStamps[0];
+            }
+        }
     @endphp
 
     <!-- Signatures -->
@@ -305,9 +314,12 @@
             <!-- Dengan Hormat -->
             <td class="signature-cell" style="text-align: right; padding-right: 30px;">
                 <p style="color: #111827; margin-bottom: 0;">Dengan Hormat,</p>
-                <div class="signature-space">
+                <div class="signature-space" style="position: relative; height: 60px;">
+                    @if($stamp)
+                        <img src="{{ $stamp }}" alt="Cap" style="max-height: 60px; position: absolute; right: 20px; top: 0px; opacity: 0.8; z-index: 1;">
+                    @endif
                     @if($signature)
-                        <img src="{{ $signature }}" alt="" style="max-height: 52px; vertical-align: middle;">
+                        <img src="{{ $signature }}" alt="" style="max-height: 52px; vertical-align: middle; position: relative; z-index: 2;">
                     @endif
                 </div>
                 <p style="margin-top: 0; font-weight: bold; color: #0b5394;">VictoryLabs</p>

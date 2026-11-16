@@ -526,6 +526,16 @@ function QuotationSection({
                                             Lihat Surat Penawaran
                                         </Button>
 
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                window.open(`/quotations/${quotation.id}/export-word`, '_blank')
+                                            }
+                                        >
+                                            Unduh Word
+                                        </Button>
+
                                         {/* Guard pada Button Approve */}
                                         {quotation.status !== 'approved' && can('quotation.approve') && (
                                             <Button

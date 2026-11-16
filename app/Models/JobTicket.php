@@ -16,6 +16,7 @@ class JobTicket extends Model
         'sales_name',
         'deadline',
         'customer_notes',
+        'customer_po_number',
         'status',
         'created_by',
     ];

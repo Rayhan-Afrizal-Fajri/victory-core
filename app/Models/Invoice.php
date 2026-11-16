@@ -15,6 +15,8 @@ class Invoice extends Model
         'delivery_cost',
         'status_tagihan',
         'tgl_jatuh_tempo',
+        'customer_po_number',
+        'notes',
     ];
 
     protected $casts = [

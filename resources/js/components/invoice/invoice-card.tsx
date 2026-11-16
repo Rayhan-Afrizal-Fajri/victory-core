@@ -210,13 +210,36 @@ const InvoiceCard = ({
                                 >
                                     Cetak Invoice
                                 </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        window.open(
+                                            `/invoices/${invoice.id}/export-word?document=full`,
+                                            '_blank'
+                                        )
+                                    }
+                                >
+                                    Unduh Word (.docx)
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </>
                 ) : (
-                    <Button type="button" variant="secondary" className="min-w-27.5 flex-1" onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
-                        <Printer className="size-4" /> Cetak
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="secondary" className="min-w-27.5 flex-1">
+                                <Printer className="size-4" /> Cetak
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/print`, '_blank')}>
+                                Cetak PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/export-word`, '_blank')}>
+                                Unduh Word (.docx)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
 
                 {canEdit && can('payment.verify') && onEdit && !isInvoicePaid(invoice) && !isInvoiceCancelled(invoice) && (

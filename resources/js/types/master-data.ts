@@ -23,6 +23,8 @@ export interface CompanyProfile {
   account_name: string;
   address: string;
   swift_code?: string;
+  stamp?: string;
+  stamp_url?: string;
 }
 
 export interface ProductDetail extends Product {
