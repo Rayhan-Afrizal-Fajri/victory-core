@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Auth\ImpersonationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -47,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                 'unread_notifications' => $request->user() ? $request->user()->unreadNotifications()->take(5)->get() : [],
                 'unread_count' => $request->user() ? $request->user()->unreadNotifications()->count() : 0,
             ],
+            'impersonation' => fn () => app(ImpersonationService::class)->viewData(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
                 'success' => fn () => session('success'),

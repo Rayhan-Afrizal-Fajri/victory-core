@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ProfitLossReportController;
 use App\Http\Controllers\Admin\PurchasingController;
 use App\Http\Controllers\Admin\SampleController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\CompanyProfileController;
@@ -63,6 +64,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('users', UserController::class);
     Route::patch('/users/{user}/toggle-status', [UserController::class, 'updateStatus'])->name('users.update-status');
     Route::put('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password.update');
+    Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'start'])->name('users.impersonate');
+    Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
     Route::resource('roles', RoleController::class)->only(['store', 'update', 'destroy']);
     Route::resource('customers', CustomerController::class);
     Route::resource('suppliers', SupplierController::class);

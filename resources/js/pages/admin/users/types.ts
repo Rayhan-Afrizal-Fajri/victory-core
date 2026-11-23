@@ -20,6 +20,7 @@ export type UserData = {
     roles: RoleData[];
     password?: string;
     is_active: boolean;
+    can_impersonate?: boolean;
 }
 
 export type UserForm = {

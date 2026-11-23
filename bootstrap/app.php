@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\ImpersonationReadOnlyException;
+use App\Http\Middleware\ApplyImpersonation;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -18,11 +20,24 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            ApplyImpersonation::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (ImpersonationReadOnlyException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() && ! $request->header('X-Inertia')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], \Symfony\Component\HttpFoundation\Response::HTTP_FORBIDDEN);
+            }
+
+            return back()
+                ->with('warning', $e->getMessage())
+                ->with('flash_id', (string) \Illuminate\Support\Str::uuid())
+                ->withErrors(['impersonation' => $e->getMessage()]);
+        });
         $exceptions->render(function (\Illuminate\Database\QueryException $e, \Illuminate\Http\Request $request) {
             \Illuminate\Support\Facades\Log::error('Database QueryException intercepted: ' . $e->getMessage(), [
                 'sql' => $e->getSql(),
