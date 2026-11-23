@@ -14,6 +14,19 @@ export type Auth = {
     user: User;
 };
 
+export type ImpersonationPerson = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+};
+
+export type ImpersonationState = {
+    is_active: boolean;
+    impersonator: ImpersonationPerson;
+    target: ImpersonationPerson;
+};
+
 export type TwoFactorSetupData = {
     svg: string;
     url: string;

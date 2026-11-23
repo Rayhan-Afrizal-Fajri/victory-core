@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
@@ -30,7 +31,8 @@ class UserController extends Controller
                     'id' => $role->id,
                     'name' => $role->name,
                 ])->all(),
-                'role' => $user->roles?->first()->name,
+                'role' => $user->roles?->first()?->name,
+                'can_impersonate' => Gate::allows('impersonate', $user),
             ]);
 
         $roles = Role::query()
@@ -223,10 +225,16 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with('roles')->findOrFail($id);
 
-        if ($user->hasRole('owner')) {
-            return back()->with('error', 'User owner tidak dapat dihapus.');
+        $isProtected = $user->roles->contains(function ($role) {
+            $normalized = strtolower(trim(preg_replace('/[_-]+/', ' ', (string) $role->name)));
+
+            return in_array($normalized, ['owner', 'super admin', 'superadmin'], true);
+        });
+
+        if ($isProtected) {
+            return back()->with('error', 'User dengan role Owner atau Super Admin tidak dapat dihapus.');
         }
 
         $user->delete();

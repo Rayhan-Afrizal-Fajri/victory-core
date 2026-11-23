@@ -107,6 +107,8 @@ export interface Invoice {
   id: number;
   job_ticket_id?: number; // BERUBAH: Naik level ke Job Ticket
   jobTicket?: JobTicket;
+  articles?: string[];
+  articles_summary?: string;
   no_invoice?: string;
   kategori_invoice?: string;
   total_tagihan?: number;
@@ -270,8 +272,10 @@ export interface ProductionProgress {
 
 export interface Customer {
   id?: number;
-  name?: string;
-  company?: string;
+  name?: string | null;
+  company?: string | null;
+  nama?: string | null;
+  nama_perusahaan?: string | null;
   email?: string;
   phone?: string;
   address?: string;

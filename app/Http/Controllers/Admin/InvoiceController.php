@@ -27,7 +27,10 @@ class InvoiceController extends Controller
         $invoices = Invoice::query()
             ->with([
                 'jobTicket.customer',
+                'jobTicket.companyProfile',
                 'jobTicket.pesanans.workflowStatus',
+                'items',
+                'sample.pesanan',
                 'payments',
             ])
             ->latest()
@@ -59,6 +62,32 @@ class InvoiceController extends Controller
         $jobTicket = $invoice->jobTicket;
         $payments = $invoice->payments ?? collect();
 
+        $customerName = $jobTicket?->customer?->nama ?: $jobTicket?->customer_nama_snapshot;
+        $customerCompany = $jobTicket?->customer?->nama_perusahaan ?: $jobTicket?->customer_perusahaan_snapshot;
+
+        $articles = ($invoice->items ?? collect())
+            ->pluck('item_name')
+            ->filter(fn ($name) => filled($name))
+            ->map(fn ($name) => trim((string) $name))
+            ->unique()
+            ->values();
+
+        if ($articles->isEmpty() && $invoice->sample?->pesanan) {
+            $sampleProduct = $invoice->sample->pesanan->requested_product_name ?: $invoice->sample->pesanan->produk;
+            if (filled($sampleProduct)) {
+                $articles = collect([trim((string) $sampleProduct)]);
+            }
+        }
+
+        if ($articles->isEmpty() && $jobTicket) {
+            $articles = ($jobTicket->pesanans ?? collect())
+                ->map(fn ($pesanan) => $pesanan->requested_product_name ?: $pesanan->produk)
+                ->filter(fn ($name) => filled($name))
+                ->map(fn ($name) => trim((string) $name))
+                ->unique()
+                ->values();
+        }
+
         return [
             'id' => $invoice->id,
 
@@ -70,8 +99,10 @@ class InvoiceController extends Controller
 
                 'customer' => [
                     'id' => $jobTicket->customer?->id,
-                    'nama' => $jobTicket->customer?->nama,
-                    'nama_perusahaan' => $jobTicket->customer?->nama_perusahaan,
+                    'nama' => $customerName,
+                    'nama_perusahaan' => $customerCompany,
+                    'name' => $customerName,
+                    'company' => $customerCompany,
                     'email' => $jobTicket->customer?->user?->email,
                     'no_hp' => $jobTicket->customer?->no_hp,
                 ],
@@ -90,6 +121,9 @@ class InvoiceController extends Controller
                 'status' => $jobTicket->status,
                 'created_at' => optional($jobTicket->created_at)->toDateTimeString(),
             ] : null,
+
+            'articles' => $articles->all(),
+            'articles_summary' => $articles->implode(', '),
 
             'no_invoice' => $invoice->no_invoice,
 

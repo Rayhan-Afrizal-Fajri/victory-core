@@ -373,10 +373,48 @@ export default function Index({
                       {row.jobTicket?.no_job_ticket || '-'}
                   </p>
                   <p className="text-xs text-slate-500">
-                      {row.jobTicket?.customer?.company || row.jobTicket?.customer?.name || '-'}
+                      {row.jobTicket?.customer?.nama_perusahaan ||
+                          row.jobTicket?.customer?.company ||
+                          row.jobTicket?.customer?.nama ||
+                          row.jobTicket?.customer?.name ||
+                          '-'}
                   </p>
               </div>
           ),
+      },
+      {
+          header: 'Artikel / Produk',
+          accessor: 'articles_summary',
+          cell: (row) => {
+              const articles = row.articles ?? [];
+              if (articles.length === 0) {
+                  return <span className="text-xs text-slate-400">-</span>;
+              }
+
+              const visibleArticles = articles.slice(0, 3);
+              const remainingCount = articles.length - visibleArticles.length;
+
+              return (
+                  <div
+                      className="max-w-[240px] space-y-1"
+                      title={articles.join(', ')}
+                  >
+                      {visibleArticles.map((article, idx) => (
+                          <p
+                              key={`${article}-${idx}`}
+                              className="truncate text-xs font-medium text-slate-700"
+                          >
+                              • {article}
+                          </p>
+                      ))}
+                      {remainingCount > 0 && (
+                          <span className="inline-block text-[11px] font-medium text-blue-600">
+                              +{remainingCount} produk lainnya
+                          </span>
+                      )}
+                  </div>
+              );
+          },
       },
       {
           header: 'Kategori',
@@ -715,8 +753,15 @@ export default function Index({
                   <DataTable
                       columns={columns}
                       data={filteredInvoices}
-                      searchKeys={['no_invoice', 'jobTicket.no_job_ticket', 'jobTicket.customer.nama', 'jobTicket.customer.nama_perusahaan', 'jobTicket.customer.company']}
-                      searchPlaceholder="Cari invoice, PO, customer, company..."
+                      searchKeys={[
+                          'no_invoice',
+                          'jobTicket.no_job_ticket',
+                          'jobTicket.customer.nama',
+                          'jobTicket.customer.nama_perusahaan',
+                          'jobTicket.customer.company',
+                          'articles_summary',
+                      ]}
+                      searchPlaceholder="Cari invoice, PO, customer, artikel/produk..."
                   />
               </CardContent>
           </Card>
