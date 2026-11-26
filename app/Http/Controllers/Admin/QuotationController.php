@@ -165,7 +165,7 @@ class QuotationController extends Controller
             'delivery_terms' => ['nullable', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:10000'],
             'delivery_cost' => ['nullable', 'numeric', 'min:0'],
-            'dp_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'dp_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.pesanan_id' => ['nullable', 'integer', 'exists:pesanan,id'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
@@ -215,7 +215,7 @@ class QuotationController extends Controller
             'notes' => ['required', 'array', 'min:1'],
             'notes.*' => ['nullable', 'string'],
             'delivery_cost' => ['nullable', 'numeric', 'min:0'],
-            'dp_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'dp_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         // Ambil Job Ticket beserta Company Profile pendukungnya
@@ -709,11 +709,20 @@ class QuotationController extends Controller
                 // 'signature_path' => null, 
             ]);
 
-            // B. Hapus Invoice Sample & Invoice Produksi yang belum dibayar
-            $jobTicket->invoices()
+            // B. Void jurnal & hapus Invoice Sample & Invoice Produksi yang belum dibayar
+            $invoicesToDelete = $jobTicket->invoices()
                 ->whereIn('kategori_invoice', ['sample', 'produksi', 'production', 'dp_produksi'])
                 ->whereIn('status_tagihan', ['unpaid', 'partially_paid'])
-                ->delete();
+                ->get();
+
+            foreach ($invoicesToDelete as $invoiceToDelete) {
+                try {
+                    app(\App\Services\Accounting\AccountingSyncService::class)->voidInvoiceJournal($invoiceToDelete);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Void journal invoice #{$invoiceToDelete->id} saat undo quotation gagal: " . $e->getMessage());
+                }
+                $invoiceToDelete->delete();
+            }
 
             // C. Proses per-Pesanan
             foreach ($jobTicket->pesanans as $pesanan) {

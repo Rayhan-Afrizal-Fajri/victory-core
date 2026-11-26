@@ -181,14 +181,25 @@ function QuotationManagementSection({ job, quotations }: Props) {
             accessor: 'grand_total',
             cell: (row) => {
                 const total = Number(row.grand_total || 0);
-                const dpPct = row.dp_percentage ? Number(row.dp_percentage) : 50;
+                const dpPct =
+                    row.dp_percentage !== null && row.dp_percentage !== undefined
+                        ? Number(row.dp_percentage)
+                        : 50;
                 const dpNominal = Math.round(total * (dpPct / 100));
 
                 return (
                     <div>
                         <span className="font-semibold text-foreground">{formatRupiah(total)}</span>
-                        <p className="text-[11px] font-medium text-primary dark:text-blue-300">
-                            DP ({dpPct}%): {formatRupiah(dpNominal)}
+                        <p
+                            className={`text-[11px] font-medium ${
+                                dpPct === 0
+                                    ? 'text-emerald-700 dark:text-emerald-300'
+                                    : 'text-primary dark:text-blue-300'
+                            }`}
+                        >
+                            {dpPct === 0
+                                ? 'Tanpa DP (0%) · Pelunasan 100%'
+                                : `DP (${dpPct}%): ${formatRupiah(dpNominal)}`}
                         </p>
                     </div>
                 );
@@ -354,22 +365,40 @@ function QuotationManagementSection({ job, quotations }: Props) {
                         }}>
                             <SelectTrigger><SelectValue placeholder="Pilih nomor quotation draft" /></SelectTrigger>
                             <SelectContent>
-                                {job.available_draft_quotations.map((draft: any) => (
-                                    <SelectItem key={draft.id} value={String(draft.id)}>
-                                        {draft.quotation_number} · {formatRupiah(draft.grand_total || 0)} (DP {draft.dp_percentage || 50}%)
-                                    </SelectItem>
-                                ))}
+                                {job.available_draft_quotations.map((draft: any) => {
+                                    const draftDpPct =
+                                        draft.dp_percentage !== null && draft.dp_percentage !== undefined
+                                            ? Number(draft.dp_percentage)
+                                            : 50;
+                                    return (
+                                        <SelectItem key={draft.id} value={String(draft.id)}>
+                                            {draft.quotation_number} · {formatRupiah(draft.grand_total || 0)} (
+                                            {draftDpPct === 0 ? 'Tanpa DP 0%' : `DP ${draftDpPct}%`})
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                     </div>
-                    {selectedDraft && (
-                        <form onSubmit={submitAttach} className="space-y-4">
-                            <div className="rounded-md border bg-slate-50 p-3">
-                                <p className="font-semibold">{selectedDraft.quotation_number}</p>
-                                <p className="text-sm text-slate-600">
-                                    Total: {formatRupiah(selectedDraft.grand_total || 0)} · DP ({selectedDraft.dp_percentage || 50}%): {formatRupiah(Math.round(Number(selectedDraft.grand_total || 0) * (Number(selectedDraft.dp_percentage || 50) / 100)))}
-                                </p>
-                            </div>
+                    {selectedDraft && (() => {
+                        const selectedDpPct =
+                            selectedDraft.dp_percentage !== null && selectedDraft.dp_percentage !== undefined
+                                ? Number(selectedDraft.dp_percentage)
+                                : 50;
+                        const selectedTotal = Number(selectedDraft.grand_total || 0);
+                        const selectedDpNominal = Math.round(selectedTotal * (selectedDpPct / 100));
+
+                        return (
+                            <form onSubmit={submitAttach} className="space-y-4">
+                                <div className="rounded-md border bg-slate-50 p-3">
+                                    <p className="font-semibold">{selectedDraft.quotation_number}</p>
+                                    <p className="text-sm text-slate-600">
+                                        Total: {formatRupiah(selectedTotal)} ·{' '}
+                                        {selectedDpPct === 0
+                                            ? 'Tanpa DP (0%) · Pelunasan 100%'
+                                            : `DP (${selectedDpPct}%): ${formatRupiah(selectedDpNominal)}`}
+                                    </p>
+                                </div>
                             {selectedDraft.items.map((item: any, index: number) => (
                                 <div key={item.id} className="grid gap-3 sm:grid-cols-2 sm:items-center">
                                     <div>
@@ -400,7 +429,8 @@ function QuotationManagementSection({ job, quotations }: Props) {
                                 <Button type="submit" disabled={attachForm.processing}>Hubungkan ke PO</Button>
                             </div>
                         </form>
-                    )}
+                        );
+                    })()}
                 </DialogContent>
             </Dialog>
         </>
