@@ -67,4 +67,49 @@ class ProductionInvoiceDocumentAmountsTest extends TestCase
         $this->assertSame(25_000_000.0, $amounts['dp_paid']);
         $this->assertSame(25_000_000.0, $amounts['settlement_paid']);
     }
+
+    public function test_zero_dp_percentage_allocates_entire_invoice_to_settlement(): void
+    {
+        $amounts = ProductionInvoiceDocumentAmounts::calculate(50_000_000, 20_000_000, 0.0);
+
+        $this->assertSame(0.0, $amounts['dp_percentage']);
+        $this->assertSame(100.0, $amounts['settlement_percentage']);
+        $this->assertSame(0.0, $amounts['dp_total']);
+        $this->assertSame(0.0, $amounts['dp_paid']);
+        $this->assertSame(0.0, $amounts['dp_remaining']);
+        $this->assertSame(50_000_000.0, $amounts['settlement_total']);
+        $this->assertSame(20_000_000.0, $amounts['settlement_paid']);
+        $this->assertSame(30_000_000.0, $amounts['settlement_remaining']);
+        $this->assertSame(50_000_000.0, $amounts['full_total']);
+        $this->assertSame(20_000_000.0, $amounts['full_paid']);
+        $this->assertSame(30_000_000.0, $amounts['full_remaining']);
+    }
+
+    public function test_hundred_percent_dp_allocates_entire_invoice_to_dp(): void
+    {
+        $amounts = ProductionInvoiceDocumentAmounts::calculate(50_000_000, 50_000_000, 100.0);
+
+        $this->assertSame(100.0, $amounts['dp_percentage']);
+        $this->assertSame(0.0, $amounts['settlement_percentage']);
+        $this->assertSame(50_000_000.0, $amounts['dp_total']);
+        $this->assertSame(50_000_000.0, $amounts['dp_paid']);
+        $this->assertSame(0.0, $amounts['dp_remaining']);
+        $this->assertSame(0.0, $amounts['settlement_total']);
+        $this->assertSame(0.0, $amounts['settlement_paid']);
+        $this->assertSame(0.0, $amounts['settlement_remaining']);
+        $this->assertSame(50_000_000.0, $amounts['full_total']);
+        $this->assertSame(50_000_000.0, $amounts['full_paid']);
+        $this->assertSame(0.0, $amounts['full_remaining']);
+    }
+
+    public function test_decimal_total_with_hundred_percent_dp_does_not_exceed_invoice_total(): void
+    {
+        $amounts = ProductionInvoiceDocumentAmounts::calculate(11155.50, 11155.50, 100.0);
+
+        $this->assertSame(11155.50, $amounts['dp_total']);
+        $this->assertSame(11155.50, $amounts['dp_paid']);
+        $this->assertSame(0.0, $amounts['dp_remaining']);
+        $this->assertSame(0.0, $amounts['settlement_total']);
+        $this->assertSame(0.0, $amounts['settlement_remaining']);
+    }
 }

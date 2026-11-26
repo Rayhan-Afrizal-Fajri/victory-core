@@ -96,6 +96,7 @@ const InvoiceDetailSheet = ({
     const isProd = isProductionInvoice(invoice);
     const dpPercentage = isProd ? getInvoiceDpPercentage(invoice) : 50;
     const settlementPercentage = 100 - dpPercentage;
+    const isWithoutDp = isProd && dpPercentage === 0;
     const dpTotal = isProd ? getInvoiceDpTotal(invoice) : 0;
     const settlementTotal = isProd ? getInvoiceSettlementTotal(invoice) : 0;
     const dpPaid = isProd ? getInvoiceDpPaid(invoice) : 0;
@@ -186,59 +187,77 @@ const InvoiceDetailSheet = ({
                         </div>
 
                         {isProd && (
-                            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-primary dark:text-blue-300">
-                                        Ketentuan DP Produksi ({dpPercentage}%)
-                                    </span>
-                                    <Badge
-                                        className={
-                                            dpFulfilled
-                                                ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
-                                                : 'border-amber-200 bg-amber-100 text-amber-800'
-                                        }
-                                    >
-                                        {dpFulfilled ? 'DP Terpenuhi' : 'Belum Memenuhi DP'}
-                                    </Badge>
-                                </div>
-
-                                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <div>
-                                        <p className="text-slate-500">Minimal DP ({dpPercentage}%)</p>
-                                        <p className="mt-0.5 font-semibold text-slate-900">
-                                            {formatRupiah(dpTotal)}
-                                        </p>
+                            isWithoutDp ? (
+                                <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-semibold text-emerald-900">
+                                            Skema Pembayaran: Tanpa DP (0%) — Langsung Pelunasan
+                                        </span>
+                                        <Badge className="border-emerald-200 bg-emerald-100 text-emerald-800">
+                                            Langsung Pelunasan
+                                        </Badge>
                                     </div>
-                                    <div>
-                                        <p className="text-slate-500">Pelunasan ({settlementPercentage}%)</p>
-                                        <p className="mt-0.5 font-semibold text-slate-900">
-                                            {formatRupiah(settlementTotal)}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-500">DP Terbayar</p>
-                                        <p className="mt-0.5 font-semibold text-emerald-700">
-                                            {formatRupiah(dpPaid)}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-500">Kekurangan DP</p>
-                                        <p
-                                            className={`mt-0.5 font-semibold ${
-                                                dpRemaining > 0 ? 'text-amber-700' : 'text-slate-500'
-                                            }`}
-                                        >
-                                            {dpRemaining > 0 ? formatRupiah(dpRemaining) : 'Rp 0'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {!dpFulfilled && (
-                                    <p className="mt-2.5 border-t border-blue-100 pt-2 text-[11px] text-amber-800">
-                                        * Produksi massal baru dapat dimulai setelah pembayaran minimal DP sejumlah {formatRupiah(dpTotal)} diverifikasi.
+                                    <p className="mt-2 text-slate-700">
+                                        Produksi tidak memerlukan DP di awal. Seluruh tagihan sebesar{' '}
+                                        <strong className="text-slate-900">{formatRupiah(total)}</strong> (100%)
+                                        dibayarkan sebagai pelunasan sebelum pengiriman.
                                     </p>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-primary dark:text-blue-300">
+                                            Ketentuan DP Produksi ({dpPercentage}%)
+                                        </span>
+                                        <Badge
+                                            className={
+                                                dpFulfilled
+                                                    ? 'border-emerald-200 bg-emerald-100 text-emerald-800'
+                                                    : 'border-amber-200 bg-amber-100 text-amber-800'
+                                            }
+                                        >
+                                            {dpFulfilled ? 'DP Terpenuhi' : 'Belum Memenuhi DP'}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        <div>
+                                            <p className="text-slate-500">Minimal DP ({dpPercentage}%)</p>
+                                            <p className="mt-0.5 font-semibold text-slate-900">
+                                                {formatRupiah(dpTotal)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500">Pelunasan ({settlementPercentage}%)</p>
+                                            <p className="mt-0.5 font-semibold text-slate-900">
+                                                {formatRupiah(settlementTotal)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500">DP Terbayar</p>
+                                            <p className="mt-0.5 font-semibold text-emerald-700">
+                                                {formatRupiah(dpPaid)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-500">Kekurangan DP</p>
+                                            <p
+                                                className={`mt-0.5 font-semibold ${
+                                                    dpRemaining > 0 ? 'text-amber-700' : 'text-slate-500'
+                                                }`}
+                                            >
+                                                {dpRemaining > 0 ? formatRupiah(dpRemaining) : 'Rp 0'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {!dpFulfilled && (
+                                        <p className="mt-2.5 border-t border-blue-100 pt-2 text-[11px] text-amber-800">
+                                            * Produksi massal baru dapat dimulai setelah pembayaran minimal DP sejumlah {formatRupiah(dpTotal)} diverifikasi.
+                                        </p>
+                                    )}
+                                </div>
+                            )
                         )}
                     </div>
 
@@ -293,26 +312,30 @@ const InvoiceDetailSheet = ({
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={() =>
-                                                    window.open(
-                                                        `/invoices/${invoice.id}/print?document=dp`,
-                                                        '_blank'
-                                                    )
-                                                }
-                                            >
-                                                Cetak DP ({dpPercentage}%)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() =>
-                                                    window.open(
-                                                        `/invoices/${invoice.id}/print?document=settlement`,
-                                                        '_blank'
-                                                    )
-                                                }
-                                            >
-                                                Cetak Pelunasan ({settlementPercentage}%)
-                                            </DropdownMenuItem>
+                                            {dpPercentage > 0 && (
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        window.open(
+                                                            `/invoices/${invoice.id}/print?document=dp`,
+                                                            '_blank'
+                                                        )
+                                                    }
+                                                >
+                                                    Cetak DP ({dpPercentage}%)
+                                                </DropdownMenuItem>
+                                            )}
+                                            {settlementPercentage > 0 && (
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        window.open(
+                                                            `/invoices/${invoice.id}/print?document=settlement`,
+                                                            '_blank'
+                                                        )
+                                                    }
+                                                >
+                                                    Cetak Pelunasan ({settlementPercentage}%)
+                                                </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem
                                                 onClick={() =>
                                                     window.open(

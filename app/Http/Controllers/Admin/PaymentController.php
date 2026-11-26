@@ -206,8 +206,12 @@ class PaymentController extends Controller
             ->where('status', 'verified')
             ->sum('jumlah_bayar');
 
-        $dpPercentage = (float) ($invoice->dp_percentage ?? 50.00);
-        $dpLimit = round($totalInvoice * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP);
+        $dpPercentage = max(min((float) ($invoice->dp_percentage ?? 50.00), 100), 0);
+        $dpLimit = $dpPercentage <= 0
+            ? 0.0
+            : ($dpPercentage >= 100
+                ? $totalInvoice
+                : min($totalInvoice, round($totalInvoice * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP)));
 
         $productionDpPaid =
             $totalInvoice > 0 &&
@@ -260,7 +264,7 @@ class PaymentController extends Controller
             }
         }
 
-        if ($dpJustVerified) {
+        if ($dpJustVerified && $dpPercentage > 0) {
             $formattedPct = round($dpPercentage, 2);
             $jobTicket->workflowHistory()->create([
                 'step' => 'finance',
@@ -279,9 +283,15 @@ class PaymentController extends Controller
                 'notes' => 'Invoice produksi telah lunas.',
             ]);
 
-            $jobTicket->update([
-                'status' => 'Done',
-            ]);
+            $jobTicket->load('pesanans.workflowStatus');
+            $allOrdersCompleted = $jobTicket->pesanans->isNotEmpty()
+                && $jobTicket->pesanans->every(fn ($p) => (bool) optional($p->workflowStatus)->completed);
+
+            if ($allOrdersCompleted) {
+                $jobTicket->update([
+                    'status' => 'Done',
+                ]);
+            }
         }
     }
 
@@ -402,6 +412,14 @@ class PaymentController extends Controller
             }
 
         });
+
+        try {
+            $syncService = app(\App\Services\Accounting\AccountingSyncService::class);
+            $syncService->syncInvoice($payment->invoice);
+            $syncService->syncPayment($payment->fresh());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-journal payment #{$payment->id} gagal: " . $e->getMessage());
+        }
 
         return back()->with(
             'success',

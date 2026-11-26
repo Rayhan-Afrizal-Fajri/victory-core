@@ -175,16 +175,37 @@ class DocumentDocxService
         $sCell = $bottomTable->addCell(Converter::cmToTwip(7.9));
         $verifiedPaid = (float) $invoice->payments->where('status', 'verified')->sum('jumlah_bayar');
         $totalTagihan = (float) $invoice->total_tagihan;
-        $remaining = max(0, $totalTagihan - $verifiedPaid);
-        $statusStr = strtoupper($invoice->status_tagihan);
+
+        if (in_array($documentType, ['dp', 'settlement'], true)) {
+            $documentAmounts = \App\Support\ProductionInvoiceDocumentAmounts::calculate($totalTagihan, $verifiedPaid, $dpPercentage);
+            $displayTotal = $documentType === 'dp' ? $documentAmounts['dp_total'] : $documentAmounts['settlement_total'];
+            $displayPaid = $documentType === 'dp' ? $documentAmounts['dp_paid'] : $documentAmounts['settlement_paid'];
+            $displayRemaining = $documentType === 'dp' ? $documentAmounts['dp_remaining'] : $documentAmounts['settlement_remaining'];
+            $displayDeliveryCost = $documentType === 'dp'
+                ? (float) $invoice->delivery_cost * ($dpPercentage / 100)
+                : (float) $invoice->delivery_cost * ((100 - $dpPercentage) / 100);
+            $statusStr = in_array(strtolower((string) $invoice->status_tagihan), ['cancelled'], true)
+                ? strtoupper((string) $invoice->status_tagihan)
+                : ($displayRemaining <= 0 ? 'PAID' : ($displayPaid > 0 ? 'PARTIALLY_PAID' : 'UNPAID'));
+            $totalLabel = $documentType === 'dp'
+                ? "Tagihan DP ({$dpLabelPct}%)"
+                : "Tagihan Pelunasan ({$settlementLabelPct}%)";
+        } else {
+            $displayTotal = $totalTagihan;
+            $displayPaid = $verifiedPaid;
+            $displayRemaining = max(0, $totalTagihan - $verifiedPaid);
+            $displayDeliveryCost = (float) $invoice->delivery_cost;
+            $statusStr = strtoupper((string) $invoice->status_tagihan);
+            $totalLabel = 'Total';
+        }
 
         $sCell->addText("Subtotal: Rp " . number_format($grandSubtotal > 0 ? $grandSubtotal : $totalTagihan, 0, ',', '.'), ['size' => 9], ['alignment' => Jc::RIGHT]);
-        if ((float) $invoice->delivery_cost > 0) {
-            $sCell->addText("Ongkir: Rp " . number_format((float) $invoice->delivery_cost, 0, ',', '.'), ['size' => 9], ['alignment' => Jc::RIGHT]);
+        if ($displayDeliveryCost > 0) {
+            $sCell->addText("Ongkir: Rp " . number_format($displayDeliveryCost, 0, ',', '.'), ['size' => 9], ['alignment' => Jc::RIGHT]);
         }
-        $sCell->addText("Total: Rp " . number_format($totalTagihan, 0, ',', '.'), ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
-        $sCell->addText("Paid: Rp " . number_format($verifiedPaid, 0, ',', '.'), ['size' => 9], ['alignment' => Jc::RIGHT]);
-        $sCell->addText("Remaining: Rp " . number_format($remaining, 0, ',', '.'), ['bold' => true, 'size' => 10, 'color' => '0B5394'], ['alignment' => Jc::RIGHT]);
+        $sCell->addText("{$totalLabel}: Rp " . number_format($displayTotal, 0, ',', '.'), ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
+        $sCell->addText("Paid: Rp " . number_format($displayPaid, 0, ',', '.'), ['size' => 9], ['alignment' => Jc::RIGHT]);
+        $sCell->addText("Remaining: Rp " . number_format($displayRemaining, 0, ',', '.'), ['bold' => true, 'size' => 10, 'color' => '0B5394'], ['alignment' => Jc::RIGHT]);
         $sCell->addText("Status Pembayaran: " . $statusStr, ['bold' => true, 'size' => 9, 'color' => '15803D'], ['alignment' => Jc::RIGHT]);
 
         $section->addTextBreak(1);

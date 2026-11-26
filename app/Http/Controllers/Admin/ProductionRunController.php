@@ -158,6 +158,12 @@ class ProductionRunController extends Controller
             $this->syncRunStatus($process);
         });
 
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->syncPesananCosting($process->productionRun?->pesanan);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-costing process #{$process->id} gagal: " . $e->getMessage());
+        }
+
         return back()->with('success', 'Process selesai. Lanjut QC.');
     }
 
@@ -251,6 +257,12 @@ class ProductionRunController extends Controller
 
             $this->recalculateRunStatus($process->productionRun);
         });
+
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->syncPesananCosting($process->productionRun?->pesanan);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-costing QC #{$process->id} gagal: " . $e->getMessage());
+        }
 
         return back()->with('success', 'QC berhasil disubmit.');
     }
@@ -582,6 +594,16 @@ class ProductionRunController extends Controller
                         'completed' => $isFinalPaid,
                     ]
                 );
+
+                if ($isFinalPaid && $pesanan->jobTicket) {
+                    $pesanan->jobTicket->load('pesanans.workflowStatus');
+                    $allOrdersCompleted = $pesanan->jobTicket->pesanans->isNotEmpty()
+                        && $pesanan->jobTicket->pesanans->every(fn ($p) => (bool) optional($p->workflowStatus)->completed);
+
+                    if ($allOrdersCompleted) {
+                        $pesanan->jobTicket->update(['status' => 'Done']);
+                    }
+                }
             }
 
             $pesanan->jobTicket->workflowHistory()->create([
@@ -600,6 +622,12 @@ class ProductionRunController extends Controller
             ]);
         });
 
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->syncProductionCogsOnDelivery($run->fresh());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-COGS delivery run #{$run->id} gagal: " . $e->getMessage());
+        }
+
         return back()->with(
             'success',
             $run->type === 'sample'
@@ -610,53 +638,7 @@ class ProductionRunController extends Controller
 
     private function generateProductionInvoiceIfNotExists(JobTicket $jobTicket): void
     {
-        // Cek apakah invoice produksi (DP/Pelunasan) sudah dibuat sebelumnya untuk JobTicket ini
-        $exists = $jobTicket->invoices()
-            ->whereIn('kategori_invoice', ['dp_produksi', 'production'])
-            ->whereNotIn('status_tagihan', ['cancelled', 'Cancelled'])
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        // Ambil nominal grand total dari quotation yang disetujui (jika ada)
-        $approvedQuotation = $jobTicket->quotations()->where('status', 'approved')->first();
-        $grandTotal = 0;
-
-        if ($approvedQuotation) {
-            $grandTotal = (float) $approvedQuotation->grand_total;
-        } else {
-            // Fallback kalkulasi manual dari pesanan
-            foreach ($jobTicket->pesanans as $pesanan) {
-                $price = (float) ($pesanan->harga_jual_per_pcs ?? $pesanan->price_per_piece ?? 0);
-                $qty = (int) ($pesanan->quantity ?: $pesanan->q ?: 0);
-                $grandTotal += ($price * $qty);
-            }
-        }
-
-        // Contoh: DP yang ditagihkan adalah 50%
-        $dpAmount = $grandTotal * 0.5;
-
-        // Create the invoice
-        $jobTicket->invoices()->create([
-            'no_invoice' => $this->generateInvoiceNumber('PROD'),
-            'kategori_invoice' => 'produksi',
-            'total_tagihan' => $grandTotal,
-            'status_tagihan' => 'unpaid',
-            'tgl_jatuh_tempo' => now()->addDays(7)->toDateString(),
-        ]);
-
-        // Update workflow_status untuk setiap pesanan bahwa invoice produksi telah dibuat
-        foreach ($jobTicket->pesanans as $pesanan) {
-            $pesanan->workflowStatus()->updateOrCreate(
-                ['pesanan_id' => $pesanan->id],
-                [
-                    'production_invoice_created' => true,
-                    'production_dp_paid' => false, // Menunggu pembayaran
-                ]
-            );
-        }
+        app(\App\Services\InvoiceService::class)->ensureProductionInvoice($jobTicket);
     }
 
     private function generateInvoiceNumber(string $prefix): string

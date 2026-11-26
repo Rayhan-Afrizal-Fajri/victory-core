@@ -9,7 +9,13 @@ class ProductionInvoiceDocumentAmounts
         $total = max($total, 0);
         $verifiedPaid = min(max($verifiedPaid, 0), $total);
         $dpPercentage = max(min($dpPercentage, 100), 0);
-        $dpTotal = round($total * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP);
+        if ($dpPercentage <= 0) {
+            $dpTotal = 0.0;
+        } elseif ($dpPercentage >= 100) {
+            $dpTotal = $total;
+        } else {
+            $dpTotal = min($total, round($total * ($dpPercentage / 100), 0, PHP_ROUND_HALF_UP));
+        }
         $settlementTotal = $total - $dpTotal;
         $dpPaid = min($verifiedPaid, $dpTotal);
         $settlementPaid = min(max($verifiedPaid - $dpTotal, 0), $settlementTotal);

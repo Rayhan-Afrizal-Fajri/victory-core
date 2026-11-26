@@ -30,6 +30,7 @@ import AppLayout from '@/layouts/app-layout';
 import InvoiceDetailSheet from '@/components/invoice/invoice-detail-sheet';
 import PaymentDialog from '@/components/sample/payment-dialog';
 import InvoiceEditDialog from '@/components/invoice/invoice-edit-dialog';
+import { getInvoiceDpPercentage, isProductionInvoice } from '@/components/invoice/invoice-utils';
 import FormattedNumberInput from '@/components/ui/formatted-number-input';
 import { Invoice } from '../job-tickets/types';
 
@@ -429,8 +430,8 @@ export default function Index({
           header: 'Total',
           accessor: 'total_tagihan',
           cell: (row) => {
-              const isProd = row.kategori_invoice === 'production';
-              const dpPct = isProd ? (row.dp_percentage ? Number(row.dp_percentage) : 50) : null;
+              const isProd = isProductionInvoice(row);
+              const dpPct = isProd ? getInvoiceDpPercentage(row) : null;
               const total = Number(row.total_tagihan || 0);
               const dpNominal = dpPct !== null ? Math.round(total * (dpPct / 100)) : null;
 
@@ -440,9 +441,15 @@ export default function Index({
                           {formatCurrency(total)}
                       </span>
                       {isProd && dpPct !== null && (
-                          <p className="text-[11px] font-medium text-blue-700">
-                              DP ({dpPct}%): {formatCurrency(dpNominal!)}
-                          </p>
+                          dpPct === 0 ? (
+                              <p className="text-[11px] font-medium text-emerald-700">
+                                  Tanpa DP (0%) · Pelunasan 100%
+                              </p>
+                          ) : (
+                              <p className="text-[11px] font-medium text-blue-700">
+                                  DP ({dpPct}%): {formatCurrency(dpNominal!)}
+                              </p>
+                          )
                       )}
                   </div>
               );

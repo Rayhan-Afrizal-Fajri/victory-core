@@ -275,13 +275,14 @@ class InvoiceController extends Controller
             'pesanan_id' => ['required', 'exists:pesanan,id'],
             'kategori_invoice' => ['required', 'in:sample,production'],
             'total_tagihan' => ['required', 'numeric', 'min:1'],
+            'dp_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'tgl_jatuh_tempo' => ['nullable', 'date'],
             'title' => ['nullable', 'string', 'max:255'],
             'customer_po_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        $pesanan = Pesanan::with(['workflowStatus', 'invoices'])->findOrFail($validated['pesanan_id']);
+        $pesanan = Pesanan::with(['workflowStatus', 'invoices', 'jobTicket.quotations'])->findOrFail($validated['pesanan_id']);
 
         $exists = $pesanan->invoices()
             ->where('kategori_invoice', $validated['kategori_invoice'])
@@ -306,10 +307,23 @@ class InvoiceController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($pesanan, $validated, $invoiceService) {
+        $createdInvoice = DB::transaction(function () use ($pesanan, $validated, $invoiceService) {
             $prefix = $validated['kategori_invoice'] === 'sample' ? 'SAMPLE' : 'PROD';
 
-            $pesanan->invoices()->create([
+            $dpPercentage = null;
+            if ($validated['kategori_invoice'] === 'production') {
+                if (array_key_exists('dp_percentage', $validated) && $validated['dp_percentage'] !== null && $validated['dp_percentage'] !== '') {
+                    $dpPercentage = (float) $validated['dp_percentage'];
+                } else {
+                    $approvedQuotation = $pesanan->jobTicket?->quotations()
+                        ->where('status', 'approved')
+                        ->latest('id')
+                        ->first();
+                    $dpPercentage = (float) ($approvedQuotation?->dp_percentage ?? 50.00);
+                }
+            }
+
+            $invoiceAttributes = [
                 'no_invoice' => $invoiceService->generate($prefix),
                 'kategori_invoice' => $validated['kategori_invoice'],
                 'title' => $validated['title']
@@ -321,7 +335,13 @@ class InvoiceController extends Controller
                 'tgl_jatuh_tempo' => now()->addDays(30)->toDateString(),
                 'customer_po_number' => $validated['customer_po_number'] ?? $pesanan->jobTicket?->customer_po_number,
                 'notes' => $validated['notes'] ?? null,
-            ]);
+            ];
+
+            if ($dpPercentage !== null) {
+                $invoiceAttributes['dp_percentage'] = $dpPercentage;
+            }
+
+            $createdInvoice = $pesanan->invoices()->create($invoiceAttributes);
 
             // Otomatis surat jalan harus sudah digenerate jauh sebelum masuk ke proses delivery
             if ($pesanan->jobTicket) {
@@ -338,7 +358,7 @@ class InvoiceController extends Controller
 
             if ($validated['kategori_invoice'] === 'production') {
                 $workflowPayload['production_invoice_created'] = true;
-                $workflowPayload['production_dp_paid'] = false;
+                $workflowPayload['production_dp_paid'] = $dpPercentage <= 0;
                 $workflowPayload['final_payment_paid'] = false;
             }
 
@@ -355,7 +375,15 @@ class InvoiceController extends Controller
                 'user_id' => Auth::id(),
                 'notes' => 'Invoice manual dibuat dari menu Invoice.',
             ]);
+
+            return $createdInvoice;
         });
+
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->syncInvoice($createdInvoice);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-journal manual invoice #{$createdInvoice->id} gagal: " . $e->getMessage());
+        }
 
         return back()->with('success', 'Invoice berhasil dibuat.');
     }
@@ -391,6 +419,7 @@ class InvoiceController extends Controller
         $invoice = Invoice::with([
             'payments',
             'sample.pesanan.workflowStatus',
+            'jobTicket.pesanans.workflowStatus',
         ])->findOrFail($id);
 
         $hasVerifiedPayment = $invoice->payments()
@@ -467,6 +496,7 @@ class InvoiceController extends Controller
         $invoice = Invoice::with([
             'payments',
             'sample.pesanan.workflowStatus',
+            'jobTicket.pesanans.workflowStatus',
         ])->findOrFail($id);
 
         $hasVerifiedPayment = $invoice->payments()
@@ -510,7 +540,37 @@ class InvoiceController extends Controller
                     'notes' => 'Invoice sample dibatalkan. Sample dianggap tanpa biaya.', 
                 ]);
             }
+
+            if (
+                in_array(strtolower((string) $invoice->kategori_invoice), ['production', 'produksi', 'dp_produksi'], true)
+                && $invoice->jobTicket
+            ) {
+                $invoice->jobTicket->loadMissing('pesanans.workflowStatus');
+                foreach ($invoice->jobTicket->pesanans as $pesanan) {
+                    $pesanan->workflowStatus()->updateOrCreate(
+                        ['pesanan_id' => $pesanan->id],
+                        [
+                            'production_invoice_created' => false,
+                            'production_dp_paid' => false,
+                            'final_payment_paid' => false,
+                        ]
+                    );
+                }
+
+                $invoice->jobTicket->workflowHistory()->create([
+                    'step' => 'finance',
+                    'action' => 'production_invoice_cancelled',
+                    'user_id' => Auth::id(),
+                    'notes' => "Invoice produksi {$invoice->no_invoice} dibatalkan.",
+                ]);
+            }
         }); 
+
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->voidInvoiceJournal($invoice);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Void journal invoice #{$invoice->id} gagal: " . $e->getMessage());
+        }
 
         return back()->with('success', 'Invoice berhasil dibatalkan.');
     }
@@ -526,23 +586,7 @@ class InvoiceController extends Controller
             'items.pesanan',
         ])->findOrFail($invoiceId);
 
-        $documentType = $request->query('document');
-        if ($documentType === 'keseluruhan') {
-            $documentType = 'full';
-        }
-        if (! in_array($documentType, ['dp', 'settlement', 'full'], true)) {
-            $documentType = null;
-        }
-
-        $isProductionInvoice = in_array(
-            strtolower((string) $invoice->kategori_invoice),
-            ['production', 'produksi', 'dp_produksi'],
-            true
-        );
-
-        if ($documentType && ! $isProductionInvoice) {
-            abort(422, 'Dokumen DP, pelunasan, dan invoice hanya tersedia untuk invoice produksi.');
-        }
+        $documentType = $this->resolveValidatedDocumentType($request, $invoice);
 
         $verifiedPaid = (float) $invoice->payments
             ->where('status', 'verified')
@@ -705,12 +749,44 @@ class InvoiceController extends Controller
             'payments',
         ])->findOrFail($invoiceId);
 
-        $documentType = $request->query('document');
+        $documentType = $this->resolveValidatedDocumentType($request, $invoice);
         $filePath = $docxService->generateInvoiceDocx($invoice, $documentType);
 
         $cleanNo = $invoice->no_invoice ? str_replace(['/', '\\'], '-', $invoice->no_invoice) : 'invoice';
         $fileName = "{$cleanNo}.docx";
 
         return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+    }
+
+    private function resolveValidatedDocumentType(Request $request, Invoice $invoice): ?string
+    {
+        $documentType = $request->query('document');
+        if ($documentType === 'keseluruhan') {
+            $documentType = 'full';
+        }
+        if (! in_array($documentType, ['dp', 'settlement', 'full'], true)) {
+            return null;
+        }
+
+        $isProductionInvoice = in_array(
+            strtolower((string) $invoice->kategori_invoice),
+            ['production', 'produksi', 'dp_produksi'],
+            true
+        );
+
+        if (! $isProductionInvoice) {
+            abort(422, 'Dokumen DP, pelunasan, dan invoice hanya tersedia untuk invoice produksi.');
+        }
+
+        $dpPercentage = (float) ($invoice->dp_percentage ?? 50.00);
+        if ($documentType === 'dp' && $dpPercentage <= 0) {
+            abort(422, 'Invoice tanpa DP (0%) tidak memiliki dokumen tagihan DP. Gunakan dokumen Pelunasan atau Invoice.');
+        }
+
+        if ($documentType === 'settlement' && $dpPercentage >= 100) {
+            abort(422, 'Invoice dengan pembayaran penuh di awal (100%) tidak memiliki dokumen tagihan pelunasan terpisah. Gunakan dokumen DP atau Invoice.');
+        }
+
+        return $documentType;
     }
 }

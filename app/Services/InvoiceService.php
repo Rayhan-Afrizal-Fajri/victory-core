@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Notification;
 use App\Models\Invoice;
 use App\Models\JobTicket;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService
@@ -164,9 +165,19 @@ class InvoiceService
                     ['pesanan_id' => $pesanan->id],
                     [
                         'production_invoice_created' => true,
-                        'production_dp_paid' => false,
+                        'production_dp_paid' => $dpPercentage <= 0,
+                        'final_payment_paid' => false,
                     ]
                 );
+            }
+
+            if ($dpPercentage <= 0) {
+                $jobTicket->workflowHistory()->create([
+                    'step' => 'finance',
+                    'action' => 'production_dp_skipped',
+                    'user_id' => Auth::id() ?? $jobTicket->created_by,
+                    'notes' => 'Invoice produksi dibuat tanpa DP (0%). Otomatis langsung masuk tahap pelunasan 100%.',
+                ]);
             }
 
             return $invoice;
@@ -180,6 +191,12 @@ class InvoiceService
                 "/purchase-orders/{$jobTicket->id}?tab=invoices",
                 'info'
             ));
+        }
+
+        try {
+            app(\App\Services\Accounting\AccountingSyncService::class)->syncInvoice($invoice);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Auto-journal invoice #{$invoice->id} gagal: " . $e->getMessage());
         }
 
         return $invoice;

@@ -206,16 +206,26 @@ export default function Index({ quotations, customers, companyProfiles, eligible
       header: 'Grand Total & DP',
       accessor: 'grand_total',
       cell: (row) => {
-        const dpPct = Number(row.dp_percentage || 50);
-        const dpAmount = Math.round(Number(row.grand_total || 0) * (dpPct / 100));
+        const dpPct =
+          row.dp_percentage !== null && row.dp_percentage !== undefined
+            ? Number(row.dp_percentage)
+            : 50;
+        const grandTotal = Number(row.grand_total || 0);
+        const dpAmount = Math.round(grandTotal * (dpPct / 100));
         return (
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-slate-900">
               {formatCurrency(row.grand_total)}
             </span>
-            <span className="text-[11px] font-medium text-blue-700">
-              DP ({dpPct}%): {formatCurrency(dpAmount)}
-            </span>
+            {dpPct === 0 ? (
+              <span className="text-[11px] font-medium text-emerald-700">
+                Tanpa DP (0%) · Pelunasan (100%): {formatCurrency(grandTotal)}
+              </span>
+            ) : (
+              <span className="text-[11px] font-medium text-blue-700">
+                DP ({dpPct}%): {formatCurrency(dpAmount)}
+              </span>
+            )}
           </div>
         );
       },
@@ -433,36 +443,42 @@ export default function Index({ quotations, customers, companyProfiles, eligible
                           {formatCurrency(selectedQuotation.grand_total)}
                         </td>
                       </tr>
-                      <tr className="border-t border-slate-200 bg-blue-50/50">
-                        <td className="px-4 py-3 font-medium text-blue-900 dark:text-blue-200">
-                          DP Produksi ({selectedQuotation.dp_percentage ?? 50}%)
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-blue-700 dark:text-blue-300">
-                          {formatCurrency(
-                            Math.round(
-                              Number(selectedQuotation.grand_total || 0) *
-                                (Number(selectedQuotation.dp_percentage ?? 50) / 100)
-                            )
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="border-t border-slate-100 bg-slate-50/50">
-                        <td className="px-4 py-3 font-medium text-slate-700">
-                          Pelunasan Produksi ({100 - Number(selectedQuotation.dp_percentage ?? 50)}%)
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-slate-800">
-                          {formatCurrency(
-                            Math.max(
-                              0,
-                              Number(selectedQuotation.grand_total || 0) -
-                                Math.round(
-                                  Number(selectedQuotation.grand_total || 0) *
-                                    (Number(selectedQuotation.dp_percentage ?? 50) / 100)
-                                )
-                            )
-                          )}
-                        </td>
-                      </tr>
+                      {(() => {
+                        const selectedDpPct =
+                          selectedQuotation.dp_percentage !== null &&
+                          selectedQuotation.dp_percentage !== undefined
+                            ? Number(selectedQuotation.dp_percentage)
+                            : 50;
+                        const selectedGrandTotal = Number(selectedQuotation.grand_total || 0);
+                        const selectedDpAmount = Math.round(selectedGrandTotal * (selectedDpPct / 100));
+                        const selectedSettlementAmount = Math.max(
+                          0,
+                          selectedGrandTotal - selectedDpAmount
+                        );
+
+                        return (
+                          <>
+                            <tr className="border-t border-slate-200 bg-blue-50/50">
+                              <td className="px-4 py-3 font-medium text-blue-900 dark:text-blue-200">
+                                {selectedDpPct === 0
+                                  ? 'Tanpa DP (0%)'
+                                  : `DP Produksi (${selectedDpPct}%)`}
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-blue-700 dark:text-blue-300">
+                                {formatCurrency(selectedDpAmount)}
+                              </td>
+                            </tr>
+                            <tr className="border-t border-slate-100 bg-slate-50/50">
+                              <td className="px-4 py-3 font-medium text-slate-700">
+                                Pelunasan Produksi ({100 - selectedDpPct}%)
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold text-slate-800">
+                                {formatCurrency(selectedSettlementAmount)}
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>

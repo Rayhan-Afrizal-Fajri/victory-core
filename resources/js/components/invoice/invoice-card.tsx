@@ -63,6 +63,7 @@ const InvoiceCard = ({
     const isProd = isProductionInvoice(invoice);
     const dpPercentage = isProd ? getInvoiceDpPercentage(invoice) : 50;
     const settlementPercentage = 100 - dpPercentage;
+    const isWithoutDp = isProd && dpPercentage === 0;
     const dpTotal = isProd ? getInvoiceDpTotal(invoice) : 0;
     const dpRemaining = isProd ? getInvoiceDpRemaining(invoice) : 0;
     const dpFulfilled = isProd ? isInvoiceDpPaid(invoice) : false;
@@ -125,24 +126,39 @@ const InvoiceCard = ({
                         Sisa: {formatRupiah(remaining)}
                     </p>
                     {isProd && (
-                        <span className="text-[11px] text-slate-500">
-                            DP {dpPercentage}%: {formatRupiah(dpTotal)}
+                        <span
+                            className={`text-[11px] ${
+                                isWithoutDp ? 'font-medium text-emerald-700' : 'text-slate-500'
+                            }`}
+                        >
+                            {isWithoutDp
+                                ? 'Tanpa DP (0%)'
+                                : `DP ${dpPercentage}%: ${formatRupiah(dpTotal)}`}
                         </span>
                     )}
                 </div>
 
                 {isProd && (
                     <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50/70 p-2 text-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-slate-600">Syarat DP ({dpPercentage}%)</span>
-                            <span
-                                className={`font-medium ${
-                                    dpFulfilled ? 'text-emerald-600' : 'text-amber-700'
-                                }`}
-                            >
-                                {dpFulfilled ? '✓ Terpenuhi' : `Kurang ${formatRupiah(dpRemaining)}`}
-                            </span>
-                        </div>
+                        {isWithoutDp ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-slate-700">Tanpa DP (0%)</span>
+                                <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                    Langsung Pelunasan (100%)
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-600">Syarat DP ({dpPercentage}%)</span>
+                                <span
+                                    className={`font-medium ${
+                                        dpFulfilled ? 'text-emerald-600' : 'text-amber-700'
+                                    }`}
+                                >
+                                    {dpFulfilled ? '✓ Terpenuhi' : `Kurang ${formatRupiah(dpRemaining)}`}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -178,27 +194,31 @@ const InvoiceCard = ({
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        window.open(
-                                            `/invoices/${invoice.id}/print?document=dp`,
-                                            '_blank'
-                                        )
-                                    }
-                                >
-                                    Cetak DP ({dpPercentage}%)
-                                </DropdownMenuItem>
+                                {dpPercentage > 0 && (
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            window.open(
+                                                `/invoices/${invoice.id}/print?document=dp`,
+                                                '_blank'
+                                            )
+                                        }
+                                    >
+                                        Cetak DP ({dpPercentage}%)
+                                    </DropdownMenuItem>
+                                )}
 
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        window.open(
-                                            `/invoices/${invoice.id}/print?document=settlement`,
-                                            '_blank'
-                                        )
-                                    }
-                                >
-                                    Cetak Pelunasan ({settlementPercentage}%)
-                                </DropdownMenuItem>
+                                {settlementPercentage > 0 && (
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            window.open(
+                                                `/invoices/${invoice.id}/print?document=settlement`,
+                                                '_blank'
+                                            )
+                                        }
+                                    >
+                                        Cetak Pelunasan ({settlementPercentage}%)
+                                    </DropdownMenuItem>
+                                )}
 
                                 <DropdownMenuItem
                                     onClick={() =>

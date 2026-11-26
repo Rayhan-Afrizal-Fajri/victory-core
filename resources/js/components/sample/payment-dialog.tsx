@@ -19,6 +19,7 @@ import {
     getInvoiceDpPercentage,
     getInvoiceDpTotal,
     getVerifiedPaid,
+    isProductionInvoice,
 } from '../invoice/invoice-utils';
 import FormattedNumberInput from '../ui/formatted-number-input';
 import { formatCurrency } from '@/helpers/format';
@@ -66,17 +67,37 @@ const PaymentDialog = ({
                                 </>
                             )}
                     </DialogDescription>
-                    {categoryLabel === 'Production' && (() => {
+                    {isProductionInvoice(invoice) && (() => {
                         const dpPct = getInvoiceDpPercentage(invoice);
                         const dpTotal = getInvoiceDpTotal(invoice);
                         const verifiedPaid = getVerifiedPaid(invoice);
                         const isDpDone = verifiedPaid >= dpTotal;
                         const remainingDp = Math.max(0, dpTotal - verifiedPaid);
 
+                        if (dpPct === 0) {
+                            return (
+                                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-900 space-y-1">
+                                    <div className="flex items-center justify-between font-semibold">
+                                        <span>Skema Tanpa DP (0%) — Langsung Pelunasan (100%)</span>
+                                        <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                                            Langsung Pelunasan
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-600">
+                                        Invoice produksi ini tidak memerlukan DP di awal. Pembayaran yang diinput dialokasikan langsung sebagai pelunasan (100% sebelum pengiriman).
+                                    </p>
+                                </div>
+                            );
+                        }
+
                         return (
                             <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-xs text-blue-900 dark:text-blue-200 space-y-1">
                                 <div className="flex items-center justify-between font-semibold">
-                                    <span>Ketentuan DP Produksi: {dpPct}% ({formatCurrency(dpTotal)})</span>
+                                    <span>
+                                        {dpPct === 100
+                                            ? `Skema Bayar Full di Awal (100%) (${formatCurrency(dpTotal)})`
+                                            : `Ketentuan DP Produksi: ${dpPct}% (${formatCurrency(dpTotal)})`}
+                                    </span>
                                     {isDpDone ? (
                                         <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
                                             DP Terpenuhi
@@ -90,7 +111,9 @@ const PaymentDialog = ({
                                 <p className="text-slate-600">
                                     {isDpDone
                                         ? `Pembayaran DP minimal ${dpPct}% sudah terpenuhi. Pembayaran saat ini dialokasikan untuk sisa pelunasan.`
-                                        : `Untuk memulai produksi massal, minimal DP yang harus dibayar adalah ${formatCurrency(dpTotal)} (Kekurangan saat ini: ${formatCurrency(remainingDp)}).`}
+                                        : dpPct === 100
+                                          ? `Untuk memulai produksi massal, customer wajib melakukan pelunasan penuh 100% sebesar ${formatCurrency(dpTotal)} di awal (Kekurangan saat ini: ${formatCurrency(remainingDp)}).`
+                                          : `Untuk memulai produksi massal, minimal DP yang harus dibayar adalah ${formatCurrency(dpTotal)} (Kekurangan saat ini: ${formatCurrency(remainingDp)}).`}
                                 </p>
                             </div>
                         );
