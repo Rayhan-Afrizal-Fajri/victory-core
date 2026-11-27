@@ -742,10 +742,11 @@ class InvoiceController extends Controller
         $invoice = Invoice::with([
             'jobTicket.customer',
             'jobTicket.companyProfile',
-            'jobTicket.quotations',
+            'jobTicket.quotations.companyProfile',
             'jobTicket.pesanans.sizeBreakdowns',
             'jobTicket.latestSuratJalan',
             'items.pesanan.sizeBreakdowns',
+            'items.pesanan.product',
             'payments',
         ])->findOrFail($invoiceId);
 

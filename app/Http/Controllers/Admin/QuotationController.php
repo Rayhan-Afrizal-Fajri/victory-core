@@ -1040,6 +1040,7 @@ class QuotationController extends Controller
             'customer',
             'companyProfile',
             'items.pesanan.sizeBreakdowns',
+            'quotationNotes',
         ])->findOrFail($quotationId);
 
         $filePath = $docxService->generateQuotationDocx($quotation);

@@ -65,12 +65,12 @@ class DocumentDocxServiceTest extends TestCase
 
         $this->companyProfile = CompanyProfile::create([
             'company_name' => 'PT Victory & Partners <ID>',
-            'company_type' => 'non_pkp',
+            'company_type' => 'pkp',
             'bank_type' => 'BCA',
-            'tax_percentage' => 0,
+            'tax_percentage' => 11,
             'account_number' => '1234567890',
             'account_name' => 'PT Victory & Partners',
-            'address' => 'Jl. Raya & Industri No. 1',
+            'address' => "Head Office:\nJl. Raya & Industri No. 1\n\nBranch Office:\nJl. Bali No. 2",
             'swift_code' => 'CENAIDJA',
         ]);
 
@@ -138,8 +138,15 @@ class DocumentDocxServiceTest extends TestCase
 
         try {
             $documentXml = $this->assertDocxArchiveIsWellFormed($filePath);
-            $this->assertStringContainsString('Pesan &amp; Ketentuan Pembayaran:', $documentXml);
             $this->assertStringContainsString('Syarat &amp; ketentuan &lt;khusus&gt;', $documentXml);
+            $this->assertStringContainsString('No Invoice', $documentXml);
+            $this->assertStringContainsString('Tgl. Jatuh Tempo', $documentXml);
+            $this->assertStringContainsString('Pajak PPN (11%)', $documentXml);
+            $this->assertStringContainsString('Branch Office:', $documentXml);
+            $this->assertStringNotContainsString("Head Office:\nJl. Raya", $documentXml);
+
+            // Verify proportional logo sizing (width:height ~= 2040:297 = 6.87, not stretched 140:38)
+            $this->assertMatchesRegularExpression('/width:210pt;\s*height:30\.57pt;/', $documentXml);
         } finally {
             @unlink($filePath);
         }
@@ -204,11 +211,15 @@ class DocumentDocxServiceTest extends TestCase
 
         try {
             $quotationXml = $this->assertDocxArchiveIsWellFormed($quotationPath);
-            $this->assertStringContainsString('Pesan &amp; Ketentuan:', $quotationXml);
+            $this->assertStringContainsString('PENAWARAN', $quotationXml);
+            $this->assertStringContainsString('Tgl. Jatuh Tempo', $quotationXml);
             $this->assertStringContainsString('DP 50% &amp; Pelunasan', $quotationXml);
 
             $suratJalanXml = $this->assertDocxArchiveIsWellFormed($suratJalanPath);
+            $this->assertStringContainsString('Kaos &amp; Jaket', $suratJalanXml);
             $this->assertStringContainsString('Size M &amp; L &lt;Packing Dus&gt;', $suratJalanXml);
+            $this->assertStringContainsString('Total Kuantitas', $suratJalanXml);
+            $this->assertStringContainsString('Menyatakan bahwa barang yang diterima :', $suratJalanXml);
         } finally {
             @unlink($quotationPath);
             @unlink($suratJalanPath);
