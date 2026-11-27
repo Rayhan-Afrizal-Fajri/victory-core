@@ -300,21 +300,21 @@ class DocumentDocxService
         $section->addTextBreak(1);
 
         // Center Banner Title matching PDF
-        if ($documentTitle) {
-            if (str_starts_with(strtoupper($documentTitle), 'INVOICE')) {
-                $section->addText(strtoupper($documentTitle), ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
-            } else {
-                $section->addText(strtoupper($documentTitle), ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
-                $section->addText('INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
-            }
-        } else {
-            if (strtolower((string) $invoice->kategori_invoice) === 'sample') {
-                $section->addText('SAMPLE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
-                $section->addText('PROFORMA INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
-            } else {
-                $section->addText('INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
-            }
-        }
+        // if ($documentTitle) {
+        //     if (str_starts_with(strtoupper($documentTitle), 'INVOICE')) {
+        //         $section->addText(strtoupper($documentTitle), ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
+        //     } else {
+        //         $section->addText(strtoupper($documentTitle), ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
+        //         $section->addText('INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
+        //     }
+        // } else {
+        //     if (strtolower((string) $invoice->kategori_invoice) === 'sample') {
+        //         $section->addText('SAMPLE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
+        //         $section->addText('PROFORMA INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
+        //     } else {
+        //         $section->addText('INVOICE', ['bold' => true, 'size' => 15, 'color' => '0B5394'], ['alignment' => Jc::CENTER]);
+        //     }
+        // }
 
         $section->addTextBreak(1);
 
@@ -330,9 +330,9 @@ class DocumentDocxService
         $this->addSectionHeader($cCell, 'Informasi Perusahaan');
         $companyRun = $cCell->addTextRun(['spaceAfter' => 40]);
         $companyRun->addText($companyProfile?->company_name ?? 'PT. Victorylab Global Industries', ['bold' => true, 'size' => 10, 'color' => '0B5394']);
-        if ($isPkp) {
-            $companyRun->addText("  (PKP - PPN {$taxPercentage}%)", ['size' => 8, 'color' => '1E40AF', 'bold' => true]);
-        }
+        // if ($isPkp) {
+        //     $companyRun->addText("  (PKP - PPN {$taxPercentage}%)", ['size' => 8, 'color' => '1E40AF', 'bold' => true]);
+        // }
         $this->addMultilineText(
             $cCell,
             'Headquarters : ' . ($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233'),
@@ -585,9 +585,9 @@ class DocumentDocxService
         $this->addSectionHeader($cCell, 'Informasi Perusahaan');
         $companyRun = $cCell->addTextRun(['spaceAfter' => 40]);
         $companyRun->addText($companyProfile?->company_name ?? 'PT. Victorylab Global Industries', ['bold' => true, 'size' => 10, 'color' => '0B5394']);
-        if ($isPkp) {
-            $companyRun->addText("  (PKP - PPN {$companyProfile->tax_percentage}%)", ['size' => 8, 'color' => '1E40AF', 'bold' => true]);
-        }
+        // if ($isPkp) {
+        //     $companyRun->addText("  (PKP - PPN {$companyProfile->tax_percentage}%)", ['size' => 8, 'color' => '1E40AF', 'bold' => true]);
+        // }
         $this->addMultilineText(
             $cCell,
             'Headquarters : ' . ($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233'),
