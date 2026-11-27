@@ -215,7 +215,7 @@
         </tr>
     </table>
 
-    <div class="title">
+    {{-- <div class="title">
         @if($documentTitle)
             @if(str_starts_with(strtoupper($documentTitle), 'INVOICE'))
                 {{ strtoupper($documentTitle) }}
@@ -228,7 +228,7 @@
             {{ $invoice->kategori_invoice === 'sample' ? 'PROFORMA ' : '' }}
             INVOICE
         @endif
-    </div>
+    </div> --}}
 
     <table class="address-container">
         <tr>
@@ -238,11 +238,6 @@
                 <div class="address-content">
                     <div class="company-name">
                         {{ $companyProfile?->company_name ?? 'PT. Victorylab Global Industries' }}
-                        @if(!empty($isPkp) && $isPkp)
-                            <span style="font-size: 8px; font-weight: normal; color: #1e40af; background: #dbeafe; padding: 1px 5px; border-radius: 3px; display: inline-block; margin-left: 5px;">
-                                PKP (PPN {{ $taxPercentage }}%)
-                            </span>
-                        @endif
                     </div>
                         Headquarters : {!! nl2br(e($companyProfile?->address ?? 'Ruko Kopo Plaza F - 9, Kota Bandung, Jawa Barat 40233')) !!}<br>
                         Telp: {{ $companyProfile?->phone ?? '081212228900' }}<br>
