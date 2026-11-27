@@ -8,6 +8,7 @@ use App\Models\SuratJalan;
 use App\Models\User;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\SimpleType\JcTable;
 use PhpOffice\PhpWord\Shared\Converter;
@@ -15,13 +16,26 @@ use PhpOffice\PhpWord\Shared\Converter;
 class DocumentDocxService
 {
     /**
+     * Initialize PhpWord with XML output escaping enabled so characters like '&', '<', '>'
+     * in labels or database values never produce malformed OOXML.
+     */
+    private function createPhpWord(): PhpWord
+    {
+        Settings::setOutputEscapingEnabled(true);
+
+        $phpWord = new PhpWord();
+        $phpWord->setDefaultFontName('Arial');
+        $phpWord->setDefaultFontSize(10);
+
+        return $phpWord;
+    }
+
+    /**
      * Create an Invoice docx document
      */
     public function generateInvoiceDocx(Invoice $invoice, ?string $documentType = null): string
     {
-        $phpWord = new PhpWord();
-        $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(10);
+        $phpWord = $this->createPhpWord();
 
         $section = $phpWord->addSection([
             'marginTop' => Converter::cmToTwip(1.5),
@@ -239,9 +253,7 @@ class DocumentDocxService
      */
     public function generateQuotationDocx(Quotation $quotation): string
     {
-        $phpWord = new PhpWord();
-        $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(10);
+        $phpWord = $this->createPhpWord();
 
         $section = $phpWord->addSection([
             'marginTop' => Converter::cmToTwip(1.5),
@@ -386,9 +398,7 @@ class DocumentDocxService
      */
     public function generateSuratJalanDocx(SuratJalan $suratJalan): string
     {
-        $phpWord = new PhpWord();
-        $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(10);
+        $phpWord = $this->createPhpWord();
 
         $section = $phpWord->addSection([
             'marginTop' => Converter::cmToTwip(1.5),
