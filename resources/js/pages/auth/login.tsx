@@ -2,6 +2,7 @@ import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -76,10 +77,24 @@ export default function Login({
                                 <InputError message={errors.password} />
                             </div>
 
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    tabIndex={3}
+                                />
+                                <Label
+                                    htmlFor="remember"
+                                    className="cursor-pointer text-sm font-normal text-gray-700 dark:text-gray-300"
+                                >
+                                    Ingat saya selama 7 hari di perangkat ini
+                                </Label>
+                            </div>
+
                             <Button
                                 type="submit"
                                 className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-sm text-base"
-                                tabIndex={3}
+                                tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
                             >
